@@ -130,6 +130,8 @@ Single Skill
 - [Six skills for financial service professionals | Claude](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
   - [Financial services | Claude by Anthropic](https://claude.com/solutions/financial-services)
 - [Building Agent Skills with skill-creator | by Daniela Petruzalek | Google Cloud - Community | Feb, 2026 | Medium](https://medium.com/google-cloud/building-agent-skills-with-skill-creator-855f18e785cf)
+- [Introducing: React Best Practices - Vercel](https://vercel.com/blog/introducing-react-best-practices)
+  - [agent-skills/skills/react-best-practices at main · vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices)
 
 ---
 
