@@ -3,5 +3,7 @@
   "workspace_id_at": "2026-03-19T03:06:33Z",
   "git_id": "5850-078b-7727-dccd",
   "git_id_at": "2026-03-19T03:06:33Z",
-  "project_name": "agent-skills"
+  "project_name": "agent-skills",
+  "cloud_sync": true,
+  "user_id": "daviddwlee84@gmail.com"
 }

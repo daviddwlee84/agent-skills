@@ -34,7 +34,14 @@ check_deps() {
   command -v yq &>/dev/null || missing+=(yq)
   if [[ ${#missing[@]} -gt 0 ]]; then
     echo -e "${RED}Error: Missing dependencies: ${missing[*]}${NC}" >&2
-    echo "Install with: brew install ${missing[*]}" >&2
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      echo "  macOS:  brew install ${missing[*]}" >&2
+    else
+      echo "  Debian/Ubuntu: sudo apt install ${missing[*]}" >&2
+      echo "  Fedora/RHEL:   sudo dnf install ${missing[*]}" >&2
+      echo "  Arch:          sudo pacman -S ${missing[*]}" >&2
+      echo "  Or via: snap install ${missing[*]}" >&2
+    fi
     exit 1
   fi
   # Check gh auth

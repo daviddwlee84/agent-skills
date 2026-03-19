@@ -47,6 +47,32 @@ npx skills@latest init [skill-name]
 
 ### Add a new vendored skill
 
+#### Quick Script
+
+```bash
+# Similar to: npx skills add owner/repo/path/to/skill
+./scripts/add-vendor.sh owner/repo/path/to/skill
+
+# Examples
+./scripts/add-vendor.sh marimo-team/skills/skills/marimo-notebook
+./scripts/add-vendor.sh vercel-labs/agent-skills/skills/next-js
+./scripts/add-vendor.sh --name my-name --branch dev owner/repo/skills/some-skill
+
+# Or via Makefile
+make add-vendor SOURCE=owner/repo/path/to/skill
+
+# GitHub URLs also work
+./scripts/add-vendor.sh https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook
+```
+
+This verifies the upstream path exists, adds an entry to `vendor.yaml`, and syncs the skill immediately.
+
+Use `--no-sync` to only add the entry without downloading.
+
+**Dependencies:** `gh` (GitHub CLI, authenticated) and `yq` (YAML processor)
+
+#### Config File
+
 1. Add an entry to `vendor.yaml`:
 
 ```yaml
@@ -63,7 +89,7 @@ npx skills@latest init [skill-name]
 
 2. Run `make sync` (requires `gh` and `yq`)
 
-### Check for upstream updates
+#### Check for upstream updates
 
 ```bash
 make sync-check
@@ -74,6 +100,7 @@ make sync-check
 ### Skills Manager
 
 - [vercel-labs/skills: The open agent skills tool - npx skills](https://github.com/vercel-labs/skills)
+  - [The Agent Skills Directory](https://skills.sh/)
 - [Skill.Fish - Skill manager for AI coding agents](https://www.skill.fish/)
   - [knoxgraeme/skillfish: The skill manager for AI coding agents. Install, update, and sync skills across Claude Code, Cursor, Copilot + more.](https://github.com/knoxgraeme/skillfish)
 
@@ -82,6 +109,17 @@ make sync-check
 - [vercel-labs/agent-skills: Vercel's official collection of agent skills](https://github.com/vercel-labs/agent-skills/tree/main)
 - [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
 - [mattpocock/skills: My personal directory of skills, straight from my .claude directory.](https://github.com/mattpocock/skills)
+- [anthropics/knowledge-work-plugins: Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork](https://github.com/anthropics/knowledge-work-plugins/tree/main)
+
+### Collections
+
+- [RKiding/Awesome-finance-skills: A collection of Awesome Finance Agent Skills for free and easy to start | 一系列开源免费的金融分析Agent Skills](https://github.com/RKiding/Awesome-finance-skills)
+- [Orchestra-Research/AI-Research-SKILLs: Comprehensive open-source library of AI research and engineering skills for any AI model. Package the skills and your claude code/codex/gemini agent will be an AI research agent with full horsepower. Maintained by Orchestra Research.](https://github.com/Orchestra-Research/AI-research-SKILLs)
+
+### Articles
+
+- [Six skills for financial service professionals | Claude](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
+  - [Financial services | Claude by Anthropic](https://claude.com/solutions/financial-services)
 
 ---
 

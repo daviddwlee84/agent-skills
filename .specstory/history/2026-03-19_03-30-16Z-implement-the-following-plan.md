@@ -794,3 +794,486 @@ _**Agent (claude-opus-4-6 2026-03-19 03:34:29Z)**_
 
 
 The `brew install yq` background task completed successfully — we already used its output earlier. Everything from the plan is fully implemented and verified.
+
+---
+
+_**User (2026-03-19 04:40:39Z)**_
+
+我希望能夠有helper script能夠方便類似 `npx skills add [skill-repo/path/to/skill]` 那樣 但目的是用於自動更新我們的 vendor.yaml
+此外 針對script dependencies check最好也涵蓋Linux場景(目前似乎只有brew install的提示）
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-19 04:40:44Z)**_
+
+_**Agent (claude-opus-4-6 2026-03-19 04:40:45Z)**_
+
+Let me check the current script's dep check, then implement both changes.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:40:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./scripts/sync-vendor.sh`
+
+```text
+     1→#!/usr/bin/env bash
+     2→set -euo pipefail
+     3→
+     4→REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+     5→VENDOR_YAML="$REPO_ROOT/vendor.yaml"
+     6→VENDOR_DIR="$REPO_ROOT/skills/vendor"
+     7→
+     8→# Colors
+     9→RED='\033[0;31m'
+    10→GREEN='\033[0;32m'
+    11→YELLOW='\033[1;33m'
+    12→NC='\033[0m' # No Color
+    13→
+    14→usage() {
+    15→  cat <<EOF
+    16→Usage: $(basename "$0") [OPTIONS] [SKILL_NAME]
+    17→
+    18→Sync vendored skills from upstream repositories.
+    19→
+    20→Options:
+    21→  --check    Dry-run: check for upstream updates without syncing
+    22→  -h, --help Show this help message
+    23→
+    24→Arguments:
+    25→  SKILL_NAME  Optional: sync only the named skill (default: sync all)
+    26→
+    27→Dependencies: gh (GitHub CLI), yq (YAML processor)
+    28→EOF
+    29→}
+    30→
+    31→check_deps() {
+    32→  local missing=()
+    33→  command -v gh &>/dev/null || missing+=(gh)
+    34→  command -v yq &>/dev/null || missing+=(yq)
+    35→  if [[ ${#missing[@]} -gt 0 ]]; then
+    36→    echo -e "${RED}Error: Missing dependencies: ${missing[*]}${NC}" >&2
+    37→    echo "Install with: brew install ${missing[*]}" >&2
+    38→    exit 1
+    39→  fi
+    40→  # Check gh auth
+    41→  if ! gh auth status &>/dev/null 2>&1; then
+    42→    echo -e "${RED}Error: gh is not authenticated. Run 'gh auth login' first.${NC}" >&2
+    43→    exit 1
+    44→  fi
+    45→}
+    46→
+    47→# Get the number of skills in vendor.yaml
+    48→skill_count() {
+    49→  yq '.skills | length' "$VENDOR_YAML"
+    50→}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:40:49Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./Makefile`
+
+```text
+     1→.PHONY: sync sync-check
+     2→
+     3→sync:
+     4→	./scripts/sync-vendor.sh
+     5→
+     6→sync-check:
+     7→	./scripts/sync-vendor.sh --check
+     8→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:40:55Z)**_
+
+Now I'll create the add-vendor script and fix the dep check in parallel.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:21Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VENDOR_YAML="$REPO_ROOT/vendor.yaml"
+SYNC_SCRIPT="$REPO_ROOT/scripts/sync-vendor.sh"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS] <owner/repo[/path/to/skill]>
+
+Add a vendored skill to vendor.yaml and optionally sync it.
+
+Examples:
+  $(basename "$0") marimo-team/skills/skills/marimo-notebook
+  $(basename "$0") vercel-labs/agent-skills/skills/next-js
+  $(basename "$0") --name my-skill --branch dev owner/repo/skills/my-skill
+  $(basename "$0") --no-sync owner/repo/skills/some-skill
+
+Options:
+  --name NAME    Override the skill name (default: last path component)
+  --branch BRANCH  Upstream branch (default: main)
+  --no-sync      Only add to vendor.yaml, don't sync immediately
+  -h, --help     Show this help message
+
+Dependencies: gh (GitHub CLI), yq (YAML processor)
+EOF
+}
+
+check_deps() {
+  local missing=()
+  command -v gh &>/dev/null || missing+=(gh)
+  command -v yq &>/dev/null || missing+=(yq)
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo -e "${RED}Error: Missing dependencies: ${missing[*]}${NC}" >&2
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      echo "  macOS:  brew install ${missing[*]}" >&2
+    else
+      echo "  Debian/Ubuntu: sudo apt install ${missing[*]}" >&2
+      echo "  Fedora/RHEL:   sudo dnf install ${missing[*]}" >&2
+      echo "  Arch:          sudo pacman -S ${missing[*]}" >&2
+      echo "  Or via: snap install ${missing[*]}" >&2
+    fi
+    exit 1
+  fi
+  if ! gh auth status &>/dev/null 2>&1; then
+    echo -e "${RED}Error: gh is not authenticated. Run 'gh auth login' first.${NC}" >&2
+    exit 1
+  fi
+}
+
+# Parse owner/repo/path from a single argument
+# Accepts formats:
+#   owner/repo/path/to/skill
+#   https://github.com/owner/repo/tree/branch/path/to/skill
+parse_source() {
+  local input="$1"
+
+  # Strip GitHub URL prefix if present
+  input="${input#https://github.com/}"
+  input="${input#http://github.com/}"
+
+  # Strip /tree/<branch>/ from URL-style paths
+  if [[ "$input" =~ ^([^/]+/[^/]+)/tree/([^/]+)/(.+)$ ]]; then
+    local url_branch="${BASH_REMATCH[2]}"
+    input="${BASH_REMATCH[1]}/${BASH_REMATCH[3]}"
+    # Use URL branch as default if --branch not explicitly set
+    if [[ -z "$OPT_BRANCH_SET" ]]; then
+      OPT_BRANCH="$url_branch"
+    fi
+  fi
+
+  # Remove trailing slash
+  input="${input%/}"
+
+  # Need at least owner/repo/one-path-component
+  local slash_count
+  slash_count=$(echo "$input" | tr -cd '/' | wc -c | tr -d ' ')
+  if [[ "$slash_count" -lt 2 ]]; then
+    echo -e "${RED}Error: Expected format: owner/repo/path/to/skill${NC}" >&2
+    echo "  Got: $input" >&2
+    exit 1
+  fi
+
+  # Extract owner and repo (first two components)
+  PARSED_OWNER="$(echo "$input" | cut -d'/' -f1)"
+  PARSED_REPO="$(echo "$input" | cut -d'/' -f2)"
+  PARSED_PATH="$(echo "$input" | cut -d'/' -f3-)"
+}
+
+main() {
+  local opt_name=""
+  OPT_BRANCH="main"
+  OPT_BRANCH_SET=""
+  local opt_sync=true
+  local positional=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --name) opt_name="$2"; shift 2 ;;
+      --branch) OPT_BRANCH="$2"; OPT_BRANCH_SET=1; shift 2 ;;
+      --no-sync) opt_sync=false; shift ;;
+      -h|--help) usage; exit 0 ;;
+      -*) echo "Unknown option: $1" >&2; usage; exit 1 ;;
+      *) positional="$1"; shift ;;
+    esac
+  done
+
+  if [[ -z "$positional" ]]; then
+    echo -e "${RED}Error: Missing required argument${NC}" >&2
+    usage
+    exit 1
+  fi
+
+  check_deps
+
+  parse_source "$positional"
+
+  local name="${opt_name:-$(basename "$PARSED_PATH")}"
+  local owner="$PARSED_OWNER"
+  local repo="$PARSED_REPO"
+  local path="$PARSED_PATH"
+  local branch="$OPT_BRANCH"
+
+  # Verify the upstream path exists
+  echo -n "Verifying upstream $owner/$repo/$path@$branch... "
+  if ! gh api "repos/$owner/$repo/contents/$path?ref=$branch" &>/dev/null 2>&1; then
+    echo -e "${RED}not found${NC}"
+    echo -e "${RED}Error: Path '$path' not found in $owner/$repo (branch: $branch)${NC}" >&2
+    exit 1
+  fi
+  echo -e "${GREEN}found${NC}"
+
+  # Check for duplicates
+  if [[ -f "$VENDOR_YAML" ]]; then
+    local existing
+    existing=$(yq ".skills[] | select(.name == \"$name\") | .name" "$VENDOR_YAML" 2>/dev/null || true)
+    if [[ -n "$existing" ]]; then
+      echo -e "${YELLOW}Skill '$name' already exists in vendor.yaml${NC}"
+      echo "Use --name to specify a different name, or edit vendor.yaml manually."
+      exit 1
+    fi
+  fi
+
+  # Append to vendor.yaml
+  echo -n "Adding '$name' to vendor.yaml... "
+  yq -i ".skills += [{
+    \"name\": \"$name\",
+    \"upstream\": {
+      \"owner\": \"$owner\",
+      \"repo\": \"$repo\",
+      \"path\": \"$path\",
+      \"branch\": \"$branch\"
+    },
+    \"last_sync\": {
+      \"date\": \"\",
+      \"commit\": \"\"
+    }
+  }]" "$VENDOR_YAML"
+  echo -e "${GREEN}done${NC}"
+
+  if [[ "$opt_sync" == "true" ]]; then
+    echo ""
+    "$SYNC_SCRIPT" "$name"
+  else
+    echo -e "\nRun ${YELLOW}make sync${NC} or ${YELLOW}./scripts/sync-vendor.sh $name${NC} to download the skill."
+  fi
+}
+
+main "$@"
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/scripts/add-vendor.sh
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:23Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/scripts/sync-vendor.sh has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Make add-vendor script executable
+
+`chmod +x /Volumes/Data/Program/Personal/agent-skills/scripts/add-vendor.sh`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:34Z)**_
+
+Now update the Makefile and README to include the new command.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/Makefile has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:42Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/README.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:47Z)**_
+
+Let me test the add-vendor script with a dry run (duplicate detection should catch marimo-notebook).
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:52Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test duplicate detection
+
+`./scripts/add-vendor.sh marimo-team/skills/skills/marimo-notebook`
+
+```text
+Exit code 1
+Verifying upstream marimo-team/skills/skills/marimo-notebook@main... found
+Skill 'marimo-notebook' already exists in vendor.yaml
+Use --name to specify a different name, or edit vendor.yaml manually.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:41:56Z)**_
+
+Duplicate detection works. Let me also test URL parsing with a quick `--no-sync` and then remove the test entry.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:00Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test GitHub URL parsing with --no-sync
+
+`./scripts/add-vendor.sh --no-sync https://github.com/vercel-labs/agent-skills/tree/main/skills/next-js`
+
+```text
+Exit code 1
+Verifying upstream vercel-labs/agent-skills/skills/next-js@main... not found
+Error: Path 'skills/next-js' not found in vercel-labs/agent-skills (branch: main)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:04Z)**_
+
+URL parsing worked correctly (it extracted owner/repo/path/branch properly) — the path just doesn't exist in that repo. Let me test with one that does exist.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test with a real upstream skill
+
+`./scripts/add-vendor.sh --no-sync https://github.com/vercel-labs/agent-skills/tree/main/skills/vercel`
+
+```text
+Exit code 1
+Verifying upstream vercel-labs/agent-skills/skills/vercel@main... not found
+Error: Path 'skills/vercel' not found in vercel-labs/agent-skills (branch: main)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:14Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check what skills exist in vercel-labs/agent-skills
+
+`gh api repos/vercel-labs/agent-skills/contents/skills --jq '.[].name' 2>/dev/null | head -5`
+
+```text
+composition-patterns
+deploy-to-vercel.zip
+deploy-to-vercel
+react-best-practices.zip
+react-best-practices
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:22Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test add-vendor with a valid upstream path
+
+`./scripts/add-vendor.sh --no-sync vercel-labs/agent-skills/skills/deploy-to-vercel`
+
+```text
+Verifying upstream vercel-labs/agent-skills/skills/deploy-to-vercel@main... found
+Adding 'deploy-to-vercel' to vendor.yaml... done
+
+Run make sync or ./scripts/sync-vendor.sh deploy-to-vercel to download the skill.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:25Z)**_
+
+Works. Let me revert that test entry.
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Remove test entry from vendor.yaml
+
+`yq -i 'del(.skills[] | select(.name == "deploy-to-vercel"))' vendor.yaml`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:30Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./vendor.yaml`
+
+```text
+     1→# Upstream skill sources for vendoring into skills/vendor/
+     2→# Managed by scripts/sync-vendor.sh
+     3→skills:
+     4→  - name: marimo-notebook
+     5→    upstream:
+     6→      owner: marimo-team
+     7→      repo: skills
+     8→      path: skills/marimo-notebook
+     9→      branch: main
+    10→    last_sync:
+    11→      date: "2026-03-19T03:33:47Z"
+    12→      commit: "343b0e05764bd528807608ea76995c80076dacef"
+    13→
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 04:42:37Z)**_
+
+Clean. Here's what was done:
+
+**Created `scripts/add-vendor.sh`** — a helper analogous to `npx skills add`, supporting:
+- `./scripts/add-vendor.sh owner/repo/path/to/skill` — simple format
+- `./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path` — GitHub URLs  
+- `--name` to override the skill name, `--branch` for non-main branches
+- `--no-sync` to only update vendor.yaml without downloading
+- Upstream path verification before adding
+- Duplicate detection
+
+**Updated `sync-vendor.sh` dep check** — now detects OS and shows platform-appropriate install instructions (macOS: `brew`, Debian/Ubuntu: `apt`, Fedora: `dnf`, Arch: `pacman`, generic: `snap`).
+
+**Updated `Makefile`** — added `make add-vendor SOURCE=...` target.
+
+**Updated `README.md`** — documented the new add-vendor workflow with examples.
