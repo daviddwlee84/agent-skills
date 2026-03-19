@@ -1,0 +1,12 @@
+# Upstream skill sources for vendoring into skills/vendor/
+# Managed by scripts/sync-vendor.sh
+skills:
+  - name: marimo-notebook
+    upstream:
+      owner: marimo-team
+      repo: skills
+      path: skills/marimo-notebook
+      branch: main
+    last_sync:
+      date: "2026-03-19T03:33:47Z"
+      commit: "343b0e05764bd528807608ea76995c80076dacef"
