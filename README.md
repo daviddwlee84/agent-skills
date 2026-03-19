@@ -7,7 +7,8 @@ A personal collection of agent skills — both custom-authored and cherry-picked
 ## Getting Started
 
 ```bash
-npx skills@latest add daviddwlee84/agent-skills
+# NOTE: If use daviddwlee84/agent-skills will only find skills in .agents/skills
+npx skills@latest add daviddwlee84/agent-skills/skills
 ```
 
 ## Structure
@@ -111,6 +112,7 @@ Skill Set
 - [vercel-labs/agent-skills: Vercel's official collection of agent skills](https://github.com/vercel-labs/agent-skills/tree/main)
 - [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
 - [mattpocock/skills: My personal directory of skills, straight from my .claude directory.](https://github.com/mattpocock/skills)
+- [anthropics/skills: Public repository for Agent Skills](https://github.com/anthropics/skills)
 - [anthropics/knowledge-work-plugins: Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork](https://github.com/anthropics/knowledge-work-plugins/tree/main)
 
 Single Skill

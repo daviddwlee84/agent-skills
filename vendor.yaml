@@ -19,3 +19,12 @@ skills:
     last_sync:
       date: "2026-03-19T05:21:55Z"
       commit: "691a9ce02a82510ed2cde3be0e61f423683b2239"
+  - name: skill-creator
+    upstream:
+      owner: anthropics
+      repo: skills
+      path: skills/skill-creator
+      branch: main
+    last_sync:
+      date: "2026-03-19T06:22:59Z"
+      commit: "b0cbd3df1533b396d281a6886d5132f623393a9c"
