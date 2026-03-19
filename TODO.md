@@ -20,9 +20,25 @@
 - [ ] LangChain / LangSmith / LangServe / LangGraph / Langfuse
 - [ ] Build MCP
 - [ ] LLM Fine-tuning (e.g. with Hugging Face Transformers / LoRA)
-- [ ] Financial Data Analysis (e.g. with yfinance, Alpha Vantage API, or Quandl)
 - [ ] Huggingface Space (with Gradio integration)
 - [ ] Tardis (SDK)
 - [ ] Discord Bot (with discord.py)
 - [ ] Playwright (for web automation or cloning websites)
 - [ ] GitHub Docs (mkdocs-material)
+- [ ] Data Visualization (e.g. with Matplotlib, Seaborn, or Plotly)
+- [ ] Financial Data Sources
+  - [ ] Yahoo Finance (yfinance)
+  - [ ] Alpha Vantage API
+  - [ ] Quandl
+  - [ ] FRED (Federal Reserve Economic Data)
+  - [ ] IEX Cloud
+  - [ ] Polygon.io
+  - [ ] Tiingo
+  - [ ] TWSE
+  - [ ] AKShare, Wind, JoinQuant, Tushare
+- [ ] Docker Compose
+- [ ] Kubernetes (e.g. with kubectl or Python client)
+- [ ] CI/CD Pipelines (e.g. GitHub Actions, Jenkins, CircleCI)
+- [ ] Terraform (for infrastructure as code)
+- [ ] Ansible (for configuration management)
+- [ ] chezmoi (for dotfile management)
