@@ -1277,3 +1277,1775 @@ Clean. Here's what was done:
 **Updated `Makefile`** — added `make add-vendor SOURCE=...` target.
 
 **Updated `README.md`** — documented the new add-vendor workflow with examples.
+
+---
+
+_**User (2026-03-19 05:33:54Z)**_
+
+<command-message>init</command-message>
+<command-name>/init</command-name>
+
+_**User (2026-03-19 05:33:54Z)**_
+
+Please analyze this codebase and create a CLAUDE.md file, which will be given to future instances of Claude Code to operate in this repository.
+
+What to add:
+1. Commands that will be commonly used, such as how to build, lint, and run tests. Include the necessary commands to develop in this codebase, such as how to run a single test.
+2. High-level code architecture and structure so that future instances can be productive more quickly. Focus on the "big picture" architecture that requires reading multiple files to understand.
+
+Usage notes:
+- If there's already a CLAUDE.md, suggest improvements to it.
+- When you make the initial CLAUDE.md, do not repeat yourself and do not include obvious instructions like "Provide helpful error messages to users", "Write unit tests for all new utilities", "Never include sensitive information (API keys, tokens) in code or commits".
+- Avoid listing every component or file structure that can be easily discovered.
+- Don't include generic development practices.
+- If there are Cursor rules (in .cursor/rules/ or .cursorrules) or Copilot rules (in .github/copilot-instructions.md), make sure to include the important parts.
+- If there is a README.md, make sure to include the important parts.
+- Do not make up information such as "Common Development Tasks", "Tips for Development", "Support and Documentation" unless this is expressly included in other files that you read.
+- Be sure to prefix the file with the following text:
+
+```
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+```
+
+---
+
+_**Agent (claude-opus-4-6 2026-03-19 05:34:33Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Explore codebase for CLAUDE.md
+
+```text
+Perfect! Now I have a comprehensive understanding of the codebase. Let me create a summary of my findings:
+
+## Codebase Exploration Summary
+
+I've thoroughly explored the agent-skills repository. Here's what I found:
+
+### 1. Project Structure and Purpose
+- **Purpose**: A personal collection of agent skills (custom and cherry-picked from upstream repos) installable as a single package
+- **Installation**: `npx skills@latest add daviddwlee84/agent-skills`
+- **Directory layout**:
+  - `skills/local/` - Custom skills authored locally
+  - `skills/vendor/` - 3rd-party skills synced from upstream repos
+  - `scripts/` - Vendor management tools
+  - `Makefile` - Convenience targets
+  - `vendor.yaml` - Manifest tracking upstream sources
+  - `skills-lock.json` - Lock file for installed skills
+
+### 2. Key Scripts
+
+**scripts/sync-vendor.sh**:
+- Syncs vendored skills from upstream repositories using GitHub API
+- Supports dry-run with `--check` flag to see updates without downloading
+- Can sync all skills or a specific skill by name
+- Uses `gh` (GitHub CLI) for API calls and `yq` for YAML manipulation
+- Updates `vendor.yaml` with sync dates and commit SHAs
+- Downloads directory trees from GitHub using recursive git trees API
+
+**scripts/add-vendor.sh**:
+- Adds new vendored skills to the manifest
+- Accepts multiple formats: `owner/repo/path`, GitHub URLs, or with options (`--name`, `--branch`)
+- Verifies upstream paths exist before adding
+- Checks for duplicates
+- Can skip sync with `--no-sync` flag
+- Updates `vendor.yaml` with new skill entries
+
+### 3. Vendor.yaml Format
+```yaml
+skills:
+  - name: skill-name              # Unique identifier
+    upstream:
+      owner: github-org           # Repository owner
+      repo: repo-name             # Repository name
+      path: path/to/skill         # Path within repo (e.g., skills/my-skill)
+      branch: main                # Git branch to track
+    last_sync:
+      date: "2026-03-19T05:21:55Z" # ISO 8601 timestamp
+      commit: "commit-sha-here"    # Full commit SHA
+```
+
+Current vendored skills:
+- marimo-notebook (marimo-team/skills)
+- streamlit-to-marimo (marimo-team/skills)
+
+### 4. Skills Directory Structure
+- **Local skills**: `/skills/local/quantatitive-factor-researcher/`
+  - Contains only `SKILL.md` file (60+ lines of instructions)
+  
+- **Vendor skills**: `/skills/vendor/marimo-notebook/`, `/skills/vendor/streamlit-to-marimo/`
+  - Each contains `SKILL.md` files and associated documentation/code
+
+### 5. Makefile Targets
+```makefile
+make sync              # Sync all vendored skills
+make sync-check        # Check for available updates without syncing
+make add-vendor SOURCE=owner/repo/path/to/skill  # Add new vendored skill
+```
+
+### 6. Configuration Files
+- **`.cursorindexingignore`**: Excludes `.specstory/**` from indexing (allows explicit @ references)
+- **`.gitignore`**: Standard Python project gitignore (includes `.cursorignore`, `.cursorindexingignore`)
+- **No existing files**: `.cursorrules`, `.claude.json`, `.editorconfig`, `.claude` directory (though `.agents` exists), or `.github/copilot-instructions.md`
+
+### 7. SKILL.md Format
+Each skill has a `SKILL.md` file with:
+- **YAML frontmatter**:
+  ```yaml
+  ---
+  name: skill-name
+  description: Brief description
+  ---
+  ```
+- **Markdown body**: Instructions, conventions, examples, and best practices specific to the skill
+- **Example files**: quantatitive-factor-researcher (Chinese/English bilingual), marimo-notebook (40+ sections), streamlit-to-marimo (widget mapping reference)
+
+### Key Files and Paths
+- `/Volumes/Data/Program/Personal/agent-skills/README.md`
+- `/Volumes/Data/Program/Personal/agent-skills/Makefile`
+- `/Volumes/Data/Program/Personal/agent-skills/vendor.yaml`
+- `/Volumes/Data/Program/Personal/agent-skills/scripts/sync-vendor.sh`
+- `/Volumes/Data/Program/Personal/agent-skills/scripts/add-vendor.sh`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/local/quantatitive-factor-researcher/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/vendor/marimo-notebook/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/vendor/streamlit-to-marimo/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/.cursorindexingignore`
+- `/Volumes/Data/Program/Personal/agent-skills/.gitignore`
+- `/Volumes/Data/Program/Personal/agent-skills/skills-lock.json`
+
+This information should give you all the context needed to create a comprehensive CLAUDE.md file for Claude Code integration!
+agentId: a26416382d6be2e0d (use SendMessage with to: 'a26416382d6be2e0d' to continue this agent)
+<usage>total_tokens: 33527
+tool_uses: 23
+duration_ms: 28661</usage>
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-03-19 05:34:04Z)**_
+
+Explore this codebase thoroughly to help me create a CLAUDE.md file. I need to understand:
+
+1. The overall project structure and purpose
+2. Key scripts and how they work (scripts/sync-vendor.sh, scripts/add-vendor.sh)
+3. The vendor.yaml format and how vendoring works
+4. The skills directory structure (local/ vs vendor/)
+5. The Makefile targets
+6. Any existing configuration files (.cursorrules, .cursor/rules/, .github/copilot-instructions.md, .editorconfig, etc.)
+7. The SKILL.md format used in skills
+
+Read the key files: README.md, Makefile, vendor.yaml, scripts/sync-vendor.sh, scripts/add-vendor.sh, and any SKILL.md files. Also check for any existing CLAUDE.md or similar config files.
+
+Thoroughness: medium
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:06Z)**_
+
+I'll help you explore this codebase to understand its structure and create a CLAUDE.md file. Let me start by gathering information about the project.
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:06Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./README.md`
+
+```text
+     1→# Agent Skills
+     2→
+     3→- [Overview - Agent Skills](https://agentskills.io/home)
+     4→
+     5→A personal collection of agent skills — both custom-authored and cherry-picked from upstream repos — installable as a single package.
+     6→
+     7→## Getting Started
+     8→
+     9→```bash
+    10→npx skills@latest add daviddwlee84/agent-skills
+    11→```
+    12→
+    13→## Structure
+    14→
+    15→```
+    16→skills/
+    17→  local/           # Custom skills authored by us
+    18→  vendor/          # 3rd-party skills synced from upstream repos
+    19→vendor.yaml        # Manifest tracking upstream sources
+    20→scripts/
+    21→  sync-vendor.sh   # Sync script for vendored skills
+    22→Makefile           # Convenience targets
+    23→```
+    24→
+    25→## Available Skills
+    26→
+    27→### Local
+    28→
+    29→| Skill | Description |
+    30→|-------|-------------|
+    31→| [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant |
+    32→
+    33→### Vendored
+    34→
+    35→| Skill | Upstream |
+    36→|-------|----------|
+    37→| [marimo-notebook](skills/vendor/marimo-notebook/) | [marimo-team/skills](https://github.com/marimo-team/skills) |
+    38→
+    39→## Adding Skills
+    40→
+    41→### Add a new local skill
+    42→
+    43→```bash
+    44→cd skills/local
+    45→npx skills@latest init [skill-name]
+    46→```
+    47→
+    48→### Add a new vendored skill
+    49→
+    50→#### Quick Script
+    51→
+    52→```bash
+    53→# Similar to: npx skills add owner/repo/path/to/skill
+    54→./scripts/add-vendor.sh owner/repo/path/to/skill
+    55→
+    56→# Examples
+    57→./scripts/add-vendor.sh marimo-team/skills/skills/marimo-notebook
+    58→./scripts/add-vendor.sh vercel-labs/agent-skills/skills/next-js
+    59→./scripts/add-vendor.sh --name my-name --branch dev owner/repo/skills/some-skill
+    60→
+    61→# Or via Makefile
+    62→make add-vendor SOURCE=owner/repo/path/to/skill
+    63→
+    64→# GitHub URLs also work
+    65→./scripts/add-vendor.sh https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook
+    66→```
+    67→
+    68→This verifies the upstream path exists, adds an entry to `vendor.yaml`, and syncs the skill immediately.
+    69→
+    70→Use `--no-sync` to only add the entry without downloading.
+    71→
+    72→**Dependencies:** `gh` (GitHub CLI, authenticated) and `yq` (YAML processor)
+    73→
+    74→#### Config File
+    75→
+    76→1. Add an entry to `vendor.yaml`:
+    77→
+    78→```yaml
+    79→  - name: my-skill
+    80→    upstream:
+    81→      owner: org-name
+    82→      repo: skills-repo
+    83→      path: skills/my-skill
+    84→      branch: main
+    85→    last_sync:
+    86→      date: ""
+    87→      commit: ""
+    88→```
+    89→
+    90→1. Run `make sync` (requires `gh` and `yq`)
+    91→
+    92→#### Check for upstream updates
+    93→
+    94→```bash
+    95→make sync-check
+    96→```
+    97→
+    98→## Resources
+    99→
+   100→### Skills Manager
+   101→
+   102→- [vercel-labs/skills: The open agent skills tool - npx skills](https://github.com/vercel-labs/skills)
+   103→  - [The Agent Skills Directory](https://skills.sh/)
+   104→- [Skill.Fish - Skill manager for AI coding agents](https://www.skill.fish/)
+   105→  - [knoxgraeme/skillfish: The skill manager for AI coding agents. Install, update, and sync skills across Claude Code, Cursor, Copilot + more.](https://github.com/knoxgraeme/skillfish)
+   106→
+   107→### Skills
+   108→
+   109→Skill Set
+   110→
+   111→- [vercel-labs/agent-skills: Vercel's official collection of agent skills](https://github.com/vercel-labs/agent-skills/tree/main)
+   112→- [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
+   113→- [mattpocock/skills: My personal directory of skills, straight from my .claude directory.](https://github.com/mattpocock/skills)
+   114→- [anthropics/knowledge-work-plugins: Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork](https://github.com/anthropics/knowledge-work-plugins/tree/main)
+   115→
+   116→Single Skill
+   117→
+   118→- [FrancyJGLisboa/agent-skill-creator: Turn any workflow into reusable AI agent skills that install on 14+ tools — Claude Code, Copilot, Cursor, Windsurf, Codex, Gemini, Kiro, and more. One SKILL.md, every platform.](https://github.com/FrancyJGLisboa/agent-skill-creator)
+   119→- [find-skills by vercel-labs/skills](https://skills.sh/vercel-labs/skills/find-skills)
+   120→
+   121→### Collections
+   122→
+   123→- [RKiding/Awesome-finance-skills: A collection of Awesome Finance Agent Skills for free and easy to start | 一系列开源免费的金融分析Agent Skills](https://github.com/RKiding/Awesome-finance-skills)
+   124→- [Orchestra-Research/AI-Research-SKILLs: Comprehensive open-source library of AI research and engineering skills for any AI model. Package the skills and your claude code/codex/gemini agent will be an AI research agent with full horsepower. Maintained by Orchestra Research.](https://github.com/Orchestra-Research/AI-research-SKILLs)
+   125→
+   126→### Articles
+   127→
+   128→- [Six skills for financial service professionals | Claude](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
+   129→  - [Financial services | Claude by Anthropic](https://claude.com/solutions/financial-services)
+   130→- [Building Agent Skills with skill-creator | by Daniela Petruzalek | Google Cloud - Community | Feb, 2026 | Medium](https://medium.com/google-cloud/building-agent-skills-with-skill-creator-855f18e785cf)
+   131→
+   132→---
+   133→
+   134→Good to be skills:
+   135→
+   136→- [humanlayer/12-factor-agents: What are the principles we can use to build LLM-powered software that is actually good enough to put in the hands of production customers?](https://github.com/humanlayer/12-factor-agents)
+   137→- [The Twelve-Factor App](https://12factor.net/)
+   138→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./Makefile`
+
+```text
+     1→.PHONY: sync sync-check add-vendor
+     2→
+     3→sync:
+     4→	./scripts/sync-vendor.sh
+     5→
+     6→sync-check:
+     7→	./scripts/sync-vendor.sh --check
+     8→
+     9→# Usage: make add-vendor SOURCE=owner/repo/path/to/skill
+    10→add-vendor:
+    11→	./scripts/add-vendor.sh $(SOURCE)
+    12→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:07Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List top-level directory contents
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/ | head -30`
+
+```text
+-N  **.agents
+-N  **.claude
+-I  .cursorindexingignore
+-I  **.git
+-- 󰊢 .gitignore
+-M  **.specstory
+--  Makefile
+-M 󰂺 README.md
+--  **scripts
+--  **skills
+-N  skills-lock.json
+--  vendor.yaml
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:07Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ path `./` pattern `vendor.yaml`
+
+```text
+/Volumes/Data/Program/Personal/agent-skills/vendor.yaml
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:08Z)**_
+
+Now let me read the vendor.yaml and check the scripts:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./vendor.yaml`
+
+```text
+     1→# Upstream skill sources for vendoring into skills/vendor/
+     2→# Managed by scripts/sync-vendor.sh
+     3→skills:
+     4→  - name: marimo-notebook
+     5→    upstream:
+     6→      owner: marimo-team
+     7→      repo: skills
+     8→      path: skills/marimo-notebook
+     9→      branch: main
+    10→    last_sync:
+    11→      date: "2026-03-19T03:33:47Z"
+    12→      commit: "343b0e05764bd528807608ea76995c80076dacef"
+    13→  - name: streamlit-to-marimo
+    14→    upstream:
+    15→      owner: marimo-team
+    16→      repo: skills
+    17→      path: skills/streamlit-to-marimo
+    18→      branch: main
+    19→    last_sync:
+    20→      date: "2026-03-19T05:21:55Z"
+    21→      commit: "691a9ce02a82510ed2cde3be0e61f423683b2239"
+    22→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:09Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./scripts/sync-vendor.sh`
+
+```text
+     1→#!/usr/bin/env bash
+     2→set -euo pipefail
+     3→
+     4→REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+     5→VENDOR_YAML="$REPO_ROOT/vendor.yaml"
+     6→VENDOR_DIR="$REPO_ROOT/skills/vendor"
+     7→
+     8→# Colors
+     9→RED='\033[0;31m'
+    10→GREEN='\033[0;32m'
+    11→YELLOW='\033[1;33m'
+    12→NC='\033[0m' # No Color
+    13→
+    14→usage() {
+    15→  cat <<EOF
+    16→Usage: $(basename "$0") [OPTIONS] [SKILL_NAME]
+    17→
+    18→Sync vendored skills from upstream repositories.
+    19→
+    20→Options:
+    21→  --check    Dry-run: check for upstream updates without syncing
+    22→  -h, --help Show this help message
+    23→
+    24→Arguments:
+    25→  SKILL_NAME  Optional: sync only the named skill (default: sync all)
+    26→
+    27→Dependencies: gh (GitHub CLI), yq (YAML processor)
+    28→EOF
+    29→}
+    30→
+    31→check_deps() {
+    32→  local missing=()
+    33→  command -v gh &>/dev/null || missing+=(gh)
+    34→  command -v yq &>/dev/null || missing+=(yq)
+    35→  if [[ ${#missing[@]} -gt 0 ]]; then
+    36→    echo -e "${RED}Error: Missing dependencies: ${missing[*]}${NC}" >&2
+    37→    if [[ "$(uname -s)" == "Darwin" ]]; then
+    38→      echo "  macOS:  brew install ${missing[*]}" >&2
+    39→    else
+    40→      echo "  Debian/Ubuntu: sudo apt install ${missing[*]}" >&2
+    41→      echo "  Fedora/RHEL:   sudo dnf install ${missing[*]}" >&2
+    42→      echo "  Arch:          sudo pacman -S ${missing[*]}" >&2
+    43→      echo "  Or via: snap install ${missing[*]}" >&2
+    44→    fi
+    45→    exit 1
+    46→  fi
+    47→  # Check gh auth
+    48→  if ! gh auth status &>/dev/null 2>&1; then
+    49→    echo -e "${RED}Error: gh is not authenticated. Run 'gh auth login' first.${NC}" >&2
+    50→    exit 1
+    51→  fi
+    52→}
+    53→
+    54→# Get the number of skills in vendor.yaml
+    55→skill_count() {
+    56→  yq '.skills | length' "$VENDOR_YAML"
+    57→}
+    58→
+    59→# Get a field from a skill entry by index
+    60→skill_field() {
+    61→  local idx="$1" field="$2"
+    62→  yq ".skills[$idx].$field" "$VENDOR_YAML"
+    63→}
+    64→
+    65→# Get latest commit SHA for a path in a repo
+    66→get_latest_commit() {
+    67→  local owner="$1" repo="$2" branch="$3" path="$4"
+    68→  gh api "repos/$owner/$repo/commits?sha=$branch&path=$path&per_page=1" \
+    69→    --jq '.[0].sha' 2>/dev/null || echo ""
+    70→}
+    71→
+    72→# Download a directory tree from GitHub
+    73→download_tree() {
+    74→  local owner="$1" repo="$2" branch="$3" src_path="$4" dest_dir="$5"
+    75→
+    76→  mkdir -p "$dest_dir"
+    77→
+    78→  # Get directory contents recursively using git trees API
+    79→  local tree_sha
+    80→  tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
+    81→    --jq '.tree[] | select(.path | startswith("'"$src_path"'/")) | .path + "\t" + .type + "\t" + (.url // "")')
+    82→
+    83→  if [[ -z "$tree_sha" ]]; then
+    84→    echo -e "${RED}Error: No files found at $owner/$repo/$src_path${NC}" >&2
+    85→    return 1
+    86→  fi
+    87→
+    88→  # Process each file
+    89→  while IFS=$'\t' read -r file_path file_type file_url; do
+    90→    local rel_path="${file_path#"$src_path"/}"
+    91→    local dest_path="$dest_dir/$rel_path"
+    92→
+    93→    if [[ "$file_type" == "tree" ]]; then
+    94→      mkdir -p "$dest_path"
+    95→    elif [[ "$file_type" == "blob" ]]; then
+    96→      mkdir -p "$(dirname "$dest_path")"
+    97→      # Download file content via the blob API
+    98→      gh api "$file_url" --jq '.content' | base64 -d > "$dest_path"
+    99→    fi
+   100→  done <<< "$tree_sha"
+   101→}
+   102→
+   103→sync_skill() {
+   104→  local idx="$1" check_only="${2:-false}"
+   105→
+   106→  local name owner repo path branch last_commit
+   107→  name=$(skill_field "$idx" "name")
+   108→  owner=$(skill_field "$idx" "upstream.owner")
+   109→  repo=$(skill_field "$idx" "upstream.repo")
+   110→  path=$(skill_field "$idx" "upstream.path")
+   111→  branch=$(skill_field "$idx" "upstream.branch")
+   112→  last_commit=$(skill_field "$idx" "last_sync.commit")
+   113→
+   114→  # Normalize yq null to empty
+   115→  [[ "$last_commit" == "null" || "$last_commit" == '""' ]] && last_commit=""
+   116→
+   117→  echo -n "Checking $name ($owner/$repo)... "
+   118→
+   119→  local latest_commit
+   120→  latest_commit=$(get_latest_commit "$owner" "$repo" "$branch" "$path")
+   121→
+   122→  if [[ -z "$latest_commit" ]]; then
+   123→    echo -e "${RED}failed to fetch latest commit${NC}"
+   124→    return 1
+   125→  fi
+   126→
+   127→  if [[ "$latest_commit" == "$last_commit" ]]; then
+   128→    echo -e "${GREEN}up to date${NC}"
+   129→    return 0
+   130→  fi
+   131→
+   132→  if [[ "$check_only" == "true" ]]; then
+   133→    echo -e "${YELLOW}update available${NC} (${last_commit:0:7}${last_commit:+..}${latest_commit:0:7})"
+   134→    return 0
+   135→  fi
+   136→
+   137→  echo -e "${YELLOW}syncing...${NC}"
+   138→
+   139→  local dest="$VENDOR_DIR/$name"
+   140→  # Clean existing and re-download
+   141→  rm -rf "$dest"
+   142→  download_tree "$owner" "$repo" "$branch" "$path" "$dest"
+   143→
+   144→  # Update vendor.yaml with sync info
+   145→  local sync_date
+   146→  sync_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+   147→  yq -i ".skills[$idx].last_sync.date = \"$sync_date\" | .skills[$idx].last_sync.commit = \"$latest_commit\"" "$VENDOR_YAML"
+   148→
+   149→  echo -e "  ${GREEN}synced${NC} to ${latest_commit:0:7}"
+   150→}
+   151→
+   152→main() {
+   153→  local check_only=false
+   154→  local filter_name=""
+   155→
+   156→  while [[ $# -gt 0 ]]; do
+   157→    case "$1" in
+   158→      --check) check_only=true; shift ;;
+   159→      -h|--help) usage; exit 0 ;;
+   160→      -*) echo "Unknown option: $1" >&2; usage; exit 1 ;;
+   161→      *) filter_name="$1"; shift ;;
+   162→    esac
+   163→  done
+   164→
+   165→  check_deps
+   166→
+   167→  if [[ ! -f "$VENDOR_YAML" ]]; then
+   168→    echo -e "${RED}Error: $VENDOR_YAML not found${NC}" >&2
+   169→    exit 1
+   170→  fi
+   171→
+   172→  local count
+   173→  count=$(skill_count)
+   174→
+   175→  if [[ "$count" -eq 0 ]]; then
+   176→    echo "No skills configured in vendor.yaml"
+   177→    exit 0
+   178→  fi
+   179→
+   180→  local found=false
+   181→  for ((i = 0; i < count; i++)); do
+   182→    local name
+   183→    name=$(skill_field "$i" "name")
+   184→    if [[ -n "$filter_name" && "$name" != "$filter_name" ]]; then
+   185→      continue
+   186→    fi
+   187→    found=true
+   188→    sync_skill "$i" "$check_only"
+   189→  done
+   190→
+   191→  if [[ "$found" == "false" ]]; then
+   192→    echo -e "${RED}Error: Skill '$filter_name' not found in vendor.yaml${NC}" >&2
+   193→    exit 1
+   194→  fi
+   195→}
+   196→
+   197→main "$@"
+   198→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:09Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./scripts/add-vendor.sh`
+
+```text
+     1→#!/usr/bin/env bash
+     2→set -euo pipefail
+     3→
+     4→REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+     5→VENDOR_YAML="$REPO_ROOT/vendor.yaml"
+     6→SYNC_SCRIPT="$REPO_ROOT/scripts/sync-vendor.sh"
+     7→
+     8→# Colors
+     9→RED='\033[0;31m'
+    10→GREEN='\033[0;32m'
+    11→YELLOW='\033[1;33m'
+    12→NC='\033[0m'
+    13→
+    14→usage() {
+    15→  cat <<EOF
+    16→Usage: $(basename "$0") [OPTIONS] <owner/repo[/path/to/skill]>
+    17→
+    18→Add a vendored skill to vendor.yaml and optionally sync it.
+    19→
+    20→Examples:
+    21→  $(basename "$0") marimo-team/skills/skills/marimo-notebook
+    22→  $(basename "$0") vercel-labs/agent-skills/skills/next-js
+    23→  $(basename "$0") --name my-skill --branch dev owner/repo/skills/my-skill
+    24→  $(basename "$0") --no-sync owner/repo/skills/some-skill
+    25→
+    26→Options:
+    27→  --name NAME    Override the skill name (default: last path component)
+    28→  --branch BRANCH  Upstream branch (default: main)
+    29→  --no-sync      Only add to vendor.yaml, don't sync immediately
+    30→  -h, --help     Show this help message
+    31→
+    32→Dependencies: gh (GitHub CLI), yq (YAML processor)
+    33→EOF
+    34→}
+    35→
+    36→check_deps() {
+    37→  local missing=()
+    38→  command -v gh &>/dev/null || missing+=(gh)
+    39→  command -v yq &>/dev/null || missing+=(yq)
+    40→  if [[ ${#missing[@]} -gt 0 ]]; then
+    41→    echo -e "${RED}Error: Missing dependencies: ${missing[*]}${NC}" >&2
+    42→    if [[ "$(uname -s)" == "Darwin" ]]; then
+    43→      echo "  macOS:  brew install ${missing[*]}" >&2
+    44→    else
+    45→      echo "  Debian/Ubuntu: sudo apt install ${missing[*]}" >&2
+    46→      echo "  Fedora/RHEL:   sudo dnf install ${missing[*]}" >&2
+    47→      echo "  Arch:          sudo pacman -S ${missing[*]}" >&2
+    48→      echo "  Or via: snap install ${missing[*]}" >&2
+    49→    fi
+    50→    exit 1
+    51→  fi
+    52→  if ! gh auth status &>/dev/null 2>&1; then
+    53→    echo -e "${RED}Error: gh is not authenticated. Run 'gh auth login' first.${NC}" >&2
+    54→    exit 1
+    55→  fi
+    56→}
+    57→
+    58→# Parse owner/repo/path from a single argument
+    59→# Accepts formats:
+    60→#   owner/repo/path/to/skill
+    61→#   https://github.com/owner/repo/tree/branch/path/to/skill
+    62→parse_source() {
+    63→  local input="$1"
+    64→
+    65→  # Strip GitHub URL prefix if present
+    66→  input="${input#https://github.com/}"
+    67→  input="${input#http://github.com/}"
+    68→
+    69→  # Strip /tree/<branch>/ from URL-style paths
+    70→  if [[ "$input" =~ ^([^/]+/[^/]+)/tree/([^/]+)/(.+)$ ]]; then
+    71→    local url_branch="${BASH_REMATCH[2]}"
+    72→    input="${BASH_REMATCH[1]}/${BASH_REMATCH[3]}"
+    73→    # Use URL branch as default if --branch not explicitly set
+    74→    if [[ -z "$OPT_BRANCH_SET" ]]; then
+    75→      OPT_BRANCH="$url_branch"
+    76→    fi
+    77→  fi
+    78→
+    79→  # Remove trailing slash
+    80→  input="${input%/}"
+    81→
+    82→  # Need at least owner/repo/one-path-component
+    83→  local slash_count
+    84→  slash_count=$(echo "$input" | tr -cd '/' | wc -c | tr -d ' ')
+    85→  if [[ "$slash_count" -lt 2 ]]; then
+    86→    echo -e "${RED}Error: Expected format: owner/repo/path/to/skill${NC}" >&2
+    87→    echo "  Got: $input" >&2
+    88→    exit 1
+    89→  fi
+    90→
+    91→  # Extract owner and repo (first two components)
+    92→  PARSED_OWNER="$(echo "$input" | cut -d'/' -f1)"
+    93→  PARSED_REPO="$(echo "$input" | cut -d'/' -f2)"
+    94→  PARSED_PATH="$(echo "$input" | cut -d'/' -f3-)"
+    95→}
+    96→
+    97→main() {
+    98→  local opt_name=""
+    99→  OPT_BRANCH="main"
+   100→  OPT_BRANCH_SET=""
+   101→  local opt_sync=true
+   102→  local positional=""
+   103→
+   104→  while [[ $# -gt 0 ]]; do
+   105→    case "$1" in
+   106→      --name) opt_name="$2"; shift 2 ;;
+   107→      --branch) OPT_BRANCH="$2"; OPT_BRANCH_SET=1; shift 2 ;;
+   108→      --no-sync) opt_sync=false; shift ;;
+   109→      -h|--help) usage; exit 0 ;;
+   110→      -*) echo "Unknown option: $1" >&2; usage; exit 1 ;;
+   111→      *) positional="$1"; shift ;;
+   112→    esac
+   113→  done
+   114→
+   115→  if [[ -z "$positional" ]]; then
+   116→    echo -e "${RED}Error: Missing required argument${NC}" >&2
+   117→    usage
+   118→    exit 1
+   119→  fi
+   120→
+   121→  check_deps
+   122→
+   123→  parse_source "$positional"
+   124→
+   125→  local name="${opt_name:-$(basename "$PARSED_PATH")}"
+   126→  local owner="$PARSED_OWNER"
+   127→  local repo="$PARSED_REPO"
+   128→  local path="$PARSED_PATH"
+   129→  local branch="$OPT_BRANCH"
+   130→
+   131→  # Verify the upstream path exists
+   132→  echo -n "Verifying upstream $owner/$repo/$path@$branch... "
+   133→  if ! gh api "repos/$owner/$repo/contents/$path?ref=$branch" &>/dev/null 2>&1; then
+   134→    echo -e "${RED}not found${NC}"
+   135→    echo -e "${RED}Error: Path '$path' not found in $owner/$repo (branch: $branch)${NC}" >&2
+   136→    exit 1
+   137→  fi
+   138→  echo -e "${GREEN}found${NC}"
+   139→
+   140→  # Check for duplicates
+   141→  if [[ -f "$VENDOR_YAML" ]]; then
+   142→    local existing
+   143→    existing=$(yq ".skills[] | select(.name == \"$name\") | .name" "$VENDOR_YAML" 2>/dev/null || true)
+   144→    if [[ -n "$existing" ]]; then
+   145→      echo -e "${YELLOW}Skill '$name' already exists in vendor.yaml${NC}"
+   146→      echo "Use --name to specify a different name, or edit vendor.yaml manually."
+   147→      exit 1
+   148→    fi
+   149→  fi
+   150→
+   151→  # Append to vendor.yaml
+   152→  echo -n "Adding '$name' to vendor.yaml... "
+   153→  yq -i ".skills += [{
+   154→    \"name\": \"$name\",
+   155→    \"upstream\": {
+   156→      \"owner\": \"$owner\",
+   157→      \"repo\": \"$repo\",
+   158→      \"path\": \"$path\",
+   159→      \"branch\": \"$branch\"
+   160→    },
+   161→    \"last_sync\": {
+   162→      \"date\": \"\",
+   163→      \"commit\": \"\"
+   164→    }
+   165→  }]" "$VENDOR_YAML"
+   166→  echo -e "${GREEN}done${NC}"
+   167→
+   168→  if [[ "$opt_sync" == "true" ]]; then
+   169→    echo ""
+   170→    "$SYNC_SCRIPT" "$name"
+   171→  else
+   172→    echo -e "\nRun ${YELLOW}make sync${NC} or ${YELLOW}./scripts/sync-vendor.sh $name${NC} to download the skill."
+   173→  fi
+   174→}
+   175→
+   176→main "$@"
+   177→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:09Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List skills directory structure
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/skills/`
+
+```text
+--  **local
+--  **vendor
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:11Z)**_
+
+Now let me check for SKILL.md files and existing configuration files:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:11Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ path `./` pattern `**/SKILL.md`
+
+```text
+/Volumes/Data/Program/Personal/agent-skills/skills/local/quantatitive-factor-researcher/SKILL.md
+/Volumes/Data/Program/Personal/agent-skills/skills/vendor/marimo-notebook/SKILL.md
+/Volumes/Data/Program/Personal/agent-skills/skills/vendor/streamlit-to-marimo/SKILL.md
+/Volumes/Data/Program/Personal/agent-skills/.agents/skills/find-skills/SKILL.md
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:12Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ path `./` pattern `.cursorrules`
+
+```text
+No files found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:12Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ path `./` pattern `.claude.json`
+
+```text
+No files found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:12Z)**_
+
+<tool-use data-tool-type="search" data-tool-name="Glob"><details>
+<summary>Tool use: **Glob**</summary>
+ path `./` pattern `.editorconfig`
+
+```text
+No files found
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Search for configuration files and directories
+
+`find /Volumes/Data/Program/Personal/agent-skills -name "CLAUDE.md" -o -name ".cursor*" -o -name ".github" -type d`
+
+```text
+/Volumes/Data/Program/Personal/agent-skills/.cursorindexingignore
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:14Z)**_
+
+Let me read the SKILL.md files to understand the format:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:14Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/quantatitive-factor-researcher/SKILL.md`
+
+```text
+     1→---
+     2→name: quantatitive-factor-researcher
+     3→description: assists in designing, evaluating and implementing factor-based investment strategies with Python
+     4→---
+     5→
+     6→# quantatitive-factor-researcher
+     7→
+     8→You are a Quantitative Factor Researcher who assists in designing, evaluating and implementing factor-based investment strategies with Python.
+     9→
+    10→**Core Responsibilities**
+    11→
+    12→1. 提供嚴謹且可重複的量化研究流程：資料取得→特徵工程→信號檢驗→風險控制→回測與效能評估。
+    13→2. 撰寫與解說高品質 Python 程式碼（pandas / numpy / scikit-learn / PyTorch / vectorbt 等），並附上適當的型別註解與英文註解。
+    14→3. 以機器學習、統計方法（含遺傳演算法、樹模型、深度學習、貝葉斯方法等）探索及優化 Alpha / Risk 因子。
+    15→4. 在需要時提供 LaTeX 格式的公式 (English variables) 與圖表 (可建議 Matplotlib / Plotly 範例) 來闡述方法論與結果。
+    16→5. 對於回測結果，解釋關鍵績效指標（Sharpe Ratio, Information Ratio, Alpha/Excess Return, Tracking Error, Drawdown 等）並給出改進建議。
+    17→
+    18→**Language & Style Rules**
+    19→
+    20→- 若使用者以中文起首，請以「繁體中文＋(English Terminology)」回覆；專有名詞需同時給出英文版本。
+    21→- 所有 LaTeX 公式必須使用英文變數與註解。
+    22→- Python 代碼中的註解一律使用英文，並為所有函式加上正確的型別標註 (typing) 與 docstring。
+    23→- 回覆應結構清晰：可使用分段、列表，但避免冗長與重覆。
+    24→- 如需引用學術文獻、GitHub repo 或資料來源，須提供完整引用格式 (作者, 年份 / 連結) 以利追蹤。
+    25→
+    26→**Technical Conventions**
+    27→
+    28→- 盡量使用向量化運算與內建函式提高效能；必要時說明如何使用並行或 GPU 加速。
+    29→- 示範資料管線時採用可組態化 (config-driven) 設計，並提及如何與 MLflow / DVC 等工具整合實驗追蹤。
+    30→- 嚴防資料洩漏：說明並實作 Purged / Group-Time-Series Split、正確的時序交叉驗證與樣本外檢驗。
+    31→- 建議較新的研究方向（例如 Price-Volume Factor, Transformer-based 時間序列模型、因子解釋性分析）時，應說明動機與限制。
+    32→
+    33→**Ethos**
+    34→
+    35→- 精準、可執行、重視實證；對任何數據或方法保持批判性思考並提出改進途徑。
+    36→- 透明揭露假設與風險；指引使用者進行獨立驗證。
+    37→
+    38→遵守以上規範，成為使用者可靠的量化因子研究伙伴。
+    39→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:15Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/vendor/marimo-notebook/SKILL.md`
+
+```text
+     1→---
+     2→name: marimo-notebook
+     3→description: Write a marimo notebook in a Python file in the right format.
+     4→---
+     5→
+     6→# Notes for marimo Notebooks
+     7→
+     8→marimo uses Python to create notebooks, unlike Jupyter which uses JSON. Here's an example notebook: 
+     9→
+    10→```python
+    11→# /// script
+    12→# dependencies = [
+    13→#     "marimo",
+    14→#     "numpy==2.4.3",
+    15→# ]
+    16→# requires-python = ">=3.14"
+    17→# ///
+    18→
+    19→import marimo
+    20→
+    21→__generated_with = "0.20.4"
+    22→app = marimo.App(width="medium")
+    23→
+    24→
+    25→@app.cell
+    26→def _():
+    27→    import marimo as mo
+    28→    import numpy as np
+    29→
+    30→    return mo, np
+    31→
+    32→
+    33→@app.cell
+    34→def _():
+    35→    print("hello world")
+    36→    return
+    37→
+    38→
+    39→@app.cell
+    40→def _(np, slider):
+    41→    np.array([1,2,3]) + slider.value
+    42→    return
+    43→
+    44→
+    45→@app.cell
+    46→def _(mo):
+    47→    slider = mo.ui.slider(1, 10, 1, label="number to add")
+    48→    slider
+    49→    return (slider,)
+    50→
+    51→
+    52→@app.cell
+    53→def _():
+    54→    return
+    55→
+    56→
+    57→if __name__ == "__main__":
+    58→    app.run()
+    59→
+    60→```
+    61→
+    62→Notice how the notebook is structured with functions can represent cell contents. Each cell is defined with the `@app.cell` decorator and the inputs/outputs of the function are the inputs/outputs of the cell. marimo usually takes care of the dependencies between cells automatically. 
+    63→
+    64→## Running Marimo Notebooks
+    65→
+    66→```bash
+    67→# Run as script (non-interactive, for testing)
+    68→uv run <notebook.py>
+    69→
+    70→# Run interactively in browser
+    71→uv run marimo run <notebook.py>
+    72→
+    73→# Edit interactively
+    74→uv run marimo edit <notebook.py>
+    75→```
+    76→
+    77→## Script Mode Detection
+    78→
+    79→Use `mo.app_meta().mode == "script"` to detect CLI vs interactive:
+    80→
+    81→```python
+    82→@app.cell
+    83→def _(mo):
+    84→    is_script_mode = mo.app_meta().mode == "script"
+    85→    return (is_script_mode,)
+    86→```
+    87→
+    88→## Key Principle: Keep It Simple
+    89→
+    90→**Show all UI elements always.** Only change the data source in script mode.
+    91→
+    92→- Sliders, buttons, widgets should always be created and displayed
+    93→- In script mode, just use synthetic/default data instead of waiting for user input
+    94→- Don't wrap everything in `if not is_script_mode` conditionals
+    95→- Don't use try/except for normal control flow
+    96→
+    97→### Good Pattern
+    98→
+    99→```python
+   100→# Always show the widget
+   101→@app.cell
+   102→def _(ScatterWidget, mo):
+   103→    scatter_widget = mo.ui.anywidget(ScatterWidget())
+   104→    scatter_widget
+   105→    return (scatter_widget,)
+   106→
+   107→# Only change data source based on mode
+   108→@app.cell
+   109→def _(is_script_mode, make_moons, scatter_widget, np, torch):
+   110→    if is_script_mode:
+   111→        # Use synthetic data for testing
+   112→        X, y = make_moons(n_samples=200, noise=0.2)
+   113→        X_data = torch.tensor(X, dtype=torch.float32)
+   114→        y_data = torch.tensor(y)
+   115→        data_error = None
+   116→    else:
+   117→        # Use widget data in interactive mode
+   118→        X, y = scatter_widget.widget.data_as_X_y
+   119→        # ... process data ...
+   120→    return X_data, y_data, data_error
+   121→
+   122→# Always show sliders - use their .value in both modes
+   123→@app.cell
+   124→def _(mo):
+   125→    lr_slider = mo.ui.slider(start=0.001, stop=0.1, value=0.01)
+   126→    lr_slider
+   127→    return (lr_slider,)
+   128→
+   129→# Auto-run in script mode, wait for button in interactive
+   130→@app.cell
+   131→def _(is_script_mode, train_button, lr_slider, run_training, X_data, y_data):
+   132→    if is_script_mode:
+   133→        # Auto-run with slider defaults
+   134→        results = run_training(X_data, y_data, lr=lr_slider.value)
+   135→    else:
+   136→        # Wait for button click
+   137→        if train_button.value:
+   138→            results = run_training(X_data, y_data, lr=lr_slider.value)
+   139→    return (results,)
+   140→```
+   141→
+   142→## State and Reactivity
+   143→
+   144→Variables between cells define the reactivity of the notebook for 99% of the use-cases out there. No special state management needed. Don't mutate objects across cells (e.g., `my_list.append()`); create new objects instead. Avoid `mo.state()` unless you need bidirectional UI sync or accumulated callback state. See [STATE.md](references/STATE.md) for details.
+   145→
+   146→## Don't Guard Cells with `if` Statements
+   147→
+   148→Marimo's reactivity means cells only run when their dependencies are ready. Don't add unnecessary guards:
+   149→
+   150→```python
+   151→# BAD - the if statement prevents the chart from showing
+   152→@app.cell
+   153→def _(plt, training_results):
+   154→    if training_results:  # WRONG - don't do this
+   155→        fig, ax = plt.subplots()
+   156→        ax.plot(training_results['losses'])
+   157→        fig
+   158→    return
+   159→
+   160→# GOOD - let marimo handle the dependency
+   161→@app.cell
+   162→def _(plt, training_results):
+   163→    fig, ax = plt.subplots()
+   164→    ax.plot(training_results['losses'])
+   165→    fig
+   166→    return
+   167→```
+   168→
+   169→The cell won't run until `training_results` has a value anyway.
+   170→
+   171→## Don't Use try/except for Control Flow
+   172→
+   173→Don't wrap code in try/except blocks unless you're handling a specific, expected exception. Let errors surface naturally.
+   174→
+   175→```python
+   176→# BAD - hiding errors behind try/except
+   177→@app.cell
+   178→def _(scatter_widget, np, torch):
+   179→    try:
+   180→        X, y = scatter_widget.widget.data_as_X_y
+   181→        X = np.array(X, dtype=np.float32)
+   182→        # ...
+   183→    except Exception as e:
+   184→        return None, None, f"Error: {e}"
+   185→
+   186→# GOOD - let it fail if something is wrong
+   187→@app.cell
+   188→def _(scatter_widget, np, torch):
+   189→    X, y = scatter_widget.widget.data_as_X_y
+   190→    X = np.array(X, dtype=np.float32)
+   191→    # ...
+   192→```
+   193→
+   194→Only use try/except when:
+   195→- You're handling a specific, known exception type
+   196→- The exception is expected in normal operation (e.g., file not found)
+   197→- You have a meaningful recovery action
+   198→
+   199→## Cell Output Rendering
+   200→
+   201→Marimo only renders the **final expression** of a cell. Indented or conditional expressions won't render:
+   202→
+   203→```python
+   204→# BAD - indented expression won't render
+   205→@app.cell
+   206→def _(mo, condition):
+   207→    if condition:
+   208→        mo.md("This won't show!")  # WRONG - indented
+   209→    return
+   210→
+   211→# GOOD - final expression renders
+   212→@app.cell
+   213→def _(mo, condition):
+   214→    result = mo.md("Shown!") if condition else mo.md("Also shown!")
+   215→    result  # This renders because it's the final expression
+   216→    return
+   217→```
+   218→
+   219→## Marimo Variable Naming
+   220→
+   221→Variables in `for` loops that would conflict across cells need underscore prefix:
+   222→
+   223→```python
+   224→# Use _name, _model to make them cell-private
+   225→for _name, _model in items:
+   226→    ...
+   227→```
+   228→
+   229→You have a tendency to overdo `_prefix` variables. **Hard rule: never underscore-prefix imports.** Only use `_prefix` for loop variables or temporaries that would genuinely collide with another cell's named outputs. Overdoing underscores (e.g. `import re as _re`, `_result = ...`) makes code deeply unpythonic and harder to read for zero benefit. It's better to start without these _prefix variables and to only correct them once the `uvx marimo check` linter fails. 
+   230→
+   231→## PEP 723 Dependencies
+   232→
+   233→Notebooks created via `marimo edit --sandbox` have these dependencies added to the top of the file automatically but it is a good practice to make sure these exist when creating a notebook too: 
+   234→
+   235→```python
+   236→# /// script
+   237→# requires-python = ">=3.12"
+   238→# dependencies = [
+   239→#     "marimo",
+   240→#     "torch>=2.0.0",
+   241→# ]
+   242→# ///
+   243→```
+   244→
+   245→## marimo check 
+   246→
+   247→When working on a notebook it is important to check if the notebook can run. That's why marimo provides a `check` command that acts as a linter to find common mistakes. 
+   248→
+   249→```bash
+   250→uvx marimo check <notebook.py>
+   251→```
+   252→
+   253→Make sure these are checked before handing a notebook back to the user.
+   254→
+   255→## api docs
+   256→
+   257→If the user specifically wants you to use a marimo function, you can locally check the docs via: 
+   258→
+   259→```
+   260→uv --with marimo run python -c "import marimo as mo; help(mo.ui.form)"
+   261→```
+   262→
+   263→## tests 
+   264→
+   265→By default, marimo discovers and executes tests inside your notebook.
+   266→When the optional `pytest` dependency is present, marimo runs `pytest` on cells that
+   267→consist exclusively of test code - i.e. functions whose names start with `test_`. 
+   268→If the user asks you to add tests, make sure to add the `pytest` dependency is added and that
+   269→there is a cell that contains only test code.
+   270→
+   271→For more information on testing with pytest see [PYTEST.md](references/PYTEST.md)
+   272→
+   273→Once tests are added, you can run pytest from the commandline on the notebook to run pytest. 
+   274→
+   275→```
+   276→pytest <notebook.py>
+   277→```
+   278→
+   279→## Additional resources
+   280→
+   281→- For SQL use in marimo see [SQL.md](references/SQL.md)
+   282→- For UI elements in marimo [UI.md](references/UI.md)
+   283→- For exposing functions/classes as top level imports [TOP-LEVEL-IMPORTS.md](references/TOP-LEVEL-IMPORTS.md)
+   284→- For exporting notebooks (PDF, HTML, markdown, etc.) [EXPORTS.md](references/EXPORTS.md)
+   285→- For state management and reactivity [STATE.md](references/STATE.md)
+   286→- For deployment of marimo notebooks [DEPLOYMENT.md](references/DEPLOYMENT.md)
+   287→- For custom interactive widgets with anywidget [ANYWIDGET.md](references/ANYWIDGET.md)
+   288→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List local skills directory
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/skills/local/`
+
+```text
+--  **quantatitive-factor-researcher
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List vendor skills directory
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/skills/vendor/`
+
+```text
+--  **marimo-notebook
+--  **streamlit-to-marimo
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:16Z)**_
+
+Let me check for the .claude directory and any existing configuration:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Explore .claude directory
+
+`find /Volumes/Data/Program/Personal/agent-skills/.claude -type f 2>/dev/null | head -20`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read cursor indexing ignore file
+
+`cat /Volumes/Data/Program/Personal/agent-skills/.cursorindexingignore`
+
+```text
+# Don't index SpecStory auto-save files, but allow explicit context inclusion via @ references
+.specstory/**
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:18Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./.gitignore`
+
+```text
+     1→# Byte-compiled / optimized / DLL files
+     2→__pycache__/
+     3→*.py[codz]
+     4→*$py.class
+     5→
+     6→# C extensions
+     7→*.so
+     8→
+     9→# Distribution / packaging
+    10→.Python
+    11→build/
+    12→develop-eggs/
+    13→dist/
+    14→downloads/
+    15→eggs/
+    16→.eggs/
+    17→lib/
+    18→lib64/
+    19→parts/
+    20→sdist/
+    21→var/
+    22→wheels/
+    23→share/python-wheels/
+    24→*.egg-info/
+    25→.installed.cfg
+    26→*.egg
+    27→MANIFEST
+    28→
+    29→# PyInstaller
+    30→#  Usually these files are written by a python script from a template
+    31→#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+    32→*.manifest
+    33→*.spec
+    34→
+    35→# Installer logs
+    36→pip-log.txt
+    37→pip-delete-this-directory.txt
+    38→
+    39→# Unit test / coverage reports
+    40→htmlcov/
+    41→.tox/
+    42→.nox/
+    43→.coverage
+    44→.coverage.*
+    45→.cache
+    46→nosetests.xml
+    47→coverage.xml
+    48→*.cover
+    49→*.py.cover
+    50→.hypothesis/
+    51→.pytest_cache/
+    52→cover/
+    53→
+    54→# Translations
+    55→*.mo
+    56→*.pot
+    57→
+    58→# Django stuff:
+    59→*.log
+    60→local_settings.py
+    61→db.sqlite3
+    62→db.sqlite3-journal
+    63→
+    64→# Flask stuff:
+    65→instance/
+    66→.webassets-cache
+    67→
+    68→# Scrapy stuff:
+    69→.scrapy
+    70→
+    71→# Sphinx documentation
+    72→docs/_build/
+    73→
+    74→# PyBuilder
+    75→.pybuilder/
+    76→target/
+    77→
+    78→# Jupyter Notebook
+    79→.ipynb_checkpoints
+    80→
+    81→# IPython
+    82→profile_default/
+    83→ipython_config.py
+    84→
+    85→# pyenv
+    86→#   For a library or package, you might want to ignore these files since the code is
+    87→#   intended to run in multiple environments; otherwise, check them in:
+    88→# .python-version
+    89→
+    90→# pipenv
+    91→#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+    92→#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+    93→#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+    94→#   install all needed dependencies.
+    95→#Pipfile.lock
+    96→
+    97→# UV
+    98→#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
+    99→#   This is especially recommended for binary packages to ensure reproducibility, and is more
+   100→#   commonly ignored for libraries.
+   101→#uv.lock
+   102→
+   103→# poetry
+   104→#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+   105→#   This is especially recommended for binary packages to ensure reproducibility, and is more
+   106→#   commonly ignored for libraries.
+   107→#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+   108→#poetry.lock
+   109→#poetry.toml
+   110→
+   111→# pdm
+   112→#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+   113→#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
+   114→#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
+   115→#pdm.lock
+   116→#pdm.toml
+   117→.pdm-python
+   118→.pdm-build/
+   119→
+   120→# pixi
+   121→#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
+   122→#pixi.lock
+   123→#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
+   124→#   in the .venv directory. It is recommended not to include this directory in version control.
+   125→.pixi
+   126→
+   127→# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+   128→__pypackages__/
+   129→
+   130→# Celery stuff
+   131→celerybeat-schedule
+   132→celerybeat.pid
+   133→
+   134→# SageMath parsed files
+   135→*.sage.py
+   136→
+   137→# Environments
+   138→.env
+   139→.envrc
+   140→.venv
+   141→env/
+   142→venv/
+   143→ENV/
+   144→env.bak/
+   145→venv.bak/
+   146→
+   147→# Spyder project settings
+   148→.spyderproject
+   149→.spyproject
+   150→
+   151→# Rope project settings
+   152→.ropeproject
+   153→
+   154→# mkdocs documentation
+   155→/site
+   156→
+   157→# mypy
+   158→.mypy_cache/
+   159→.dmypy.json
+   160→dmypy.json
+   161→
+   162→# Pyre type checker
+   163→.pyre/
+   164→
+   165→# pytype static type analyzer
+   166→.pytype/
+   167→
+   168→# Cython debug symbols
+   169→cython_debug/
+   170→
+   171→# PyCharm
+   172→#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+   173→#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+   174→#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+   175→#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+   176→#.idea/
+   177→
+   178→# Abstra
+   179→# Abstra is an AI-powered process automation framework.
+   180→# Ignore directories containing user credentials, local state, and settings.
+   181→# Learn more at https://abstra.io/docs
+   182→.abstra/
+   183→
+   184→# Visual Studio Code
+   185→#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+   186→#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+   187→#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+   188→#  you could uncomment the following to ignore the entire vscode folder
+   189→# .vscode/
+   190→
+   191→# Ruff stuff:
+   192→.ruff_cache/
+   193→
+   194→# PyPI configuration file
+   195→.pypirc
+   196→
+   197→# Cursor
+   198→#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
+   199→#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
+   200→#  refer to https://docs.cursor.com/context/ignore-files
+   201→.cursorignore
+   202→.cursorindexingignore
+   203→
+   204→# Marimo
+   205→marimo/_static/
+   206→marimo/_lsp/
+   207→__marimo__/
+   208→
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check skills-lock.json structure
+
+`cat /Volumes/Data/Program/Personal/agent-skills/skills-lock.json | head -50`
+
+```text
+{
+  "version": 1,
+  "skills": {
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
+    }
+  }
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:19Z)**_
+
+Let me check one more vendor skill to see the format:
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:20Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/vendor/streamlit-to-marimo/SKILL.md`
+
+```text
+     1→---
+     2→name: streamlit-to-marimo
+     3→description: Convert a Streamlit app to a marimo notebook
+     4→---
+     5→
+     6→# Converting Streamlit Apps to Marimo
+     7→
+     8→For general marimo notebook conventions (cell structure, PEP 723 metadata, output rendering, `marimo check`, variable naming, etc.), refer to the `marimo-notebook` skill. This skill focuses specifically on **mapping Streamlit concepts to marimo equivalents**.
+     9→
+    10→## Steps
+    11→
+    12→1. **Read the Streamlit app** to understand its widgets, layout, and state management.
+    13→
+    14→2. **Create a new marimo notebook** following the `marimo-notebook` skill conventions. Add all dependencies the Streamlit app uses (pandas, plotly, altair, etc.) — but replace `streamlit` with `marimo`. You should not overwrite the original file. 
+    15→
+    16→3. **Map Streamlit components to marimo equivalents** using the reference tables below. Key principles:
+    17→   - UI elements are **assigned to variables** and their current value is accessed via `.value`.
+    18→   - Cells that reference a UI element automatically re-run when the user interacts with it — no callbacks needed.
+    19→
+    20→4. **Handle conceptual differences** in execution model, state, and caching (see below).
+    21→
+    22→5. **Run `uvx marimo check`** on the result and fix any issues.
+    23→
+    24→## Widget Mapping Reference
+    25→
+    26→### Input Widgets
+    27→
+    28→| Streamlit | marimo | Notes |
+    29→|-----------|--------|-------|
+    30→| `st.slider()` | `mo.ui.slider()` | |
+    31→| `st.select_slider()` | `mo.ui.slider(steps=[...])` | Pass discrete values via `steps` |
+    32→| `st.text_input()` | `mo.ui.text()` | |
+    33→| `st.text_area()` | `mo.ui.text_area()` | |
+    34→| `st.number_input()` | `mo.ui.number()` | |
+    35→| `st.checkbox()` | `mo.ui.checkbox()` | |
+    36→| `st.toggle()` | `mo.ui.switch()` | |
+    37→| `st.radio()` | `mo.ui.radio()` | |
+    38→| `st.selectbox()` | `mo.ui.dropdown()` | |
+    39→| `st.multiselect()` | `mo.ui.multiselect()` | |
+    40→| `st.date_input()` | `mo.ui.date()` | |
+    41→| `st.time_input()` | `mo.ui.text()` | No dedicated time widget |
+    42→| `st.file_uploader()` | `mo.ui.file()` | Use `.contents()` to read bytes |
+    43→| `st.color_picker()` | `mo.ui.text(value="#000000")` | No dedicated color picker |
+    44→| `st.button()` | `mo.ui.button()` or `mo.ui.run_button()` | Use `run_button` for triggering expensive computations |
+    45→| `st.download_button()` | `mo.download()` | Returns a download link element |
+    46→| `st.form()` + `st.form_submit_button()` | `mo.ui.form(element)` | Wraps any element so its value only updates on submit |
+    47→
+    48→### Display Elements
+    49→
+    50→| Streamlit | marimo | Notes |
+    51→|-----------|--------|-------|
+    52→| `st.write()` | `mo.md()` or last expression | |
+    53→| `st.markdown()` | `mo.md()` | Supports f-strings: `mo.md(f"Value: {x.value}")` |
+    54→| `st.latex()` | `mo.md(r"$...$")` | marimo uses KaTeX; see `references/latex.md` |
+    55→| `st.code()` | `mo.md("```python\n...\n```")` | |
+    56→| `st.dataframe()` | `df` (last expression) | DataFrames render as interactive marimo widgets natively; use `mo.ui.dataframe(df)` only for no-code transformations |
+    57→| `st.table()` | `df` (last expression) | Use `mo.ui.table(df)` if you need row selection |
+    58→| `st.metric()` | `mo.stat()` | |
+    59→| `st.json()` | `mo.json()` or `mo.tree()` | `mo.tree()` for interactive collapsible view |
+    60→| `st.image()` | `mo.image()` | |
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:20Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check structure of local skill
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/skills/local/quantatitive-factor-researcher/`
+
+```text
+--  SKILL.md
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-haiku-4-5-20251001 2026-03-19 05:34:33Z)**_
+
+Perfect! Now I have a comprehensive understanding of the codebase. Let me create a summary of my findings:
+
+## Codebase Exploration Summary
+
+I've thoroughly explored the agent-skills repository. Here's what I found:
+
+### 1. Project Structure and Purpose
+- **Purpose**: A personal collection of agent skills (custom and cherry-picked from upstream repos) installable as a single package
+- **Installation**: `npx skills@latest add daviddwlee84/agent-skills`
+- **Directory layout**:
+  - `skills/local/` - Custom skills authored locally
+  - `skills/vendor/` - 3rd-party skills synced from upstream repos
+  - `scripts/` - Vendor management tools
+  - `Makefile` - Convenience targets
+  - `vendor.yaml` - Manifest tracking upstream sources
+  - `skills-lock.json` - Lock file for installed skills
+
+### 2. Key Scripts
+
+**scripts/sync-vendor.sh**:
+- Syncs vendored skills from upstream repositories using GitHub API
+- Supports dry-run with `--check` flag to see updates without downloading
+- Can sync all skills or a specific skill by name
+- Uses `gh` (GitHub CLI) for API calls and `yq` for YAML manipulation
+- Updates `vendor.yaml` with sync dates and commit SHAs
+- Downloads directory trees from GitHub using recursive git trees API
+
+**scripts/add-vendor.sh**:
+- Adds new vendored skills to the manifest
+- Accepts multiple formats: `owner/repo/path`, GitHub URLs, or with options (`--name`, `--branch`)
+- Verifies upstream paths exist before adding
+- Checks for duplicates
+- Can skip sync with `--no-sync` flag
+- Updates `vendor.yaml` with new skill entries
+
+### 3. Vendor.yaml Format
+```yaml
+skills:
+  - name: skill-name              # Unique identifier
+    upstream:
+      owner: github-org           # Repository owner
+      repo: repo-name             # Repository name
+      path: path/to/skill         # Path within repo (e.g., skills/my-skill)
+      branch: main                # Git branch to track
+    last_sync:
+      date: "2026-03-19T05:21:55Z" # ISO 8601 timestamp
+      commit: "commit-sha-here"    # Full commit SHA
+```
+
+Current vendored skills:
+- marimo-notebook (marimo-team/skills)
+- streamlit-to-marimo (marimo-team/skills)
+
+### 4. Skills Directory Structure
+- **Local skills**: `/skills/local/quantatitive-factor-researcher/`
+  - Contains only `SKILL.md` file (60+ lines of instructions)
+  
+- **Vendor skills**: `/skills/vendor/marimo-notebook/`, `/skills/vendor/streamlit-to-marimo/`
+  - Each contains `SKILL.md` files and associated documentation/code
+
+### 5. Makefile Targets
+```makefile
+make sync              # Sync all vendored skills
+make sync-check        # Check for available updates without syncing
+make add-vendor SOURCE=owner/repo/path/to/skill  # Add new vendored skill
+```
+
+### 6. Configuration Files
+- **`.cursorindexingignore`**: Excludes `.specstory/**` from indexing (allows explicit @ references)
+- **`.gitignore`**: Standard Python project gitignore (includes `.cursorignore`, `.cursorindexingignore`)
+- **No existing files**: `.cursorrules`, `.claude.json`, `.editorconfig`, `.claude` directory (though `.agents` exists), or `.github/copilot-instructions.md`
+
+### 7. SKILL.md Format
+Each skill has a `SKILL.md` file with:
+- **YAML frontmatter**:
+  ```yaml
+  ---
+  name: skill-name
+  description: Brief description
+  ---
+  ```
+- **Markdown body**: Instructions, conventions, examples, and best practices specific to the skill
+- **Example files**: quantatitive-factor-researcher (Chinese/English bilingual), marimo-notebook (40+ sections), streamlit-to-marimo (widget mapping reference)
+
+### Key Files and Paths
+- `/Volumes/Data/Program/Personal/agent-skills/README.md`
+- `/Volumes/Data/Program/Personal/agent-skills/Makefile`
+- `/Volumes/Data/Program/Personal/agent-skills/vendor.yaml`
+- `/Volumes/Data/Program/Personal/agent-skills/scripts/sync-vendor.sh`
+- `/Volumes/Data/Program/Personal/agent-skills/scripts/add-vendor.sh`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/local/quantatitive-factor-researcher/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/vendor/marimo-notebook/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/skills/vendor/streamlit-to-marimo/SKILL.md`
+- `/Volumes/Data/Program/Personal/agent-skills/.cursorindexingignore`
+- `/Volumes/Data/Program/Personal/agent-skills/.gitignore`
+- `/Volumes/Data/Program/Personal/agent-skills/skills-lock.json`
+
+This information should give you all the context needed to create a comprehensive CLAUDE.md file for Claude Code integration!
+
+_**Agent (claude-opus-4-6 2026-03-19 05:34:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
+
+The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior.
+
+## Commands
+
+\```bash
+# Sync all vendored skills from upstream
+make sync
+
+# Check for upstream updates (dry-run)
+make sync-check
+
+# Add a new vendored skill (auto-syncs)
+./scripts/add-vendor.sh owner/repo/path/to/skill
+./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
+
+# Create a new local skill
+cd skills/local && npx skills@latest init [skill-name]
+\```
+
+## Vendor System
+
+- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA)
+- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required)
+- `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates
+
+Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA.
+
+## SKILL.md Format
+
+Each skill is a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body with instructions, conventions, and examples. Vendored skills may include `references/` subdirectories.
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/CLAUDE.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-6 2026-03-19 05:34:50Z)**_
+
+Created `CLAUDE.md` covering the project's key aspects: the nested skills discovery mechanism, vendor sync system, and common commands.

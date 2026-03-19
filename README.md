@@ -87,7 +87,7 @@ Use `--no-sync` to only add the entry without downloading.
       commit: ""
 ```
 
-2. Run `make sync` (requires `gh` and `yq`)
+1. Run `make sync` (requires `gh` and `yq`)
 
 #### Check for upstream updates
 
@@ -106,10 +106,17 @@ make sync-check
 
 ### Skills
 
+Skill Set
+
 - [vercel-labs/agent-skills: Vercel's official collection of agent skills](https://github.com/vercel-labs/agent-skills/tree/main)
 - [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
 - [mattpocock/skills: My personal directory of skills, straight from my .claude directory.](https://github.com/mattpocock/skills)
 - [anthropics/knowledge-work-plugins: Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork](https://github.com/anthropics/knowledge-work-plugins/tree/main)
+
+Single Skill
+
+- [FrancyJGLisboa/agent-skill-creator: Turn any workflow into reusable AI agent skills that install on 14+ tools — Claude Code, Copilot, Cursor, Windsurf, Codex, Gemini, Kiro, and more. One SKILL.md, every platform.](https://github.com/FrancyJGLisboa/agent-skill-creator)
+- [find-skills by vercel-labs/skills](https://skills.sh/vercel-labs/skills/find-skills)
 
 ### Collections
 
@@ -120,6 +127,7 @@ make sync-check
 
 - [Six skills for financial service professionals | Claude](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
   - [Financial services | Claude by Anthropic](https://claude.com/solutions/financial-services)
+- [Building Agent Skills with skill-creator | by Daniela Petruzalek | Google Cloud - Community | Feb, 2026 | Medium](https://medium.com/google-cloud/building-agent-skills-with-skill-creator-855f18e785cf)
 
 ---
 
