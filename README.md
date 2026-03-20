@@ -13,12 +13,15 @@ npx skills@latest add daviddwlee84/agent-skills/skills
 
 ## Structure
 
-```
+```txt
+.agents/           # Agent config that used for this repo
+skills-lock.json   # npx skills managed skills for this repo
 skills/
   local/           # Custom skills authored by us
   vendor/          # 3rd-party skills synced from upstream repos
 vendor.yaml        # Manifest tracking upstream sources
 scripts/
+  add-vendor.sh    # Add 3rd-party skills
   sync-vendor.sh   # Sync script for vendored skills
 Makefile           # Convenience targets
 ```

@@ -42,3 +42,4 @@
 - [ ] Terraform (for infrastructure as code)
 - [ ] Ansible (for configuration management)
 - [ ] chezmoi (for dotfile management)
+- [ ] Tailscale
