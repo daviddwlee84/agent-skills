@@ -102,6 +102,8 @@ nav:
       - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
       - marimo-batch-mlflow: skills/marimo-batch-mlflow.md
       - anywidget: skills/anywidget.md
+      - dvc-ml-workflow: skills/dvc-ml-workflow.md
+      - mlflow-tracking: skills/mlflow-tracking.md
   - Reference:
       - TODO format: reference/todo-format.md
       - Tag schema: reference/tag-schema.md

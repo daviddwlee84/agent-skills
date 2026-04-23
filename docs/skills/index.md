@@ -13,6 +13,9 @@ manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
 | [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
+| [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
+| [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
+| [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |
 
 ## Vendored skills
 
