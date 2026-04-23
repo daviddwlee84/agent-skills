@@ -1,0 +1,9 @@
+# Local secrets — never commit
+.env
+
+# Persisted data
+mlflow_data/
+
+# Local mlruns (if anyone runs MLflow client from this folder by accident)
+mlruns/
+mlflow.db

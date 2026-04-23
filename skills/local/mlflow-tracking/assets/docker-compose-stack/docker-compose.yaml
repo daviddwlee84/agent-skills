@@ -1,0 +1,125 @@
+# MLflow Tracking Server with PostgreSQL and MinIO (S3-compatible storage)
+# Usage: docker compose up -d
+# Access MLflow UI at http://localhost:${MLFLOW_PORT:-8000}
+
+services:
+  # PostgreSQL database for MLflow tracking metadata
+  db:
+    image: postgres:16
+    container_name: mlflow_db
+    restart: unless-stopped
+    expose:
+      - "${PG_PORT:-5432}"
+    # NOTE: [OPTIONAL] Port exposure to host is optional.
+    # Only needed if you want to connect to PostgreSQL directly from host
+    # (e.g., for debugging with psql/pgAdmin). MLflow connects internally via docker network.
+    # Comment out the 'ports' section below if not needed.
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    networks:
+      - mlflow-network
+    environment:
+      POSTGRES_USER: ${PG_USER:-mlflow}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-mlflow}
+      POSTGRES_DB: ${PG_DATABASE:-mlflow}
+    volumes:
+      - ./mlflow_data/db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${PG_USER:-mlflow} -d ${PG_DATABASE:-mlflow}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # MinIO S3-compatible object storage for MLflow artifacts
+  s3:
+    image: minio/minio:latest
+    container_name: mlflow_minio
+    restart: unless-stopped
+    # NOTE: [OPTIONAL] Both MinIO ports are optional for host exposure.
+    # - Port 9000 (API): Only needed if accessing MinIO S3 API directly from host.
+    #   MLflow server connects internally via docker network.
+    # - Port 9001 (Console): Only needed if you want to access MinIO web console
+    #   for debugging/managing buckets. Comment out if not needed.
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000" # Optional: MinIO S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001" # Optional: MinIO Web Console
+    networks:
+      - mlflow-network
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_ACCESS_KEY:-minioadmin}
+    volumes:
+      - ./mlflow_data/minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # One-time init container to create S3 bucket
+  create_s3_buckets:
+    image: minio/mc:latest
+    container_name: mlflow_create_bucket
+    depends_on:
+      s3:
+        condition: service_healthy
+    networks:
+      - mlflow-network
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://s3:9000 '${MINIO_ACCESS_KEY:-minioadmin}' '${MINIO_SECRET_ACCESS_KEY:-minioadmin}';
+      mc mb minio/${MLFLOW_BUCKET_NAME:-mlflow} --ignore-existing;
+      mc anonymous set download minio/${MLFLOW_BUCKET_NAME:-mlflow};
+      echo 'Bucket ${MLFLOW_BUCKET_NAME:-mlflow} created successfully';
+      "
+
+  # MLflow Tracking Server
+  tracking_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mlflow_server:latest
+    container_name: mlflow_server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+      create_s3_buckets:
+        condition: service_completed_successfully
+    # NOTE: [REQUIRED] This port MUST be exposed - it's the main MLflow UI/API endpoint.
+    ports:
+      - "${MLFLOW_PORT:-8000}:5000"
+    networks:
+      - mlflow-network
+    environment:
+      # S3/MinIO configuration
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_ACCESS_KEY:-minioadmin}
+      MLFLOW_S3_ENDPOINT_URL: http://s3:9000
+      MLFLOW_S3_IGNORE_TLS: "true"
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://${PG_USER:-mlflow}:${PG_PASSWORD:-mlflow}@db:5432/${PG_DATABASE:-mlflow}
+      --artifacts-destination s3://${MLFLOW_BUCKET_NAME:-mlflow}
+      --serve-artifacts
+      --host 0.0.0.0
+      --port 5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  mlflow-network:
+    driver: bridge
