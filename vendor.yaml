@@ -28,3 +28,12 @@ skills:
     last_sync:
       date: "2026-03-19T06:22:59Z"
       commit: "b0cbd3df1533b396d281a6886d5132f623393a9c"
+  - name: anywidget
+    upstream:
+      owner: marimo-team
+      repo: skills
+      path: skills/anywidget
+      branch: main
+    last_sync:
+      date: "2026-04-23T10:40:25Z"
+      commit: "0add481fb753a3695ba3d0d0a91bdf72f5626506"
