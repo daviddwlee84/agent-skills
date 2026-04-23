@@ -198,6 +198,29 @@ create_file "TODO.md" "$assets_dir/TODO.md.template"
 create_file "backlog/README.md" "$assets_dir/backlog-README.md.template"
 create_file "pitfalls/README.md" "$assets_dir/pitfalls-README.md.template"
 
+# Seed backlog/inbox.md if missing. Keep it tiny — sweep-inbox.sh handles it.
+if [ ! -e "$target_abs/backlog/inbox.md" ]; then
+  mkdir -p "$target_abs/backlog"
+  cat > "$target_abs/backlog/inbox.md" <<'INBOX_EOF'
+# Inbox
+
+Quick-capture area. Drop loose lines here when priority/effort/wording
+isn't clear yet; run `scripts/sweep-inbox.sh` later to formalize them
+into `TODO.md`.
+
+Lines starting with `#` and blank lines are ignored. Free-form lines
+prompt the sweeper for missing fields; lines shaped like
+`- priority=P3 effort=M title="X" description="Y"` (or short aliases
+`p=`/`e=`/`t=`/`d=`) are processed automatically by `--batch`.
+
+<!-- inbox entries below this line; mix free-form and key=value freely -->
+
+INBOX_EOF
+  echo "create: backlog/inbox.md"
+else
+  echo "skip: backlog/inbox.md already exists"
+fi
+
 append_snippet "$agent_contract" "$assets_dir/agent-guidance.md.template" "$agent_marker"
 if [ -n "$readme_file" ]; then
   append_snippet "$readme_file" "$assets_dir/readme-roadmap.md.template" "$readme_marker"
@@ -218,10 +241,16 @@ fi
 cat <<'EOF'
 
 Next steps:
-  1. Open TODO.md and replace the example items with real ones.
-  2. Add ignore rules above to your packaging/deployment ignore file.
-  3. Run the kanban renderer when you want a quick board view:
+  1. Open TODO.md and replace the example items with real ones, or use
+     scripts/add-todo.sh to insert structured entries:
+       scripts/add-todo.sh --priority P3 --effort M \
+         --title "Title" --description "Description"
+  2. Drop loose ideas into backlog/inbox.md; formalize later via:
+       scripts/sweep-inbox.sh             # interactive
+       scripts/sweep-inbox.sh --batch     # only key=value lines
+  3. Add ignore rules above to your packaging/deployment ignore file.
+  4. Run the kanban renderer when you want a quick board view:
        scripts/todo-kanban.sh
-  4. Promote shipped items via:
+  5. Promote shipped items via:
        scripts/promote-todo.sh --title "<substring>" --summary "<what shipped>"
 EOF

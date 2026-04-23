@@ -38,15 +38,18 @@ documentation (use `docs/`).
 
 ## How to apply this skill (default workflow)
 
-The skill bundles three scripts and several templates. **Default to the
-init script** rather than asking the agent to copy templates by hand.
+The skill bundles five scripts and several templates. **Default to the
+init script** for setup, and **default to `add-todo.sh` / `sweep-inbox.sh`
+for capture** rather than asking the agent to edit `TODO.md` by hand.
 
 ```
 scripts/
   init.sh         # one-shot setup of TODO.md + backlog/ + pitfalls/
                   # + agent guidance + README snippet
   todo-kanban.sh  # validate TODO.md format and render kanban-style board
+  add-todo.sh     # insert a structured entry into the right ## P* lane
   promote-todo.sh # move an active TODO item to ## Done with the right syntax
+  sweep-inbox.sh  # triage backlog/inbox.md into TODO.md via add-todo.sh
 ```
 
 ### 1. Run `scripts/init.sh` against the target repo
@@ -80,15 +83,38 @@ Signals: "maybe later", "nice to have", "if I'm interested",
 "工程量太大需要再評估", "先記下來", "not now but…".
 
 1. If `TODO.md` doesn't exist yet, run `scripts/init.sh` first.
-2. Add the entry by editing `TODO.md` directly. Use the syntax from
-   [`references/tag-schema.md`](references/tag-schema.md):
-   - `P1` / `P2` / `P3`: `- [ ] **[Effort] Title** — description`
-   - `P?`:               `- [ ] **[?/Effort] Title** — description`
-3. If the conversation produced real investigation (research, error
-   traces, options analysis), create `backlog/<slug>.md` from
-   `assets/backlog-doc.md.template` before the context evaporates and
-   add `→ [research](backlog/<slug>.md)` to the TODO line.
-4. Run `scripts/todo-kanban.sh --validate-only` to catch syntax drift.
+2. **Default path — call `scripts/add-todo.sh`** with the priority,
+   effort, title, and description. This inserts the canonical line into
+   the right `## P*` lane and re-validates. Add `--backlog` if the
+   conversation produced enough investigation that a `backlog/<slug>.md`
+   doc is worth scaffolding.
+
+   ```sh
+   scripts/add-todo.sh --priority "P?" --effort M \
+     --title "Try Rspress for docs" \
+     --description "Evaluate AI-native docs framework alternative"
+   ```
+
+3. **Quick-capture path — append to `backlog/inbox.md`** when the user
+   isn't sure of priority/effort yet, or is mid-thought:
+
+   ```sh
+   echo "- $UNSTRUCTURED_THOUGHT" >> backlog/inbox.md
+   ```
+
+   Later (this session or next), run `scripts/sweep-inbox.sh` to
+   formalize the loose lines into `TODO.md` one at a time. The sweeper
+   prompts for missing fields per line; in `--batch` mode it only
+   processes lines that already have `priority=… effort=… title="…"
+   description="…"` pairs and leaves ambiguous ones in place.
+
+4. **Manual edit path — only when scripts can't help.** Use the syntax
+   from [`references/tag-schema.md`](references/tag-schema.md) and run
+   `scripts/todo-kanban.sh --validate-only` afterwards.
+
+5. If you wrote a `backlog/<slug>.md` (either via `--backlog` or by
+   hand), make sure the TODO line ends with
+   ` → [research](backlog/<slug>.md)` so the index points to the doc.
 
 ### 3. Mid-conversation, when you finish debugging something tricky
 
@@ -157,7 +183,10 @@ not files to ship. Cheatsheet for chezmoi / npm / pip / Docker in
 - `scripts/init.sh` — one-shot setup
 - `scripts/todo-kanban.sh` — validator + Markdown kanban renderer
   (also supports `--json` and `--validate-only`)
+- `scripts/add-todo.sh` — structured insert into `## P*` lane;
+  `--backlog` also scaffolds `backlog/<slug>.md`
 - `scripts/promote-todo.sh` — atomic active-→-Done move with re-validation
+- `scripts/sweep-inbox.sh` — triage `backlog/inbox.md` → `add-todo.sh`
 
 ## Reference implementation
 

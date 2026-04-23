@@ -1,0 +1,117 @@
+site_name: Agent Skills
+site_description: Personal collection of agent skills — both custom-authored and cherry-picked from upstream repos.
+site_url: https://daviddwlee84.github.io/agent-skills/
+repo_url: https://github.com/daviddwlee84/agent-skills
+repo_name: daviddwlee84/agent-skills
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+
+plugins:
+  - search
+  - llmstxt:
+      full_output: llms-full.txt
+      markdown_description: >
+        Personal collection of agent skills — local custom-authored skills under
+        skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via
+        the vendor.yaml manifest. Includes project-knowledge-harness (a
+        TODO/backlog/pitfalls memory harness with bundled init/kanban/promote
+        scripts) and quantatitive-factor-researcher (a Python quant-research
+        persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
+      sections:
+        Guides:
+          - index.md
+          - getting-started.md
+          - conventions.md
+        Workflows:
+          - workflows/*.md
+        Skills:
+          - skills/*.md
+        Reference:
+          - reference/*.md
+        Changelog:
+          - changelog.md
+  - copy-to-llm:
+      repo_url: "https://daviddwlee84.github.io/agent-skills"
+      button_hover_color: "var(--md-primary-fg-color)"
+      toast_bg_color: "var(--md-primary-fg-color)"
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path:
+        - .
+        - docs
+        - docs/_snippets
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Conventions: conventions.md
+  - Workflows:
+      - Adding vendor skills: workflows/adding-vendor-skills.md
+      - Creating local skills: workflows/creating-local-skills.md
+      - Project memory: workflows/project-memory.md
+  - Skills:
+      - Overview: skills/index.md
+      - project-knowledge-harness: skills/project-knowledge-harness.md
+      - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
+  - Reference:
+      - TODO format: reference/todo-format.md
+      - Tag schema: reference/tag-schema.md
+      - Pitfalls format: reference/pitfalls.md
+      - Bundled scripts: reference/scripts.md
+      - Downstream docs stack recipe: reference/docs-stack-recipe.md
+  - Changelog: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/daviddwlee84/agent-skills
+
+# `_snippets/` are meant to be included via pymdownx.snippets, never
+# rendered as their own page. `not_in_nav` suppresses the INFO warning.
+not_in_nav: |
+  /_snippets/

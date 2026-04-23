@@ -14,6 +14,33 @@ The bundled `scripts/todo-kanban.sh` validates the format. Run it
 (`scripts/todo-kanban.sh --validate-only TODO.md`) after editing so syntax
 drift is caught immediately.
 
+#### Three ways to add a TODO entry (preferred order)
+
+1. **Structured CLI — `scripts/add-todo.sh`** (default):
+
+   ```
+   scripts/add-todo.sh --priority P3 --effort M \
+     --title "Title" --description "Description"
+   ```
+
+   Inserts a canonically-formatted line into the right `## P*` lane and
+   re-runs the validator. Add `--backlog` to also scaffold
+   `backlog/<slug>.md` from the bundled template.
+
+2. **Quick capture — `backlog/inbox.md`** (when priority/effort unclear):
+
+   ```
+   echo "- maybe add docs versioning with mike" >> backlog/inbox.md
+   ```
+
+   When the user asks "sweep the inbox", run
+   `scripts/sweep-inbox.sh`. It prompts for the missing fields per loose
+   line and calls `add-todo.sh`. Use `--batch` for non-interactive runs
+   that only formalize lines with parseable `key=value` pairs.
+
+3. **Direct edit of `TODO.md`** — fine if the format is fresh; run
+   `scripts/todo-kanban.sh --validate-only` afterwards.
+
 Add a `backlog/<slug>.md` companion doc when the item meets any of:
 
 - carries a `P?` tag (record what was tried so it doesn't need re-investigation)

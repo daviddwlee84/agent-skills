@@ -1,0 +1,23 @@
+[project]
+name = "agent-skills"
+version = "0.0.0"
+description = "Personal collection of agent skills (custom + vendored). The Python project here exists only to manage the docs site build."
+requires-python = ">=3.11"
+# No runtime dependencies. The repo itself is shell + markdown; this
+# pyproject.toml exists so that `uv sync --extra docs` can manage the
+# MkDocs Material toolchain that builds the documentation site.
+dependencies = []
+
+[project.optional-dependencies]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocs-llmstxt>=0.1",
+  "mkdocs-copy-to-llm>=0.1",
+  # pymdownx is bundled with mkdocs-material, but pin explicitly so the
+  # snippets / superfences / tabbed extensions never silently disappear.
+  "pymdown-extensions>=10.0",
+]
+
+[tool.uv]
+package = false

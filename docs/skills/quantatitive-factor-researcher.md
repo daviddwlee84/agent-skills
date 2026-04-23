@@ -72,7 +72,7 @@ extra material into `references/` and `assets/` rather than letting
 
 - The skill ships no example notebooks or backtest scaffolding yet — it
   is purely a persona. Adding `assets/` with reusable factor-evaluation
-  scaffolds is a candidate `[?/L]` item for [`TODO.md`](../TODO.md).
+  scaffolds is a candidate `[?/L]` item for [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md).
 - It does not currently bundle a "preferred data source" decision —
   that interacts with the broader "Financial data sources skill set"
   P? item already in the repo backlog.

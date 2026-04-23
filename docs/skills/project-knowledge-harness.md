@@ -150,15 +150,17 @@ See the workflow above. Notable flags:
 
 ## Reference docs the skill loads on demand
 
-- [`references/tag-schema.md`](../skills/local/project-knowledge-harness/references/tag-schema.md)
-- [`references/when-to-add-docs.md`](../skills/local/project-knowledge-harness/references/when-to-add-docs.md)
-- [`references/anti-patterns.md`](../skills/local/project-knowledge-harness/references/anti-patterns.md)
-- [`references/deployment-exclusion.md`](../skills/local/project-knowledge-harness/references/deployment-exclusion.md)
+- [`references/tag-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/tag-schema.md)
+  (also surfaced as a human-readable page: [Tag schema](../reference/tag-schema.md))
+- [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
+- [`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)
+- [`references/deployment-exclusion.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/deployment-exclusion.md)
 
 ## How this repo uses the skill on itself
 
-The repo's own [`TODO.md`](../TODO.md), [`backlog/`](../backlog/) (when
-populated), [`pitfalls/`](../pitfalls/) (when populated), and
-[`scripts/`](../scripts/) `todo-kanban.sh` / `promote-todo.sh` are a live
-example of the harness applied to a real project. The
-[`make kanban`](../Makefile) target wraps the validator/renderer.
+The repo's own [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md),
+[`backlog/`](../../backlog/) (when populated), [`pitfalls/`](../../pitfalls/)
+(when populated), and [`scripts/`](../../scripts/) `todo-kanban.sh` /
+`promote-todo.sh` are a live example of the harness applied to a real
+project. The [`make kanban`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+target wraps the validator/renderer.
