@@ -9,12 +9,18 @@ A personal collection of agent skills — both custom-authored and cherry-picked
 ```bash
 # NOTE: If use daviddwlee84/agent-skills will only find skills in .agents/skills
 npx skills@latest add daviddwlee84/agent-skills/skills
+
+# Render the repo backlog as a validated kanban-style board
+make kanban
 ```
 
 ## Structure
 
 ```txt
 .agents/           # Agent config that used for this repo
+TODO.md            # Future work index plus recent shipped items
+backlog/           # Deferred investigation linked from TODO.md
+pitfalls/          # Past non-obvious traps and their fixes
 skills-lock.json   # npx skills managed skills for this repo
 skills/
   local/           # Custom skills authored by us
@@ -25,6 +31,21 @@ scripts/
   sync-vendor.sh   # Sync script for vendored skills
 Makefile           # Convenience targets
 ```
+
+## Roadmap & lessons learned
+
+Forward-looking work lives in [`TODO.md`](TODO.md), grouped into `P1` through
+`P3` plus `P?` for ideas that still need evaluation. Non-trivial investigation
+or paused analysis should be linked from the TODO entry into
+[`backlog/`](backlog/).
+
+Backward-looking knowledge lives in [`pitfalls/`](pitfalls/), titled by
+symptom so humans and agents can grep recurring issues quickly. Recent shipped
+work stays in `TODO.md` under `## Done` until it is large enough to prune into a
+future `CHANGELOG.md`.
+
+To render a validated board view for the current backlog, run `make kanban` or
+[`./scripts/todo-kanban.sh`](scripts/todo-kanban.sh).
 
 ## Available Skills
 

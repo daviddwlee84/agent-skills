@@ -17,6 +17,9 @@ make sync
 # Check for upstream updates (dry-run)
 make sync-check
 
+# Validate and render the repo backlog board
+make kanban
+
 # Add a new vendored skill (auto-syncs)
 ./scripts/add-vendor.sh owner/repo/path/to/skill
 ./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
@@ -36,3 +39,39 @@ Sync uses the git trees API to recursively download skill directories (SKILL.md 
 ## SKILL.md Format
 
 Each skill is a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body with instructions, conventions, and examples. Vendored skills may include `references/` subdirectories.
+
+## Project Memory Workflow
+
+### Long-term backlog -> `TODO.md` + `backlog/`
+
+When work is explicitly deferred, add it to [`TODO.md`](TODO.md) using the
+fixed section order `P1`, `P2`, `P3`, `P?`, `Done`.
+
+- Active items must use `- [ ] **[Effort] Title** — description`
+- `P?` items must use `- [ ] **[?/Effort] Title** — description`
+- Non-trivial research should be linked as `→ [research](backlog/<slug>.md)`
+
+`TODO.md` is parsed by [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), so
+do not invent alternate headings, nested bullets, or ad hoc checkbox formats.
+
+When implementing a TODO item, in the same commit:
+
+1. Move it to `## Done`
+2. Rewrite it as `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
+3. Mark the related `backlog/<slug>.md` as shipped if one exists
+
+Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
+when it contains items from a previous calendar year or grows past 20 entries.
+
+### Past pitfalls -> `pitfalls/`
+
+When a debugging session uncovers a non-obvious trap that could realistically be
+hit again, write `pitfalls/<slug>.md` with:
+
+1. The verbatim symptom or error text
+2. The root cause
+3. The workaround
+4. Prevention guidance or the hard invariant that supersedes it
+
+Use symptom-first titles so future agents can grep the failure they see, not
+the explanation they do not know yet.
