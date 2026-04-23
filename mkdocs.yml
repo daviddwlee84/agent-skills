@@ -117,3 +117,14 @@ extra:
 # rendered as their own page. `not_in_nav` suppresses the INFO warning.
 not_in_nav: |
   /_snippets/
+
+# Validation: keep strict mode useful but don't fail on links to files
+# that exist in the *built* site/ but not in docs/ source (e.g.
+# llms.txt and llms-full.txt produced by mkdocs-llmstxt at build time,
+# and per-page <page>/index.md raw-markdown URLs which are directory
+# URLs that only exist post-build).
+# Demote 'not_found' from warn -> info so --strict still passes; keep
+# everything else at defaults (anchors/absolute_links stay warn-able).
+validation:
+  links:
+    not_found: info

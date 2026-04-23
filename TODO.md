@@ -14,8 +14,12 @@ workflow that agents should follow.
 ## P1
 
 ## P2
+- [ ] **[S] Bump GitHub Actions to next majors before Node 20 deprecation** — actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4, astral-sh/setup-uv@v5 will deprecate June 2026. Bump checkout/upload-artifact to @v5, setup-python to @v6, setup-uv to @v6 in .github/workflows/docs.yml and any other workflows. Verify deploy still passes.
 
 ## P3
+- [ ] **[S] Document 'prefer relative links' as docs convention** — Add an explicit rule in docs/conventions.md and CLAUDE.md: inside docs/, default to relative links (not absolute https URLs) so docs are portable across deploys. Absolute URLs only when (a) linking to files outside docs/ in the GitHub repo, or (b) absolutely necessary. See pitfalls/mkdocs-strict-rejects-build-time-generated-links.md for the validation.links.not_found:info workaround that makes this work with strict mode.
+- [ ] **[S] Mirror-check script for scripts/ vs project-knowledge-harness/scripts/** — Add scripts/check-script-mirror.sh that diffs scripts/{add-todo,sweep-inbox,promote-todo,todo-kanban}.sh against skills/local/project-knowledge-harness/scripts/ and exits non-zero if any pair differs. Wire into a Make target and (later) CI.
+- [ ] **[M] Bake validation.links.not_found:info into mkdocs-site-bootstrap template** — skills/local/mkdocs-site-bootstrap/assets/mkdocs.yml.template should ship with the validation override pre-set so downstream sites don't rediscover the strict-mode-rejects-build-time-generated-links pitfall. Also document the rationale inline as a YAML comment.
 
 ## P?
 
