@@ -53,5 +53,6 @@ workflow that agents should follow.
 - [ ] **[?/M] Ansible skill** — evaluate playbook structure, inventory handling, and idempotent troubleshooting patterns for Ansible repos.
 - [ ] **[?/M] chezmoi skill** — evaluate dotfile templating, apply workflows, and common gotchas for chezmoi-managed machines.
 - [ ] **[?/M] Tailscale skill** — evaluate device onboarding, ACL/auth-key management, and common networking tasks for Tailscale users.
+- [ ] **[?/L] Sibling docs-stack skills (docusaurus / vitepress / hugo / sphinx)** — mkdocs-site-bootstrap is intentionally MkDocs-specific (Python/Material stack). Not all projects want MkDocs: JS projects often prefer Docusaurus or VitePress, Go/static prefer Hugo, scientific Python prefers Sphinx. Each should be a separate skill (docusaurus-site-bootstrap, vitepress-site-bootstrap, etc.) following the same consent-gated + .skills/preferences.yaml pattern. Don't merge into a generic docs-site-bootstrap — the configs / lifecycle / link-checker rules are too divergent. Currently uncertain whether to write all four or wait until needed; keeping as P?.
 
 ## Done
