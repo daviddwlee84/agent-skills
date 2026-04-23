@@ -1,11 +1,19 @@
 # Skills overview
 
-This page indexes the skills bundled in this repo. Local skills are
-maintained here; vendored skills are synced from upstream via the
-[`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
-manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
+This page indexes the skills bundled in this repo.
+
+- **Local skills** (`skills/local/`) are authored and maintained here.
+- **Vendored skills** (`skills/vendor/`) are cherry-picked from upstream
+  repos and synced via the
+  [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+  manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
+  Do not edit vendored SKILL.md files locally; changes will be clobbered
+  on the next `make sync`.
 
 ## Local skills
+
+Custom-authored, curated to this repo's conventions (see
+[Conventions](../conventions.md)).
 
 | Skill | One-line | Detailed page |
 |---|---|---|
@@ -19,9 +27,18 @@ manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
 
 ## Vendored skills
 
-| Skill | Upstream |
-|---|---|
-| [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/vendor/marimo-notebook) | [marimo-team/skills](https://github.com/marimo-team/skills) |
+3rd-party skills cherry-picked because they fill a gap the local skills
+don't cover, or because the upstream is the canonical authority on the
+topic. The linked detail page shows what each skill teaches, upstream
+provenance, and last-sync commit is tracked in `vendor.yaml`.
+
+| Skill | Upstream | Detailed page |
+|---|---|---|
+| [`marimo-notebook`](marimo-notebook.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook) | [docs](marimo-notebook.md) |
+| [`streamlit-to-marimo`](streamlit-to-marimo.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo) | [docs](streamlit-to-marimo.md) |
+| [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
+| [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
 
 For the rules every local skill follows (layout, naming, scripts,
-references), see [Conventions](../conventions.md).
+references), see [Conventions](../conventions.md). For how vendoring
+works end-to-end, see [Adding vendor skills](../workflows/adding-vendor-skills.md).

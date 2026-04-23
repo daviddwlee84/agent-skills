@@ -1,4 +1,4 @@
-# anywidget (anywidget-generator)
+# anywidget (vendored)
 
 Vendored from
 [marimo-team/skills/skills/anywidget](https://github.com/marimo-team/skills/tree/main/skills/anywidget).

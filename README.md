@@ -28,9 +28,11 @@ npx skills@latest add daviddwlee84/agent-skills/skills
   - [`marimo-batch-mlflow`](skills/local/marimo-batch-mlflow/) — Opinionated fork of upstream `marimo-batch`: Tyro CLI (dataclass or Pydantic) + MLflow tracking + live `mlflow-widgets` chart, dual-mode (`mo.app_meta().mode == "script"`) UI/CLI from one notebook. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-batch-mlflow/))
   - [`dvc-ml-workflow`](skills/local/dvc-ml-workflow/) — DVC ([treeverse/dvc](https://github.com/treeverse/dvc)) pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships `init-dvc-project.sh`, `queue-helper.sh` (with `grid` cartesian-product enqueue), `lint-dvcyaml.sh`. ([docs](https://daviddwlee84.github.io/agent-skills/skills/dvc-ml-workflow/))
   - [`mlflow-tracking`](skills/local/mlflow-tracking/) — Generic [MLflow](https://mlflow.org/docs/latest) skill: SQLite + `mlflow ui` for solo, vendored PostgreSQL + MinIO docker-compose stack for teams; covers LLM tracing, model registry (aliases), and autologging across all officially-supported frameworks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/mlflow-tracking/))
-- **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml).
-  - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills).
+- **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml). Do not edit these locally; `make sync` will clobber changes.
+  - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills); general marimo authoring conventions. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-notebook/))
+  - [`streamlit-to-marimo`](skills/vendor/streamlit-to-marimo/) — from [marimo-team/skills](https://github.com/marimo-team/skills); convert Streamlit apps to marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/streamlit-to-marimo/))
   - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
+  - [`skill-creator`](skills/vendor/skill-creator/) — from [anthropics/skills](https://github.com/anthropics/skills); evaluate, benchmark, and optimize skill trigger descriptions. Complements local [`skill-author`](skills/local/skill-author/). ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-creator/))
 
 ## Repo memory
 

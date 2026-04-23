@@ -96,14 +96,19 @@ nav:
       - Project memory: workflows/project-memory.md
   - Skills:
       - Overview: skills/index.md
-      - project-knowledge-harness: skills/project-knowledge-harness.md
-      - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
-      - skill-author: skills/skill-author.md
-      - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
-      - marimo-batch-mlflow: skills/marimo-batch-mlflow.md
-      - anywidget: skills/anywidget.md
-      - dvc-ml-workflow: skills/dvc-ml-workflow.md
-      - mlflow-tracking: skills/mlflow-tracking.md
+      - Local:
+          - project-knowledge-harness: skills/project-knowledge-harness.md
+          - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
+          - skill-author: skills/skill-author.md
+          - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
+          - marimo-batch-mlflow: skills/marimo-batch-mlflow.md
+          - dvc-ml-workflow: skills/dvc-ml-workflow.md
+          - mlflow-tracking: skills/mlflow-tracking.md
+      - Vendored:
+          - marimo-notebook: skills/marimo-notebook.md
+          - streamlit-to-marimo: skills/streamlit-to-marimo.md
+          - anywidget: skills/anywidget.md
+          - skill-creator: skills/skill-creator.md
   - Reference:
       - TODO format: reference/todo-format.md
       - Tag schema: reference/tag-schema.md
