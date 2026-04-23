@@ -8,8 +8,6 @@ e.g. AGENTS.md or CLAUDE.md> for maintenance rules.
 > "工程量太大需要再評估", "先記下來"), add it here with priority + effort tags.
 > Do not create new `ROADMAP.md` / `IDEAS.md` / `BACKLOG.md` files — `TODO.md` is
 > the single backlog index. Long-form research goes in [`backlog/<slug>.md`](backlog/).
-> If this repo includes `scripts/todo-kanban.sh`, run it after editing
-> `TODO.md` so syntax drift is caught before another agent parses the file.
 
 ## How to read this
 

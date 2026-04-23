@@ -1,6 +1,6 @@
 ---
 name: project-knowledge-harness
-description: Set up a structured project memory for any software project — TODO.md as a priority-section/effort-tagged index of future work, backlog/ for resume-friendly research/design notes on P? items, pitfalls/ as a symptom-grep-able knowledge base of past traps, and an optional `todo-kanban.sh` validator/renderer so agents can keep the TODO format machine-readable.
+description: Set up a structured project memory for any software project — TODO.md as a priority-section/effort-tagged index of future work, backlog/ for resume-friendly research/design notes on P? items, pitfalls/ as a symptom-grep-able knowledge base of past traps, plus a bundled `scripts/todo-kanban.sh` validator/renderer so agents can keep the TODO format machine-readable after install.
 ---
 
 # project-knowledge-harness
@@ -108,9 +108,9 @@ below).
 - Contains an indexed `README.md` with a "Cross-referenced pitfalls" table
   pointing to traps documented elsewhere (avoids duplication)
 
-### `scripts/todo-kanban.sh` — validator + board view
+### `scripts/todo-kanban.sh` — bundled validator + board view
 
-- Optional but recommended repo-local helper copied from this skill's assets
+- Bundled helper script that ships with this skill when installed
 - Validates `TODO.md` heading order and item syntax before rendering a board
 - Gives humans and agents a single command to confirm the file is still
   machine-readable after edits
@@ -222,27 +222,24 @@ When the user agrees to set this up in a fresh project:
    `assets/backlog-README.md.template`).
 3. **Create `pitfalls/` folder** with `pitfalls/README.md` (template at
    `assets/pitfalls-README.md.template`).
-4. **Install `scripts/todo-kanban.sh`** from `assets/todo-kanban.sh.template`
-   and make it executable. Default to this unless the host repo already has an
-   equivalent validator/task.
-5. **If the host repo already has a `Makefile`**, add a `kanban` target that
-   runs `./scripts/todo-kanban.sh`. If there is no task runner, direct script
-   invocation is enough.
-6. **Add ignore rules** so `backlog/` and `pitfalls/` don't ship with the project:
+4. **Use the bundled `scripts/todo-kanban.sh`** from this skill to validate
+   the target repo's `TODO.md` after editing it. Run the script from the target
+   repo root, or pass an explicit path to `TODO.md`.
+5. **Add ignore rules** so `backlog/` and `pitfalls/` don't ship with the project:
    - chezmoi: `backlog/**` `pitfalls/**` in `.chezmoiignore.tmpl`
    - Python package: `recursive-exclude backlog *` etc. in `MANIFEST.in`
    - npm package: in `package.json` `files` exclusion or `.npmignore`
    - Docker: in `.dockerignore`
    - Generic: confirm `.gitignore` does NOT ignore them (we want them tracked!)
-7. **Add agent guidance** to project's agent contract file
+6. **Add agent guidance** to project's agent contract file
    (`AGENTS.md` / `CLAUDE.md` / `.cursorrules` / `.opencode/AGENTS.md`):
    tell future agent sessions to use this harness rather than spawn parallel
    files. Template snippet at `assets/agent-guidance.md.template`.
-8. **Add a Roadmap & lessons section to `README.md`** — short, links to both
+7. **Add a Roadmap & lessons section to `README.md`** — short, links to both
    `TODO.md` and `pitfalls/`. Template at `assets/readme-roadmap.md.template`.
-9. **Migrate existing TODO content** if any — categorise into P1/P2/P3/P?,
+8. **Migrate existing TODO content** if any — categorise into P1/P2/P3/P?,
    tag effort, mark shipped items as `## Done`.
-10. **Seed at least one doc each** in `backlog/` and `pitfalls/` from real
+9. **Seed at least one doc each** in `backlog/` and `pitfalls/` from real
    topics — sets the tone and proves the system works. Don't bulk-migrate
    scattered historical pitfalls; index them in `pitfalls/README.md`'s
    "Cross-referenced pitfalls" table instead, and only physically move them
@@ -263,8 +260,8 @@ Then:
    traces, options analysis), create a `backlog/<slug>.md` capturing it
    before the conversation context is lost.
 4. Cross-link: TODO entry → backlog doc via `→ [research](backlog/<slug>.md)`.
-5. If `scripts/todo-kanban.sh` exists, run it after editing `TODO.md` so
-   syntax drift is caught immediately.
+5. Run this skill's bundled `scripts/todo-kanban.sh` against the target repo's
+   `TODO.md` so syntax drift is caught immediately.
 
 ## What to do mid-conversation when you finish debugging something tricky
 
@@ -294,8 +291,8 @@ Same commit:
    (linking back if related).
 4. If shipping uncovered a trap that bit you during implementation, write
    a `pitfalls/<slug>.md` for it — don't let it evaporate.
-5. If `scripts/todo-kanban.sh` exists, run it before finishing so the updated
-   `TODO.md` is still parseable.
+5. Run this skill's bundled `scripts/todo-kanban.sh` before finishing so the
+   updated `TODO.md` is still parseable.
 
 ## Anti-patterns to avoid
 
@@ -318,9 +315,10 @@ Same commit:
 - **Auto-redacting `backlog/` or `pitfalls/`** the way agent scratchpads
   are redacted. These are first-class docs you write deliberately; treat
   them like any other doc for secret review.
-- **TODO heading drift or free-form item syntax** after installing the validator.
-  If the repo uses `scripts/todo-kanban.sh`, keep the exact section order and
-  item forms it validates, or update the validator in the same change.
+- **TODO heading drift or free-form item syntax** after adopting the validator.
+  Keep the exact section order and item forms that this skill's
+  `scripts/todo-kanban.sh` validates, or update the validator and the
+  documented format in the same change.
 - **Letting `## Done` grow unbounded**. Prune into a `CHANGELOG.md` or similar
   once prior-year items appear or the section grows past ~20 entries, keeping
   recent entries for context.
@@ -334,9 +332,9 @@ See the `assets/` folder in this skill for:
 - `backlog-doc.md.template` — single backlog doc (context-first structure)
 - `pitfalls-README.md.template` — `pitfalls/` index + when-to-add-doc rules + cross-reference table for traps in other locations
 - `pitfall-doc.md.template` — single pitfall doc (symptom-first structure)
-- `todo-kanban.sh.template` — repo-local validator + Markdown kanban renderer for `TODO.md`
 - `agent-guidance.md.template` — snippet for `AGENTS.md` / `CLAUDE.md`, covers all three surfaces + upgrade-to-invariant path
 - `readme-roadmap.md.template` — snippet for project `README.md`, covers both forward (TODO/backlog) and backward (pitfalls) directions
+- `scripts/todo-kanban.sh` — bundled validator + Markdown kanban renderer for target-project `TODO.md`
 
 ## Reference implementation
 

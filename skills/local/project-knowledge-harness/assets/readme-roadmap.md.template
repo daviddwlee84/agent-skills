@@ -12,6 +12,3 @@ Backward-looking knowledge — past traps and non-obvious debugging — lives in
 [`pitfalls/`](pitfalls/), titled by symptom so future-you can grep the error
 message and land on the root cause + workaround instead of re-debugging from
 scratch.
-
-If this repo includes [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), run
-it to validate the `TODO.md` schema and render a kanban-style Markdown view.

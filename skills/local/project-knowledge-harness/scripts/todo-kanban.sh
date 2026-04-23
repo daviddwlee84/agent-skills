@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Keep this script compatible with macOS system Bash 3.2 so agents can drop it
-# into user repos without requiring a newer shell runtime.
+# Keep this script compatible with macOS system Bash 3.2 so agents can use the
+# bundled copy immediately after `npx skills` installation.
 
 usage() {
   cat <<'EOF'
