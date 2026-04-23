@@ -33,6 +33,7 @@ Makefile           # Convenience targets
 | Skill | Description |
 |-------|-------------|
 | [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant |
+| [backlog-harness](skills/local/backlog-harness/) | Set up TODO.md + backlog/ structure for long-term project ideas, paused troubleshooting, and design notes |
 
 ### Vendored
 
@@ -110,13 +111,19 @@ make sync-check
 
 ### Skills
 
-Skill Set
+#### Skill Set
+
+General
 
 - [vercel-labs/agent-skills: Vercel's official collection of agent skills](https://github.com/vercel-labs/agent-skills/tree/main)
-- [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
 - [mattpocock/skills: My personal directory of skills, straight from my .claude directory.](https://github.com/mattpocock/skills)
 - [anthropics/skills: Public repository for Agent Skills](https://github.com/anthropics/skills)
 - [anthropics/knowledge-work-plugins: Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork](https://github.com/anthropics/knowledge-work-plugins/tree/main)
+
+For Specific Framework
+
+- [marimo-team/skills: skills for coding agents related to marimo](https://github.com/marimo-team/skills)
+- [streamlit/agent-skills: A collection of agent skills for development of Streamlit apps.](https://github.com/streamlit/agent-skills)
 
 Single Skill
 

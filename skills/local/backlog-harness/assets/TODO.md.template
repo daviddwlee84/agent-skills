@@ -1,0 +1,48 @@
+# TODO
+
+Long-term backlog for <PROJECT NAME>. See <LINK TO PROJECT AGENT CONTRACT,
+e.g. AGENTS.md or CLAUDE.md> for maintenance rules.
+
+> **For agents**: when the user surfaces an idea explicitly **not** being implemented
+> this session (signals: "maybe later", "nice to have", "if I'm interested",
+> "工程量太大需要再評估", "先記下來"), add it here with priority + effort tags.
+> Do not create new `ROADMAP.md` / `IDEAS.md` / `BACKLOG.md` files — `TODO.md` is
+> the single backlog index. Long-form research goes in [`backlog/<slug>.md`](backlog/).
+
+## How to read this
+
+Each item carries two tags:
+
+- **Priority**: `P1` (next likely batch) · `P2` (worth doing) · `P3` (someday) · `P?` (needs evaluation first — spike before committing)
+- **Effort**: `S` (< 1h) · `M` (half day) · `L` (multi-day) · `XL` (architectural, design doc first)
+
+A trailing `→ [research](backlog/<slug>.md)` link means the item has accompanying
+investigation, design notes, or paused troubleshooting — read that first before
+re-investigating. Items without a link are simple enough to act on directly.
+
+When implementing an item, move it to the `## Done` section in the same commit
+with a one-line summary of what shipped.
+
+---
+
+## P1 — Likely next batch
+
+- [ ] **[S] Example small item** — short description with file paths if helpful.
+
+## P2 — Worth doing, no rush
+
+- [ ] **[M] Example medium item** — link to research if non-trivial. → [research](backlog/example-medium.md)
+
+## P3 — Someday / nice to have
+
+- [ ] **[S] Example deferred item** — low signal-to-effort, but easy.
+
+## P? — Needs evaluation before committing
+
+- [ ] **[?/L] Example evaluation item** — what spike would answer the question? → [research](backlog/example-evaluation.md)
+
+---
+
+## Done (recent, kept for context — older items pruned)
+
+- ✅ **Example shipped item** — one-line summary of what landed and where.
