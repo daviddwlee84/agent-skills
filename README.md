@@ -27,8 +27,10 @@ skills/
   vendor/          # 3rd-party skills synced from upstream repos
 vendor.yaml        # Manifest tracking upstream sources
 scripts/
-  add-vendor.sh    # Add 3rd-party skills
-  sync-vendor.sh   # Sync script for vendored skills
+  add-vendor.sh      # Add 3rd-party skills
+  sync-vendor.sh     # Sync script for vendored skills
+  todo-kanban.sh     # Validate TODO.md and render kanban-style board
+  promote-todo.sh    # Move an active TODO item to ## Done with re-validation
 Makefile           # Convenience targets
 ```
 
@@ -45,16 +47,26 @@ work stays in `TODO.md` under `## Done` until it is large enough to prune into a
 future `CHANGELOG.md`.
 
 To render a validated board view for the current backlog, run `make kanban` or
-[`./scripts/todo-kanban.sh`](scripts/todo-kanban.sh).
+[`./scripts/todo-kanban.sh`](scripts/todo-kanban.sh). When implementing a TODO
+item, run [`./scripts/promote-todo.sh`](scripts/promote-todo.sh) so the move
+into `## Done` is atomic and re-validated.
+
+Both scripts originate from
+[`skills/local/project-knowledge-harness`](skills/local/project-knowledge-harness/);
+applying that skill to another project is a one-shot via
+`skills/local/project-knowledge-harness/scripts/init.sh --target /path/to/repo`.
 
 ## Available Skills
 
+Local skills are documented in detail under [`docs/`](docs/) — what each
+skill is for, when it triggers, and how to use any bundled scripts.
+
 ### Local
 
-| Skill | Description |
-|-------|-------------|
-| [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant |
-| [project-knowledge-harness](skills/local/project-knowledge-harness/) | Set up TODO.md + backlog/ + pitfalls/ structure for project memory, plus a bundled todo-kanban validator/board view |
+| Skill | Description | Detailed doc |
+|-------|-------------|--------------|
+| [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant | [docs](docs/quantatitive-factor-researcher.md) |
+| [project-knowledge-harness](skills/local/project-knowledge-harness/) | Set up TODO.md + backlog/ + pitfalls/ structure for project memory, plus a bundled init / kanban / promote toolkit | [docs](docs/project-knowledge-harness.md) |
 
 ### Vendored
 

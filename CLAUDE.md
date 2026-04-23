@@ -54,11 +54,15 @@ fixed section order `P1`, `P2`, `P3`, `P?`, `Done`.
 `TODO.md` is parsed by [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), so
 do not invent alternate headings, nested bullets, or ad hoc checkbox formats.
 
-When implementing a TODO item, in the same commit:
+When implementing a TODO item, in the same commit run:
 
-1. Move it to `## Done`
-2. Rewrite it as `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
-3. Mark the related `backlog/<slug>.md` as shipped if one exists
+```
+scripts/promote-todo.sh --title "<substring>" --summary "<one-line shipped summary>"
+```
+
+That moves the matched active item into `## Done` with the dated `Done`
+syntax and re-validates the file. If a `backlog/<slug>.md` exists for the
+item, also mark it as shipped (don't delete — keep it as historical record).
 
 Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
 when it contains items from a previous calendar year or grows past 20 entries.
