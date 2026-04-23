@@ -99,6 +99,7 @@ nav:
       - project-knowledge-harness: skills/project-knowledge-harness.md
       - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
       - skill-author: skills/skill-author.md
+      - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
   - Reference:
       - TODO format: reference/todo-format.md
       - Tag schema: reference/tag-schema.md

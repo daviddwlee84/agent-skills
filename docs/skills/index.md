@@ -12,6 +12,7 @@ manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
 | [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls structure with a bundled validator/init/promote toolkit | [docs](project-knowledge-harness.md) |
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
 | [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
+| [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
 
 ## Vendored skills
 
