@@ -25,8 +25,10 @@ npx skills@latest add daviddwlee84/agent-skills/skills
   - [`quantatitive-factor-researcher`](skills/local/quantatitive-factor-researcher/) — Python quant-research persona. ([docs](https://daviddwlee84.github.io/agent-skills/skills/quantatitive-factor-researcher/))
   - [`skill-author`](skills/local/skill-author/) — Author new skills following [agentskills.io](https://agentskills.io/skill-creation/best-practices) best practices; ships `new-skill.sh` scaffolder and `lint-skill.sh` linter. ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-author/))
   - [`mkdocs-site-bootstrap`](skills/local/mkdocs-site-bootstrap/) — Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated via `.skills/preferences.yaml`; ongoing `add-docs-page.sh` helper. ([docs](https://daviddwlee84.github.io/agent-skills/skills/mkdocs-site-bootstrap/))
+  - [`marimo-batch-mlflow`](skills/local/marimo-batch-mlflow/) — Opinionated fork of upstream `marimo-batch`: Tyro CLI (dataclass or Pydantic) + MLflow tracking + live `mlflow-widgets` chart, dual-mode (`mo.app_meta().mode == "script"`) UI/CLI from one notebook. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-batch-mlflow/))
 - **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml).
   - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills).
+  - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
 
 ## Repo memory
 
