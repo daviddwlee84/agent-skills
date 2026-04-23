@@ -33,7 +33,7 @@ Makefile           # Convenience targets
 | Skill | Description |
 |-------|-------------|
 | [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant |
-| [backlog-harness](skills/local/backlog-harness/) | Set up TODO.md + backlog/ structure for long-term project ideas, paused troubleshooting, and design notes |
+| [project-knowledge-harness](skills/local/project-knowledge-harness/) | Set up TODO.md + backlog/ + pitfalls/ structure for project memory — future ideas, paused research, and past debugging traps |
 
 ### Vendored
 
