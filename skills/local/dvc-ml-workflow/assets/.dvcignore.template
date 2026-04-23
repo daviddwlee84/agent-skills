@@ -1,0 +1,30 @@
+# Files matching these patterns are ignored by dvc add / dvc commit / dvc status.
+# Syntax mirrors .gitignore.
+# Docs: https://dvc.org/doc/user-guide/project-structure/dvcignore-files
+
+# Notebooks (let git handle them; .ipynb diffs are messy in cache)
+*.ipynb
+.ipynb_checkpoints/
+
+# Python build/cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Common scratch dirs
+scratch/
+tmp/
+.tmp/
+
+# Logs (use stage outputs with `cache: false` if you want them in git)
+*.log
+logs/

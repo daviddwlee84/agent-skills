@@ -1,0 +1,28 @@
+# Hyperparameters consumed by dvc.yaml stages.
+#
+# Override at run time with -S:
+#   dvc exp run -S model.lr=1e-3 -S train.batch_size=64
+#
+# Sweep with the queue:
+#   dvc exp run --queue -S model.lr=1e-4
+#   dvc exp run --queue -S model.lr=5e-4
+#   dvc queue start --jobs 2
+#
+# Docs: https://dvc.org/doc/user-guide/experiment-management/hydra-composition
+
+data:
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  seed: 42
+
+model:
+  arch: resnet18
+  lr: 1.0e-4
+  epochs: 25
+  weight_decay: 1.0e-5
+
+train:
+  batch_size: 32
+  num_workers: 4
+  early_stopping_patience: 5

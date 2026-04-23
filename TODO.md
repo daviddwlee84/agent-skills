@@ -60,3 +60,7 @@ workflow that agents should follow.
 - [ ] **[?/M] marimo-batch-pydantic-only variant skill** — If usage shows people want strict Pydantic validation + Field descriptions WITHOUT Tyro overhead (e.g., embedded in larger app where Tyro's argparse takeover is unwanted), spin off a marimo-batch-pydantic skill that uses pydantic + a thin click/typer CLI instead. Decide based on whether marimo-batch-mlflow's Pydantic alternative section gets requested standalone.
 
 ## Done
+
+- ✅ [2026-04-23] [P2/L] Author mlflow-tracking skill — MLflow skill: SKILL.md + 6 references (sqlite-local, docker-compose-server, llm-tracing, model-registry, autologging-by-framework, mlflow-widgets) + 3 scripts (init-sqlite/start-server/tail-runs) + vendored docker-compose-stack assets. Lint clean.
+
+- ✅ [2026-04-23] [P2/L] Author dvc-ml-workflow skill — DVC skill: SKILL.md + 4 references (pipelines, experiments-queue, data-remotes, plots-metrics) + 3 scripts (init/queue-helper/lint) + 3 templates. Lint clean.

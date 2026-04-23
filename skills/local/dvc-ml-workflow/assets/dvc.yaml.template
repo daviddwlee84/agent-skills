@@ -1,0 +1,37 @@
+# DVC pipeline template — minimal 2-stage ML workflow.
+#
+# Edit cmds, deps, and outs to match your project. Add more stages with:
+#   dvc stage add -n <name> -d <dep> -o <out> <cmd>
+#
+# Docs: https://dvc.org/doc/user-guide/project-structure/dvcyaml-files
+
+stages:
+  featurize:
+    cmd: python src/featurize.py
+    deps:
+      - src/featurize.py
+      - data/raw
+    outs:
+      - data/features
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/features
+    params:
+      # Subset of params.yaml this stage depends on (dot-notation).
+      # If any of these change, dvc repro re-runs `train`.
+      - model.lr
+      - model.epochs
+      - train.batch_size
+    outs:
+      - models/best.pt
+    metrics:
+      - metrics.json:
+          cache: false
+    plots:
+      - plots.csv:
+          cache: false
+          x: epoch
+          y: [train_loss, val_loss]
