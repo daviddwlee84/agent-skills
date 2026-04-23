@@ -11,6 +11,14 @@ priority + effort tags (`P1`/`P2`/`P3`/`P?` × `S`/`M`/`L`/`XL`). Do **not**
 create new `ROADMAP.md` / `IDEAS.md` / `BACKLOG.md` files — `TODO.md` is the
 single index.
 
+Keep the exact section order `P1`, `P2`, `P3`, `P?`, `Done`. Item syntax:
+
+- `P1` / `P2` / `P3`: `- [ ] **[M] Title** — description` where the effort is
+  one of `S`, `M`, `L`, or `XL`
+- `P?`: `- [ ] **[?/L] Title** — description` where the effort is one of `S`,
+  `M`, `L`, or `XL`
+- `Done`: `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
+
 Add a `backlog/<slug>.md` companion doc when the item meets any of:
 
 - carries a `P?` tag (record what was tried so it doesn't need re-investigation)
@@ -25,10 +33,12 @@ template and "when to add a doc" rules.
 
 When implementing a `TODO.md` item, in the same commit:
 
-1. Move the entry to the `## Done` section with a one-line summary.
+1. Move the entry to the `## Done` section using the dated `Done` syntax above.
 2. Mark the corresponding `backlog/<slug>.md` (if any) `Status: shipped` and
    keep it as a historical record (don't delete — future-you may revisit
    adjacent decisions).
+3. If the repo includes `scripts/todo-kanban.sh`, run it after editing
+   `TODO.md` so future agents do not inherit syntax drift.
 
 `backlog/` is excluded from <DEPLOYMENT MECHANISM> (see <IGNORE FILE>); it is
 repo metadata for maintainers, not user-facing config to deploy.
@@ -58,3 +68,12 @@ invariant.
 
 `pitfalls/` is excluded from <DEPLOYMENT MECHANISM> (see <IGNORE FILE>) and
 **not** auto-redacted; review for secrets before committing.
+
+### Optional validator / board view → `scripts/todo-kanban.sh`
+
+If this repo includes [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), treat
+it as the source of truth for `TODO.md` syntax. The script validates heading
+order and item format before rendering a kanban-style Markdown board.
+
+Prefer adding a `kanban` task in the host repo's task runner when one already
+exists; otherwise direct script invocation is enough.

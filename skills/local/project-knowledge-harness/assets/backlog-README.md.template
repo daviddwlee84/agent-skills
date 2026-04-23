@@ -6,7 +6,8 @@ the TODO entry.
 
 ## Why this exists
 
-`TODO.md` is the **index** — short titles with priority/effort tags. This folder
+`TODO.md` is the **index** — short titles grouped by priority section with
+effort tags. This folder
 is the **knowledge base** — the actual investigation, options considered,
 benchmarks, error messages, and decisions that informed the TODO entry. The goal
 is **resume-friendliness**: when you (or an agent) come back to an item three

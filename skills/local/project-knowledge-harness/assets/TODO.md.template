@@ -8,41 +8,47 @@ e.g. AGENTS.md or CLAUDE.md> for maintenance rules.
 > "工程量太大需要再評估", "先記下來"), add it here with priority + effort tags.
 > Do not create new `ROADMAP.md` / `IDEAS.md` / `BACKLOG.md` files — `TODO.md` is
 > the single backlog index. Long-form research goes in [`backlog/<slug>.md`](backlog/).
+> If this repo includes `scripts/todo-kanban.sh`, run it after editing
+> `TODO.md` so syntax drift is caught before another agent parses the file.
 
 ## How to read this
 
-Each item carries two tags:
+Use the exact section order below: `P1`, `P2`, `P3`, `P?`, `Done`.
 
-- **Priority**: `P1` (next likely batch) · `P2` (worth doing) · `P3` (someday) · `P?` (needs evaluation first — spike before committing)
-- **Effort**: `S` (< 1h) · `M` (half day) · `L` (multi-day) · `XL` (architectural, design doc first)
+Every active item must use one of these forms:
 
-A trailing `→ [research](backlog/<slug>.md)` link means the item has accompanying
-investigation, design notes, or paused troubleshooting — read that first before
-re-investigating. Items without a link are simple enough to act on directly.
+- In `P1` / `P2` / `P3`: `- [ ] **[M] Title** — description` where the effort
+  is one of `S`, `M`, `L`, or `XL`
+- In `## P?`: `- [ ] **[?/L] Title** — description` where the effort is one of
+  `S`, `M`, `L`, or `XL`
 
-When implementing an item, move it to the `## Done` section in the same commit
-with a one-line summary of what shipped.
+A trailing `→ [research](backlog/<slug>.md)` link means the item has
+accompanying investigation, design notes, or paused troubleshooting.
+
+When implementing an item, move it to `## Done` in the same commit using:
+
+- `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
 
 ---
 
-## P1 — Likely next batch
+## P1
 
 - [ ] **[S] Example small item** — short description with file paths if helpful.
 
-## P2 — Worth doing, no rush
+## P2
 
 - [ ] **[M] Example medium item** — link to research if non-trivial. → [research](backlog/example-medium.md)
 
-## P3 — Someday / nice to have
+## P3
 
 - [ ] **[S] Example deferred item** — low signal-to-effort, but easy.
 
-## P? — Needs evaluation before committing
+## P?
 
 - [ ] **[?/L] Example evaluation item** — what spike would answer the question? → [research](backlog/example-evaluation.md)
 
 ---
 
-## Done (recent, kept for context — older items pruned)
+## Done
 
-- ✅ **Example shipped item** — one-line summary of what landed and where.
+- ✅ [2026-04-23] [P1/M] Example shipped item — one-line summary of what landed and where.

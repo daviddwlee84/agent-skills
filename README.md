@@ -54,7 +54,7 @@ To render a validated board view for the current backlog, run `make kanban` or
 | Skill | Description |
 |-------|-------------|
 | [quantatitive-factor-researcher](skills/local/quantatitive-factor-researcher/) | Quantitative factor research assistant |
-| [project-knowledge-harness](skills/local/project-knowledge-harness/) | Set up TODO.md + backlog/ + pitfalls/ structure for project memory — future ideas, paused research, and past debugging traps |
+| [project-knowledge-harness](skills/local/project-knowledge-harness/) | Set up TODO.md + backlog/ + pitfalls/ structure for project memory, plus an optional todo-kanban validator/board view |
 
 ### Vendored
 

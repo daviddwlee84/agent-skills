@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Keep this script compatible with macOS system Bash 3.2 so agents can drop it
+# into user repos without requiring a newer shell runtime.
+
+usage() {
+  cat <<'EOF'
+Usage: todo-kanban.sh [TODO_FILE]
+
+Validate a TODO.md file that follows the project-knowledge-harness template and
+render a kanban-like Markdown board.
+
+Checks performed before rendering:
+  - heading order must be: P1, P2, P3, P?, Done
+  - active items must use: - [ ] **[Effort] Title** — description
+  - P? items must use:     - [ ] **[?/Effort] Title** — description
+  - Done items must use:   - ✅ [YYYY-MM-DD] [P#/Effort] Title — summary
+
+If validation fails, the script exits non-zero and reports the offending line.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $# -gt 1 ]]; then
+  usage >&2
+  exit 1
+fi
+
+todo_file="${1:-TODO.md}"
+
+if [[ ! -f "$todo_file" ]]; then
+  echo "Error: file not found: $todo_file" >&2
+  exit 1
+fi
+
+error() {
+  local line_no="$1"
+  local message="$2"
+  echo "Syntax error in $todo_file:$line_no: $message" >&2
+  exit 1
+}
+
+append_item() {
+  local section_index="$1"
+  local item="$2"
+  if [[ -n "${section_items[$section_index]}" ]]; then
+    section_items[$section_index]+=$'\n'
+  fi
+  section_items[$section_index]+="$item"
+  section_counts[$section_index]=$((section_counts[$section_index] + 1))
+}
+
+validate_active_item() {
+  local section="$1"
+  local line="$2"
+  local regex
+
+  if [[ "$section" == "P?" ]]; then
+    regex='^- \[ \] \*\*\[\?/(S|M|L|XL)\] .+\*\* — .+( → \[research\]\(backlog/[a-z0-9][a-z0-9-]*\.md\))?$'
+  else
+    regex='^- \[ \] \*\*\[(S|M|L|XL)\] .+\*\* — .+( → \[research\]\(backlog/[a-z0-9][a-z0-9-]*\.md\))?$'
+  fi
+
+  [[ "$line" =~ $regex ]]
+}
+
+validate_done_item() {
+  local line="$1"
+  local regex='^- ✅ \[[0-9]{4}-[0-9]{2}-[0-9]{2}\] \[(P1|P2|P3|P\?)/(S|M|L|XL)\] .+ — .+$'
+  [[ "$line" =~ $regex ]]
+}
+
+render_section() {
+  local section_index="$1"
+  local section="${expected_sections[$section_index]}"
+  local count="${section_counts[$section_index]}"
+
+  printf '## %s (%s)\n\n' "$section" "$count"
+  if [[ "$count" -eq 0 ]]; then
+    printf '_No items._\n\n'
+    return
+  fi
+
+  printf '%s\n\n' "${section_items[$section_index]}"
+}
+
+declare -a expected_sections=("P1" "P2" "P3" "P?" "Done")
+declare -a section_items=()
+declare -a section_counts=()
+
+for ((i = 0; i < ${#expected_sections[@]}; i++)); do
+  section_items[$i]=""
+  section_counts[$i]=0
+done
+
+title_seen=0
+current_section=""
+current_section_index=-1
+section_index=0
+line_no=0
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line_no=$((line_no + 1))
+
+  if [[ "$line" == "# TODO" ]]; then
+    if [[ "$title_seen" -eq 1 ]]; then
+      error "$line_no" "duplicate '# TODO' heading"
+    fi
+    title_seen=1
+    continue
+  fi
+
+  if [[ "$line" =~ ^##[[:space:]] ]]; then
+    if [[ "$section_index" -ge "${#expected_sections[@]}" ]]; then
+      error "$line_no" "unexpected extra section heading '$line'"
+    fi
+
+    expected_heading="## ${expected_sections[$section_index]}"
+    if [[ "$line" != "$expected_heading" ]]; then
+      error "$line_no" "expected section heading '$expected_heading'"
+    fi
+
+    current_section="${expected_sections[$section_index]}"
+    current_section_index=$section_index
+    section_index=$((section_index + 1))
+    continue
+  fi
+
+  if [[ "$line" =~ ^#[^#] ]]; then
+    error "$line_no" "unexpected top-level heading '$line'"
+  fi
+
+  if [[ -z "$current_section" ]]; then
+    continue
+  fi
+
+  if [[ -z "$line" ]]; then
+    continue
+  fi
+
+  if [[ "$line" == "---" ]]; then
+    continue
+  fi
+
+  if [[ "$line" =~ ^- ]]; then
+    if [[ "$current_section" == "Done" ]]; then
+      if ! validate_done_item "$line"; then
+        error "$line_no" "Done item must use '- ✅ [YYYY-MM-DD] [P#/Effort] Title — summary'"
+      fi
+    else
+      if ! validate_active_item "$current_section" "$line"; then
+        if [[ "$current_section" == "P?" ]]; then
+          error "$line_no" "P? item must use '- [ ] **[?/Effort] Title** — description'"
+        fi
+        error "$line_no" "active item must use '- [ ] **[Effort] Title** — description'"
+      fi
+    fi
+
+    append_item "$current_section_index" "$line"
+    continue
+  fi
+
+  error "$line_no" "unexpected content inside section '$current_section'"
+done < "$todo_file"
+
+if [[ "$title_seen" -eq 0 ]]; then
+  error 1 "missing '# TODO' heading"
+fi
+
+if [[ "$section_index" -ne "${#expected_sections[@]}" ]]; then
+  missing="${expected_sections[$section_index]}"
+  error "$line_no" "missing section heading '## $missing'"
+fi
+
+printf '# TODO Kanban\n\n'
+printf '_Source: `%s`_\n\n' "$todo_file"
+printf '| Lane | Count |\n'
+printf '|---|---:|\n'
+for ((section_index = 0; section_index < ${#expected_sections[@]}; section_index++)); do
+  printf '| `%s` | %s |\n' "${expected_sections[$section_index]}" "${section_counts[$section_index]}"
+done
+printf '\n'
+
+for ((section_index = 0; section_index < ${#expected_sections[@]}; section_index++)); do
+  render_section "$section_index"
+done
