@@ -23,6 +23,7 @@ npx skills@latest add daviddwlee84/agent-skills/skills
 - **`skills/local/`** — custom-authored skills.
   - [`project-knowledge-harness`](skills/local/project-knowledge-harness/) — TODO + backlog + pitfalls structure with init / kanban / promote / add-todo / sweep-inbox toolkit. ([docs](https://daviddwlee84.github.io/agent-skills/skills/project-knowledge-harness/))
   - [`quantatitive-factor-researcher`](skills/local/quantatitive-factor-researcher/) — Python quant-research persona. ([docs](https://daviddwlee84.github.io/agent-skills/skills/quantatitive-factor-researcher/))
+  - [`skill-author`](skills/local/skill-author/) — Author new skills following [agentskills.io](https://agentskills.io/skill-creation/best-practices) best practices; ships `new-skill.sh` scaffolder and `lint-skill.sh` linter. ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-author/))
 - **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml).
   - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills).
 
@@ -85,6 +86,15 @@ Deployed automatically to GitHub Pages on push to `main` via [`.github/workflows
 If you want to apply the same docs stack to your own project, see [Downstream docs stack recipe](https://daviddwlee84.github.io/agent-skills/reference/docs-stack-recipe/).
 
 ## Adding a new local skill
+
+Use the bundled scaffolder (recommended — seeds the agentskills.io best-practice template):
+
+```bash
+bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
+```
+
+Or with the upstream init:
 
 ```bash
 cd skills/local
