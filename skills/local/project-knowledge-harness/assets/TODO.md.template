@@ -9,7 +9,7 @@ e.g. AGENTS.md or CLAUDE.md> for maintenance rules.
 > Do not create new `ROADMAP.md` / `IDEAS.md` / `BACKLOG.md` files — `TODO.md` is
 > the single backlog index. Long-form research goes in [`backlog/<slug>.md`](backlog/).
 
-## How to read this
+How to read this:
 
 Use the exact section order below: `P1`, `P2`, `P3`, `P?`, `Done`.
 
