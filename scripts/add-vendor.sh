@@ -22,12 +22,14 @@ Examples:
   $(basename "$0") vercel-labs/agent-skills/skills/next-js
   $(basename "$0") --name my-skill --branch dev owner/repo/skills/my-skill
   $(basename "$0") --no-sync owner/repo/skills/some-skill
+  $(basename "$0") --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
 
 Options:
-  --name NAME    Override the skill name (default: last path component)
+  --name NAME      Override the skill name (default: last path component)
+  --series SERIES  Group under skills/vendor/<series>/<name>/ (default: flat)
   --branch BRANCH  Upstream branch (default: main)
-  --no-sync      Only add to vendor.yaml, don't sync immediately
-  -h, --help     Show this help message
+  --no-sync        Only add to vendor.yaml, don't sync immediately
+  -h, --help       Show this help message
 
 Dependencies: gh (GitHub CLI), yq (YAML processor)
 EOF
@@ -96,6 +98,7 @@ parse_source() {
 
 main() {
   local opt_name=""
+  local opt_series=""
   OPT_BRANCH="main"
   OPT_BRANCH_SET=""
   local opt_sync=true
@@ -104,6 +107,7 @@ main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --name) opt_name="$2"; shift 2 ;;
+      --series) opt_series="$2"; shift 2 ;;
       --branch) OPT_BRANCH="$2"; OPT_BRANCH_SET=1; shift 2 ;;
       --no-sync) opt_sync=false; shift ;;
       -h|--help) usage; exit 0 ;;
@@ -163,6 +167,9 @@ main() {
       \"commit\": \"\"
     }
   }]" "$VENDOR_YAML"
+  if [[ -n "$opt_series" ]]; then
+    yq -i ".skills[-1].series = \"$opt_series\"" "$VENDOR_YAML"
+  fi
   echo -e "${GREEN}done${NC}"
 
   if [[ "$opt_sync" == "true" ]]; then

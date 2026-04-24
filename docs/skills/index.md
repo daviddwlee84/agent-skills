@@ -32,12 +32,37 @@ don't cover, or because the upstream is the canonical authority on the
 topic. The linked detail page shows what each skill teaches, upstream
 provenance, and last-sync commit is tracked in `vendor.yaml`.
 
+Vendored skills can be **flat** (`skills/vendor/<name>/`) or grouped into
+a **series** (`skills/vendor/<series>/<name>/`). See
+[Adding vendor skills](../workflows/adding-vendor-skills.md#series-grouping)
+for how series work.
+
+### Flat (notebooks + meta)
+
 | Skill | Upstream | Detailed page |
 |---|---|---|
 | [`marimo-notebook`](marimo-notebook.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook) | [docs](marimo-notebook.md) |
 | [`streamlit-to-marimo`](streamlit-to-marimo.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo) | [docs](streamlit-to-marimo.md) |
 | [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
 | [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
+
+### Fullstack Next.js series
+
+`series: fullstack-nextjs` — Next.js (App Router) + Supabase (Postgres) +
+shadcn/ui + Tailwind CSS + design/testing skills. All from official orgs
+(Vercel, vercel-labs, Supabase, Anthropic).
+
+| Skill | Upstream | Detailed page |
+|---|---|---|
+| [`nextjs`](nextjs.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs) | [docs](nextjs.md) |
+| [`shadcn`](shadcn.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn) | [docs](shadcn.md) |
+| [`react-best-practices`](react-best-practices.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/react-best-practices) | [docs](react-best-practices.md) |
+| [`vercel-storage`](vercel-storage.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/vercel-storage) | [docs](vercel-storage.md) |
+| [`supabase`](supabase.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase) | [docs](supabase.md) |
+| [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices) | [docs](supabase-postgres-best-practices.md) |
+| [`web-design-guidelines`](web-design-guidelines.md) | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines) | [docs](web-design-guidelines.md) |
+| [`frontend-design`](frontend-design.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | [docs](frontend-design.md) |
+| [`webapp-testing`](webapp-testing.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/webapp-testing) | [docs](webapp-testing.md) |
 
 For the rules every local skill follows (layout, naming, scripts,
 references), see [Conventions](../conventions.md). For how vendoring

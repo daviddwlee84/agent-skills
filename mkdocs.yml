@@ -109,6 +109,16 @@ nav:
           - streamlit-to-marimo: skills/streamlit-to-marimo.md
           - anywidget: skills/anywidget.md
           - skill-creator: skills/skill-creator.md
+          - Fullstack Next.js:
+              - nextjs: skills/nextjs.md
+              - shadcn: skills/shadcn.md
+              - supabase: skills/supabase.md
+              - supabase-postgres-best-practices: skills/supabase-postgres-best-practices.md
+              - react-best-practices: skills/react-best-practices.md
+              - vercel-storage: skills/vercel-storage.md
+              - web-design-guidelines: skills/web-design-guidelines.md
+              - frontend-design: skills/frontend-design.md
+              - webapp-testing: skills/webapp-testing.md
   - Reference:
       - TODO format: reference/todo-format.md
       - Tag schema: reference/tag-schema.md

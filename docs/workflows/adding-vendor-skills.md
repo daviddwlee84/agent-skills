@@ -16,6 +16,9 @@ SHA, so re-syncing is reproducible.
 ./scripts/add-vendor.sh vercel-labs/agent-skills/skills/next-js
 ./scripts/add-vendor.sh --name my-name --branch dev owner/repo/skills/some-skill
 
+# Group into a series subdir
+./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+
 # Or via Makefile
 make add-vendor SOURCE=owner/repo/path/to/skill
 
@@ -28,6 +31,34 @@ syncs the skill immediately. Pass `--no-sync` to only add the entry without
 downloading.
 
 **Dependencies:** `gh` (GitHub CLI, authenticated) and `yq` (YAML processor).
+
+## Series grouping
+
+When you're vendoring a coherent set of skills around a single tech stack
+(e.g. Next.js + Supabase + shadcn), pass `--series <name>` so the skills
+land in `skills/vendor/<series>/<name>/` instead of being flat. The
+`series` field is recorded in `vendor.yaml` and honored by `sync-vendor.sh`.
+
+```yaml
+# vendor.yaml
+- name: nextjs
+  series: fullstack-nextjs              # ← optional, omit for flat layout
+  upstream:
+    owner: vercel
+    repo: vercel-plugin
+    path: skills/nextjs
+    branch: main
+  last_sync: { date: "...", commit: "..." }
+```
+
+This results in `skills/vendor/fullstack-nextjs/nextjs/SKILL.md`. The
+`npx skills@latest add` discovery does a 5-level fallback recursive
+search, so series subdirs are still discovered.
+
+Existing flat entries (no `series` field) keep working unchanged. Active
+series in this repo:
+
+- **`fullstack-nextjs`** — see [Skills overview > Fullstack Next.js series](../skills/index.md#fullstack-nextjs-series)
 
 ## Manual config
 

@@ -37,3 +37,93 @@ skills:
     last_sync:
       date: "2026-04-23T10:40:25Z"
       commit: "0add481fb753a3695ba3d0d0a91bdf72f5626506"
+  - name: nextjs
+    upstream:
+      owner: vercel
+      repo: vercel-plugin
+      path: skills/nextjs
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:12:43Z"
+      commit: "c2d6e61dd0a65e3ba9339861b078c5a823711ce3"
+    series: fullstack-nextjs
+  - name: shadcn
+    upstream:
+      owner: vercel
+      repo: vercel-plugin
+      path: skills/shadcn
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:13:05Z"
+      commit: "7a73b567913d04fc7704d3a5c0b822aa26e072ee"
+    series: fullstack-nextjs
+  - name: react-best-practices
+    upstream:
+      owner: vercel
+      repo: vercel-plugin
+      path: skills/react-best-practices
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:17:06Z"
+      commit: "44d8248160eb808bef1fbe543aeb2319854bb693"
+    series: fullstack-nextjs
+  - name: vercel-storage
+    upstream:
+      owner: vercel
+      repo: vercel-plugin
+      path: skills/vercel-storage
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:17:15Z"
+      commit: "8e24d0694a31e85be951167e59e0dc9913c05073"
+    series: fullstack-nextjs
+  - name: supabase
+    upstream:
+      owner: supabase
+      repo: agent-skills
+      path: skills/supabase
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:17:28Z"
+      commit: "7c2e3894fddfde8eb6c77d2a8921904543b9be7a"
+    series: fullstack-nextjs
+  - name: supabase-postgres-best-practices
+    upstream:
+      owner: supabase
+      repo: agent-skills
+      path: skills/supabase-postgres-best-practices
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:18:25Z"
+      commit: "7a646f8812ec8d21cc8735d5b3fe67c9b5e665db"
+    series: fullstack-nextjs
+  - name: web-design-guidelines
+    upstream:
+      owner: vercel-labs
+      repo: agent-skills
+      path: skills/web-design-guidelines
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:18:33Z"
+      commit: "ba46938889d4e58635362fb8f618e1178ac3ec46"
+    series: fullstack-nextjs
+  - name: frontend-design
+    upstream:
+      owner: anthropics
+      repo: skills
+      path: skills/frontend-design
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:18:46Z"
+      commit: "00756142ab04c82a447693cf373c4e0c554d1005"
+    series: fullstack-nextjs
+  - name: webapp-testing
+    upstream:
+      owner: anthropics
+      repo: skills
+      path: skills/webapp-testing
+      branch: main
+    last_sync:
+      date: "2026-04-24T05:19:05Z"
+      commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
+    series: fullstack-nextjs

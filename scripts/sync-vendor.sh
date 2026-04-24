@@ -103,8 +103,9 @@ download_tree() {
 sync_skill() {
   local idx="$1" check_only="${2:-false}"
 
-  local name owner repo path branch last_commit
+  local name series owner repo path branch last_commit
   name=$(skill_field "$idx" "name")
+  series=$(skill_field "$idx" "series")
   owner=$(skill_field "$idx" "upstream.owner")
   repo=$(skill_field "$idx" "upstream.repo")
   path=$(skill_field "$idx" "upstream.path")
@@ -113,6 +114,7 @@ sync_skill() {
 
   # Normalize yq null to empty
   [[ "$last_commit" == "null" || "$last_commit" == '""' ]] && last_commit=""
+  [[ "$series" == "null" || "$series" == '""' ]] && series=""
 
   echo -n "Checking $name ($owner/$repo)... "
 
@@ -136,7 +138,12 @@ sync_skill() {
 
   echo -e "${YELLOW}syncing...${NC}"
 
-  local dest="$VENDOR_DIR/$name"
+  local dest
+  if [[ -n "$series" ]]; then
+    dest="$VENDOR_DIR/$series/$name"
+  else
+    dest="$VENDOR_DIR/$name"
+  fi
   # Clean existing and re-download
   rm -rf "$dest"
   download_tree "$owner" "$repo" "$branch" "$path" "$dest"

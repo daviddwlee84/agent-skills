@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
 
-The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior.
+The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior — including vendor `series` subdirs (e.g. `skills/vendor/fullstack-nextjs/<name>/SKILL.md` at depth 4).
 
 ## Commands
 
@@ -23,6 +23,8 @@ make kanban
 # Add a new vendored skill (auto-syncs)
 ./scripts/add-vendor.sh owner/repo/path/to/skill
 ./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
+# Group under a series subdir (skills/vendor/<series>/<name>/)
+./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
 
 # Add a structured TODO entry (preferred over editing TODO.md by hand)
 ./scripts/add-todo.sh --priority P3 --effort M \
@@ -46,11 +48,14 @@ make docs-build     # produces ./site/
 
 ## Vendor System
 
-- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA)
-- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required)
-- `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates
+- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; entries without `series` stay flat at `skills/vendor/<name>/`
+- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations
+- `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates; pass `--series <name>` to group into a series subdir
 
 Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA.
+
+Active series in this repo:
+- `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
 
 ## SKILL.md Format
 

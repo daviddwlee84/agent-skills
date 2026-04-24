@@ -28,11 +28,22 @@ npx skills@latest add daviddwlee84/agent-skills/skills
   - [`marimo-batch-mlflow`](skills/local/marimo-batch-mlflow/) — Opinionated fork of upstream `marimo-batch`: Tyro CLI (dataclass or Pydantic) + MLflow tracking + live `mlflow-widgets` chart, dual-mode (`mo.app_meta().mode == "script"`) UI/CLI from one notebook. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-batch-mlflow/))
   - [`dvc-ml-workflow`](skills/local/dvc-ml-workflow/) — DVC ([treeverse/dvc](https://github.com/treeverse/dvc)) pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships `init-dvc-project.sh`, `queue-helper.sh` (with `grid` cartesian-product enqueue), `lint-dvcyaml.sh`. ([docs](https://daviddwlee84.github.io/agent-skills/skills/dvc-ml-workflow/))
   - [`mlflow-tracking`](skills/local/mlflow-tracking/) — Generic [MLflow](https://mlflow.org/docs/latest) skill: SQLite + `mlflow ui` for solo, vendored PostgreSQL + MinIO docker-compose stack for teams; covers LLM tracing, model registry (aliases), and autologging across all officially-supported frameworks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/mlflow-tracking/))
-- **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml). Do not edit these locally; `make sync` will clobber changes.
-  - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills); general marimo authoring conventions. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-notebook/))
-  - [`streamlit-to-marimo`](skills/vendor/streamlit-to-marimo/) — from [marimo-team/skills](https://github.com/marimo-team/skills); convert Streamlit apps to marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/streamlit-to-marimo/))
-  - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
-  - [`skill-creator`](skills/vendor/skill-creator/) — from [anthropics/skills](https://github.com/anthropics/skills); evaluate, benchmark, and optimize skill trigger descriptions. Complements local [`skill-author`](skills/local/skill-author/). ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-creator/))
+- **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml). Do not edit these locally; `make sync` will clobber changes. Skills can be flat (`skills/vendor/<name>/`) or grouped into a **series** (`skills/vendor/<series>/<name>/`).
+  - Flat:
+    - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills); general marimo authoring conventions. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-notebook/))
+    - [`streamlit-to-marimo`](skills/vendor/streamlit-to-marimo/) — from [marimo-team/skills](https://github.com/marimo-team/skills); convert Streamlit apps to marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/streamlit-to-marimo/))
+    - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
+    - [`skill-creator`](skills/vendor/skill-creator/) — from [anthropics/skills](https://github.com/anthropics/skills); evaluate, benchmark, and optimize skill trigger descriptions. Complements local [`skill-author`](skills/local/skill-author/). ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-creator/))
+  - Series **`fullstack-nextjs`** — Next.js (App Router) + Supabase (Postgres) + shadcn/ui + Tailwind CSS + design/testing skills, all from official orgs. See the [series overview](https://daviddwlee84.github.io/agent-skills/skills/#fullstack-next-js-series).
+    - [`nextjs`](skills/vendor/fullstack-nextjs/nextjs/) — Next.js App Router expert from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+    - [`shadcn`](skills/vendor/fullstack-nextjs/shadcn/) — shadcn/ui CLI + components from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+    - [`react-best-practices`](skills/vendor/fullstack-nextjs/react-best-practices/) — TSX reviewer (70+ rules) from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+    - [`vercel-storage`](skills/vendor/fullstack-nextjs/vercel-storage/) — Blob/Edge Config + Supabase/Prisma integration from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+    - [`supabase`](skills/vendor/fullstack-nextjs/supabase/) — full Supabase product surface from [supabase/agent-skills](https://github.com/supabase/agent-skills)
+    - [`supabase-postgres-best-practices`](skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/) — Postgres perf rules from [supabase/agent-skills](https://github.com/supabase/agent-skills)
+    - [`web-design-guidelines`](skills/vendor/fullstack-nextjs/web-design-guidelines/) — UI audit reviewer from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills)
+    - [`frontend-design`](skills/vendor/fullstack-nextjs/frontend-design/) — anti-AI-slop aesthetics from [anthropics/skills](https://github.com/anthropics/skills)
+    - [`webapp-testing`](skills/vendor/fullstack-nextjs/webapp-testing/) — Playwright toolkit from [anthropics/skills](https://github.com/anthropics/skills)
 
 ## Repo memory
 
@@ -66,6 +77,9 @@ Full workflow: [Project memory](https://daviddwlee84.github.io/agent-skills/work
 ./scripts/add-vendor.sh owner/repo/path/to/skill
 # or via Makefile
 make add-vendor SOURCE=owner/repo/path/to/skill
+
+# Group into a series subdir (skills/vendor/<series>/<name>/)
+./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
 
 # Sync all vendored skills from upstream
 make sync
