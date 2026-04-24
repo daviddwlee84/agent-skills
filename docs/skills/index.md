@@ -24,6 +24,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
 | [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |
+| [`agent-history-hygiene`](agent-history-hygiene.md) | Commit SpecStory transcripts + plan files with feature diffs; bootstrap pre-commit + gitleaks + redactor; rotate-first leak runbook | [docs](agent-history-hygiene.md) |
 
 ## Vendored skills
 
