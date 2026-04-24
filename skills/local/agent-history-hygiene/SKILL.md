@@ -249,6 +249,26 @@ committed / pushed a secret":
   rotate-first runbook for "I committed / pushed a secret". Read
   **before** any `git filter-repo` / `git push --force` action.
 
+## Tests
+
+The skill ships with a three-level test suite under
+[`tests/`](tests/README.md). Run from repo root:
+
+```bash
+make test-skill
+```
+
+- `test_redact_secrets.py` — pytest for pure redactor functions.
+- `test_gitleaks_corpus.py` — golden-corpus fixtures staged in tmp git
+  repos, asserting real-key shapes fire and example shapes are
+  allowlisted only inside configured artifact dirs.
+- `test_scan_staged.sh` — exit-code contract for
+  `scripts/scan-staged.sh` (0 / 20 / 30 / 2).
+
+The corpus + shell tests skip gracefully when `gitleaks` isn't on
+`PATH`. See [`tests/README.md`](tests/README.md) for what each
+regression the suite locks in.
+
 ## Related skills
 
 - [`project-knowledge-harness`](../project-knowledge-harness/SKILL.md)

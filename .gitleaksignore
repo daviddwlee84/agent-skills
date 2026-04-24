@@ -1,0 +1,16 @@
+# Gitleaks-ignore entries for the agent-skills repo.
+#
+# Format: one fingerprint or glob per line. See
+# https://github.com/gitleaks/gitleaks#gitleaksignore
+#
+# We intentionally check in fake realistic-shape test vectors for
+# agent-history-hygiene's gitleaks corpus test. They're scoped to the
+# skill's own tests/ directory and clearly labelled as fixtures.
+
+skills/local/agent-history-hygiene/tests/fixtures/real_anthropic.md:anthropic-api-key:6
+skills/local/agent-history-hygiene/tests/fixtures/real_openai.md:openai-project-key:9
+skills/local/agent-history-hygiene/tests/fixtures/private_key.md:private-key:7
+# The test files themselves quote the fixture content inside string
+# literals; same story.
+skills/local/agent-history-hygiene/tests/test_redact_secrets.py:private-key:70
+skills/local/agent-history-hygiene/tests/test_redact_secrets.py:private-key:142

@@ -210,11 +210,17 @@ def find_private_key_files(files: list[Path]) -> dict[Path, list[str]]:
 
 
 def redact_private_keys(file_path: Path) -> bool:
-    """Redact private key patterns in a file. Returns True if modified."""
+    """Redact private key patterns in a file. Returns True if modified.
+
+    The PEM-block placeholder must NOT contain the substring "PRIVATE
+    KEY", otherwise the follow-up literal replacement below would
+    corrupt it into "[REDACTED PRIV***KEY BLOCK]".
+    """
     content = read_text(file_path)
     original = content
-    # Replace full PEM blocks
-    content = _PEM_BLOCK_RE.sub("[REDACTED PRIVATE KEY BLOCK]", content)
+    # Replace full PEM blocks first, using a sentinel that won't be
+    # clobbered by the literal-string replacement on the next line.
+    content = _PEM_BLOCK_RE.sub("[REDACTED PEM PRIVKEY BLOCK]", content)
     # Replace remaining literal "PRIVATE KEY" mentions
     content = content.replace(_PRIVATE_KEY_STR, "PRIV***KEY")
     if content != original:

@@ -18,6 +18,11 @@ docs = [
   # snippets / superfences / tabbed extensions never silently disappear.
   "pymdown-extensions>=10.0",
 ]
+dev = [
+  # Test runner for agent-history-hygiene's pytest suite. See
+  # skills/local/agent-history-hygiene/tests/ and `make test-skill`.
+  "pytest>=8.0",
+]
 
 [tool.uv]
 package = false

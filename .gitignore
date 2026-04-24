@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Claude Code runtime state (settings.json + plans/ ARE committed; these
+# lock/state files are per-process and shouldn't be).
+.claude/scheduled_tasks.lock
+.claude/scheduled_tasks.json
