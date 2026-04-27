@@ -210,3 +210,10 @@ __marimo__/
 # lock/state files are per-process and shouldn't be).
 .claude/scheduled_tasks.lock
 .claude/scheduled_tasks.json
+
+# Pueue test-fixture leftovers — earlier conftest.py had a bug where an
+# unset PUEUE_TEST_DIR resolved to repo root and let pueued drop its
+# daemon state (shared_secret, TLS certs) here. Even with the fix, keep
+# this guard so a regression can't slip secrets into a commit.
+/state/
+/config/pueue.yml

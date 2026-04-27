@@ -105,6 +105,7 @@ nav:
           - dvc-ml-workflow: skills/dvc-ml-workflow.md
           - mlflow-tracking: skills/mlflow-tracking.md
           - agent-history-hygiene: skills/agent-history-hygiene.md
+          - pueue-job-queue: skills/pueue-job-queue.md
       - Vendored:
           - marimo-notebook: skills/marimo-notebook.md
           - streamlit-to-marimo: skills/streamlit-to-marimo.md

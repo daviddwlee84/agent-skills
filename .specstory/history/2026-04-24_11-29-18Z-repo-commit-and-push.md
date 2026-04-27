@@ -77,7 +77,7 @@ index 4ed95ec..c73a466 100644
  45	| `.opencode/plans/` | OpenCode plan files |
  46	
 -47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIV***KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
-+47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIV***KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
++47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIVATE KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
  48	
  49	When introducing a new coding-agent artifact directory that could contain secrets, add its prefix to `DEFAULT_PATHS` in `scripts/redact_secrets.py` **and** the `files:` regex of the `redact-agent-secrets` pre-commit hook.
  50	
@@ -86,13 +86,13 @@ index 4ed95ec..c73a466 100644
  154	# Matches actual PEM private key blocks
  155	_PEM_BLOCK_RE = re.compile(
 -156	    r"-----BEGIN[^-]*PRIV***KEY[^-]*-----.*?-----END[^-]*PRIV***KEY[^-]*-----",
-+156	    r"-----BEGIN[^-]*PRIV***KEY[^-]*-----.*?-----END[^-]*PRIV***KEY[^-]*-----",
++156	    r"-----BEGIN[^-]*PRIVATE KEY[^-]*-----.*?-----END[^-]*PRIVATE KEY[^-]*-----",
  157	    re.DOTALL,
  158	)
  159	
  160	# Matches the literal string the detect-private-key hook greps for
 -161	_PRIVATE_KEY_STR = "PRIV***KEY"
-+161	_PRIVATE_KEY_STR = "PRIV***KEY"
++161	_PRIVATE_KEY_STR = "PRIVATE KEY"
  162	
  163	
  164	def find_private_key_files(files: list[Path]) -> dict[Path, list[str]]:
@@ -102,8 +102,8 @@ index 4ed95ec..c73a466 100644
  194	    # Replace full PEM blocks
 -195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIV***KEY BLOCK]", content)
 -196	    # Replace remaining literal "PRIV***KEY" mentions
-+195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIV***KEY BLOCK]", content)
-+196	    # Replace remaining literal "PRIV***KEY" mentions
++195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIVATE KEY BLOCK]", content)
++196	    # Replace remaining literal "PRIVATE KEY" mentions
  197	    content = content.replace(_PRIVATE_KEY_STR, "PRIV***KEY")
  198	    if content != original:
  199	        write_text(file_path, content)
@@ -114,9 +114,9 @@ index 4ed95ec..c73a466 100644
 -3. Private-key PEM blocks (`-----BEGIN ... PRIV***KEY-----`) are
 -   replaced wholesale with `[REDACTED PRIV***KEY BLOCK]`, and the
 -   literal string `PRIV***KEY` becomes `PRIV***KEY` to stop the
-+3. Private-key PEM blocks (`-----BEGIN ... PRIV***KEY-----`) are
-+   replaced wholesale with `[REDACTED PRIV***KEY BLOCK]`, and the
-+   literal string `PRIV***KEY` becomes `PRIV***KEY` to stop the
++3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----`) are
++   replaced wholesale with `[REDACTED PRIVATE KEY BLOCK]`, and the
++   literal string `PRIVATE KEY` becomes `PRIV***KEY` to stop the
     detect-private-key hook from firing downstream.
  4. Any modified file is rewritten on disk. Pre-commit notices and exits
     non-zero with "files were modified by this hook" — the user then
@@ -125,7 +125,7 @@ index 4ed95ec..c73a466 100644
  
  Oops — real shape:
 -ANTHROPIC_API_KEY=sk-...aAA
-+ANTHROPIC_API_KEY=sk-...aAA
++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  EOF
  git add .claude/plans/p1.md
  bash /Volumes/Data/Program/Personal/agent-skills/skills/local/agent-history-hygiene/scripts/scan-staged.sh
@@ -134,7 +134,7 @@ index 4ed95ec..c73a466 100644
  --- cat p1.md ---
  # plan
 -ANTHROPIC_API_KEY=sk-...aAA
-+ANTHROPIC_API_KEY=sk-...aAA
++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  
  --- git diff --staged ---
  diff --git a/.claude/plans/p1.md b/.claude/plans/p1.md
@@ -143,7 +143,7 @@ index 4ed95ec..c73a466 100644
  @@ -0,0 +1,2 @@
  +# plan
 -+ANTHROPIC_API_KEY=sk-...aAA
-++ANTHROPIC_API_KEY=sk-...aAA
+++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  
  --- gitleaks on working dir (file), not staged ---
  
@@ -152,7 +152,7 @@ index 4ed95ec..c73a466 100644
  +++ b/leaks.md
  @@ -0,0 +1 @@
 -+ANTHROPIC_API_KEY=sk-...aAA
-++ANTHROPIC_API_KEY=sk-...aAA
+++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  ```
  </details></tool-use>
  
@@ -162,8 +162,8 @@ index 4ed95ec..c73a466 100644
  === B. LEAK in .claude/plans/ (expect exit 20 with JSON findings) ===
 -{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
 -{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
++{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
  gitleaks found leaks. See JSON findings on stdout.
  Next: rotate the secret at the provider, then run redact_secrets.py --fix,
        then re-stage and re-run this check. DO NOT `git push --force`.
@@ -174,10 +174,10 @@ index 4ed95ec..c73a466 100644
 -{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
 -{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
 -{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
++{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
  gitleaks found leaks. See JSON findings on stdout.
  Next: rotate the secret at the provider, then run redact_secrets.py --fix,
        then re-stage and re-run this check. DO NOT `git push --force`.
@@ -186,15 +186,15 @@ index 4ed95ec..c73a466 100644
  === p1.md after redaction ===
  # plan
 -ANTHROPIC_API_KEY=sk-...aAA
-+ANTHROPIC_API_KEY=sk-...aAA
++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  
  The end.
  
  === re-stage + scan (should be clean) ===
 -{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
 -{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
++{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
  gitleaks found leaks. See JSON findings on stdout.
  Next: rotate the secret at the provider, then run redact_secrets.py --fix,
        then re-stage and re-run this check. DO NOT `git push --force`.
@@ -204,8 +204,8 @@ index 4ed95ec..c73a466 100644
  === 2. scan-staged on real leak (expect 20) ===
 -{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
 -{"rule_id": "anthropic-api-key", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
++{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
  gitleaks found leaks. See JSON findings on stdout.
  Next: rotate the secret at the provider, then run redact_secrets.py --fix,
        then re-stage and re-run this check. DO NOT `git push --force`.
@@ -228,21 +228,21 @@ index 4ed95ec..c73a466 100644
 -{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12068, "commit": "STAGED", "match": "sk-...aAA\""}
 -{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12448, "commit": "STAGED", "match": "sk-...aAA\""}
 -{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12449, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11374, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11602, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11612, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11789, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11975, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11976, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11983, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11984, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11985, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11986, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12062, "commit": "STAGED", "match": "sk-...aAA"}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12067, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12068, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12448, "commit": "STAGED", "match": "sk-...aAA\""}
-+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12449, "commit": "STAGED", "match": "sk-...aAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11374, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11602, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11612, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11789, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11975, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11976, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11983, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11984, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11985, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11986, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12062, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12067, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12068, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12448, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
++{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 12449, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
  gitleaks found leaks. See JSON findings on stdout.
  Next: rotate the secret at the provider, then run redact_secrets.py --fix,
        then re-stage and re-run this check. DO NOT `git push --force`.
@@ -251,7 +251,7 @@ index 4ed95ec..c73a466 100644
  
    .specstory/history/2026-04-24_05-05-10Z.md:
 -    9 "PRIV***KEY" mention(s)
-+    9 "PRIV***KEY" mention(s)
++    9 "PRIVATE KEY" mention(s)
  
  Redacting secrets...
    Redacted: .specstory/history/2026-04-24_05-05-10Z.md
@@ -260,7 +260,7 @@ index 4ed95ec..c73a466 100644
  `sk-ant-api\d{2}-` + exactly 93 filler chars + `AA`.
  
 -ANTHROPIC_API_KEY=sk-...aAA
-+ANTHROPIC_API_KEY=sk-...aAA
++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
  
  ```
  
@@ -310,7 +310,7 @@ _**Agent (claude-opus-4-7 2026-04-24 11:29:57Z)**_
 <summary>Tool use: **Bash**</summary>
 Check what's in HEAD version of this file
 
-`git show HEAD:.specstory/history/2026-04-24_05-05-10Z.md | grep -nE 'sk-ant-api|PRIV***KEY|PRIV\*\*\*KEY' | head -20`
+`git show HEAD:.specstory/history/2026-04-24_05-05-10Z.md | grep -nE 'sk-ant-api|PRIVATE KEY|PRIV\*\*\*KEY' | head -20`
 
 ```text
 1395:43	  description = "Anthropic API key (sk-ant-apiNN-..., strict length)"
@@ -342,39 +342,39 @@ _**Agent (claude-opus-4-7 2026-04-24 11:29:59Z)**_
 <summary>Tool use: **Bash**</summary>
 Check untracked specstory file for secrets
 
-`grep -nE 'sk-ant-api|sk-proj|PRIV***KEY|PRIV\*\*\*KEY|BEGIN [A-Z ]*PRIVATE' .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md | head -30`
+`grep -nE 'sk-ant-api|sk-proj|PRIVATE KEY|PRIV\*\*\*KEY|BEGIN [A-Z ]*PRIVATE' .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md | head -30`
 
 ```text
 79:-47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIV***KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
-80:+47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIV***KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
+80:+47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIVATE KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
 88:-156	    r"-----BEGIN[^-]*PRIV***KEY[^-]*-----.*?-----END[^-]*PRIV***KEY[^-]*-----",
-89:+156	    r"-----BEGIN[^-]*PRIV***KEY[^-]*-----.*?-----END[^-]*PRIV***KEY[^-]*-----",
+89:+156	    r"-----BEGIN[^-]*PRIVATE KEY[^-]*-----.*?-----END[^-]*PRIVATE KEY[^-]*-----",
 94:-161	_PRIVATE_KEY_STR = "PRIV***KEY"
-95:+161	_PRIVATE_KEY_STR = "PRIV***KEY"
+95:+161	_PRIVATE_KEY_STR = "PRIVATE KEY"
 103:-195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIV***KEY BLOCK]", content)
 104:-196	    # Replace remaining literal "PRIV***KEY" mentions
-105:+195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIV***KEY BLOCK]", content)
-106:+196	    # Replace remaining literal "PRIV***KEY" mentions
+105:+195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIVATE KEY BLOCK]", content)
+106:+196	    # Replace remaining literal "PRIVATE KEY" mentions
 107: 197	    content = content.replace(_PRIVATE_KEY_STR, "PRIV***KEY")
 113:    `first3...last3` (e.g. `sk-proj-abc...xyz`).
 114:-3. Private-key PEM blocks (`-----BEGIN ... PRIV***KEY-----`) are
 115:-   replaced wholesale with `[REDACTED PRIV***KEY BLOCK]`, and the
 116:-   literal string `PRIV***KEY` becomes `PRIV***KEY` to stop the
-117:+3. Private-key PEM blocks (`-----BEGIN ... PRIV***KEY-----`) are
-118:+   replaced wholesale with `[REDACTED PRIV***KEY BLOCK]`, and the
-119:+   literal string `PRIV***KEY` becomes `PRIV***KEY` to stop the
-128:+ANTHROPIC_API_KEY=sk-...aAA
-137:+ANTHROPIC_API_KEY=sk-...aAA
-146:++ANTHROPIC_API_KEY=sk-...aAA
-155:++ANTHROPIC_API_KEY=sk-...aAA
-165:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-166:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-177:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-178:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-179:+{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-180:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-189:+ANTHROPIC_API_KEY=sk-...aAA
-196:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
+117:+3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----`) are
+118:+   replaced wholesale with `[REDACTED PRIVATE KEY BLOCK]`, and the
+119:+   literal string `PRIVATE KEY` becomes `PRIV***KEY` to stop the
+128:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+137:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+146:++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+155:++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+165:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+166:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+177:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+178:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+179:+{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+180:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+189:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+196:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
 ```
 </details></tool-use>
 
@@ -432,8 +432,8 @@ Date:   Fri Apr 24 14:11:07 2026 +0800
     group. `uv sync --extra dev` once, then `make test-skill`.
     
     Also fixes a latent bug the pytest surfaced: redact_private_keys
-    chained a PEM-block placeholder containing "PRIV***KEY" into a
-    literal-string replacement, corrupting "[REDACTED PRIV***KEY BLOCK]"
+    chained a PEM-block placeholder containing "PRIVATE KEY" into a
+    literal-string replacement, corrupting "[REDACTED PRIVATE KEY BLOCK]"
     into "[REDACTED PRIV***KEY BLOCK]". Sentinel is now "PEM PRIVKEY".
     
     .gitleaksignore carves out the test fixtures + their quoted forms
@@ -586,7 +586,7 @@ GitHub Push Protection 沒擋住，是因為它後端會把 key hash 後跟 Anth
 
 ### 2. 工作目錄裡 modified 的同一個檔 — **commit 前一定要再 redact 一次**
 
-`git diff` 顯示 SpecStory 把這個檔重生了一遍，把先前 commit 已遮罩的 `PRIV***KEY` / `sk-...aAA` **倒退回原始的 `PRIV***KEY` / `sk-ant-api03-aaaa...aAA`**，未遮罩出現次數從 12 跳到 47。這是 SpecStory 已知行為（它把 conversation log 當 source-of-truth 覆寫檔案）。
+`git diff` 顯示 SpecStory 把這個檔重生了一遍，把先前 commit 已遮罩的 `PRIV***KEY` / `sk-...aAA` **倒退回原始的 `PRIVATE KEY` / `sk-ant-api03-aaaa...aAA`**，未遮罩出現次數從 12 跳到 47。這是 SpecStory 已知行為（它把 conversation log 當 source-of-truth 覆寫檔案）。
 
 如果現在 `git add` + `git commit`，pre-commit 的 `redact-agent-secrets` + gitleaks 會擋下來。
 
@@ -696,11 +696,11 @@ Redact secrets in working dir specstory/plans
 Found private key pattern(s) in 2 file(s):
 
   .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:
-    24 "PRIV***KEY" mention(s)
+    24 "PRIVATE KEY" mention(s)
 
   .specstory/history/2026-04-24_05-05-10Z.md:
     7 PEM private key block(s)
-    35 "PRIV***KEY" mention(s)
+    35 "PRIVATE KEY" mention(s)
 
 Redacting secrets...
   Redacted: .specstory/history/2026-04-24_05-05-10Z.md
@@ -718,7 +718,7 @@ _**Agent (claude-opus-4-7 2026-04-24 11:35:50Z)**_
 <summary>Tool use: **Bash**</summary>
 Verify no un-redacted secrets remain
 
-`grep -c "sk-ant-api03-aaaa\|^.*PRIV***KEY" .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md`
+`grep -c "sk-ant-api03-aaaa\|^.*PRIVATE KEY" .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md`
 
 ```text
 .specstory/history/2026-04-24_05-05-10Z.md:12
@@ -737,44 +737,44 @@ Locate remaining secret-like strings
 ```bash
 grep -n "sk-ant-api03-aaaa" .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md | head -20
 echo "---"
-grep -n "PRIV***KEY" .specstory/history/2026-04-24_05-05-10Z.md | head -10
+grep -n "PRIVATE KEY" .specstory/history/2026-04-24_05-05-10Z.md | head -10
 echo "---"
-grep -n "PRIV***KEY" .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md | head -10
+grep -n "PRIVATE KEY" .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md | head -10
 ```
 
 ```text
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:128:+ANTHROPIC_API_KEY=sk-...aAA
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:137:+ANTHROPIC_API_KEY=sk-...aAA
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:146:++ANTHROPIC_API_KEY=sk-...aAA
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:155:++ANTHROPIC_API_KEY=sk-...aAA
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:165:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:166:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:177:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:178:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:179:+{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:180:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:189:+ANTHROPIC_API_KEY=sk-...aAA
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:196:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:197:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:207:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:208:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:231:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11374, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:232:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11602, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:233:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11612, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:234:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11789, "commit": "STAGED", "match": "sk-...aAA"}
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:235:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11975, "commit": "STAGED", "match": "sk-...aAA\""}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:128:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:137:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:146:++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:155:++ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:165:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:166:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:177:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:178:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:179:+{"rule_id": "anthropic-api-key-strict", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:180:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24.md", "line": 1, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:189:+ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:196:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:197:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p1.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:207:+{"rule_id": "anthropic-api-key-strict", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:208:+{"rule_id": "anthropic-api-key", "file": ".claude/plans/p2.md", "line": 2, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:231:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11374, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:232:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11602, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:233:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11612, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:234:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11789, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA"}
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md:235:+{"rule_id": "anthropic-api-key", "file": ".specstory/history/2026-04-24_05-05-10Z.md", "line": 11975, "commit": "STAGED", "match": "sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAA\""}
 ---
 ---
-80:+47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIV***KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
-89:+156	    r"-----BEGIN[^-]*PRIV***KEY[^-]*-----.*?-----END[^-]*PRIV***KEY[^-]*-----",
-95:+161	_PRIVATE_KEY_STR = "PRIV***KEY"
-105:+195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIV***KEY BLOCK]", content)
-106:+196	    # Replace remaining literal "PRIV***KEY" mentions
-117:+3. Private-key PEM blocks (`-----BEGIN ... PRIV***KEY-----`) are
-118:+   replaced wholesale with `[REDACTED PRIV***KEY BLOCK]`, and the
-119:+   literal string `PRIV***KEY` becomes `PRIV***KEY` to stop the
-254:+    9 "PRIV***KEY" mention(s)
-313:`git show HEAD:.specstory/history/2026-04-24_05-05-10Z.md | grep -nE 'sk-ant-api|PRIV***KEY|PRIV\*\*\*KEY' | head -20`
+80:+47	Tooling: `scripts/redact_secrets.py` (gitleaks + `PRIVATE KEY` pattern), `just check-secrets` / `just redact-secrets` / `just add-and-redact`. Pre-commit hook `redact-agent-secrets` runs `--fix` before `gitleaks-system`; if it rewrites a file, stage and retry.
+89:+156	    r"-----BEGIN[^-]*PRIVATE KEY[^-]*-----.*?-----END[^-]*PRIVATE KEY[^-]*-----",
+95:+161	_PRIVATE_KEY_STR = "PRIVATE KEY"
+105:+195	    content = _PEM_BLOCK_RE.sub("[REDACTED PRIVATE KEY BLOCK]", content)
+106:+196	    # Replace remaining literal "PRIVATE KEY" mentions
+117:+3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----`) are
+118:+   replaced wholesale with `[REDACTED PRIVATE KEY BLOCK]`, and the
+119:+   literal string `PRIVATE KEY` becomes `PRIV***KEY` to stop the
+254:+    9 "PRIVATE KEY" mention(s)
+313:`git show HEAD:.specstory/history/2026-04-24_05-05-10Z.md | grep -nE 'sk-ant-api|PRIVATE KEY|PRIV\*\*\*KEY' | head -20`
 ```
 </details></tool-use>
 
@@ -861,7 +861,7 @@ git show HEAD --stat | head -5
 echo "---"
 for f in .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md; do
   raw=$(git show HEAD:"$f" | grep -cE 'sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}AA' || true)
-  pem=$(git show HEAD:"$f" | grep -cE 'BEGIN [A-Z ]*PRIV***KEY' || true)
+  pem=$(git show HEAD:"$f" | grep -cE 'BEGIN [A-Z ]*PRIVATE KEY' || true)
   echo "$f: raw_keys=$raw pem_blocks=$pem"
 done
 ```
@@ -902,7 +902,7 @@ _**Agent (claude-opus-4-7 2026-04-24 11:37:48Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
-Brute-force redact full key shape + PRIV***KEY string
+Brute-force redact full key shape + PRIVATE KEY string
 
 ```bash
 python3 - <<'PY'
@@ -917,10 +917,10 @@ for f in files:
     txt = p.read_text()
     n_key = len(key_re.findall(txt))
     txt2 = key_re.sub("sk-...aAA", txt)
-    n_pem = txt2.count("PRIV***KEY")
-    txt2 = txt2.replace("[REDACTED PEM PRIVKEY BLOCK BEGIN]", "[REDACTED PEM PRIVKEY BLOCK BEGIN]")
-    txt2 = txt2.replace("[REDACTED PEM PRIVKEY BLOCK END]", "[REDACTED PEM PRIVKEY BLOCK END]")
-    txt2 = txt2.replace("PRIV***KEY", "PRIV***KEY")
+    n_pem = txt2.count("PRIVATE KEY")
+    txt2 = txt2.replace("-----BEGIN PRIVATE KEY-----", "[REDACTED PEM PRIVKEY BLOCK BEGIN]")
+    txt2 = txt2.replace("-----END PRIVATE KEY-----", "[REDACTED PEM PRIVKEY BLOCK END]")
+    txt2 = txt2.replace("PRIVATE KEY", "PRIV***KEY")
     p.write_text(txt2)
     print(f"{f}: replaced {n_key} keys, {n_pem} PRIV***KEY mentions")
 PY
@@ -945,15 +945,15 @@ git add .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24
 # Verify staged blobs are clean
 for f in .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md; do
   raw=$(git show :"$f" | grep -cE 'sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}AA' || true)
-  pk=$(git show :"$f" | grep -c 'PRIV***KEY' || true)
+  pk=$(git show :"$f" | grep -c 'PRIVATE KEY' || true)
   pem=$(git show :"$f" | grep -cE 'BEGIN [A-Z ]*PRIVATE' || true)
-  echo "$f: full_keys=$raw 'PRIV***KEY'=$pk pem_begin=$pem"
+  echo "$f: full_keys=$raw 'PRIVATE KEY'=$pk pem_begin=$pem"
 done
 ```
 
 ```text
-.specstory/history/2026-04-24_05-05-10Z.md: full_keys=0 'PRIV***KEY'=0 pem_begin=0
-.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md: full_keys=63 'PRIV***KEY'=45 pem_begin=1
+.specstory/history/2026-04-24_05-05-10Z.md: full_keys=0 'PRIVATE KEY'=0 pem_begin=0
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md: full_keys=63 'PRIVATE KEY'=45 pem_begin=1
 ```
 </details></tool-use>
 
@@ -981,9 +981,9 @@ for f in files:
     p = pathlib.Path(f)
     txt = p.read_text()
     txt = key_re.sub("sk-...aAA", txt)
-    txt = txt.replace("[REDACTED PEM PRIVKEY BLOCK BEGIN]", "[REDACTED PEM PRIVKEY BLOCK BEGIN]")
-    txt = txt.replace("[REDACTED PEM PRIVKEY BLOCK END]", "[REDACTED PEM PRIVKEY BLOCK END]")
-    txt = txt.replace("PRIV***KEY", "PRIV***KEY")
+    txt = txt.replace("-----BEGIN PRIVATE KEY-----", "[REDACTED PEM PRIVKEY BLOCK BEGIN]")
+    txt = txt.replace("-----END PRIVATE KEY-----", "[REDACTED PEM PRIVKEY BLOCK END]")
+    txt = txt.replace("PRIVATE KEY", "PRIV***KEY")
     # Hash the redacted bytes into git's object store and update the index.
     # Bypasses working tree so SpecStory can't re-pollute the staged blob.
     h = subprocess.run(
@@ -999,8 +999,102 @@ PY
 echo "---verify staged blobs---"
 for f in .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md; do
   raw=$(git show :"$f" | grep -cE 'sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}AA' || true)
-  pk=$(git show :"$f" | grep -c 'PRIV***KEY' || true)
-  echo "$f: full_keys=$raw 'PRIV***KEY'=$pk"
+  pk=$(git show :"$f" | grep -c 'PRIVATE KEY' || true)
+  echo "$f: full_keys=$raw 'PRIVATE KEY'=$pk"
 done
 ```
+
+```text
+.specstory/history/2026-04-24_05-05-10Z.md: staged blob 0acae75aad09
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md: staged blob e37e3fd3777b
+---verify staged blobs---
+.specstory/history/2026-04-24_05-05-10Z.md: full_keys=0 'PRIVATE KEY'=0
+.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md: full_keys=0 'PRIVATE KEY'=0
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-24 11:38:48Z)**_
+
+Staged blobs 都乾淨了（0 keys, 0 "PRIVATE KEY"）。現在 commit + push。
+
+_**Agent (claude-opus-4-7 2026-04-24 11:38:52Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit redacted specstory transcripts
+
+```bash
+git commit -m "$(cat <<'EOF'
+Archive specstory transcripts from agent-history-hygiene dogfood session
+
+SpecStory regenerated 2026-04-24_05-05-10Z.md and emitted a new
+2026-04-24_11-29-18Z transcript. Both staged blobs were redacted
+(fake sk-ant-api03-* fixtures + literal "PRIVATE KEY" mentions) via
+direct git-hash-object injection, since SpecStory rewrites working-tree
+files from its internal log and races a normal --fix + git-add flow.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+```text
+[main b7ff463] Archive specstory transcripts from agent-history-hygiene dogfood session
+ 2 files changed, 3367 insertions(+)
+ create mode 100644 .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-24 11:39:27Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify HEAD clean then push
+
+```bash
+# Final sanity check on HEAD blob, then push
+for f in .specstory/history/2026-04-24_05-05-10Z.md .specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md; do
+  raw=$(git show HEAD:"$f" | grep -cE 'sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}AA' || true)
+  pk=$(git show HEAD:"$f" | grep -c 'PRIVATE KEY' || true)
+  echo "HEAD:$f full_keys=$raw 'PRIVATE KEY'=$pk"
+done
+echo "---"
+git push origin main 2>&1 | tail -10
+```
+
+```text
+HEAD:.specstory/history/2026-04-24_05-05-10Z.md full_keys=0 'PRIVATE KEY'=0
+HEAD:.specstory/history/2026-04-24_11-29-18Z-repo-commit-and-push.md full_keys=0 'PRIVATE KEY'=0
+---
+To github.com:daviddwlee84/agent-skills.git
+   6435e5c..b7ff463  main -> main
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-24 11:39:31Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Confirm push landed
+
+`git log --oneline -3`
+
+```text
+b7ff463 Archive specstory transcripts from agent-history-hygiene dogfood session
+6435e5c Add test suite for agent-history-hygiene (pytest + bash contract)
+f92604f Add agent-history-hygiene local skill
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-24 11:39:44Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-24 11:39:51Z)**_
+
+推上去了：`6435e5c..b7ff463 main -> main`，HEAD 的兩個 specstory blob 都驗過 0 keys / 0 "PRIVATE KEY"。
+
+這次踩到兩個值得記下來的點：
+
+1. **SpecStory 從 internal conversation log 重寫 working-tree 檔**（無視 on-disk 內容），所以 `redact → git add` 兩步之間會 race — 必須用 `git hash-object -w` + `git update-index --cacheinfo` 直接把 redacted bytes 灌進 index。
+2. **本 repo 的 pre-commit hook 沒生效** — chezmoi 的 global hooksPath 應該要 cover `.specstory/history/*.md`，但今天的 commit 完全沒看到 `redact-agent-secrets` / `gitleaks-system` 跑，否則第一次 commit 就應該被擋掉那 63 處 fake key。
+
+要我把「SpecStory race 問題 + git update-index workaround」寫成 `pitfalls/specstory-rewrites-working-tree-during-redact.md` 嗎？另外（2）的 chezmoi hook 失效要不要查一下？

@@ -25,6 +25,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
 | [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |
 | [`agent-history-hygiene`](agent-history-hygiene.md) | Commit SpecStory transcripts + plan files with feature diffs; bootstrap pre-commit + gitleaks + redactor; rotate-first leak runbook | [docs](agent-history-hygiene.md) |
+| [`pueue-job-queue`](pueue-job-queue.md) | Drive Nukesor/pueue for queued/parallel/scheduled shell jobs; submit-one + DAG submitter + JSON-summary waiter; observed pueue 4.0.2 schema | [docs](pueue-job-queue.md) |
 
 ## Vendored skills
 
