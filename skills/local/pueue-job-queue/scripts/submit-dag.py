@@ -79,7 +79,13 @@ Examples:
     p.add_argument("--dry-run", action="store_true",
                    help="Validate + print plan; submit nothing.")
     p.add_argument("--print-graph", action="store_true",
-                   help="Also print topo order + edges to stderr.")
+                   help="Print topo order, edges, and per-task `name -> id` "
+                        "lines to stderr. Default emits only the JSON map on "
+                        "stdout (plus DAG-width warnings if applicable).")
+    p.add_argument("--auto-parallel", action="store_true",
+                   help="Before submitting, set each group's `parallel_tasks` "
+                        "to at least the DAG's max width in that group. "
+                        "Without this flag, the script only warns.")
     return p.parse_args()
 
 
@@ -200,9 +206,31 @@ def validate(spec: dict[str, Any], default_group_arg: str | None) -> tuple[dict[
     return cleaned, topo, default_group
 
 
+def compute_max_width_per_group(cleaned: dict[str, dict[str, Any]],
+                                topo: list[str],
+                                default_group: str | None) -> dict[str, int]:
+    """Per-group lower-bound on max parallel tasks across the DAG.
+
+    Computes each task's longest-path level from a source, groups tasks by
+    (group, level), and returns the max group-size per group. This is the
+    minimum group `parallel_tasks` needed for the DAG's fan-out to actually
+    run in parallel rather than be serialized by group capacity.
+    """
+    levels: dict[str, int] = {}
+    for name in topo:
+        deps = cleaned[name]["after"]
+        levels[name] = max((levels[d] + 1 for d in deps), default=0)
+    by_group_level: dict[str, dict[int, list[str]]] = {}
+    for name, lvl in levels.items():
+        g = cleaned[name]["group"] or default_group or "default"
+        by_group_level.setdefault(g, {}).setdefault(lvl, []).append(name)
+    return {g: max(len(tasks) for tasks in lvls.values())
+            for g, lvls in by_group_level.items()}
+
+
 def submit_one(name: str, body: dict[str, Any], after_ids: list[int],
                default_group: str | None, label_prefix: str,
-               dry_run: bool) -> int | None:
+               dry_run: bool, verbose: bool) -> int | None:
     label = f"{label_prefix}{name}"
     group = body["group"] or default_group
     pueue_args = ["pueue", "add", "--print-task-id", "--label", label]
@@ -213,7 +241,8 @@ def submit_one(name: str, body: dict[str, Any], after_ids: list[int],
     pueue_args += ["--", body["cmd"]]
 
     if dry_run:
-        print(f"  {name} -> [dry-run] {' '.join(pueue_args)}", file=sys.stderr)
+        if verbose:
+            print(f"  {name} -> [dry-run] {' '.join(pueue_args)}", file=sys.stderr)
         return None
 
     # Auto-create group if missing.
@@ -257,11 +286,37 @@ def main() -> int:
             if after:
                 print(f"  {name}: after={after}", file=sys.stderr)
 
+    # Compare DAG fan-out width against each group's parallel_tasks.
+    # Without enough slots, --after deps run correctly but siblings serialize.
+    width_per_group = compute_max_width_per_group(cleaned, topo, default_group)
+    width_warnings: list[str] = []
+    if not args.dry_run and shutil.which("pueue"):
+        gp = subprocess.run(["pueue", "group", "--json"], capture_output=True, text=True)
+        if gp.returncode == 0:
+            groups_state = json.loads(gp.stdout)
+            for g, needed in width_per_group.items():
+                have = groups_state.get(g, {}).get("parallel_tasks")
+                # parallel_tasks=0 means unlimited
+                if have is not None and have != 0 and have < needed and needed > 1:
+                    msg = (f"warning: DAG fan-out width in group '{g}' is {needed}, "
+                           f"but `parallel_tasks={have}` — siblings will serialize. "
+                           f"Run: pueue parallel {needed} --group {g}")
+                    width_warnings.append(msg)
+                    if args.auto_parallel:
+                        subprocess.run(["pueue", "parallel", str(needed),
+                                        "--group", g],
+                                       capture_output=True, text=True, check=False)
+                        print(f"auto-parallel: pueue parallel {needed} --group {g}",
+                              file=sys.stderr)
+                    else:
+                        print(msg, file=sys.stderr)
+
     name_to_id: dict[str, int] = {}
     for idx, name in enumerate(topo):
         body = cleaned[name]
         after_ids = [name_to_id[ref] for ref in body["after"]]
-        tid = submit_one(name, body, after_ids, default_group, args.label_prefix, args.dry_run)
+        tid = submit_one(name, body, after_ids, default_group,
+                         args.label_prefix, args.dry_run, args.print_graph)
         if args.dry_run:
             # Use synthetic ids so chained --after lookups resolve.
             name_to_id[name] = idx
@@ -273,13 +328,17 @@ def main() -> int:
             print(json.dumps(partial))
             return 3
         name_to_id[name] = tid
-        print(f"  {name} -> {tid}", file=sys.stderr)
+        if args.print_graph:
+            print(f"  {name} -> {tid}", file=sys.stderr)
 
     out = {
         "tasks": name_to_id,
         "topo_order": topo,
         "default_group": default_group,
+        "width_per_group": width_per_group,
     }
+    if width_warnings and not args.auto_parallel:
+        out["parallelism_warnings"] = width_warnings
     if args.dry_run:
         out["dry_run"] = True
     print(json.dumps(out))

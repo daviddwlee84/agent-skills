@@ -93,23 +93,26 @@ done
 
 command -v pueue >/dev/null 2>&1 || { log "pueue not installed"; exit 2; }
 
-# Probe daemon. `pueue status --json` returns non-zero when unreachable.
-if ! pueue status --json >/dev/null 2>&1; then
-  log "pueued unreachable. Start with: pueued -d   (or use scripts/check-daemon.sh --start)"
-  exit 4
-fi
+# In dry-run mode, do NOT touch the daemon — the agent expects this to be
+# a pure plan rendering. Skip both the reachability probe and the group
+# probe/create.
+if [ "$DRY_RUN" = "0" ]; then
+  # Probe daemon. `pueue status --json` returns non-zero when unreachable.
+  if ! pueue status --json >/dev/null 2>&1; then
+    log "pueued unreachable. Start with: pueued -d   (or use scripts/check-daemon.sh --start)"
+    exit 4
+  fi
 
-# Auto-create group if requested and missing.
-if [ -n "$GROUP" ]; then
-  GROUPS_JSON=$(pueue group --json)
-  HAS_GROUP=$(PUEUE_GROUP_NAME="$GROUP" python3 -c '
+  # Auto-create group if requested and missing.
+  if [ -n "$GROUP" ]; then
+    GROUPS_JSON=$(pueue group --json)
+    HAS_GROUP=$(PUEUE_GROUP_NAME="$GROUP" python3 -c '
 import json, os, sys
 d = json.loads(sys.stdin.read())
 print("yes" if os.environ["PUEUE_GROUP_NAME"] in d else "no")
 ' <<<"$GROUPS_JSON")
-  if [ "$HAS_GROUP" = "no" ]; then
-    log "group '$GROUP' missing — creating."
-    if [ "$DRY_RUN" = "0" ]; then
+    if [ "$HAS_GROUP" = "no" ]; then
+      log "group '$GROUP' missing — creating."
       pueue group add "$GROUP" >&2 || { log "failed to create group $GROUP"; exit 3; }
     fi
   fi

@@ -13,8 +13,9 @@ Selectors (one or more required):
 
 The script polls `pueue status --json` every --poll-seconds and exits when
 all selected tasks are in a terminal state (Done.*) or --timeout-seconds
-elapses, whichever first. Output on stdout is a JSON summary; per-tick
-diagnostics go to stderr (suppressed by --quiet).
+elapses, whichever first. Output on stdout is a JSON summary; stderr is
+quiet by default (one initial line + state-change events). `--verbose`
+restores per-tick stderr.
 
 Exit codes:
   0  all selected tasks finished with result==Success
@@ -58,7 +59,11 @@ Examples:
                    help="Wall-clock timeout in seconds. 0 = no timeout (default).")
     p.add_argument("--fail-fast", action="store_true",
                    help="Return non-zero immediately when any selected task fails.")
-    p.add_argument("--quiet", action="store_true", help="Suppress per-tick stderr.")
+    p.add_argument("--verbose", "-v", action="store_true",
+                   help="Print one line per poll tick to stderr (debug only). "
+                        "Default emits state-change events only.")
+    # --quiet kept as no-op for backwards compat; default is already quiet.
+    p.add_argument("--quiet", action="store_true", help=argparse.SUPPRESS)
     return p.parse_args()
 
 
@@ -168,13 +173,13 @@ def main() -> int:
         print("error: selectors matched zero tasks", file=sys.stderr)
         sys.exit(1)
 
-    if not args.quiet:
-        print(f"waiting on {len(ids)} task(s): {ids}", file=sys.stderr)
+    print(f"waiting on {len(ids)} task(s): {ids}", file=sys.stderr)
 
     deadline = time.monotonic() + args.timeout_seconds if args.timeout_seconds > 0 else None
     started = time.monotonic()
     tick = 0
     last_summaries: list[dict[str, Any]] = []
+    prev_state: dict[int, str] = {}  # task id → last seen state
 
     while True:
         tick += 1
@@ -189,38 +194,42 @@ def main() -> int:
         summaries = [task_summary(t) for t in present]
         last_summaries = summaries
 
-        states = [s["state"] for s in summaries]
-        n_done = sum(1 for s in states if s == "Done")
-        n_running = sum(1 for s in states if s == "Running")
-        n_queued = sum(1 for s in states if s == "Queued")
-        n_other = len(states) - n_done - n_running - n_queued
+        # Emit state-change events on stderr (quiet by default; one line per
+        # transition rather than per tick).
+        for s in summaries:
+            cur = s["state"] if s["state"] != "Done" else f"Done.{s['result']}"
+            prev = prev_state.get(s["id"])
+            if prev != cur:
+                if prev is None:
+                    msg = f"task {s['id']} ({s['label']}): {cur}"
+                else:
+                    msg = f"task {s['id']} ({s['label']}): {prev} -> {cur}"
+                print(msg, file=sys.stderr)
+                prev_state[s["id"]] = cur
 
-        if not args.quiet:
+        states = [s["state"] for s in summaries]
+        if args.verbose:
+            n_done = sum(1 for x in states if x == "Done")
+            n_running = sum(1 for x in states if x == "Running")
+            n_queued = sum(1 for x in states if x == "Queued")
+            n_other = len(states) - n_done - n_running - n_queued
             print(
                 f"tick {tick}: {n_done} done, {n_running} running, {n_queued} queued, {n_other} other",
                 file=sys.stderr,
             )
 
-        if args.fail_fast:
-            for s in summaries:
-                if s["state"] == "Done" and s["result"] in TERMINAL_RESULTS_BAD.union({"Failed"}):
-                    break
-            else:
-                # no failure found yet
-                pass
-            if any(
-                s["state"] == "Done" and s["result"] in TERMINAL_RESULTS_BAD.union({"Failed"})
-                for s in summaries
-            ):
-                emit_summary(summaries, started)
-                return 5
+        if args.fail_fast and any(
+            s["state"] == "Done" and s["result"] in TERMINAL_RESULTS_BAD.union({"Failed"})
+            for s in summaries
+        ):
+            emit_summary(summaries, started)
+            return 5
 
         if all(is_terminal(s) for s in states):
             break
 
         if deadline is not None and time.monotonic() >= deadline:
-            if not args.quiet:
-                print("timeout reached", file=sys.stderr)
+            print("timeout reached", file=sys.stderr)
             emit_summary(summaries, started)
             return 6
 

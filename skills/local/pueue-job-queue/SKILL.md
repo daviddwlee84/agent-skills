@@ -133,14 +133,24 @@ and submit it declaratively:
 ```bash
 skills/local/pueue-job-queue/scripts/submit-dag.py \
   skills/local/pueue-job-queue/assets/dag.example.yaml \
-  --label-prefix nightly- --default-group ml
-# stdout: {"tasks":{"fetch":17,"featurize":18,...},"topo_order":[...],...}
+  --label-prefix nightly- --default-group ml --auto-parallel
+# stdout: {"tasks":{"fetch":17,"featurize":18,...},
+#          "topo_order":[...],
+#          "width_per_group":{"ml":2}, ...}
 ```
 
+Each task gets the label `<--label-prefix><task_name>` so you can
+`wait.py --label-prefix nightly-` later.
+
 The submitter topo-sorts, validates the graph (cycle detection, unknown
-references, missing `cmd:`), then submits in order — wiring `--after` from
-the in-flight name→id map. **No partial submits**: validation fails loud
-before any `pueue add` runs.
+references, missing `cmd:`), computes the **DAG width per group** (the
+minimum `parallel_tasks` needed for fan-out to actually run in parallel),
+then submits in order — wiring `--after` from the in-flight name→id map.
+**No partial submits**: validation fails loud before any `pueue add` runs.
+
+`--auto-parallel` runs `pueue parallel <width> --group <g>` for each group
+that's under-provisioned. Without it, the script only warns (in stderr +
+the JSON's `parallelism_warnings`).
 
 See `assets/dag.example.yaml` for a 5-task fan-out/fan-in template and
 `references/dag-patterns.md` for more shapes.
@@ -173,27 +183,12 @@ Exit codes: `0` all succeeded, `5` ≥1 task failed/killed/dependency-failed,
 
 ## Workflow E — logs, retry, kill
 
-These don't have wrapper scripts — they're one-line `pueue` calls. See
-`references/cli-cheatsheet.md` for the full list. Most-used:
+One-line `pueue` calls (full list in `references/cli-cheatsheet.md`):
 
 ```bash
-# Tail a running task's output
-pueue follow 17
-
-# Get full stdout/stderr as JSON
-pueue log --json --full 17
-
-# Retry a failed task in-place (reuses id, overwrites old log)
-pueue restart --in-place 17
-
-# Retry as a NEW task (fresh id, original 17 stays in history)
-pueue restart 17
-
-# Kill a running task and remove it
-pueue kill 17 && pueue remove 17
-
-# Drop all completed-successful tasks from the visible queue
-pueue clean --successful-only
+pueue log --json --full 17        # full stdout/stderr as JSON
+pueue restart --in-place 17       # retry in-place (overwrites old log)
+pueue kill 17 && pueue remove 17  # kill + drop from queue
 ```
 
 ## Available scripts
@@ -204,11 +199,11 @@ pueue clean --successful-only
 - **`scripts/submit.sh`** — Submit ONE task, return clean JSON `{task_id, group, label, after, ...}`. Wraps `pueue add --print-task-id` with defensive id parsing. Auto-creates the group if missing.
   - Flags: `--label`, `--group`, `--after` (repeatable), `--immediate`, `--stashed`, `--delay`, `--priority`, `--working-dir`, `--escape`, `--dry-run`, `--help`.
   - Exit: `0` ok, `1` bad args, `2` pueue not installed, `3` `pueue add` failed, `4` daemon unreachable.
-- **`scripts/wait.py`** — Block until selected tasks reach terminal status; emit a JSON summary. Selectors: `--ids`, `--label`, `--label-prefix`, `--group`. Polls `pueue status --json`.
-  - Flags: `--ids`, `--label` (repeatable), `--label-prefix`, `--group`, `--poll-seconds`, `--timeout-seconds`, `--fail-fast`, `--quiet`, `--help`.
+- **`scripts/wait.py`** — Block until selected tasks reach terminal status; emit a JSON summary. Selectors: `--ids`, `--label`, `--label-prefix`, `--group`. Quiet by default — emits only one initial line + state-change events on stderr; pass `--verbose` for per-tick output.
+  - Flags: `--ids`, `--label` (repeatable), `--label-prefix`, `--group`, `--poll-seconds`, `--timeout-seconds`, `--fail-fast`, `--verbose`, `--help`.
   - Exit: `0` all succeeded, `1` arg error, `4` daemon unreachable, `5` ≥1 failed/killed/dependency-failed, `6` timeout.
-- **`scripts/submit-dag.py`** — Declarative DAG submitter. Reads YAML or JSON (file path or `-` for stdin), topo-sorts, validates, submits with wired `--after`, returns name→id JSON map.
-  - Flags: `--format`, `--default-group`, `--label-prefix`, `--dry-run`, `--print-graph`, `--help`.
+- **`scripts/submit-dag.py`** — Declarative DAG submitter. Reads YAML or JSON (file path or `-` for stdin), topo-sorts, validates, submits with wired `--after`, returns `{name → id, topo_order, width_per_group}`. Computes DAG fan-out width per group; warns (or with `--auto-parallel`, sets) `pueue parallel` to match.
+  - Flags: `--format`, `--default-group`, `--label-prefix`, `--dry-run`, `--print-graph`, `--auto-parallel`, `--help`.
   - Exit: `0` all submitted, `1` schema/cycle/unknown-ref, `2` pueue not installed, `3` mid-run pueue failure (stdout still emits IDs that DID submit, for cleanup).
 
 ## Bundled assets
@@ -225,6 +220,7 @@ pueue clean --successful-only
 
 ## Gotchas
 
+- **DAG fan-out is gated by `parallel_tasks` per group.** Even when two siblings both depend only on `A` and the DAG allows them to run in parallel, they will *serialize* if their group's `parallel_tasks=1`. Pueue's parallelism primitive is the group, not the dependency graph. `submit-dag.py` warns when DAG width exceeds the group's slots and suggests the exact `pueue parallel N --group G` command; pass `--auto-parallel` to apply it.
 - **`pueue add -- bash -c 'sleep 60'` does not preserve quoting.** Pueue joins all `<COMMAND>` args and re-shells. The single-quoted `'sleep 60'` is unwrapped by *your* shell before pueue sees it, then pueue re-splits. Quote the **whole** command as one arg: `pueue add 'sleep 60'` or `submit.sh -- 'bash -c "sleep 60 && echo done"'`.
 - **`--after` is AND-only and success-only.** Failed parent → dependent's `status.Done.result` becomes `"DependencyFailed"` and it never runs. There is no OR, no run-on-failure, no retry-on-failure. If you need that, you need a real orchestrator.
 - **Pueue does NOT auto-create groups.** `pueue add --group new_name` exits 1 with `"Group new_name doesn't exists. Use one of these: [...]"`. `submit.sh` calls `pueue group add` first if the group is missing.
