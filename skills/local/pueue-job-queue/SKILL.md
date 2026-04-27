@@ -128,19 +128,24 @@ per-task pool. Set it once, submit freely.
 ## Workflow C — fan-out / fan-in DAG
 
 For multi-task pipelines with success-only dependencies, write a YAML spec
-and submit it declaratively:
+and submit it declaratively. **Prefer `--isolated-group`** — it creates a
+fresh group sized to the DAG's fan-out width and leaves your other groups
+(especially `default`) untouched:
 
 ```bash
 skills/local/pueue-job-queue/scripts/submit-dag.py \
   skills/local/pueue-job-queue/assets/dag.example.yaml \
-  --label-prefix nightly- --default-group ml --auto-parallel
-# stdout: {"tasks":{"fetch":17,"featurize":18,...},
+  --label-prefix nightly- --isolated-group
+# stderr: isolated-group: created 'dag-dcda9347' with parallel_tasks=2
+# stdout: {"tasks":{"fetch":17,...},
 #          "topo_order":[...],
-#          "width_per_group":{"ml":2}, ...}
+#          "width_per_group":{"dag-dcda9347":2},
+#          "isolated_group":"dag-dcda9347"}
 ```
 
 Each task gets the label `<--label-prefix><task_name>` so you can
-`wait.py --label-prefix nightly-` later.
+`wait.py --label-prefix nightly-` later. After the run, clean up with
+`pueue group remove <name>` (or run `cleanup.sh --remove-empty-groups`).
 
 The submitter topo-sorts, validates the graph (cycle detection, unknown
 references, missing `cmd:`), computes the **DAG width per group** (the
@@ -148,9 +153,16 @@ minimum `parallel_tasks` needed for fan-out to actually run in parallel),
 then submits in order — wiring `--after` from the in-flight name→id map.
 **No partial submits**: validation fails loud before any `pueue add` runs.
 
-`--auto-parallel` runs `pueue parallel <width> --group <g>` for each group
-that's under-provisioned. Without it, the script only warns (in stderr +
-the JSON's `parallelism_warnings`).
+Three parallelism modes, in order of recommendation:
+
+1. **`--isolated-group [NAME]`** (recommended). Fresh group, sized to width,
+   no side effects on other groups. NAME auto-generates from spec hash if
+   omitted. Mutually exclusive with `--default-group`.
+2. **`--auto-parallel`**. Mutates `pueue parallel` on the target group in
+   place. Use this when the DAG is meant to live in a long-lived shared
+   group (e.g. `ml`) and that group's parallelism should permanently grow.
+3. **No flag**. Only warns (in stderr + JSON's `parallelism_warnings`).
+   Useful in `--dry-run` planning.
 
 See `assets/dag.example.yaml` for a 5-task fan-out/fan-in template and
 `references/dag-patterns.md` for more shapes.
@@ -191,6 +203,33 @@ pueue restart --in-place 17       # retry in-place (overwrites old log)
 pueue kill 17 && pueue remove 17  # kill + drop from queue
 ```
 
+For ad-hoc filtering, prefer pueue's built-in QUERY DSL over piping
+through `jq` — it's faster (server-side filter) and shorter:
+
+```bash
+pueue status --json 'status=Failed order_by end desc first 10'
+pueue status --json 'label %= sweep-'   # substring match
+```
+
+See `references/json-schema.md` for the QUERY grammar + jq fallbacks.
+
+## Workflow F — periodic cleanup
+
+Pueue's task list grows unbounded. `pueue status --json` walks the whole
+table, so a queue with thousands of completed tasks slows down everything
+that touches status. Run `cleanup.sh` weekly:
+
+```bash
+skills/local/pueue-job-queue/scripts/cleanup.sh \
+  --successful-only --remove-empty-groups --logs-older-than 30
+# stdout: {"cleaned_tasks":[...], "removed_groups":["dag-abc12345"],
+#          "deleted_logs":[...], "kept_running":[...], ...}
+```
+
+`--successful-only` keeps failures around for inspection; drop the flag
+for a full sweep. Pair with the agent's existing weekly maintenance habit
+(or `/schedule` an agent to run it).
+
 ## Available scripts
 
 - **`scripts/check-daemon.sh`** — Single-shot daemon health + version + log-dir check, with optional auto-start. Outputs JSON to stdout.
@@ -202,9 +241,12 @@ pueue kill 17 && pueue remove 17  # kill + drop from queue
 - **`scripts/wait.py`** — Block until selected tasks reach terminal status; emit a JSON summary. Selectors: `--ids`, `--label`, `--label-prefix`, `--group`. Quiet by default — emits only one initial line + state-change events on stderr; pass `--verbose` for per-tick output.
   - Flags: `--ids`, `--label` (repeatable), `--label-prefix`, `--group`, `--poll-seconds`, `--timeout-seconds`, `--fail-fast`, `--verbose`, `--help`.
   - Exit: `0` all succeeded, `1` arg error, `4` daemon unreachable, `5` ≥1 failed/killed/dependency-failed, `6` timeout.
-- **`scripts/submit-dag.py`** — Declarative DAG submitter. Reads YAML or JSON (file path or `-` for stdin), topo-sorts, validates, submits with wired `--after`, returns `{name → id, topo_order, width_per_group}`. Computes DAG fan-out width per group; warns (or with `--auto-parallel`, sets) `pueue parallel` to match.
-  - Flags: `--format`, `--default-group`, `--label-prefix`, `--dry-run`, `--print-graph`, `--auto-parallel`, `--help`.
-  - Exit: `0` all submitted, `1` schema/cycle/unknown-ref, `2` pueue not installed, `3` mid-run pueue failure (stdout still emits IDs that DID submit, for cleanup).
+- **`scripts/submit-dag.py`** — Declarative DAG submitter. Reads YAML or JSON (file path or `-` for stdin), topo-sorts, validates, submits with wired `--after`, returns `{name → id, topo_order, width_per_group, isolated_group?}`. Computes DAG fan-out width per group; with `--isolated-group [NAME]` creates a fresh dedicated group sized to the width (preferred — leaves user's other groups untouched). With `--auto-parallel` mutates target groups in place. Without either, only warns.
+  - Flags: `--format`, `--default-group`, `--label-prefix`, `--dry-run`, `--print-graph`, `--auto-parallel`, `--isolated-group [NAME]`, `--help`.
+  - Exit: `0` all submitted, `1` schema/cycle/unknown-ref/conflicting flags, `2` pueue not installed, `3` mid-run pueue failure (stdout still emits IDs that DID submit, for cleanup).
+- **`scripts/cleanup.sh`** — Prune pueue task history, empty groups, and old log files. Wraps `pueue clean` + `pueue group remove` for empty non-default groups + optional log-file mtime pruning. Emits a JSON report. Run weekly to keep `pueue status --json` fast.
+  - Flags: `--successful-only`, `--group GROUP`, `--remove-empty-groups`, `--logs-older-than N`, `--dry-run`, `--help`.
+  - Exit: `0` ok (or dry-run), `1` bad args, `2` pueue not installed, `3` daemon unreachable.
 
 ## Bundled assets
 

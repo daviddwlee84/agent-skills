@@ -103,3 +103,56 @@ def test_dag_stdin(pueue_env, scripts_dir):
     )
     out = json.loads(r.stdout)
     assert "only" in out["tasks"]
+
+
+def test_dag_isolated_group_creates_fresh_group(pueue_env, scripts_dir, fixtures_dir):
+    submit_dag = scripts_dir / "submit-dag.py"
+    r = subprocess.run(
+        [str(submit_dag), str(fixtures_dir / "simple-dag.yaml"),
+         "--isolated-group", "--label-prefix", "iso-"],
+        env=pueue_env, capture_output=True, text=True, check=True,
+    )
+    out = json.loads(r.stdout)
+    isolated = out["isolated_group"]
+    assert isolated.startswith("dag-")
+    assert out["default_group"] == isolated
+
+    # All tasks should be in the isolated group
+    st_proc = subprocess.run(
+        ["pueue", "status", "--json"], env=pueue_env,
+        capture_output=True, text=True, check=True,
+    )
+    st = json.loads(st_proc.stdout)
+    for tid in out["tasks"].values():
+        assert st["tasks"][str(tid)]["group"] == isolated
+
+    # The group's parallel_tasks should match DAG width (2 for diamond)
+    gp_proc = subprocess.run(
+        ["pueue", "group", "--json"], env=pueue_env,
+        capture_output=True, text=True, check=True,
+    )
+    groups = json.loads(gp_proc.stdout)
+    assert isolated in groups
+    assert groups[isolated]["parallel_tasks"] >= 2
+
+
+def test_dag_isolated_group_named(pueue_env, scripts_dir, fixtures_dir):
+    submit_dag = scripts_dir / "submit-dag.py"
+    r = subprocess.run(
+        [str(submit_dag), str(fixtures_dir / "simple-dag.yaml"),
+         "--isolated-group", "test-iso-x9", "--label-prefix", "named-"],
+        env=pueue_env, capture_output=True, text=True, check=True,
+    )
+    out = json.loads(r.stdout)
+    assert out["isolated_group"] == "test-iso-x9"
+
+
+def test_dag_isolated_group_conflicts_with_default_group(pueue_env, scripts_dir, fixtures_dir):
+    submit_dag = scripts_dir / "submit-dag.py"
+    r = subprocess.run(
+        [str(submit_dag), str(fixtures_dir / "simple-dag.yaml"),
+         "--isolated-group", "x", "--default-group", "y"],
+        env=pueue_env, capture_output=True, text=True,
+    )
+    assert r.returncode == 1
+    assert "mutually exclusive" in r.stderr

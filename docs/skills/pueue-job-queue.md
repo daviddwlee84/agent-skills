@@ -11,10 +11,11 @@ what's running.
 |---|---|
 | `check-daemon.sh` | "Is `pueued` running, and where do logs live on this OS?" |
 | `submit.sh` | "Submit one task and give me a parseable `{task_id, label, group, after}`." |
-| `submit-dag.py` | "Submit this whole fan-out / fan-in pipeline with deps wired." |
+| `submit-dag.py` | "Submit this whole fan-out / fan-in pipeline with deps wired — in a fresh isolated group sized to the DAG width." |
 | `wait.py` | "Block until these tasks finish, then summarize success/failure." |
+| `cleanup.sh` | "Reclaim disk + status latency: prune old tasks, empty groups, log files." |
 | `references/cli-cheatsheet.md` | "What un-wrapped `pueue` subcommand do I reach for?" |
-| `references/json-schema.md` | "What does `pueue status --json` actually look like?" |
+| `references/json-schema.md` | "What does `pueue status --json` actually look like? What's the QUERY DSL syntax?" |
 | `references/dag-patterns.md` | "How do I express fan-out / fan-in / diamond shapes?" |
 | `references/daemon-and-config.md` | "How do I auto-start `pueued` on macOS / Linux?" |
 
@@ -56,15 +57,16 @@ The skill exists to keep three things out of an agent's way:
 
 ```
 skills/local/pueue-job-queue/
-├── SKILL.md                                  # ~230 lines
+├── SKILL.md                                  # ~275 lines
 ├── scripts/
 │   ├── check-daemon.sh                       # bash; daemon health + auto-start
 │   ├── submit.sh                             # bash; submit-one wrapper, JSON out, group autocreate
-│   ├── wait.py                               # PEP 723; block until terminal, JSON summary
-│   └── submit-dag.py                         # PEP 723 (pyyaml); declarative DAG submitter
+│   ├── wait.py                               # PEP 723; block until terminal, state-change events, JSON summary
+│   ├── submit-dag.py                         # PEP 723 (pyyaml); DAG submitter with --isolated-group / --auto-parallel
+│   └── cleanup.sh                            # bash; prune tasks + empty groups + old log files
 ├── references/
 │   ├── cli-cheatsheet.md                     # un-wrapped commands
-│   ├── json-schema.md                        # observed status --json shape (4.0.2) + jq recipes
+│   ├── json-schema.md                        # observed status --json shape (4.0.2) + QUERY DSL + jq recipes
 │   ├── dag-patterns.md                       # fan-out / fan-in / diamond + escalation table
 │   └── daemon-and-config.md                  # pueued setup per OS, config knobs, log paths
 ├── assets/
@@ -73,7 +75,7 @@ skills/local/pueue-job-queue/
 └── tests/
     ├── conftest.py                           # isolated pueued fixture, skip if pueue absent
     ├── test_submit.py                        # submit.sh paths + dependency failure
-    ├── test_dag.py                           # topo invariant, cycle/unknown/missing-cmd
+    ├── test_dag.py                           # topo invariant, cycle/unknown/missing-cmd, isolated-group
     ├── test_wait.py                          # success/failure/timeout exit codes
     ├── test_contracts.sh                     # bash --help/error-code contract
     └── fixtures/simple-dag.yaml              # 4-task diamond
@@ -135,10 +137,10 @@ shape:
 
 ## Verification
 
-The skill ships **19 pytest cases** that spin up an isolated `pueued`
+The skill ships **22 pytest cases** that spin up an isolated `pueued`
 under a tempdir-scoped config — your real queue is never touched — plus a
 bash exit-code contract test. Both auto-skip if `pueue` / `pueued` aren't
-on `PATH`. `make lint-skill` is clean (0 errors, 0 warnings).
+on `PATH`. `lint-skill --strict` is clean (0 errors, 0 warnings).
 
 ```bash
 uv run --extra dev pytest skills/local/pueue-job-queue/tests/ -q

@@ -127,6 +127,48 @@ Shape:
 case, read the file directly from `~/Library/Application Support/pueue/logs/`
 on macOS or `~/.local/share/pueue/logs/` on Linux).
 
+## Pueue's built-in QUERY DSL (prefer over jq for simple filters)
+
+`pueue status [QUERY]` accepts a SQL-ish filter string that the daemon
+applies *before* serialization — faster than jq on a big task table, and
+shorter to type. Works with `--json`. Documented under `pueue status --help`.
+
+Grammar:
+
+```
+[columns=[col,...]]?  [filter ...]*  [order_by col asc|desc]?  [first|last N]?
+
+cols accepted in columns=[]:    id, status, command, label, path,
+                                enqueue_at, dependencies, start, end
+cols accepted in filters:       status, command, label, start, end, enqueue_at
+filter ops:                     =   !=   <   >   %=   (%= = "contains")
+```
+
+Recipes:
+
+```bash
+# Last 10 failed tasks across all groups, with end time
+pueue status --json 'status=Failed order_by end desc first 10'
+
+# Substring match on label (great for label-prefix workflows)
+pueue status --json 'label %= sweep-'
+
+# Currently running tasks (no enum value for Running here — use jq for state),
+# but for any Done variant (Success, Failed, Killed, DependencyFailed) the DSL works:
+pueue status --json 'status=Success last 20'
+
+# Compose: failed in the last hour, project columns
+pueue status --json 'status=Failed end > 2026-04-27T00:00:00Z columns=[id,label,end]'
+
+# Order by start, take the most recent 5
+pueue status --json 'order_by start desc first 5'
+```
+
+The DSL covers ~80% of common queries with one-line incantations. For
+status-enum *variant* matching that the DSL doesn't expose (e.g.
+`Running`, `Stashed`, `DependencyFailed` specifically) or complex
+projections, fall back to `jq` (next section).
+
 ## Useful `jq` recipes
 
 ```bash

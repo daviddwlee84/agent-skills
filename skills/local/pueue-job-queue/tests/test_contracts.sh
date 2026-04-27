@@ -33,7 +33,7 @@ assert_exit() {
 
 echo "== --help on every script returns 0 =="
 
-for s in check-daemon.sh submit.sh wait.py submit-dag.py; do
+for s in check-daemon.sh submit.sh wait.py submit-dag.py cleanup.sh; do
   bash "$SCRIPTS/$s" --help >/dev/null 2>&1
   rc=$?
   if [ "$s" = "wait.py" ] || [ "$s" = "submit-dag.py" ]; then
@@ -58,6 +58,11 @@ echo
 echo "== submit-dag.py with missing spec returns 1 =="
 "$SCRIPTS/submit-dag.py" /tmp/no-such-file-x9.yaml >/dev/null 2>&1
 assert_exit "submit-dag.py (missing file)" 1 "$?"
+
+echo
+echo "== cleanup.sh bad flag returns 1 =="
+bash "$SCRIPTS/cleanup.sh" --bogus-flag >/dev/null 2>&1
+assert_exit "cleanup.sh (bad flag)" 1 "$?"
 
 echo
 echo "== check-daemon.sh w/ unreachable daemon returns 3 =="

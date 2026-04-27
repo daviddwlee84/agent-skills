@@ -85,7 +85,18 @@ Examples:
     p.add_argument("--auto-parallel", action="store_true",
                    help="Before submitting, set each group's `parallel_tasks` "
                         "to at least the DAG's max width in that group. "
-                        "Without this flag, the script only warns.")
+                        "Without this flag, the script only warns. Mutates "
+                        "the target groups' config — prefer --isolated-group "
+                        "if you don't want that side effect.")
+    p.add_argument("--isolated-group", nargs="?", const="__auto__", default=None,
+                   metavar="NAME",
+                   help="Run the whole DAG in a fresh dedicated group sized "
+                        "to the DAG width. NAME is auto-generated from spec "
+                        "content + timestamp if omitted. Per-task `group:` "
+                        "overrides in the spec are ignored under this flag — "
+                        "isolation means one group for the run. After the "
+                        "run, `pueue group remove <NAME>` to clean up "
+                        "(remaining tasks move to default).")
     return p.parse_args()
 
 
@@ -276,8 +287,34 @@ def main() -> int:
         print("error: pueue CLI not found on PATH", file=sys.stderr)
         return 2
 
+    if args.isolated_group is not None and args.default_group is not None:
+        print("error: --isolated-group and --default-group are mutually exclusive",
+              file=sys.stderr)
+        return 1
+
+    spec_raw = ""
+    if args.spec_path != "-":
+        p = Path(args.spec_path)
+        if p.is_file():
+            spec_raw = p.read_text()
+
     spec = load_spec(args.spec_path, args.format)
     cleaned, topo, default_group = validate(spec, args.default_group)
+
+    isolated_group: str | None = None
+    if args.isolated_group is not None:
+        if args.isolated_group == "__auto__":
+            import hashlib, time as _time
+            seed = (spec_raw or json.dumps(spec, sort_keys=True)) + str(_time.time())
+            digest = hashlib.sha256(seed.encode()).hexdigest()[:8]
+            isolated_group = f"dag-{digest}"
+        else:
+            isolated_group = args.isolated_group
+        # Override the resolved default + strip per-task group overrides so
+        # everything lands in the isolated group.
+        default_group = isolated_group
+        for body in cleaned.values():
+            body["group"] = None
 
     if args.print_graph or args.dry_run:
         print("topo order:", " -> ".join(topo), file=sys.stderr)
@@ -294,22 +331,39 @@ def main() -> int:
         gp = subprocess.run(["pueue", "group", "--json"], capture_output=True, text=True)
         if gp.returncode == 0:
             groups_state = json.loads(gp.stdout)
-            for g, needed in width_per_group.items():
-                have = groups_state.get(g, {}).get("parallel_tasks")
-                # parallel_tasks=0 means unlimited
-                if have is not None and have != 0 and have < needed and needed > 1:
-                    msg = (f"warning: DAG fan-out width in group '{g}' is {needed}, "
-                           f"but `parallel_tasks={have}` — siblings will serialize. "
-                           f"Run: pueue parallel {needed} --group {g}")
-                    width_warnings.append(msg)
-                    if args.auto_parallel:
-                        subprocess.run(["pueue", "parallel", str(needed),
-                                        "--group", g],
-                                       capture_output=True, text=True, check=False)
-                        print(f"auto-parallel: pueue parallel {needed} --group {g}",
-                              file=sys.stderr)
-                    else:
-                        print(msg, file=sys.stderr)
+            # If --isolated-group, create the group sized to the DAG's width
+            # for that group. No mutation of any other group.
+            if isolated_group is not None and isolated_group not in groups_state:
+                subprocess.run(["pueue", "group", "add", isolated_group],
+                               capture_output=True, text=True, check=False)
+                needed = width_per_group.get(isolated_group, 1)
+                if needed > 1:
+                    subprocess.run(["pueue", "parallel", str(needed),
+                                    "--group", isolated_group],
+                                   capture_output=True, text=True, check=False)
+                print(f"isolated-group: created '{isolated_group}' "
+                      f"with parallel_tasks={max(needed, 1)}",
+                      file=sys.stderr)
+            else:
+                for g, needed in width_per_group.items():
+                    have = groups_state.get(g, {}).get("parallel_tasks")
+                    # parallel_tasks=0 means unlimited
+                    if have is not None and have != 0 and have < needed and needed > 1:
+                        msg = (f"warning: DAG fan-out width in group '{g}' is "
+                               f"{needed}, but `parallel_tasks={have}` — "
+                               f"siblings will serialize. Run: "
+                               f"pueue parallel {needed} --group {g} "
+                               f"(or pass --isolated-group / --auto-parallel)")
+                        width_warnings.append(msg)
+                        if args.auto_parallel:
+                            subprocess.run(["pueue", "parallel", str(needed),
+                                            "--group", g],
+                                           capture_output=True, text=True,
+                                           check=False)
+                            print(f"auto-parallel: pueue parallel {needed} "
+                                  f"--group {g}", file=sys.stderr)
+                        else:
+                            print(msg, file=sys.stderr)
 
     name_to_id: dict[str, int] = {}
     for idx, name in enumerate(topo):
@@ -337,7 +391,9 @@ def main() -> int:
         "default_group": default_group,
         "width_per_group": width_per_group,
     }
-    if width_warnings and not args.auto_parallel:
+    if isolated_group is not None:
+        out["isolated_group"] = isolated_group
+    if width_warnings and not args.auto_parallel and isolated_group is None:
         out["parallelism_warnings"] = width_warnings
     if args.dry_run:
         out["dry_run"] = True
