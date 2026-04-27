@@ -193,6 +193,27 @@ committed / pushed a secret":
   exists — so a repo without `.pre-commit-config.yaml` has no
   protection. Run `bootstrap-project.sh` before the first commit with
   agent artifacts, not after.
+- **Active SpecStory writer can defeat the redact loop.** The standard
+  `git add → git commit → pre-commit auto-fixes → re-stage → re-commit`
+  flow assumes the file is **quiescent** during the commit. SpecStory's
+  `specstory_*_watch` daemon tails the agent transcript continuously,
+  so if the chat captured `ps -axo args`-style output that contained an
+  unrelated daemon's secret in argv (e.g. SpecStory's own
+  `--cloud-token …` flag), every diagnostic command (`grep`, `sed -n
+  '<line>p'`, `cat | head | tail`) prints the secret again, SpecStory
+  appends it to the transcript, and the redact-then-restage cycle
+  never converges. Symptom: pre-commit says "Successfully redacted N
+  file(s)" but `gitleaks-system` immediately fails on the same line,
+  re-running `git add && git commit` doesn't help, and `grep -c
+  '<secret-prefix>' file` shows the count *increasing* over commit
+  attempts. **Workaround**: a single atomic
+  `python3 -c "<in-place re.sub>" && git add <file> && git commit -m
+  "..."` pipeline so the index is frozen before any new specstory write
+  lands. **Don't** print, grep, or diff the secret line during the
+  recovery — every print echoes back into the transcript. Diagnose with
+  `lsof <file>` (looking for `specstory_*` writers) instead. See
+  `pitfalls/redact-secrets-loop-with-active-specstory-writer.md` in
+  upstream chezmoi for the full debugging trail.
 
 ## Available scripts
 
