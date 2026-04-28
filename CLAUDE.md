@@ -20,6 +20,10 @@ make sync-check
 # Validate and render the repo backlog board
 make kanban
 
+# Validate skills/.claude-plugin/marketplace.json (the catalog manifest
+# that drives the grouped install UI of `npx skills add ...`).
+make marketplace
+
 # Add a new vendored skill (auto-syncs)
 ./scripts/add-vendor.sh owner/repo/path/to/skill
 ./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
@@ -56,6 +60,23 @@ Sync uses the git trees API to recursively download skill directories (SKILL.md 
 
 Active series in this repo:
 - `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
+
+## Marketplace Catalog
+
+`skills/.claude-plugin/marketplace.json` defines the user-facing plugin
+groupings shown by `npx skills@latest add daviddwlee84/agent-skills/skills`.
+Located under `skills/` (not repo root) because the `/skills` subpath in
+the install command makes the CLI read the manifest from
+`<repo>/skills/.claude-plugin/marketplace.json` — see
+[`docs/reference/npx-skills-metadata.md`](docs/reference/npx-skills-metadata.md)
+for the full mechanism.
+
+When adding a new skill (local or vendored), also append its path to the
+matching plugin's `skills[]` array in the manifest, or accept that it
+will fall through to the **Other** group. Run `make marketplace` after
+editing — the validator catches broken paths, duplicates, and reserved
+marketplace names. Path format is `./local/<name>` or
+`./vendor/<name>` (relative to `skills/`, not repo root).
 
 ## SKILL.md Format
 

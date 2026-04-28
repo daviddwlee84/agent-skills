@@ -2293,129 +2293,4817 @@ The file /Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-
 ```
 </details></tool-use>
 
-_**Agent (claude-opus-4-7 2026-04-28 08:30:52Z)**_
+_**Agent (claude-opus-4-7 2026-04-28 08:43:58Z)**_
 
 <tool-use data-tool-type="generic" data-tool-name="ExitPlanMode"><details>
 <summary>Tool use: **ExitPlanMode**</summary>
 
+```text
+The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). To tell you how to proceed, the user said:
+再分析一下 是不是 .claude-plugin/marketplace.json 就是現在維護 skills metadata 的 best practice 還是說有什麼更好的方法 (當然我們避免overdesign 如果convension是這樣可以先用)
+
+以下是ChatGPT的回答
+```
+我會建議：可以用 .claude-plugin/marketplace.json，但不要把它當成唯一 source of truth；把它當「distribution/catalog manifest」會比較穩。
+
+原因是：
+
+1. 這格式現在確實是官方 Claude Code Marketplace 格式
+    官方文件明確說 marketplace 要放在 repo root 的 .claude-plugin/marketplace.json，裡面定義 marketplace 名稱、owner、plugins；每個 plugin 至少需要 name + source。也支援 category、tags、skills、commands、agents、hooks 等欄位。
+2. 它不是純 Claude 私貨到完全不能用
+    npx skills 目前定位是 “open agent skills ecosystem”，README 說支援 OpenCode、Claude Code、Codex、Cursor 等多個 agent；你截圖裡它能讀到 .claude-plugin/marketplace.json 的分類，基本就是借用了 Claude marketplace manifest 當 catalog。
+3. 但它本質還是 Claude Code plugin 生態的 schema
+    官方 plugin manifest 是 .claude-plugin/plugin.json，skill 本身則是 skills/<name>/SKILL.md。Claude Code 也會 auto-discover default locations；manifest 是 optional，但需要 metadata 或自訂 component path 時才用。
+    所以如果你想做跨 agent skill repo，直接把所有 metadata 綁死在 .claude-plugin/*，長期會有一點 vendor-lock-in 味道。
+
+我會用這種分層：
+
+agent-skills/
+  skills/
+    frontend-design/
+      SKILL.md          # skill 本體 + frontmatter，跨 agent 最重要
+    python-debugging/
+      SKILL.md
+  .claude-plugin/
+    marketplace.json    # 對 Claude Code / npx skills 友善的 catalog
+    plugin.json         # 可選：如果你要把整包當 Claude plugin
+  skills.catalog.yaml   # 可選：你自己的 canonical metadata
+  scripts/
+    generate-marketplace.py
+    validate-skills.py
+
+實務建議是：
+
+把 SKILL.md frontmatter 當每個 skill 的最小 metadata source。npx skills 的 skill format 要求 frontmatter 裡有 name、description，而且 description 會幫 agent 判斷什麼時候該啟用 skill。
+
+然後用 .claude-plugin/marketplace.json 維護「分類、分組、發佈入口」。例如：
+
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "my-agent-skills",
+  "owner": {
+    "name": "Da-Wei"
+  },
+  "description": "Reusable skills for coding agents",
+  "plugins": [
+    {
+      "name": "coding-skills",
+      "description": "Coding workflow skills",
+      "category": "Coding",
+      "tags": ["coding", "workflow", "review"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/frontend-design",
+        "./skills/python-debugging"
+      ]
+    },
+    {
+      "name": "research-skills",
+      "description": "Research and document-reading skills",
+      "category": "Research",
+      "tags": ["research", "paper", "summarization"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/paper-reading",
+        "./skills/literature-review"
+      ]
+    }
+  ]
+}
+
+這種寫法的好處是：
+npx skills add your/repo 可以看到分類；Claude Code plugin marketplace 也能吃；但每個 skill 還是標準 SKILL.md，不會完全綁死 Claude。
+
+幾種方案比較：
+
+方案	適合用途	優點	缺點
+只靠 skills/*/SKILL.md frontmatter	純 skill repo、跨 agent	最簡單、最 portable	分類/marketplace 體驗弱
+.claude-plugin/marketplace.json	發佈、分類、讓 npx skills 顯示漂亮	官方 Claude schema；有 category/tags/source/version	名字很 Claude-centric
+.claude-plugin/plugin.json	一個完整 Claude plugin，含 skills/hooks/MCP/agents	Claude Code 支援最好	對其他 agent 意義較弱
+自己的 skills.catalog.yaml 再生成 marketplace	長期維護、跨平台	最乾淨，可生成 Claude/OpenCode/Codex 各種格式	要自己寫 generator/validator
+npm package / OpenPackage 類方案	想做真正 package manager 化	版本化與 dependency 管理更自然	生態還在變，可能過度設計
+
+我的取捨會是：
+
+現在就想用：直接維護 .claude-plugin/marketplace.json，沒問題。
+但如果你打算長期維護自己的 skill collection：建議加一層 skills.catalog.yaml 或至少寫 script 從 SKILL.md frontmatter 生成 marketplace。
+
+例如 canonical catalog 可以長這樣：
+
+marketplace:
+  name: my-agent-skills
+  owner:
+    name: Da-Wei
+groups:
+  - name: coding-skills
+    category: Coding
+    description: Coding workflow skills
+    tags: [coding, workflow, review]
+    skills:
+      - frontend-design
+      - python-debugging
+  - name: research-skills
+    category: Research
+    description: Research and paper reading skills
+    tags: [research, paper]
+    skills:
+      - paper-reading
+      - literature-review
+
+然後 generator 產生：
+
+.claude-plugin/marketplace.json
+README.md 的 skill index
+可能未來再產生 opencode/codex/cursor 專用 metadata
+
+還有幾個坑要注意：
+
+官方 marketplace name 有保留名，像 agent-skills、anthropic-plugins、claude-code-marketplace 這類不能冒用或仿冒。
+
+如果你在 marketplace 裡寫 version，官方文件說使用者只有在你 bump version 時才會收到更新；不寫 version 且用 git hosting 時，每個 commit 可以視作新版本。這點對自己維護 skill repo 很重要。
+
+相對路徑 source: "./..." 是相對於 marketplace root，也就是包含 .claude-plugin/ 的 repo root，不是相對於 .claude-plugin/marketplace.json 本身。官方也提醒不要用 ../ 去引用 marketplace root 外的路徑。
+
+另外因為這類 installer 會讀 metadata 然後 copy/symlink 檔案，name、source、path 最好做 validation，避免奇怪字元、path traversal、重名覆蓋。官方也有 claude plugin validate 可檢查 marketplace/plugin/skill/frontmatter 等格式問題。
+
+結論：
+你現在的需求是「維護分類 metadata，讓 npx skills 看到更好的分類 UI」，那就用 .claude-plugin/marketplace.json。但 repo 設計上我會把它定位成 generated or compatibility manifest，而不是唯一核心資料。核心仍然保持 skills/<name>/SKILL.md 標準結構；之後如果 OpenCode/Codex/Cursor 形成自己的 manifest，你只要新增 generator，不用重構整個 skill repo。
+```
+順便看看會不會還需要 .claude-plugin/plugin.json 之類的
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:44:09Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:44:11Z)**_
+
+Good push-back. Let me actually verify the claims (is marketplace.json truly best practice for `npx skills`? do we need plugin.json? is there a more portable layer?) before locking in the plan.
+
+_**Agent (claude-opus-4-7 2026-04-28 08:46:53Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="Agent"><details>
+<summary>Tool use: **Agent**</summary>
+Verify marketplace.json best practice
+
+```text
+All claims are now verified. I have everything I need.
+
+---
+
+## Bottom line: **Plan (A)** — write `.claude-plugin/marketplace.json` directly. No extra abstraction layer earns its keep.
+
+### Q1. What `npx skills` actually reads
+
+Source: `vercel-labs/skills` (npm `skills` v1.5.2, `bin/cli.mjs`). The categorization comes from one file, [`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts), which only ever opens two paths:
+
+```ts
+readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');  // multi-plugin
+readFile(join(basePath, '.claude-plugin/plugin.json'),       'utf-8'); // single-plugin
+```
+
+`getPluginGroupings()` returns `Map<absoluteSkillPath, plugin.name>`. Then in `src/add.ts` (lines ~1180-1193) the UI is built with clack's `groupMultiselect`:
+
+```ts
+const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+if (!grouped[groupName]) grouped[groupName] = [];
+grouped[groupName]!.push({ ... });
+selected = await p.groupMultiselect({ options: grouped, ... });
+```
+
+So the "Document Skills / Example Skills / Claude Api / Other" headers in the screenshot are literally `kebabToTitle(plugins[].name)` from `marketplace.json`. **There is no native `skills.json` / `skills.yaml` / `skill-pack.json` format** — I grep'd the repo tree, only `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` are consumed. Fields read: `metadata.pluginRoot`, `plugins[].name`, `plugins[].source` (string only — object/remote sources are skipped), `plugins[].skills`. **Fields ignored by `npx skills`: `category`, `tags`, `version`, `description`, `strict`, `author`** — they pass through but don't affect grouping or UI.
+
+### Q2. `plugin.json` vs `marketplace.json`
+
+Per the [official plugins-reference](https://code.claude.com/docs/en/plugins-reference) and [plugin-marketplaces docs](https://code.claude.com/docs/en/plugin-marketplaces): **they are not redundant.** `plugin.json` describes *one* plugin (single-plugin repo install). `marketplace.json` is the *catalog* listing many plugins. For a multi-category repo like `anthropics/skills`, you only need `marketplace.json` — `anthropics/skills` itself ships no `plugin.json`. `plugins[]` entries in marketplace.json may carry `category`, `tags`, `strict`, plus any plugin-manifest field; quote: *"You can include any field from the plugin manifest schema (...), plus these marketplace-specific fields: source, category, tags, and strict."* `category` and `tags` are honored by Claude Code's native `/plugin` UI but **ignored by `npx skills`'s grouping** (it groups on `name` only).
+
+### Q3. Reserved names / source / version — all three ChatGPT claims confirmed
+
+Verbatim from plugin-marketplaces docs:
+
+- **Reserved**: *"`claude-code-marketplace`, `claude-code-plugins`, `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`, `agent-skills`, `knowledge-work-plugins`, `life-sciences`. Names that impersonate official marketplaces (like `official-claude-plugins` or `anthropic-tools-v2`) are also blocked."* So `agent-skills` is reserved — your marketplace `name` must be something else (e.g. `daviddwlee84-skills`).
+- **Source resolution**: *"Resolved relative to the marketplace root, not the `.claude-plugin/` directory ... `./plugins/my-plugin` points to `<repo>/plugins/my-plugin`, even though `marketplace.json` lives at `<repo>/.claude-plugin/marketplace.json`."* Confirmed.
+- **Version when omitted**: plugin.json — *"If omitted, Claude Code falls back to the git commit SHA, so every commit is treated as a new version."* Marketplace metadata.version — *"If you omit `version` and host this marketplace in git, every commit automatically counts as a new version."* Both confirmed.
+
+### Q4. Cross-agent portability
+
+OpenCode reads `.opencode/plugins/` and `opencode.json`'s `plugin: []` (npm packages) — **not** `.claude-plugin/marketplace.json`. Codex/Cursor/Aider have their own conventions (`.cursor/rules/`, `AGENTS.md`, etc.). The **only thing that crosses agents is `npx skills add`** — it reads `marketplace.json` once, then *installs* the SKILL.md files into each target agent's native skills directory (`agents` array in `src/types.ts` enumerates 50+ agents). So one `marketplace.json` is sufficient for cross-agent install via the CLI, even though no other agent natively reads it.
+
+### Q5. Recommendation
+
+**Do plan (A): write `.claude-plugin/marketplace.json` directly**, modeled on `anthropics/skills`. Concretely:
+
+1. `metadata.name` = something not in the reserved list (e.g. `daviddwlee84-skills`).
+2. `metadata.pluginRoot: "./skills"` so each plugin's `source` can be `"./local"` or `"./vendor/fullstack-nextjs"` instead of `"./skills/local"`.
+3. Define plugins as the user-visible categories (`local-skills`, `vendor-fullstack-nextjs`, `vendor-misc`, etc.) — one plugin per group header you want in the picker.
+4. Each `plugins[]` entry: include `name` (drives the header — `npx skills` titlecases it), `description`, `source`, `skills: [...]`. Optionally add `category`/`tags`/`version` — they cost nothing and are honored by Claude Code's native `/plugin` UI even though `npx skills` ignores them.
+5. **Omit `version`** during active development so every commit ships to users (matches `anthropics/skills`, which has no version on its plugin entries).
+
+Plan (B) — a generated catalog — is **not justified yet**: only one consumer reads it, and `marketplace.json` is already the broadest-reach format. Add a generator only if you ever need a second native target (e.g. a Cursor/OpenCode catalog), not preemptively.
+
+Relevant local files: `/Volumes/Data/Program/Personal/agent-skills/CLAUDE.md` (current vendor/local layout — your `pluginRoot: "./skills"` aligns with it), `/Volumes/Data/Program/Personal/agent-skills/vendor.yaml` (already provides per-skill metadata you could codegen `plugins[].skills` from if desired).
+
+Plan file to write next (per plan-mode requirement): `/Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry-agent-a1cb4b04e77fa6abd.md` — let me know if you want me to draft the concrete `marketplace.json` shape there before any implementation.
+agentId: a1cb4b04e77fa6abd (use SendMessage with to: 'a1cb4b04e77fa6abd' to continue this agent)
+<usage>total_tokens: 62784
+tool_uses: 25
+duration_ms: 145691</usage>
+```
+</details></tool-use>
+
+_**Agent - sidechain (2026-04-28 08:44:28Z)**_
+
+I'm planning how to add category metadata to a personal skills repo at https://github.com/daviddwlee84/agent-skills so that running `npx skills@latest add daviddwlee84/agent-skills` shows skills grouped by category in the interactive selection UI (just like `anthropics/skills` does, where they're grouped under "Document Skills", "Example Skills", "Claude Api", "Other").
+
+I've already confirmed `anthropics/skills` ships a `.claude-plugin/marketplace.json` and the `npx skills` CLI seems to read that. But I want to verify a deeper question before committing: **is `.claude-plugin/marketplace.json` actually the right long-term place to put this metadata, or is there a more agent-neutral / less Claude-centric mechanism that `npx skills` supports?**
+
+Please research and answer concretely:
+
+1. **What does the `npx skills` CLI actually read for categorization?**
+   - Find the source repo behind `npx skills@latest` on npm. Likely candidates: `vercel-labs/skills`, an npm package called `skills`, or something tied to the `skills.dev` / `agentskills.io` ecosystem.
+   - Read the package.json + source to confirm exactly what file(s) and fields drive the grouped UI shown in the screenshot. Quote the relevant code if you can.
+   - Does it have its own native catalog format (e.g. `skills.json`, `skills.yaml`, `skill-pack.json`) that is preferred over `.claude-plugin/marketplace.json`? Or does it ONLY consume the Claude marketplace.json shape?
+
+2. **Claude Code plugin schema — what's actually required?**
+   - Do we also need `.claude-plugin/plugin.json` alongside `marketplace.json`, or is `plugin.json` for something else (single-plugin install rather than a marketplace)?
+   - Confirm the official Claude Code plugin/marketplace docs at https://docs.claude.com/en/docs/claude-code/plugins-marketplaces or similar — fetch the actual page.
+   - What fields beyond `name`/`description`/`skills` does `plugins[]` support? Specifically: `category`, `tags`, `version`. Are these honored by `npx skills` too, or only by Claude Code's native marketplace?
+
+3. **Reserved names / pitfalls**:
+   - ChatGPT claimed `agent-skills`, `anthropic-plugins`, `claude-code-marketplace` are reserved marketplace names. Verify against official docs.
+   - ChatGPT claimed `source: "./..."` is relative to marketplace root, NOT to the JSON file itself. Verify.
+   - ChatGPT claimed not setting `version` means every commit is treated as a new release when hosted on git. Verify.
+
+4. **Cross-agent portability** — does OpenCode / Codex / Cursor read marketplace.json, or do they have separate catalog formats? The user wants their skills usable across agents.
+
+5. **Bottom line**: should the plan be:
+   - (A) Just write `.claude-plugin/marketplace.json` directly (current plan).
+   - (B) Maintain a canonical `skills.catalog.yaml` and generate `marketplace.json` from it.
+   - (C) Something else.
+
+Quote source code, official docs, and live config files verbatim where possible. Don't speculate — verify. Use `gh api` to fetch GitHub files, WebFetch for docs sites, and `npm view skills` / `npm view <pkg> repository` to find the right package source. Report under ~700 words with a concrete recommendation backed by evidence.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:32Z)**_
+
+I'll research this systematically. Let me start by finding the actual `skills` npm package and its source, then check the Claude plugin docs and reference repos in parallel.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect npm package metadata for skills
+
+`npm view skills 2>&1 | head -60`
+
+```text
+skills@1.5.2 | MIT | deps: 1 | versions: 65
+The open agent skills ecosystem
+https://github.com/vercel-labs/skills#readme
+
+keywords: cli, agent-skills, skills, ai-agents, aider-desk, amp, antigravity, augment, bob, claude-code, openclaw, cline, codearts-agent, codebuddy, codemaker, codestudio, codex, command-code, continue, cortex, crush, cursor, deepagents, devin, droid, firebender, forgecode, gemini-cli, github-copilot, goose, junie, iflow-cli, kilo, kimi-cli, kiro-cli, kode, mcpjam, mistral-vibe, mux, opencode, openhands, pi, qoder, qwen-code, replit, rovodev, roo, tabnine-cli, trae, trae-cn, warp, windsurf, zencoder, neovate, pochi, adal, universal
+
+bin: skills, add-skill
+
+dist
+.tarball: https://registry.npmmirror.com/skills/-/skills-1.5.2.tgz
+.shasum: 8ca0d916cf9468751bac1585dbb0cd46467aa1f2
+.integrity: sha512-ERMYM+UpIYi8+8zj8jiknOx5Z1eX7TkCyZfJv8jNfq3cVd49lj3lrIfQ4M4LWGEd1zXEZD5tuRKC1PRhqeyZyA==
+.unpackedSize: 407.6 kB
+
+dependencies:
+yaml: ^2.8.3
+
+maintainers:
+- rauchg <rauchg@gmail.com>
+- quuu <qual1337@gmail.com>
+
+dist-tags:
+latest: 1.5.2
+snapshot: 1.4.5-snapshot.2
+
+published 9 hours ago by quuu <qual1337@gmail.com>
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:38Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Get repo and homepage for skills package
+
+`npm view skills repository homepage 2>&1`
+
+```text
+repository = { type: 'git', url: 'git+https://github.com/vercel-labs/skills.git' }
+homepage = 'https://github.com/vercel-labs/skills#readme'
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:39Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List .claude-plugin contents in anthropics/skills
+
+`gh api repos/anthropics/skills/contents/.claude-plugin 2>&1 | head -80`
+
+```text
+[{"name":"marketplace.json","path":".claude-plugin/marketplace.json","sha":"03d8e71c46e567e210a397ef12e949737f7d66c1","size":1606,"url":"https://api.github.com/repos/anthropics/skills/contents/.claude-plugin/marketplace.json?ref=main","html_url":"https://github.com/anthropics/skills/blob/main/.claude-plugin/marketplace.json","git_url":"https://api.github.com/repos/anthropics/skills/git/blobs/03d8e71c46e567e210a397ef12e949737f7d66c1","download_url":"https://raw.githubusercontent.com/anthropics/skills/main/.claude-plugin/marketplace.json","type":"file","_links":{"self":"https://api.github.com/repos/anthropics/skills/contents/.claude-plugin/marketplace.json?ref=main","git":"https://api.github.com/repos/anthropics/skills/git/blobs/03d8e71c46e567e210a397ef12e949737f7d66c1","html":"https://github.com/anthropics/skills/blob/main/.claude-plugin/marketplace.json"}}]
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:42Z)**_
+
+Got it - plan mode active, read-only research. Let me load WebFetch and gather the rest of the evidence in parallel.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:43Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ToolSearch"><details>
+<summary>Tool use: **ToolSearch**</summary>
+
 **Input:**
 
-- plan: `# Add category groupings to the `npx skills@latest add` selection UI
+- max_results: `1`
+- query: `select:WebFetch`
 
-## Context
+**Result:**
 
-When users run `npx skills@latest add anthropics/skills`, the upstream
-Anthropic skills repo shows skills grouped under labels like **Claude Api**,
-**Document Skills**, **Example Skills**, and **Other** (see the screenshot
-the user shared). This repo (`daviddwlee84/agent-skills`) currently presents
-all 22 skills as a flat list because the `npx skills` CLI has no metadata
-file telling it how to group them.
+```
 
-The user wants the same grouped UX for this repo so picking a subset of
-skills to install becomes easier — especially as the repo now spans
-unrelated domains (ML, notebooks, fullstack web, skill authoring,
-project hygiene, job queues, docs).
+```
+</details></tool-use>
 
-## Mechanism — verified
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:45Z)**_
 
-The `npx skills` CLI reads `.claude-plugin/marketplace.json` at the repo
-root. The upstream file (fetched verbatim from `anthropics/skills`) is:
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List vercel-labs/skills root contents
 
-```json
+`gh api repos/vercel-labs/skills/contents | head -100`
+
+```text
+[{"name":".github","path":".github","sha":"a8a2fd4b03236ebc2062bb3871320a54323f92c1","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/.github?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/.github","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/a8a2fd4b03236ebc2062bb3871320a54323f92c1","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/.github?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/a8a2fd4b03236ebc2062bb3871320a54323f92c1","html":"https://github.com/vercel-labs/skills/tree/main/.github"}},{"name":".gitignore","path":".gitignore","sha":"70e87be13c2f09378729c892d7f1d7e3d12ca944","size":575,"url":"https://api.github.com/repos/vercel-labs/skills/contents/.gitignore?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/.gitignore","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/70e87be13c2f09378729c892d7f1d7e3d12ca944","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/.gitignore","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/.gitignore?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/70e87be13c2f09378729c892d7f1d7e3d12ca944","html":"https://github.com/vercel-labs/skills/blob/main/.gitignore"}},{"name":".husky","path":".husky","sha":"f4b16e20c064417c54d82fe462b5a9cfcca5369e","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/.husky?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/.husky","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/f4b16e20c064417c54d82fe462b5a9cfcca5369e","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/.husky?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/f4b16e20c064417c54d82fe462b5a9cfcca5369e","html":"https://github.com/vercel-labs/skills/tree/main/.husky"}},{"name":".prettierrc","path":".prettierrc","sha":"a95cb0538ce3c313951a42f4a80b55f39421205a","size":106,"url":"https://api.github.com/repos/vercel-labs/skills/contents/.prettierrc?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/.prettierrc","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/a95cb0538ce3c313951a42f4a80b55f39421205a","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/.prettierrc","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/.prettierrc?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/a95cb0538ce3c313951a42f4a80b55f39421205a","html":"https://github.com/vercel-labs/skills/blob/main/.prettierrc"}},{"name":"AGENTS.md","path":"AGENTS.md","sha":"01786e8531cf801e46647041cce312db028cc199","size":6959,"url":"https://api.github.com/repos/vercel-labs/skills/contents/AGENTS.md?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/AGENTS.md","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/01786e8531cf801e46647041cce312db028cc199","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/AGENTS.md","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/AGENTS.md?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/01786e8531cf801e46647041cce312db028cc199","html":"https://github.com/vercel-labs/skills/blob/main/AGENTS.md"}},{"name":"README.md","path":"README.md","sha":"db2a3257f330c470678cb1afa65a1854fb2136c4","size":20104,"url":"https://api.github.com/repos/vercel-labs/skills/contents/README.md?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/README.md","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/db2a3257f330c470678cb1afa65a1854fb2136c4","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/README.md","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/README.md?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/db2a3257f330c470678cb1afa65a1854fb2136c4","html":"https://github.com/vercel-labs/skills/blob/main/README.md"}},{"name":"ThirdPartyNoticeText.txt","path":"ThirdPartyNoticeText.txt","sha":"9d38da3504a4d299db374cca501078918dc3bc35","size":9237,"url":"https://api.github.com/repos/vercel-labs/skills/contents/ThirdPartyNoticeText.txt?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/ThirdPartyNoticeText.txt","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/9d38da3504a4d299db374cca501078918dc3bc35","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/ThirdPartyNoticeText.txt","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/ThirdPartyNoticeText.txt?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/9d38da3504a4d299db374cca501078918dc3bc35","html":"https://github.com/vercel-labs/skills/blob/main/ThirdPartyNoticeText.txt"}},{"name":"bin","path":"bin","sha":"26efae910d2fa7de3bac398b3847088b8343ad82","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/bin?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/bin","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/26efae910d2fa7de3bac398b3847088b8343ad82","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/bin?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/26efae910d2fa7de3bac398b3847088b8343ad82","html":"https://github.com/vercel-labs/skills/tree/main/bin"}},{"name":"build.config.mjs","path":"build.config.mjs","sha":"948f2727f3cd55b760562c0fd4a6b908fda63a61","size":181,"url":"https://api.github.com/repos/vercel-labs/skills/contents/build.config.mjs?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/build.config.mjs","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/948f2727f3cd55b760562c0fd4a6b908fda63a61","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/build.config.mjs","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/build.config.mjs?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/948f2727f3cd55b760562c0fd4a6b908fda63a61","html":"https://github.com/vercel-labs/skills/blob/main/build.config.mjs"}},{"name":"package.json","path":"package.json","sha":"7411e117d5b72418c9ae895d2c4f71f248a2b1d5","size":2684,"url":"https://api.github.com/repos/vercel-labs/skills/contents/package.json?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/package.json","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/7411e117d5b72418c9ae895d2c4f71f248a2b1d5","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/package.json","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/package.json?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/7411e117d5b72418c9ae895d2c4f71f248a2b1d5","html":"https://github.com/vercel-labs/skills/blob/main/package.json"}},{"name":"pnpm-lock.yaml","path":"pnpm-lock.yaml","sha":"b57e13d7c8edb16a61c66297404b80f997e3a2fd","size":58471,"url":"https://api.github.com/repos/vercel-labs/skills/contents/pnpm-lock.yaml?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/pnpm-lock.yaml","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/b57e13d7c8edb16a61c66297404b80f997e3a2fd","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/pnpm-lock.yaml","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/pnpm-lock.yaml?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/b57e13d7c8edb16a61c66297404b80f997e3a2fd","html":"https://github.com/vercel-labs/skills/blob/main/pnpm-lock.yaml"}},{"name":"scripts","path":"scripts","sha":"61cd8ec8800350f217a41dfc06325aaaa171c0b2","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/scripts?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/scripts","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/61cd8ec8800350f217a41dfc06325aaaa171c0b2","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/scripts?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/61cd8ec8800350f217a41dfc06325aaaa171c0b2","html":"https://github.com/vercel-labs/skills/tree/main/scripts"}},{"name":"skills","path":"skills","sha":"f1277025c9276459167aed6c891524d190315acf","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/skills?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/skills","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/f1277025c9276459167aed6c891524d190315acf","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/skills?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/f1277025c9276459167aed6c891524d190315acf","html":"https://github.com/vercel-labs/skills/tree/main/skills"}},{"name":"src","path":"src","sha":"111e16ca4329f7dc23b67d64b5520bf7d2d5d5e9","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/src?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/src","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/111e16ca4329f7dc23b67d64b5520bf7d2d5d5e9","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/src?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/111e16ca4329f7dc23b67d64b5520bf7d2d5d5e9","html":"https://github.com/vercel-labs/skills/tree/main/src"}},{"name":"tests","path":"tests","sha":"1b97b21b8020578cbd961b80942b67fbf5341156","size":0,"url":"https://api.github.com/repos/vercel-labs/skills/contents/tests?ref=main","html_url":"https://github.com/vercel-labs/skills/tree/main/tests","git_url":"https://api.github.com/repos/vercel-labs/skills/git/trees/1b97b21b8020578cbd961b80942b67fbf5341156","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/tests?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/trees/1b97b21b8020578cbd961b80942b67fbf5341156","html":"https://github.com/vercel-labs/skills/tree/main/tests"}},{"name":"tsconfig.json","path":"tsconfig.json","sha":"88c07fd2c764807c8ab870f3036770596cb3d535","size":774,"url":"https://api.github.com/repos/vercel-labs/skills/contents/tsconfig.json?ref=main","html_url":"https://github.com/vercel-labs/skills/blob/main/tsconfig.json","git_url":"https://api.github.com/repos/vercel-labs/skills/git/blobs/88c07fd2c764807c8ab870f3036770596cb3d535","download_url":"https://raw.githubusercontent.com/vercel-labs/skills/main/tsconfig.json","type":"file","_links":{"self":"https://api.github.com/repos/vercel-labs/skills/contents/tsconfig.json?ref=main","git":"https://api.github.com/repos/vercel-labs/skills/git/blobs/88c07fd2c764807c8ab870f3036770596cb3d535","html":"https://github.com/vercel-labs/skills/blob/main/tsconfig.json"}}]
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:46Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Fetch raw marketplace.json from anthropics/skills
+
+`gh api repos/anthropics/skills/contents/.claude-plugin/marketplace.json --jq '.content' | base64 -d`
+
+```text
 {
   "name": "anthropic-agent-skills",
-  "owner": { "name": "Keith Lazuka", "email": "klazuka@anthropic.com" },
-  "metadata": { "description": "Anthropic example skills", "version": "1.0.0" },
+  "owner": {
+    "name": "Keith Lazuka",
+    "email": "klazuka@anthropic.com"
+  },
+  "metadata": {
+    "description": "Anthropic example skills",
+    "version": "1.0.0"
+  },
   "plugins": [
     {
       "name": "document-skills",
-      "description": "Collection of document processing suite ...",
+      "description": "Collection of document processing suite including Excel, Word, PowerPoint, and PDF capabilities",
       "source": "./",
       "strict": false,
-      "skills": ["./skills/xlsx", "./skills/docx", "./skills/pptx", "./skills/pdf"]
+      "skills": [
+        "./skills/xlsx",
+        "./skills/docx",
+        "./skills/pptx",
+        "./skills/pdf"
+      ]
     },
-    { "name": "example-skills", "...": "..." },
-    { "name": "claude-api", "...": "..." }
+    {
+      "name": "example-skills",
+      "description": "Collection of example skills demonstrating various capabilities including skill creation, MCP building, visual design, algorithmic art, internal communications, web testing, artifact building, Slack GIFs, and theme styling",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/algorithmic-art",
+        "./skills/brand-guidelines",
+        "./skills/canvas-design",
+        "./skills/doc-coauthoring",
+        "./skills/frontend-design",
+        "./skills/internal-comms",
+        "./skills/mcp-builder",
+        "./skills/skill-creator",
+        "./skills/slack-gif-creator",
+        "./skills/theme-factory",
+        "./skills/web-artifacts-builder",
+        "./skills/webapp-testing"
+      ]
+    }
+    ,
+    {
+      "name": "claude-api",
+      "description": "Claude API and SDK documentation skill for building LLM-powered applications",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/claude-api"
+      ]
+    }
   ]
 }
 ```
+</details></tool-use>
 
-Each `plugins[]` entry becomes one collapsible group in the selection UI.
-Skills found on disk but **not** listed under any plugin show up in **Other**
-automatically (that's how upstream's `template-skill` ends up under "Other").
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:51Z)**_
+
+Now let me look inside `vercel-labs/skills/src` to see how the CLI parses marketplace.json (and whether it has its own native catalog format).
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:52Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List all src files in vercel-labs/skills
+
+`gh api repos/vercel-labs/skills/git/trees/main?recursive=1 --jq '.tree[] | select(.path | startswith("src/")) | .path' | head -80`
+
+```text
+(eval):1: no matches found: repos/vercel-labs/skills/git/trees/main?recursive=1
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:54Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read vercel-labs/skills package.json
+
+`gh api repos/vercel-labs/skills/contents/package.json --jq '.content' | base64 -d`
+
+```text
+{
+  "name": "skills",
+  "version": "1.5.1",
+  "description": "The open agent skills ecosystem",
+  "type": "module",
+  "bin": {
+    "skills": "./bin/cli.mjs",
+    "add-skill": "./bin/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "ThirdPartyNoticeText.txt"
+  ],
+  "scripts": {
+    "build": "node scripts/generate-licenses.ts && obuild",
+    "generate-licenses": "node scripts/generate-licenses.ts",
+    "dev": "node src/cli.ts",
+    "exec:test": "node scripts/execute-tests.ts",
+    "prepublishOnly": "npm run build",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.ts\"",
+    "prepare": "husky",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "publish:snapshot": "npm version prerelease --preid=snapshot --no-git-tag-version && npm publish --tag snapshot"
+  },
+  "lint-staged": {
+    "src/**/*.ts": "prettier --write",
+    "scripts/**/*.ts": "prettier --write",
+    "tests/**/*.ts": "prettier --write"
+  },
+  "keywords": [
+    "cli",
+    "agent-skills",
+    "skills",
+    "ai-agents",
+    "aider-desk",
+    "amp",
+    "antigravity",
+    "augment",
+    "bob",
+    "claude-code",
+    "openclaw",
+    "cline",
+    "codearts-agent",
+    "codebuddy",
+    "codemaker",
+    "codestudio",
+    "codex",
+    "command-code",
+    "continue",
+    "cortex",
+    "crush",
+    "cursor",
+    "deepagents",
+    "devin",
+    "droid",
+    "firebender",
+    "forgecode",
+    "gemini-cli",
+    "github-copilot",
+    "goose",
+    "junie",
+    "iflow-cli",
+    "kilo",
+    "kimi-cli",
+    "kiro-cli",
+    "kode",
+    "mcpjam",
+    "mistral-vibe",
+    "mux",
+    "opencode",
+    "openhands",
+    "pi",
+    "qoder",
+    "qwen-code",
+    "replit",
+    "rovodev",
+    "roo",
+    "tabnine-cli",
+    "trae",
+    "trae-cn",
+    "warp",
+    "windsurf",
+    "zencoder",
+    "neovate",
+    "pochi",
+    "adal",
+    "universal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel-labs/skills.git"
+  },
+  "homepage": "https://github.com/vercel-labs/skills#readme",
+  "bugs": {
+    "url": "https://github.com/vercel-labs/skills/issues"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@types/bun": "latest",
+    "@types/node": "^22.10.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "obuild": "^0.4.22",
+    "picocolors": "^1.1.1",
+    "prettier": "^3.8.1",
+    "simple-git": "^3.27.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17",
+    "xdg-basedir": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "yaml": "^2.8.3"
+  }
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:44:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List src tree recursively
+
+`gh api 'repos/vercel-labs/skills/git/trees/main?recursive=1' --jq '.tree[] | select(.path | test("^src/")) | .path'`
+
+```text
+src/add-prompt.test.ts
+src/add.test.ts
+src/add.ts
+src/agents.ts
+src/blob.ts
+src/cli.test.ts
+src/cli.ts
+src/constants.ts
+src/find.ts
+src/frontmatter.ts
+src/git.ts
+src/init.test.ts
+src/install.ts
+src/installer.ts
+src/list.test.ts
+src/list.ts
+src/local-lock.ts
+src/plugin-manifest.ts
+src/prompts
+src/prompts/search-multiselect.ts
+src/providers
+src/providers/index.ts
+src/providers/registry.ts
+src/providers/types.ts
+src/providers/wellknown.ts
+src/remove.test.ts
+src/remove.ts
+src/sanitize.ts
+src/skill-lock.ts
+src/skills.ts
+src/source-parser.test.ts
+src/source-parser.ts
+src/sync.ts
+src/telemetry.ts
+src/test-utils.ts
+src/types.ts
+src/update-source.test.ts
+src/update-source.ts
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:02Z)**_
+
+`plugin-manifest.ts` is the smoking gun. Let me read it plus `add.ts` and `skills.ts` to see how categorization works.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:05Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read plugin-manifest.ts
+
+`gh api repos/vercel-labs/skills/contents/src/plugin-manifest.ts --jq '.content' | base64 -d`
+
+```text
+import { readFile } from 'fs/promises';
+import { join, dirname, resolve, normalize, sep } from 'path';
+
+/**
+ * Check if a path is contained within a base directory.
+ * Prevents path traversal attacks via `..` segments or absolute paths.
+ */
+function isContainedIn(targetPath: string, basePath: string): boolean {
+  const normalizedBase = normalize(resolve(basePath));
+  const normalizedTarget = normalize(resolve(targetPath));
+  return normalizedTarget.startsWith(normalizedBase + sep) || normalizedTarget === normalizedBase;
+}
+
+/**
+ * Validate that a relative path follows Claude Code conventions.
+ * Paths must start with './' per the plugin manifest spec.
+ */
+function isValidRelativePath(path: string): boolean {
+  return path.startsWith('./');
+}
+
+/**
+ * Plugin manifest types
+ */
+interface PluginManifestEntry {
+  source?: string | { source: string; repo?: string };
+  skills?: string[];
+  /** Optional name for grouping skills (e.g., "document-skills") */
+  name?: string;
+}
+
+interface MarketplaceManifest {
+  metadata?: { pluginRoot?: string };
+  plugins?: PluginManifestEntry[];
+}
+
+interface PluginManifest {
+  skills?: string[];
+  name?: string;
+}
+
+/**
+ * Extract skill search directories from plugin manifests.
+ * Handles both marketplace.json (multi-plugin) and plugin.json (single plugin).
+ * Only resolves local paths - remote sources are skipped.
+ *
+ * Returns directories that CONTAIN skills (to be searched for child SKILL.md files).
+ * For explicit skill paths in manifests, adds the parent directory so the
+ * existing discovery loop finds them.
+ */
+export async function getPluginSkillPaths(basePath: string): Promise<string[]> {
+  const searchDirs: string[] = [];
+
+  // Helper: add skill paths for a plugin at a given base path
+  // Only adds paths that are contained within basePath (security: prevents traversal)
+  const addPluginSkillPaths = (pluginBase: string, skills?: string[]) => {
+    // Validate pluginBase itself is contained
+    if (!isContainedIn(pluginBase, basePath)) return;
+
+    if (skills && skills.length > 0) {
+      // Plugin explicitly declares skill paths - add parent dirs so existing loop finds them
+      for (const skillPath of skills) {
+        // Validate skill path starts with './' (per Claude Code convention)
+        if (!isValidRelativePath(skillPath)) continue;
+
+        const skillDir = dirname(join(pluginBase, skillPath));
+        if (isContainedIn(skillDir, basePath)) {
+          searchDirs.push(skillDir);
+        }
+      }
+    }
+    // Always add conventional skills/ directory for discovery
+    // (deduplication happens via seenNames in discoverSkills)
+    searchDirs.push(join(pluginBase, 'skills'));
+  };
+
+  // Try marketplace.json (multi-plugin catalog)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');
+    const manifest: MarketplaceManifest = JSON.parse(content);
+    const pluginRoot = manifest.metadata?.pluginRoot;
+
+    // Validate pluginRoot starts with './' if provided (per Claude Code convention)
+    const validPluginRoot = pluginRoot === undefined || isValidRelativePath(pluginRoot);
+
+    if (validPluginRoot) {
+      for (const plugin of manifest.plugins ?? []) {
+        // Skip remote sources (object with source/repo) - only handle local string paths
+        if (typeof plugin.source !== 'string' && plugin.source !== undefined) continue;
+
+        // Validate source starts with './' if provided (per Claude Code convention)
+        if (plugin.source !== undefined && !isValidRelativePath(plugin.source)) continue;
+
+        const pluginBase = join(basePath, pluginRoot ?? '', plugin.source ?? '');
+        addPluginSkillPaths(pluginBase, plugin.skills);
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  // Try plugin.json (single plugin at root)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/plugin.json'), 'utf-8');
+    const manifest: PluginManifest = JSON.parse(content);
+    addPluginSkillPaths(basePath, manifest.skills);
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  return searchDirs;
+}
+
+/**
+ * Get a map of skill directory paths to plugin names from plugin manifests.
+ * This allows grouping skills by their parent plugin.
+ *
+ * Returns Map<AbsolutePath, PluginName>
+ */
+export async function getPluginGroupings(basePath: string): Promise<Map<string, string>> {
+  const groupings = new Map<string, string>();
+
+  // Try marketplace.json (multi-plugin catalog)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');
+    const manifest: MarketplaceManifest = JSON.parse(content);
+    const pluginRoot = manifest.metadata?.pluginRoot;
+
+    // Validate pluginRoot starts with './' if provided (per Claude Code convention)
+    const validPluginRoot = pluginRoot === undefined || isValidRelativePath(pluginRoot);
+
+    if (validPluginRoot) {
+      for (const plugin of manifest.plugins ?? []) {
+        if (!plugin.name) continue;
+
+        // Skip remote sources (object with source/repo) - only handle local string paths
+        if (typeof plugin.source !== 'string' && plugin.source !== undefined) continue;
+
+        // Validate source starts with './' if provided (per Claude Code convention)
+        if (plugin.source !== undefined && !isValidRelativePath(plugin.source)) continue;
+
+        const pluginBase = join(basePath, pluginRoot ?? '', plugin.source ?? '');
+
+        // Validate pluginBase itself is contained
+        if (!isContainedIn(pluginBase, basePath)) continue;
+
+        if (plugin.skills && plugin.skills.length > 0) {
+          for (const skillPath of plugin.skills) {
+            // Validate skill path starts with './' (per Claude Code convention)
+            if (!isValidRelativePath(skillPath)) continue;
+
+            const skillDir = join(pluginBase, skillPath);
+            if (isContainedIn(skillDir, basePath)) {
+              // Store absolute path as key for reliable matching
+              groupings.set(resolve(skillDir), plugin.name);
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  // Try plugin.json (single plugin at root)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/plugin.json'), 'utf-8');
+    const manifest: PluginManifest = JSON.parse(content);
+    if (manifest.name && manifest.skills && manifest.skills.length > 0) {
+      for (const skillPath of manifest.skills) {
+        if (!isValidRelativePath(skillPath)) continue;
+        const skillDir = join(basePath, skillPath);
+        if (isContainedIn(skillDir, basePath)) {
+          groupings.set(resolve(skillDir), manifest.name);
+        }
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  return groupings;
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read types.ts
+
+`gh api repos/vercel-labs/skills/contents/src/types.ts --jq '.content' | base64 -d`
+
+```text
+export type AgentType =
+  | 'aider-desk'
+  | 'amp'
+  | 'antigravity'
+  | 'augment'
+  | 'bob'
+  | 'claude-code'
+  | 'openclaw'
+  | 'cline'
+  | 'codearts-agent'
+  | 'codebuddy'
+  | 'codemaker'
+  | 'codestudio'
+  | 'codex'
+  | 'command-code'
+  | 'continue'
+  | 'cortex'
+  | 'crush'
+  | 'cursor'
+  | 'deepagents'
+  | 'devin'
+  | 'droid'
+  | 'firebender'
+  | 'forgecode'
+  | 'gemini-cli'
+  | 'github-copilot'
+  | 'goose'
+  | 'iflow-cli'
+  | 'junie'
+  | 'kilo'
+  | 'kimi-cli'
+  | 'kiro-cli'
+  | 'kode'
+  | 'mcpjam'
+  | 'mistral-vibe'
+  | 'mux'
+  | 'neovate'
+  | 'opencode'
+  | 'openhands'
+  | 'pi'
+  | 'qoder'
+  | 'qwen-code'
+  | 'replit'
+  | 'roo'
+  | 'rovodev'
+  | 'tabnine-cli'
+  | 'trae'
+  | 'trae-cn'
+  | 'warp'
+  | 'windsurf'
+  | 'zencoder'
+  | 'pochi'
+  | 'adal'
+  | 'universal';
+
+export interface Skill {
+  name: string;
+  description: string;
+  path: string;
+  /** Raw SKILL.md content for hashing */
+  rawContent?: string;
+  /** Name of the plugin this skill belongs to (if any) */
+  pluginName?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgentConfig {
+  name: string;
+  displayName: string;
+  skillsDir: string;
+  /** Global skills directory. Set to undefined if the agent doesn't support global installation. */
+  globalSkillsDir: string | undefined;
+  detectInstalled: () => Promise<boolean>;
+  /** Whether to show this agent in the universal agents list. Defaults to true. */
+  showInUniversalList?: boolean;
+}
+
+export interface ParsedSource {
+  type: 'github' | 'gitlab' | 'git' | 'local' | 'well-known';
+  url: string;
+  subpath?: string;
+  localPath?: string;
+  ref?: string;
+  /** Skill name extracted from @skill syntax (e.g., owner/repo@skill-name) */
+  skillFilter?: string;
+}
+
+/**
+ * Represents a skill fetched from a remote host provider.
+ */
+export interface RemoteSkill {
+  /** Display name of the skill (from frontmatter) */
+  name: string;
+  /** Description of the skill (from frontmatter) */
+  description: string;
+  /** Full markdown content including frontmatter */
+  content: string;
+  /** The identifier used for installation directory name */
+  installName: string;
+  /** The original source URL */
+  sourceUrl: string;
+  /** The provider that fetched this skill */
+  providerId: string;
+  /** Source identifier for telemetry (e.g., "mintlify.com") */
+  sourceIdentifier: string;
+  /** Any additional metadata from frontmatter */
+  metadata?: Record<string, unknown>;
+}
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:09Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read add.ts (first 200 lines)
+
+`gh api repos/vercel-labs/skills/contents/src/add.ts --jq '.content' | base64 -d | head -200`
+
+```text
+import * as p from '@clack/prompts';
+import pc from 'picocolors';
+import { existsSync } from 'fs';
+import { homedir } from 'os';
+import { sep, join, dirname } from 'path';
+import { parseSource, getOwnerRepo, parseOwnerRepo, isRepoPrivate } from './source-parser.ts';
+import { stripTerminalEscapes } from './sanitize.ts';
+import { searchMultiselect } from './prompts/search-multiselect.ts';
+
+// Helper to check if a value is a cancel symbol (works with both clack and our custom prompts)
+const isCancelled = (value: unknown): value is symbol => typeof value === 'symbol';
+
+/**
+ * Check if a source identifier (owner/repo format) represents a private GitHub repo.
+ * Returns true if private, false if public, null if unable to determine or not a GitHub repo.
+ */
+async function isSourcePrivate(source: string): Promise<boolean | null> {
+  const ownerRepo = parseOwnerRepo(source);
+  if (!ownerRepo) {
+    // Not in owner/repo format, assume not private (could be other providers)
+    return false;
+  }
+  return isRepoPrivate(ownerRepo.owner, ownerRepo.repo);
+}
+import { cloneRepo, cleanupTempDir, GitCloneError } from './git.ts';
+import { discoverSkills, getSkillDisplayName, filterSkills } from './skills.ts';
+import {
+  installSkillForAgent,
+  installBlobSkillForAgent,
+  isSkillInstalled,
+  getCanonicalPath,
+  installWellKnownSkillForAgent,
+  type InstallMode,
+} from './installer.ts';
+import {
+  detectInstalledAgents,
+  agents,
+  getUniversalAgents,
+  getNonUniversalAgents,
+  isUniversalAgent,
+} from './agents.ts';
+import {
+  track,
+  setVersion,
+  fetchAuditData,
+  type AuditResponse,
+  type PartnerAudit,
+} from './telemetry.ts';
+import { wellKnownProvider, type WellKnownSkill } from './providers/index.ts';
+import {
+  addSkillToLock,
+  fetchSkillFolderHash,
+  getGitHubToken,
+  isPromptDismissed,
+  dismissPrompt,
+  getLastSelectedAgents,
+  saveSelectedAgents,
+} from './skill-lock.ts';
+import { addSkillToLocalLock, computeSkillFolderHash } from './local-lock.ts';
+import type { Skill, AgentType } from './types.ts';
+import {
+  tryBlobInstall,
+  getSkillFolderHashFromTree,
+  fetchRepoTree,
+  type BlobSkill,
+  type BlobInstallResult,
+} from './blob.ts';
+import packageJson from '../package.json' with { type: 'json' };
+export function initTelemetry(version: string): void {
+  setVersion(version);
+}
+
+// ─── Security Advisory ───
+
+function riskLabel(risk: string): string {
+  switch (risk) {
+    case 'critical':
+      return pc.red(pc.bold('Critical Risk'));
+    case 'high':
+      return pc.red('High Risk');
+    case 'medium':
+      return pc.yellow('Med Risk');
+    case 'low':
+      return pc.green('Low Risk');
+    case 'safe':
+      return pc.green('Safe');
+    default:
+      return pc.dim('--');
+  }
+}
+
+function socketLabel(audit: PartnerAudit | undefined): string {
+  if (!audit) return pc.dim('--');
+  const count = audit.alerts ?? 0;
+  return count > 0 ? pc.red(`${count} alert${count !== 1 ? 's' : ''}`) : pc.green('0 alerts');
+}
+
+/** Pad a string to a given visible width (ignoring ANSI escape codes). */
+function padEnd(str: string, width: number): string {
+  // Strip ANSI codes to measure visible length
+  const visible = stripTerminalEscapes(str);
+  const pad = Math.max(0, width - visible.length);
+  return str + ' '.repeat(pad);
+}
+
+/**
+ * Render a compact security table showing partner audit results.
+ * Returns the lines to display, or empty array if no data.
+ */
+function buildSecurityLines(
+  auditData: AuditResponse | null,
+  skills: Array<{ slug: string; displayName: string }>,
+  source: string
+): string[] {
+  if (!auditData) return [];
+
+  // Check if we have any audit data at all
+  const hasAny = skills.some((s) => {
+    const data = auditData[s.slug];
+    return data && Object.keys(data).length > 0;
+  });
+  if (!hasAny) return [];
+
+  // Compute column width for skill names
+  const nameWidth = Math.min(Math.max(...skills.map((s) => s.displayName.length)), 36);
+
+  // Header
+  const lines: string[] = [];
+  const header =
+    padEnd('', nameWidth + 2) +
+    padEnd(pc.dim('Gen'), 18) +
+    padEnd(pc.dim('Socket'), 18) +
+    pc.dim('Snyk');
+  lines.push(header);
+
+  // Rows
+  for (const skill of skills) {
+    const data = auditData[skill.slug];
+    const name =
+      skill.displayName.length > nameWidth
+        ? skill.displayName.slice(0, nameWidth - 1) + '\u2026'
+        : skill.displayName;
+
+    const ath = data?.ath ? riskLabel(data.ath.risk) : pc.dim('--');
+    const socket = data?.socket ? socketLabel(data.socket) : pc.dim('--');
+    const snyk = data?.snyk ? riskLabel(data.snyk.risk) : pc.dim('--');
+
+    lines.push(padEnd(pc.cyan(name), nameWidth + 2) + padEnd(ath, 18) + padEnd(socket, 18) + snyk);
+  }
+
+  // Footer link
+  lines.push('');
+  lines.push(`${pc.dim('Details:')} ${pc.dim(`https://skills.sh/${source}`)}`);
+
+  return lines;
+}
+
+/**
+ * Shortens a path for display: replaces homedir with ~ and cwd with .
+ * Handles both Unix and Windows path separators.
+ */
+function shortenPath(fullPath: string, cwd: string): string {
+  const home = homedir();
+  // Ensure we match complete path segments by checking for separator after the prefix
+  if (fullPath === home || fullPath.startsWith(home + sep)) {
+    return '~' + fullPath.slice(home.length);
+  }
+  if (fullPath === cwd || fullPath.startsWith(cwd + sep)) {
+    return '.' + fullPath.slice(cwd.length);
+  }
+  return fullPath;
+}
+
+/**
+ * Formats a list of items, truncating if too many
+ */
+function formatList(items: string[], maxShow: number = 5): string {
+  if (items.length <= maxShow) {
+    return items.join(', ');
+  }
+  const shown = items.slice(0, maxShow);
+  const remaining = items.length - maxShow;
+  return `${shown.join(', ')} +${remaining} more`;
+}
+
+/**
+ * Splits agents into universal and non-universal (symlinked) groups.
+ * Returns display names for each group.
+ */
+function splitAgentsByType(agentTypes: AgentType[]): {
+  universal: string[];
+  symlinked: string[];
+} {
+  const universal: string[] = [];
+  const symlinked: string[] = [];
+
+  for (const a of agentTypes) {
+    if (isUniversalAgent(a)) {
+      universal.push(agents[a].displayName);
+    } else {
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:13Z)**_
+
+I now have everything for Q1. Let me see the actual grouping/UI code (`searchMultiselect` use), and quickly check for other catalog formats, plus pull the official Claude docs.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find plugin grouping references in skills.ts
+
+`gh api repos/vercel-labs/skills/contents/src/skills.ts --jq '.content' | base64 -d | grep -nE 'pluginName|getPluginGroupings|category|tags|version' | head -40`
+
+```text
+6:import { getPluginSkillPaths, getPluginGroupings } from './plugin-manifest.ts';
+128:  const pluginGroupings = await getPluginGroupings(searchPath);
+134:      skill.pluginName = pluginGroupings.get(resolvedPath);
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find grouping/category logic in add.ts
+
+`gh api repos/vercel-labs/skills/contents/src/add.ts --jq '.content' | base64 -d | grep -nE 'pluginName|group|category|Other' | head -40`
+
+```text
+187: * Splits agents into universal and non-universal (symlinked) groups.
+188: * Returns display names for each group.
+376:  // Other agents are selectable with their skillsDir as hint
+1081:      const groupedSkills: Record<string, Skill[]> = {};
+1082:      const ungroupedSkills: Skill[] = [];
+1085:        if (skill.pluginName) {
+1086:          const group = skill.pluginName;
+1087:          if (!groupedSkills[group]) groupedSkills[group] = [];
+1088:          groupedSkills[group].push(skill);
+1090:          ungroupedSkills.push(skill);
+1094:      // Print groups
+1095:      const sortedGroups = Object.keys(groupedSkills).sort();
+1096:      for (const group of sortedGroups) {
+1098:        const title = group
+1104:        for (const skill of groupedSkills[group]!) {
+1111:      // Print ungrouped
+1112:      if (ungroupedSkills.length > 0) {
+1114:        for (const skill of ungroupedSkills) {
+1159:        if (a.pluginName && !b.pluginName) return -1;
+1160:        if (!a.pluginName && b.pluginName) return 1;
+1161:        if (a.pluginName && b.pluginName && a.pluginName !== b.pluginName) {
+1162:          return a.pluginName.localeCompare(b.pluginName);
+1167:      // Check if any skills have plugin grouping
+1168:      const hasGroups = sortedSkills.some((s) => s.pluginName);
+1173:        // Build grouped options for groupMultiselect
+1180:        const grouped: Record<string, p.Option<Skill>[]> = {};
+1182:          const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+1183:          if (!grouped[groupName]) grouped[groupName] = [];
+1184:          grouped[groupName]!.push({
+1191:        selected = await p.groupMultiselect({
+1193:          options: grouped,
+1391:    const groupedSummary: Record<string, Skill[]> = {};
+1392:    const ungroupedSummary: Skill[] = [];
+1395:      if (skill.pluginName) {
+1396:        const group = skill.pluginName;
+1397:        if (!groupedSummary[group]) groupedSummary[group] = [];
+1398:        groupedSummary[group].push(skill);
+1400:        ungroupedSummary.push(skill);
+1425:    // Build grouped summary
+1426:    const sortedGroups = Object.keys(groupedSummary).sort();
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:21Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find grouping in search-multiselect
+
+`gh api repos/vercel-labs/skills/contents/src/prompts/search-multiselect.ts --jq '.content' | base64 -d | grep -nE 'group|category|pluginName|Other|header' | head -30`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:24Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Search for any other catalog file patterns
+
+`gh api 'repos/vercel-labs/skills/git/trees/main?recursive=1' --jq '.tree[].path' | grep -iE 'catalog|skills\.(json|yaml|yml)|skill-pack|marketplace' | head -20`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:27Z)**_
+
+Confirmed: only `marketplace.json` + `plugin.json` are read. The grouping uses `plugin.name` (kebabToTitle). Now the official docs and reserved-name claims.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:34Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://docs.claude.com/en/docs/claude-code/plugins-marketplaces`
+
+```text
+REDIRECT DETECTED: The URL redirects to a different host.
+
+Original URL: https://docs.claude.com/en/docs/claude-code/plugins-marketplaces
+Redirect URL: https://code.claude.com/docs/en/plugins-marketplaces
+Status: 301 Moved Permanently
+
+To complete your request, I need to fetch content from the redirected URL. Please use WebFetch again with these parameters:
+- url: "https://code.claude.com/docs/en/plugins-marketplaces"
+- prompt: "Extract exactly: (1) the JSON schema fields supported in .claude-plugin/marketplace.json plugins[] entries (especially category, tags, version, source); (2) what plugin.json is for vs marketplace.json; (3) any reserved marketplace names (e.g. agent-skills, anthropic-plugins, claude-code-marketplace); (4) how source paths resolve (relative to marketplace.json file or to repo root); (5) version field semantics when omitted (does each commit become a new release?). Quote verbatim where possible."
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:34Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://docs.claude.com/en/docs/claude-code/plugins-reference`
+
+```text
+REDIRECT DETECTED: The URL redirects to a different host.
+
+Original URL: https://docs.claude.com/en/docs/claude-code/plugins-reference
+Redirect URL: https://code.claude.com/docs/en/plugins-reference
+Status: 301 Moved Permanently
+
+To complete your request, I need to fetch content from the redirected URL. Please use WebFetch again with these parameters:
+- url: "https://code.claude.com/docs/en/plugins-reference"
+- prompt: "Extract verbatim: full schema for .claude-plugin/plugin.json and .claude-plugin/marketplace.json. List every supported field on plugins[] entries (name, description, source, skills, category, tags, version, strict, etc). Note what 'category' and 'tags' do, how 'source' resolves (relative to what), and version semantics when omitted. Also note any reserved plugin or marketplace names."
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:42Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://opencode.ai/docs/plugins/`
+
+```text
+Based on the provided documentation, there is **no mention** of OpenCode reading `.claude-plugin/marketplace.json` or having its own plugin/skill catalog format.
+
+The documentation only specifies that OpenCode discovers plugins from:
+
+1. **Local directories**: "Files in these directories are automatically loaded at startup" from `.opencode/plugins/` (project-level) and `~/.config/opencode/plugins/` (global)
+
+2. **Configuration file**: npm packages listed in `opencode.json` under a `"plugin"` array
+
+The documentation does not reference any marketplace discovery mechanism or dedicated catalog file format for discovering skills or plugins beyond these two methods.
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:48Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://code.claude.com/docs/en/plugins-marketplaces`
+
+```text
+Request failed with status code 404
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:48Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://code.claude.com/docs/en/plugins-reference`
+
+```text
+<persisted-output>
+Output too large (58.1KB). Full output saved to: /Users/daviddwlee84/.claude/projects/-Volumes-Data-Program-Personal-agent-skills/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/tool-results/toolu_01JenHQS86cUBBbVgJqEy8MM.txt
+
+Preview (first 2KB):
+> ## Documentation Index
+> Fetch the complete documentation index at: https://code.claude.com/docs/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Plugins reference
+
+> Complete technical reference for Claude Code plugin system, including schemas, CLI commands, and component specifications.
+
+<Tip>
+  Looking to install plugins? See [Discover and install plugins](/en/discover-plugins). For creating plugins, see [Plugins](/en/plugins). For distributing plugins, see [Plugin marketplaces](/en/plugin-marketplaces).
+</Tip>
+
+This reference provides complete technical specifications for the Claude Code plugin system, including component schemas, CLI commands, and development tools.
+
+A **plugin** is a self-contained directory of components that extends Claude Code with custom functionality. Plugin components include skills, agents, hooks, MCP servers, LSP servers, and monitors.
+
+## Plugin components reference
+
+### Skills
+
+Plugins add skills to Claude Code, creating `/name` shortcuts that you or Claude can invoke.
+
+**Location**: `skills/` or `commands/` directory in plugin root
+
+**File format**: Skills are directories with `SKILL.md`; commands are simple markdown files
+
+**Skill structure**:
+
+```text theme={null}
+skills/
+├── pdf-processor/
+│   ├── SKILL.md
+│   ├── reference.md (optional)
+│   └── scripts/ (optional)
+└── code-reviewer/
+    └── SKILL.md
+```
+
+**Integration behavior**:
+
+* Skills and commands are automatically discovered when the plugin is installed
+* Claude can invoke them automatically based on task context
+* Skills can include supporting files alongside SKILL.md
+
+For complete details, see [Skills](/en/skills).
+
+### Agents
+
+Plugins can provide specialized subagents for specific tasks that Claude can invoke automatically when appropriate.
+
+**Location**: `agents/` directory in plugin root
+
+**File format**: Markdown files describing agent capabilities
+
+**Agent structure**:
+
+```markdown theme={null}
+---
+name: agent-name
+...
+</persisted-output>
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:52Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `/Users/daviddwlee84/.claude/projects/-Volumes-Data-Program-Personal-agent-skills/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/tool-results/toolu_01JenHQS86cUBBbVgJqEy8MM.txt`
+
+```text
+200	**Location**: `.lsp.json` in plugin root, or inline in `plugin.json`
+201	
+202	**Format**: JSON configuration mapping language server names to their configurations
+203	
+204	**`.lsp.json` file format**:
+205	
+206	```json theme={null}
+207	{
+208	  "go": {
+209	    "command": "gopls",
+210	    "args": ["serve"],
+211	    "extensionToLanguage": {
+212	      ".go": "go"
+213	    }
+214	  }
+215	}
+216	```
+217	
+218	**Inline in `plugin.json`**:
+219	
+220	```json theme={null}
+221	{
+222	  "name": "my-plugin",
+223	  "lspServers": {
+224	    "go": {
+225	      "command": "gopls",
+226	      "args": ["serve"],
+227	      "extensionToLanguage": {
+228	        ".go": "go"
+229	      }
+230	    }
+231	  }
+232	}
+233	```
+234	
+235	**Required fields:**
+236	
+237	| Field                 | Description                                  |
+238	| :-------------------- | :------------------------------------------- |
+239	| `command`             | The LSP binary to execute (must be in PATH)  |
+240	| `extensionToLanguage` | Maps file extensions to language identifiers |
+241	
+242	**Optional fields:**
+243	
+244	| Field                   | Description                                               |
+245	| :---------------------- | :-------------------------------------------------------- |
+246	| `args`                  | Command-line arguments for the LSP server                 |
+247	| `transport`             | Communication transport: `stdio` (default) or `socket`    |
+248	| `env`                   | Environment variables to set when starting the server     |
+249	| `initializationOptions` | Options passed to the server during initialization        |
+250	| `settings`              | Settings passed via `workspace/didChangeConfiguration`    |
+251	| `workspaceFolder`       | Workspace folder path for the server                      |
+252	| `startupTimeout`        | Max time to wait for server startup (milliseconds)        |
+253	| `shutdownTimeout`       | Max time to wait for graceful shutdown (milliseconds)     |
+254	| `restartOnCrash`        | Whether to automatically restart the server if it crashes |
+255	| `maxRestarts`           | Maximum number of restart attempts before giving up       |
+256	
+257	<Warning>
+258	  **You must install the language server binary separately.** LSP plugins configure how Claude Code connects to a language server, but they don't include the server itself. If you see `Executable not found in $PATH` in the `/plugin` Errors tab, install the required binary for your language.
+259	</Warning>
+260	
+261	**Available LSP plugins:**
+262	
+263	| Plugin           | Language server            | Install command                                                                            |
+264	| :--------------- | :------------------------- | :----------------------------------------------------------------------------------------- |
+265	| `pyright-lsp`    | Pyright (Python)           | `pip install pyright` or `npm install -g pyright`                                          |
+266	| `typescript-lsp` | TypeScript Language Server | `npm install -g typescript-language-server typescript`                                     |
+267	| `rust-lsp`       | rust-analyzer              | [See rust-analyzer installation](https://rust-analyzer.github.io/manual.html#installation) |
+268	
+269	Install the language server first, then install the plugin from the marketplace.
+270	
+271	### Monitors
+272	
+273	Plugins can declare background monitors that Claude Code starts automatically when the plugin is active. Each monitor runs a shell command for the lifetime of the session and delivers every stdout line to Claude as a notification, so Claude can react to log entries, status changes, or polled events without being asked to start the watch itself.
+274	
+275	Plugin monitors use the same mechanism as the [Monitor tool](/en/tools-reference#monitor-tool) and share its availability constraints. They run only in interactive CLI sessions, run unsandboxed at the same trust level as [hooks](#hooks), and are skipped on hosts where the Monitor tool is unavailable.
+276	
+277	<Note>
+278	  Plugin monitors require Claude Code v2.1.105 or later.
+279	</Note>
+280	
+281	**Location**: `monitors/monitors.json` in the plugin root, or inline in `plugin.json`
+282	
+283	**Format**: JSON array of monitor entries
+284	
+285	The following `monitors/monitors.json` watches a deployment status endpoint and a local error log:
+286	
+287	```json theme={null}
+288	[
+289	  {
+290	    "name": "deploy-status",
+291	    "command": "${CLAUDE_PLUGIN_ROOT}/scripts/poll-deploy.sh ${user_config.api_endpoint}",
+292	    "description": "Deployment status changes"
+293	  },
+294	  {
+295	    "name": "error-log",
+296	    "command": "tail -F ./logs/error.log",
+297	    "description": "Application error log",
+298	    "when": "on-skill-invoke:debug"
+299	  }
+300	]
+301	```
+302	
+303	To declare monitors inline, set the `monitors` key in `plugin.json` to the same array. To load from a non-default path, set `monitors` to a relative path string such as `"./config/monitors.json"`.
+304	
+305	**Required fields:**
+306	
+307	| Field         | Description                                                                                                           |
+308	| :------------ | :-------------------------------------------------------------------------------------------------------------------- |
+309	| `name`        | Identifier unique within the plugin. Prevents duplicate processes when the plugin reloads or a skill is invoked again |
+310	| `command`     | Shell command run as a persistent background process in the session working directory                                 |
+311	| `description` | Short summary of what is being watched. Shown in the task panel and in notification summaries                         |
+312	
+313	**Optional fields:**
+314	
+315	| Field  | Description                                                                                                                                                                                                              |
+316	| :----- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+317	| `when` | Controls when the monitor starts. `"always"` starts it at session start and on plugin reload, and is the default. `"on-skill-invoke:<skill-name>"` starts it the first time the named skill in this plugin is dispatched |
+318	
+319	The `command` value supports the same [variable substitutions](#environment-variables) as MCP and LSP server configs: `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${user_config.*}`, and any `${ENV_VAR}` from the environment. Prefix the command with `cd "${CLAUDE_PLUGIN_ROOT}" && ` if the script needs to run from the plugin's own directory.
+320	
+321	Disabling a plugin mid-session does not stop monitors that are already running. They stop when the session ends.
+322	
+323	### Themes
+324	
+325	Plugins can ship color themes that appear in `/theme` alongside the built-in presets and the user's local themes. A theme is a JSON file in `themes/` with a `base` preset and a sparse `overrides` map of color tokens.
+326	
+327	```json theme={null}
+328	{
+329	  "name": "Dracula",
+330	  "base": "dark",
+331	  "overrides": {
+332	    "claude": "#bd93f9",
+333	    "error": "#ff5555",
+334	    "success": "#50fa7b"
+335	  }
+336	}
+337	```
+338	
+339	Selecting a plugin theme persists `custom:<plugin-name>:<slug>` in the user's config. Plugin themes are read-only; pressing `Ctrl+E` on one in `/theme` copies it into `~/.claude/themes/` so the user can edit the copy.
+340	
+341	***
+342	
+343	## Plugin installation scopes
+344	
+345	When you install a plugin, you choose a **scope** that determines where the plugin is available and who else can use it:
+346	
+347	| Scope     | Settings file                                   | Use case                                                 |
+348	| :-------- | :---------------------------------------------- | :------------------------------------------------------- |
+349	| `user`    | `~/.claude/settings.json`                       | Personal plugins available across all projects (default) |
+350	| `project` | `.claude/settings.json`                         | Team plugins shared via version control                  |
+351	| `local`   | `.claude/settings.local.json`                   | Project-specific plugins, gitignored                     |
+352	| `managed` | [Managed settings](/en/settings#settings-files) | Managed plugins (read-only, update only)                 |
+353	
+354	Plugins use the same scope system as other Claude Code configurations. For installation instructions and scope flags, see [Install plugins](/en/discover-plugins#install-plugins). For a complete explanation of scopes, see [Configuration scopes](/en/settings#configuration-scopes).
+355	
+356	***
+357	
+358	## Plugin manifest schema
+359	
+360	The `.claude-plugin/plugin.json` file defines your plugin's metadata and configuration. This section documents all supported fields and options.
+361	
+362	The manifest is optional. If omitted, Claude Code auto-discovers components in [default locations](#file-locations-reference) and derives the plugin name from the directory name. Use a manifest when you need to provide metadata or custom component paths.
+363	
+364	### Complete schema
+365	
+366	```json theme={null}
+367	{
+368	  "name": "plugin-name",
+369	  "version": "1.2.0",
+370	  "description": "Brief plugin description",
+371	  "author": {
+372	    "name": "Author Name",
+373	    "email": "author@example.com",
+374	    "url": "https://github.com/author"
+375	  },
+376	  "homepage": "https://docs.example.com/plugin",
+377	  "repository": "https://github.com/author/plugin",
+378	  "license": "MIT",
+379	  "keywords": ["keyword1", "keyword2"],
+380	  "skills": "./custom/skills/",
+381	  "commands": ["./custom/commands/special.md"],
+382	  "agents": "./custom/agents/",
+383	  "hooks": "./config/hooks.json",
+384	  "mcpServers": "./mcp-config.json",
+385	  "outputStyles": "./styles/",
+386	  "themes": "./themes/",
+387	  "lspServers": "./.lsp.json",
+388	  "monitors": "./monitors.json",
+389	  "dependencies": [
+390	    "helper-lib",
+391	    { "name": "secrets-vault", "version": "~2.1.0" }
+392	  ]
+393	}
+394	```
+395	
+396	### Required fields
+397	
+398	If you include a manifest, `name` is the only required field.
+399	
+400	| Field  | Type   | Description                               | Example              |
+401	| :----- | :----- | :---------------------------------------- | :------------------- |
+402	| `name` | string | Unique identifier (kebab-case, no spaces) | `"deployment-tools"` |
+403	
+404	This name is used for namespacing components. For example, in the UI, the
+405	agent `agent-creator` for the plugin with name `plugin-dev` will appear as
+406	`plugin-dev:agent-creator`.
+407	
+408	### Metadata fields
+409	
+410	| Field         | Type   | Description                                                                                                                                                                                                                                                                                                                                      | Example                                                           |
+411	| :------------ | :----- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------- |
+412	| `$schema`     | string | JSON Schema URL for editor autocomplete and validation. Claude Code ignores this field at load time.                                                                                                                                                                                                                                             | `"https://json.schemastore.org/claude-code-plugin-manifest.json"` |
+413	| `version`     | string | Optional. Semantic version. Setting this pins the plugin to that version string, so users only receive updates when you bump it. If omitted, Claude Code falls back to the git commit SHA, so every commit is treated as a new version. If also set in the marketplace entry, `plugin.json` wins. See [Version management](#version-management). | `"2.1.0"`                                                         |
+414	| `description` | string | Brief explanation of plugin purpose                                                                                                                                                                                                                                                                                                              | `"Deployment automation tools"`                                   |
+415	| `author`      | object | Author information                                                                                                                                                                                                                                                                                                                               | `{"name": "Dev Team", "email": "dev@company.com"}`                |
+416	| `homepage`    | string | Documentation URL                                                                                                                                                                                                                                                                                                                                | `"https://docs.example.com"`                                      |
+417	| `repository`  | string | Source code URL                                                                                                                                                                                                                                                                                                                                  | `"https://github.com/user/plugin"`                                |
+418	| `license`     | string | License identifier                                                                                                                                                                                                                                                                                                                               | `"MIT"`, `"Apache-2.0"`                                           |
+419	| `keywords`    | array  | Discovery tags                                                                                                                                                                                                                                                                                                                                   | `["deployment", "ci-cd"]`                                         |
+420	
+421	### Component path fields
+422	
+423	| Field          | Type                  | Description                                                                                                                                               | Example                                              |
+424	| :------------- | :-------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------- |
+425	| `skills`       | string\|array         | Custom skill directories containing `<name>/SKILL.md` (replaces default `skills/`)                                                                        | `"./custom/skills/"`                                 |
+426	| `commands`     | string\|array         | Custom flat `.md` skill files or directories (replaces default `commands/`)                                                                               | `"./custom/cmd.md"` or `["./cmd1.md"]`               |
+427	| `agents`       | string\|array         | Custom agent files (replaces default `agents/`)                                                                                                           | `"./custom/agents/reviewer.md"`                      |
+428	| `hooks`        | string\|array\|object | Hook config paths or inline config                                                                                                                        | `"./my-extra-hooks.json"`                            |
+429	| `mcpServers`   | string\|array\|object | MCP config paths or inline config                                                                                                                         | `"./my-extra-mcp-config.json"`                       |
+430	| `outputStyles` | string\|array         | Custom output style files/directories (replaces default `output-styles/`)                                                                                 | `"./styles/"`                                        |
+431	| `themes`       | string\|array         | Color theme files/directories (replaces default `themes/`). See [Themes](#themes)                                                                         | `"./themes/"`                                        |
+432	| `lspServers`   | string\|array\|object | [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) configs for code intelligence (go to definition, find references, etc.) | `"./.lsp.json"`                                      |
+433	| `monitors`     | string\|array         | Background [Monitor](/en/tools-reference#monitor-tool) configurations that start automatically when the plugin is active. See [Monitors](#monitors)       | `"./monitors.json"`                                  |
+434	| `userConfig`   | object                | User-configurable values prompted at enable time. See [User configuration](#user-configuration)                                                           | See below                                            |
+435	| `channels`     | array                 | Channel declarations for message injection (Telegram, Slack, Discord style). See [Channels](#channels)                                                    | See below                                            |
+436	| `dependencies` | array                 | Other plugins this plugin requires, optionally with semver version constraints. See [Constrain plugin dependency versions](/en/plugin-dependencies)       | `[{ "name": "secrets-vault", "version": "~2.1.0" }]` |
+437	
+438	### User configuration
+439	
+440	The `userConfig` field declares values that Claude Code prompts the user for when the plugin is enabled. Use this instead of requiring users to hand-edit `settings.json`.
+441	
+442	```json theme={null}
+443	{
+444	  "userConfig": {
+445	    "api_endpoint": {
+446	      "type": "string",
+447	      "title": "API endpoint",
+448	      "description": "Your team's API endpoint"
+449	    },
+450	    "api_token": {
+451	      "type": "string",
+452	      "title": "API token",
+453	      "description": "API authentication token",
+454	      "sensitive": true
+455	    }
+456	  }
+457	}
+458	```
+459	
+460	Keys must be valid identifiers. Each option supports these fields:
+461	
+462	| Field         | Required | Description                                                                              |
+463	| :------------ | :------- | :--------------------------------------------------------------------------------------- |
+464	| `type`        | Yes      | One of `string`, `number`, `boolean`, `directory`, or `file`                             |
+465	| `title`       | Yes      | Label shown in the configuration dialog                                                  |
+466	| `description` | Yes      | Help text shown beneath the field                                                        |
+467	| `sensitive`   | No       | If `true`, masks input and stores the value in secure storage instead of `settings.json` |
+468	| `required`    | No       | If `true`, validation fails when the field is empty                                      |
+469	| `default`     | No       | Value used when the user provides nothing                                                |
+470	| `multiple`    | No       | For `string` type, allow an array of strings                                             |
+471	| `min` / `max` | No       | Bounds for `number` type                                                                 |
+472	
+473	Each value is available for substitution as `${user_config.KEY}` in MCP and LSP server configs, hook commands, and monitor commands. Non-sensitive values can also be substituted in skill and agent content. All values are exported to plugin subprocesses as `CLAUDE_PLUGIN_OPTION_<KEY>` environment variables.
+474	
+475	Non-sensitive values are stored in `settings.json` under `pluginConfigs[<plugin-id>].options`. Sensitive values go to the system keychain (or `~/.claude/.credentials.json` where the keychain is unavailable). Keychain storage is shared with OAuth tokens and has an approximately 2 KB total limit, so keep sensitive values small.
+476	
+477	### Channels
+478	
+479	The `channels` field lets a plugin declare one or more message channels that inject content into the conversation. Each channel binds to an MCP server that the plugin provides.
+480	
+481	```json theme={null}
+482	{
+483	  "channels": [
+484	    {
+485	      "server": "telegram",
+486	      "userConfig": {
+487	        "bot_token": {
+488	          "type": "string",
+489	          "title": "Bot token",
+490	          "description": "Telegram bot token",
+491	          "sensitive": true
+492	        },
+493	        "owner_id": {
+494	          "type": "string",
+495	          "title": "Owner ID",
+496	          "description": "Your Telegram user ID"
+497	        }
+498	      }
+499	    }
+500	  ]
+501	}
+502	```
+503	
+504	The `server` field is required and must match a key in the plugin's `mcpServers`. The optional per-channel `userConfig` uses the same schema as the top-level field, letting the plugin prompt for bot tokens or owner IDs when the plugin is enabled.
+505	
+506	### Path behavior rules
+507	
+508	For `skills`, `commands`, `agents`, `outputStyles`, `themes`, and `monitors`, a custom path replaces the default. If the manifest specifies `skills`, the default `skills/` directory is not scanned; if it specifies `monitors`, the default `monitors/monitors.json` is not loaded. [Hooks](#hooks), [MCP servers](#mcp-servers), and [LSP servers](#lsp-servers) have different semantics for handling multiple sources.
+509	
+510	* All paths must be relative to the plugin root and start with `./`
+511	* Components from custom paths use the same naming and namespacing rules
+512	* Multiple paths can be specified as arrays
+513	* To keep the default directory and add more paths for skills, commands, agents, or output styles, include the default in your array: `"skills": ["./skills/", "./extras/"]`
+514	* When a skill path points to a directory that contains a `SKILL.md` directly, for example `"skills": ["./"]` pointing to the plugin root, the frontmatter `name` field in `SKILL.md` determines the skill's invocation name. This gives a stable name regardless of the install directory. If `name` is not set in the frontmatter, the directory basename is used as a fallback.
+515	
+516	**Path examples**:
+517	
+518	```json theme={null}
+519	{
+520	  "commands": [
+521	    "./specialized/deploy.md",
+522	    "./utilities/batch-process.md"
+523	  ],
+524	  "agents": [
+525	    "./custom-agents/reviewer.md",
+526	    "./custom-agents/tester.md"
+527	  ]
+528	}
+529	```
+530	
+531	### Environment variables
+532	
+533	Claude Code provides two variables for referencing plugin paths. Both are substituted inline anywhere they appear in skill content, agent content, hook commands, monitor commands, and MCP or LSP server configs. Both are also exported as environment variables to hook processes and MCP or LSP server subprocesses.
+534	
+535	**`${CLAUDE_PLUGIN_ROOT}`**: the absolute path to your plugin's installation directory. Use this to reference scripts, binaries, and config files bundled with the plugin. This path changes when the plugin updates, so files you write here do not survive an update.
+536	
+537	**`${CLAUDE_PLUGIN_DATA}`**: a persistent directory for plugin state that survives updates. Use this for installed dependencies such as `node_modules` or Python virtual environments, generated code, caches, and any other files that should persist across plugin versions. The directory is created automatically the first time this variable is referenced.
+538	
+539	```json theme={null}
+540	{
+541	  "hooks": {
+542	    "PostToolUse": [
+543	      {
+544	        "hooks": [
+545	          {
+546	            "type": "command",
+547	            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/process.sh"
+548	          }
+549	        ]
+550	      }
+551	    ]
+552	  }
+553	}
+554	```
+555	
+556	#### Persistent data directory
+557	
+558	The `${CLAUDE_PLUGIN_DATA}` directory resolves to `~/.claude/plugins/data/{id}/`, where `{id}` is the plugin identifier with characters outside `a-z`, `A-Z`, `0-9`, `_`, and `-` replaced by `-`. For a plugin installed as `formatter@my-marketplace`, the directory is `~/.claude/plugins/data/formatter-my-marketplace/`.
+559	
+560	A common use is installing language dependencies once and reusing them across sessions and plugin updates. Because the data directory outlives any single plugin version, a check for directory existence alone cannot detect when an update changes the plugin's dependency manifest. The recommended pattern compares the bundled manifest against a copy in the data directory and reinstalls when they differ.
+561	
+562	This `SessionStart` hook installs `node_modules` on the first run and again whenever a plugin update includes a changed `package.json`:
+563	
+564	```json theme={null}
+565	{
+566	  "hooks": {
+567	    "SessionStart": [
+568	      {
+569	        "hooks": [
+570	          {
+571	            "type": "command",
+572	            "command": "diff -q \"${CLAUDE_PLUGIN_ROOT}/package.json\" \"${CLAUDE_PLUGIN_DATA}/package.json\" >/dev/null 2>&1 || (cd \"${CLAUDE_PLUGIN_DATA}\" && cp \"${CLAUDE_PLUGIN_ROOT}/package.json\" . && npm install) || rm -f \"${CLAUDE_PLUGIN_DATA}/package.json\""
+573	          }
+574	        ]
+575	      }
+576	    ]
+577	  }
+578	}
+579	```
+580	
+581	The `diff` exits nonzero when the stored copy is missing or differs from the bundled one, covering both first run and dependency-changing updates. If `npm install` fails, the trailing `rm` removes the copied manifest so the next session retries.
+582	
+583	Scripts bundled in `${CLAUDE_PLUGIN_ROOT}` can then run against the persisted `node_modules`:
+584	
+585	```json theme={null}
+586	{
+587	  "mcpServers": {
+588	    "routines": {
+589	      "command": "node",
+590	      "args": ["${CLAUDE_PLUGIN_ROOT}/server.js"],
+591	      "env": {
+592	        "NODE_PATH": "${CLAUDE_PLUGIN_DATA}/node_modules"
+593	      }
+594	    }
+595	  }
+596	}
+597	```
+598	
+599	The data directory is deleted automatically when you uninstall the plugin from the last scope where it is installed. The `/plugin` interface shows the directory size and prompts before deleting. The CLI deletes by default; pass [`--keep-data`](#plugin-uninstall) to preserve it.
+600	
+601	***
+602	
+603	## Plugin caching and file resolution
+604	
+605	Plugins are specified in one of two ways:
+606	
+607	* Through `claude --plugin-dir`, for the duration of a session.
+608	* Through a marketplace, installed for future sessions.
+609	
+610	For security and verification purposes, Claude Code copies *marketplace* plugins to the user's local **plugin cache** (`~/.claude/plugins/cache`) rather than using them in-place. Understanding this behavior is important when developing plugins that reference external files.
+611	
+612	Each installed version is a separate directory in the cache. When you update or uninstall a plugin, the previous version directory is marked as orphaned and removed automatically 7 days later. The grace period lets concurrent Claude Code sessions that already loaded the old version keep running without errors.
+613	
+614	Claude's Glob and Grep tools skip orphaned version directories during searches, so file results don't include outdated plugin code.
+615	
+616	### Path traversal limitations
+617	
+618	Installed plugins cannot reference files outside their directory. Paths that traverse outside the plugin root (such as `../shared-utils`) will not work after installation because those external files are not copied to the cache.
+619	
+620	### Working with external dependencies
+621	
+622	If your plugin needs to access files outside its directory, you can create symbolic links to external files within your plugin directory. Symlinks are preserved in the cache rather than dereferenced, and they resolve to their target at runtime. The following command creates a link from inside your plugin directory to a shared utilities location:
+623	
+624	```bash theme={null}
+625	ln -s /path/to/shared-utils ./shared-utils
+626	```
+627	
+628	This provides flexibility while maintaining the security benefits of the caching system.
+629	
+630	***
+631	
+632	## Plugin directory structure
+633	
+634	### Standard plugin layout
+635	
+636	A complete plugin follows this structure:
+637	
+638	```text theme={null}
+639	enterprise-plugin/
+640	├── .claude-plugin/           # Metadata directory (optional)
+641	│   └── plugin.json             # plugin manifest
+642	├── skills/                   # Skills
+643	│   ├── code-reviewer/
+644	│   │   └── SKILL.md
+645	│   └── pdf-processor/
+646	│       ├── SKILL.md
+647	│       └── scripts/
+648	├── commands/                 # Skills as flat .md files
+649	│   ├── status.md
+650	│   └── logs.md
+651	├── agents/                   # Subagent definitions
+652	│   ├── security-reviewer.md
+653	│   ├── performance-tester.md
+654	│   └── compliance-checker.md
+655	├── output-styles/            # Output style definitions
+656	│   └── terse.md
+657	├── themes/                   # Color theme definitions
+658	│   └── dracula.json
+659	├── monitors/                 # Background monitor configurations
+660	│   └── monitors.json
+661	├── hooks/                    # Hook configurations
+662	│   ├── hooks.json           # Main hook config
+663	│   └── security-hooks.json  # Additional hooks
+664	├── bin/                      # Plugin executables added to PATH
+665	│   └── my-tool               # Invokable as bare command in Bash tool
+666	├── settings.json            # Default settings for the plugin
+667	├── .mcp.json                # MCP server definitions
+668	├── .lsp.json                # LSP server configurations
+669	├── scripts/                 # Hook and utility scripts
+670	│   ├── security-scan.sh
+671	│   ├── format-code.py
+672	│   └── deploy.js
+673	├── LICENSE                  # License file
+674	└── CHANGELOG.md             # Version history
+675	```
+676	
+677	<Warning>
+678	  The `.claude-plugin/` directory contains the `plugin.json` file. All other directories (commands/, agents/, skills/, output-styles/, themes/, monitors/, hooks/) must be at the plugin root, not inside `.claude-plugin/`.
+679	</Warning>
+680	
+681	### File locations reference
+682	
+683	| Component         | Default Location             | Purpose                                                                                                                                                                                    |
+684	| :---------------- | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+685	| **Manifest**      | `.claude-plugin/plugin.json` | Plugin metadata and configuration (optional)                                                                                                                                               |
+686	| **Skills**        | `skills/`                    | Skills with `<name>/SKILL.md` structure                                                                                                                                                    |
+687	| **Commands**      | `commands/`                  | Skills as flat Markdown files. Use `skills/` for new plugins                                                                                                                               |
+688	| **Agents**        | `agents/`                    | Subagent Markdown files                                                                                                                                                                    |
+689	| **Output styles** | `output-styles/`             | Output style definitions                                                                                                                                                                   |
+690	| **Themes**        | `themes/`                    | Color theme definitions                                                                                                                                                                    |
+691	| **Hooks**         | `hooks/hooks.json`           | Hook configuration                                                                                                                                                                         |
+692	| **MCP servers**   | `.mcp.json`                  | MCP server definitions                                                                                                                                                                     |
+693	| **LSP servers**   | `.lsp.json`                  | Language server configurations                                                                                                                                                             |
+694	| **Monitors**      | `monitors/monitors.json`     | Background monitor configurations                                                                                                                                                          |
+695	| **Executables**   | `bin/`                       | Executables added to the Bash tool's `PATH`. Files here are invokable as bare commands in any Bash tool call while the plugin is enabled                                                   |
+696	| **Settings**      | `settings.json`              | Default configuration applied when the plugin is enabled. Only the [`agent`](/en/sub-agents) and [`subagentStatusLine`](/en/statusline#subagent-status-lines) keys are currently supported |
+697	
+698	***
+699	
+700	## CLI commands reference
+701	
+702	Claude Code provides CLI commands for non-interactive plugin management, useful for scripting and automation.
+703	
+704	### plugin install
+705	
+706	Install a plugin from available marketplaces.
+707	
+708	```bash theme={null}
+709	claude plugin install <plugin> [options]
+710	```
+711	
+712	**Arguments:**
+713	
+714	* `<plugin>`: Plugin name or `plugin-name@marketplace-name` for a specific marketplace
+715	
+716	**Options:**
+717	
+718	| Option                | Description                                       | Default |
+719	| :-------------------- | :------------------------------------------------ | :------ |
+720	| `-s, --scope <scope>` | Installation scope: `user`, `project`, or `local` | `user`  |
+721	| `-h, --help`          | Display help for command                          |         |
+722	
+723	Scope determines which settings file the installed plugin is added to. For example, `--scope project` writes to `enabledPlugins` in .claude/settings.json, making the plugin available to everyone who clones the project repository.
+724	
+725	**Examples:**
+726	
+727	```bash theme={null}
+728	# Install to user scope (default)
+729	claude plugin install formatter@my-marketplace
+730	
+731	# Install to project scope (shared with team)
+732	claude plugin install formatter@my-marketplace --scope project
+733	
+734	# Install to local scope (gitignored)
+735	claude plugin install formatter@my-marketplace --scope local
+736	```
+737	
+738	### plugin uninstall
+739	
+740	Remove an installed plugin.
+741	
+742	```bash theme={null}
+743	claude plugin uninstall <plugin> [options]
+744	```
+745	
+746	**Arguments:**
+747	
+748	* `<plugin>`: Plugin name or `plugin-name@marketplace-name`
+749	
+750	**Options:**
+751	
+752	| Option                | Description                                                                                              | Default |
+753	| :-------------------- | :------------------------------------------------------------------------------------------------------- | :------ |
+754	| `-s, --scope <scope>` | Uninstall from scope: `user`, `project`, or `local`                                                      | `user`  |
+755	| `--keep-data`         | Preserve the plugin's [persistent data directory](#persistent-data-directory)                            |         |
+756	| `--prune`             | Also remove auto-installed dependencies that no other plugin requires. See [plugin prune](#plugin-prune) |         |
+757	| `-y, --yes`           | Skip the `--prune` confirmation prompt. Required when stdin is not a TTY                                 |         |
+758	| `-h, --help`          | Display help for command                                                                                 |         |
+759	
+760	**Aliases:** `remove`, `rm`
+761	
+762	By default, uninstalling from the last remaining scope also deletes the plugin's `${CLAUDE_PLUGIN_DATA}` directory. Use `--keep-data` to preserve it, for example when reinstalling after testing a new version.
+763	
+764	### plugin prune
+765	
+766	Remove auto-installed plugin dependencies that are no longer required by any installed plugin. Dependencies that Claude Code pulled in to satisfy another plugin's [`dependencies`](/en/plugin-dependencies) field are removed; plugins you installed directly are never touched.
+767	
+768	```bash theme={null}
+769	claude plugin prune [options]
+770	```
+771	
+772	**Options:**
+773	
+774	| Option                | Description                                                    | Default |
+775	| :-------------------- | :------------------------------------------------------------- | :------ |
+776	| `-s, --scope <scope>` | Prune at scope: `user`, `project`, or `local`                  | `user`  |
+777	| `--dry-run`           | List what would be removed without removing anything           |         |
+778	| `-y, --yes`           | Skip the confirmation prompt. Required when stdin is not a TTY |         |
+779	| `-h, --help`          | Display help for command                                       |         |
+780	
+781	**Aliases:** `autoremove`
+782	
+783	The command lists orphaned dependencies and asks for confirmation before removing them. To remove a plugin and clean up its dependencies in one step, run `claude plugin uninstall <plugin> --prune`.
+784	
+785	<Note>
+786	  `claude plugin prune` requires Claude Code v2.1.121 or later.
+787	</Note>
+788	
+789	### plugin enable
+790	
+791	Enable a disabled plugin.
+792	
+793	```bash theme={null}
+794	claude plugin enable <plugin> [options]
+795	```
+796	
+797	**Arguments:**
+798	
+799	* `<plugin>`: Plugin name or `plugin-name@marketplace-name`
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:55Z)**_
+
+I have the version semantics confirmed. Now let me grab the marketplace schema section and the reserved-name claim.
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:45:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Grep for marketplace-relevant lines
+
+`grep -nE 'marketplace\.json|plugins\[\]|category|tags|reserved|source|relative to' /Users/daviddwlee84/.claude/projects/-Volumes-Data-Program-Personal-agent-skills/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/tool-results/toolu_01JenHQS86cUBBbVgJqEy8MM.txt | head -60`
+
+```text
+419:| `keywords`    | array  | Discovery tags                                                                                                                                                                                                                                                                                                                                   | `["deployment", "ci-cd"]`                                         |
+508:For `skills`, `commands`, `agents`, `outputStyles`, `themes`, and `monitors`, a custom path replaces the default. If the manifest specifies `skills`, the default `skills/` directory is not scanned; if it specifies `monitors`, the default `monitors/monitors.json` is not loaded. [Hooks](#hooks), [MCP servers](#mcp-servers), and [LSP servers](#lsp-servers) have different semantics for handling multiple sources.
+510:* All paths must be relative to the plugin root and start with `./`
+622:If your plugin needs to access files outside its directory, you can create symbolic links to external files within your plugin directory. Symlinks are preserved in the cache rather than dereferenced, and they resolve to their target at runtime. The following command creates a link from inside your plugin directory to a shared utilities location:
+850:List installed plugins with their version, source marketplace, and enable status.
+918:* `Plugin directory not found at path: ./plugins/my-plugin. Check that the marketplace entry has the correct path.`: the `source` path in marketplace.json points to a non-existent directory
+985:2. The `version` field in the plugin's marketplace entry in `marketplace.json`
+986:3. The git commit SHA of the plugin's source, for `github`, `url`, `git-subdir`, and relative-path sources in a git-hosted marketplace
+987:4. `unknown`, for `npm` sources or local directories not inside a git repository
+994:| **Commit-SHA version** | Omit `version` from both `plugin.json` and the marketplace entry | Users get updates on every new commit to the plugin's git source                                                                                                     | Internal or team plugins under active development |
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:46:05Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="WebFetch"><details>
+<summary>Tool use: **WebFetch**</summary>
+ `https://code.claude.com/docs/en/plugin-marketplaces`
+
+```text
+<persisted-output>
+Output too large (52.7KB). Full output saved to: /Users/daviddwlee84/.claude/projects/-Volumes-Data-Program-Personal-agent-skills/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/tool-results/toolu_01XzMYe5Qp1RQMEhCVzg7w5T.txt
+
+Preview (first 2KB):
+> ## Documentation Index
+> Fetch the complete documentation index at: https://code.claude.com/docs/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Create and distribute a plugin marketplace
+
+> Build and host plugin marketplaces to distribute Claude Code extensions across teams and communities.
+
+A **plugin marketplace** is a catalog that lets you distribute plugins to others. Marketplaces provide centralized discovery, version tracking, automatic updates, and support for multiple source types (git repositories, local paths, and more). This guide shows you how to create your own marketplace to share plugins with your team or community.
+
+Looking to install plugins from an existing marketplace? See [Discover and install prebuilt plugins](/en/discover-plugins).
+
+## Overview
+
+Creating and distributing a marketplace involves:
+
+1. **Creating plugins**: build one or more plugins with skills, agents, hooks, MCP servers, or LSP servers. This guide assumes you already have plugins to distribute; see [Create plugins](/en/plugins) for details on how to create them.
+2. **Creating a marketplace file**: define a `marketplace.json` that lists your plugins and where to find them (see [Create the marketplace file](#create-the-marketplace-file)).
+3. **Host the marketplace**: push to GitHub, GitLab, or another git host (see [Host and distribute marketplaces](#host-and-distribute-marketplaces)).
+4. **Share with users**: users add your marketplace with `/plugin marketplace add` and install individual plugins (see [Discover and install plugins](/en/discover-plugins)).
+
+Once your marketplace is live, you can update it by pushing changes to your repository. Users refresh their local copy with `/plugin marketplace update`.
+
+## Walkthrough: create a local marketplace
+
+...
+</persisted-output>
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:46:09Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find category/tags/source/reserved/version mentions
+
+`grep -niE 'category|tags|source|reserved|relative|version|plugins\[\]|kebab' /Users/daviddwlee84/.claude/projects/-Volumes-Data-Program-Personal-agent-skills/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/tool-results/toolu_01XzMYe5Qp1RQMEhCVzg7w5T.txt | head -80`
+
+```text
+9:A **plugin marketplace** is a catalog that lets you distribute plugins to others. Marketplaces provide centralized discovery, version tracking, automatic updates, and support for multiple source types (git repositories, local paths, and more). This guide shows you how to create your own marketplace to share plugins with your team or community.
+63:      "version": "1.0.0"
+68:      Setting `version` means users only receive updates when you change this field, so bump it on every release. If you omit `version` and host this marketplace in git, every commit automatically counts as a new version. See [Version resolution](#version-resolution-and-release-channels) to choose the right approach.
+84:          "source": "./plugins/quality-review-plugin",
+120:Create `.claude-plugin/marketplace.json` in your repository root. This file defines your marketplace's name, owner information, and a list of plugins with their sources.
+122:Each plugin entry needs at minimum a `name` and `source` (where to fetch it from). See the [full schema](#marketplace-schema) below for all available fields.
+134:      "source": "./plugins/formatter",
+136:      "version": "2.1.0",
+143:      "source": {
+144:        "source": "github",
+159:| `name`    | string | Marketplace identifier (kebab-case, no spaces). This is public-facing: users see it when installing plugins (for example, `/plugin install my-tool@your-marketplace`). | `"acme-tools"` |
+164:  **Reserved names**: The following marketplace names are reserved for official Anthropic use and cannot be used by third-party marketplaces: `claude-code-marketplace`, `claude-code-plugins`, `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`, `agent-skills`, `knowledge-work-plugins`, `life-sciences`. Names that impersonate official marketplaces (like `official-claude-plugins` or `anthropic-tools-v2`) are also blocked.
+180:| `version`                             | string | Marketplace manifest version                                                                                                                                                                                                                                       |
+181:| `metadata.pluginRoot`                 | string | Base directory prepended to relative plugin source paths (for example, `"./plugins"` lets you write `"source": "formatter"` instead of `"source": "./plugins/formatter"`)                                                                                          |
+184:`description` and `version` are also accepted under `metadata` for backward compatibility.
+188:Each plugin entry in the `plugins` array describes a plugin and where to find it. You can include any field from the [plugin manifest schema](/en/plugins-reference#plugin-manifest-schema) (like `description`, `version`, `author`, `commands`, `hooks`, etc.), plus these marketplace-specific fields: `source`, `category`, `tags`, and `strict`.
+194:| `name`   | string         | Plugin identifier (kebab-case, no spaces). This is public-facing: users see it when installing (for example, `/plugin install my-plugin@marketplace`). |
+195:| `source` | string\|object | Where to fetch the plugin from (see [Plugin sources](#plugin-sources) below)                                                                           |
+204:| `version`     | string  | Plugin version. If set (here or in `plugin.json`), the plugin is pinned to this string and users only receive updates when it changes. Omit to fall back to the git commit SHA. See [Version resolution](#version-resolution-and-release-channels). |
+207:| `repository`  | string  | Source code repository URL                                                                                                                                                                                                                          |
+209:| `keywords`    | array   | Tags for plugin discovery and categorization                                                                                                                                                                                                        |
+210:| `category`    | string  | Plugin category for organization                                                                                                                                                                                                                    |
+211:| `tags`        | array   | Tags for searchability                                                                                                                                                                                                                              |
+225:## Plugin sources
+227:Plugin sources tell Claude Code where to fetch each individual plugin listed in your marketplace. These are set in the `source` field of each plugin entry in `marketplace.json`.
+229:Once a plugin is cloned or copied into the local machine, it is copied into the local versioned plugin cache at `~/.claude/plugins/cache`.
+231:| Source        | Type                            | Fields                             | Notes                                                                                                                                             |
+233:| Relative path | `string` (e.g. `"./my-plugin"`) | none                               | Local directory within the marketplace repo. Must start with `./`. Resolved relative to the marketplace root, not the `.claude-plugin/` directory |
+235:| `url`         | object                          | `url`, `ref?`, `sha?`              | Git URL source                                                                                                                                    |
+237:| `npm`         | object                          | `package`, `version?`, `registry?` | Installed via `npm install`                                                                                                                       |
+240:  **Marketplace sources vs plugin sources**: These are different concepts that control different things.
+242:  * **Marketplace source** — where to fetch the `marketplace.json` catalog itself. Set when users run `/plugin marketplace add` or in `extraKnownMarketplaces` settings. Supports `ref` (branch/tag) but not `sha`.
+243:  * **Plugin source** — where to fetch an individual plugin listed in the marketplace. Set in the `source` field of each plugin entry inside `marketplace.json`. Supports both `ref` (branch/tag) and `sha` (exact commit).
+245:  For example, a marketplace hosted at `acme-corp/plugin-catalog` (marketplace source) can list a plugin fetched from `acme-corp/code-formatter` (plugin source). The marketplace source and plugin source point to different repositories and are pinned independently.
+248:### Relative paths
+255:  "source": "./plugins/my-plugin"
+259:Paths resolve relative to the marketplace root, which is the directory containing `.claude-plugin/`. In the example above, `./plugins/my-plugin` points to `<repo>/plugins/my-plugin`, even though `marketplace.json` lives at `<repo>/.claude-plugin/marketplace.json`. Do not use `../` to reference paths outside the marketplace root.
+262:  Relative paths only work when users add your marketplace via Git (GitHub, GitLab, or git URL). If users add your marketplace via a direct URL to the `marketplace.json` file, relative paths will not resolve correctly. For URL-based distribution, use GitHub, npm, or git URL sources instead. See [Troubleshooting](#plugins-with-relative-paths-fail-in-url-based-marketplaces) for details.
+270:  "source": {
+271:    "source": "github",
+282:  "source": {
+283:    "source": "github",
+295:| `sha`  | string | Optional. Full 40-character git commit SHA to pin to an exact version |
+302:  "source": {
+303:    "source": "url",
+314:  "source": {
+315:    "source": "url",
+327:| `sha` | string | Optional. Full 40-character git commit SHA to pin to an exact version                                                                                    |
+336:  "source": {
+337:    "source": "git-subdir",
+349:  "source": {
+350:    "source": "git-subdir",
+366:| `sha`  | string | Optional. Full 40-character git commit SHA to pin to an exact version                                    |
+375:  "source": {
+376:    "source": "npm",
+382:To pin to a specific version, add the `version` field:
+387:  "source": {
+388:    "source": "npm",
+390:    "version": "2.1.0"
+400:  "source": {
+401:    "source": "npm",
+403:    "version": "^2.0.0",
+412:| `version`  | string | Optional. Version or version range (for example, `2.1.0`, `^2.0.0`, `~1.5.0`)                |
+422:  "source": {
+423:    "source": "github",
+427:  "version": "2.1.0",
+436:  "category": "productivity",
+468:* **`commands` and `agents`**: You can specify multiple directories or individual files. Paths are relative to the plugin root.
+478:| `true` (default) | `plugin.json` is the authority. The marketplace entry can supplement it with additional components, and both sources are merged.                                 |
+496:**Benefits**: Built-in version control, issue tracking, and team collaboration features.
+547:      "source": {
+548:        "source": "github",
+570:  If you use a local `directory` or `file` source with a relative path, the path resolves against your repository's main checkout. When you run Claude Code from a git worktree, the path still points at the main checkout, so all worktrees share the same marketplace location. Marketplace state is stored once per user in `~/.claude/plugins/known_marketplaces.json`, not per project.
+585:  cache/<marketplace>/<plugin>/<version>/...
+611:For organizations requiring strict control over plugin sources, administrators can restrict which plugin marketplaces users are allowed to add using the [`strictKnownMarketplaces`](/en/settings#strictknownmarketplaces) setting in managed settings.
+619:| List of sources     | Users can only add marketplaces that match the allowlist exactly |
+637:      "source": "github",
+641:      "source": "github",
+646:      "source": "url",
+659:      "source": "hostPattern",
+```
+</details></tool-use>
+
+_**Agent - sidechain (claude-opus-4-7 2026-04-28 08:46:53Z)**_
+
+All claims are now verified. I have everything I need.
+
+---
+
+## Bottom line: **Plan (A)** — write `.claude-plugin/marketplace.json` directly. No extra abstraction layer earns its keep.
+
+### Q1. What `npx skills` actually reads
+
+Source: `vercel-labs/skills` (npm `skills` v1.5.2, `bin/cli.mjs`). The categorization comes from one file, [`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts), which only ever opens two paths:
+
+```ts
+readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');  // multi-plugin
+readFile(join(basePath, '.claude-plugin/plugin.json'),       'utf-8'); // single-plugin
+```
+
+`getPluginGroupings()` returns `Map<absoluteSkillPath, plugin.name>`. Then in `src/add.ts` (lines ~1180-1193) the UI is built with clack's `groupMultiselect`:
+
+```ts
+const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+if (!grouped[groupName]) grouped[groupName] = [];
+grouped[groupName]!.push({ ... });
+selected = await p.groupMultiselect({ options: grouped, ... });
+```
+
+So the "Document Skills / Example Skills / Claude Api / Other" headers in the screenshot are literally `kebabToTitle(plugins[].name)` from `marketplace.json`. **There is no native `skills.json` / `skills.yaml` / `skill-pack.json` format** — I grep'd the repo tree, only `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` are consumed. Fields read: `metadata.pluginRoot`, `plugins[].name`, `plugins[].source` (string only — object/remote sources are skipped), `plugins[].skills`. **Fields ignored by `npx skills`: `category`, `tags`, `version`, `description`, `strict`, `author`** — they pass through but don't affect grouping or UI.
+
+### Q2. `plugin.json` vs `marketplace.json`
+
+Per the [official plugins-reference](https://code.claude.com/docs/en/plugins-reference) and [plugin-marketplaces docs](https://code.claude.com/docs/en/plugin-marketplaces): **they are not redundant.** `plugin.json` describes *one* plugin (single-plugin repo install). `marketplace.json` is the *catalog* listing many plugins. For a multi-category repo like `anthropics/skills`, you only need `marketplace.json` — `anthropics/skills` itself ships no `plugin.json`. `plugins[]` entries in marketplace.json may carry `category`, `tags`, `strict`, plus any plugin-manifest field; quote: *"You can include any field from the plugin manifest schema (...), plus these marketplace-specific fields: source, category, tags, and strict."* `category` and `tags` are honored by Claude Code's native `/plugin` UI but **ignored by `npx skills`'s grouping** (it groups on `name` only).
+
+### Q3. Reserved names / source / version — all three ChatGPT claims confirmed
+
+Verbatim from plugin-marketplaces docs:
+
+- **Reserved**: *"`claude-code-marketplace`, `claude-code-plugins`, `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`, `agent-skills`, `knowledge-work-plugins`, `life-sciences`. Names that impersonate official marketplaces (like `official-claude-plugins` or `anthropic-tools-v2`) are also blocked."* So `agent-skills` is reserved — your marketplace `name` must be something else (e.g. `daviddwlee84-skills`).
+- **Source resolution**: *"Resolved relative to the marketplace root, not the `.claude-plugin/` directory ... `./plugins/my-plugin` points to `<repo>/plugins/my-plugin`, even though `marketplace.json` lives at `<repo>/.claude-plugin/marketplace.json`."* Confirmed.
+- **Version when omitted**: plugin.json — *"If omitted, Claude Code falls back to the git commit SHA, so every commit is treated as a new version."* Marketplace metadata.version — *"If you omit `version` and host this marketplace in git, every commit automatically counts as a new version."* Both confirmed.
+
+### Q4. Cross-agent portability
+
+OpenCode reads `.opencode/plugins/` and `opencode.json`'s `plugin: []` (npm packages) — **not** `.claude-plugin/marketplace.json`. Codex/Cursor/Aider have their own conventions (`.cursor/rules/`, `AGENTS.md`, etc.). The **only thing that crosses agents is `npx skills add`** — it reads `marketplace.json` once, then *installs* the SKILL.md files into each target agent's native skills directory (`agents` array in `src/types.ts` enumerates 50+ agents). So one `marketplace.json` is sufficient for cross-agent install via the CLI, even though no other agent natively reads it.
+
+### Q5. Recommendation
+
+**Do plan (A): write `.claude-plugin/marketplace.json` directly**, modeled on `anthropics/skills`. Concretely:
+
+1. `metadata.name` = something not in the reserved list (e.g. `daviddwlee84-skills`).
+2. `metadata.pluginRoot: "./skills"` so each plugin's `source` can be `"./local"` or `"./vendor/fullstack-nextjs"` instead of `"./skills/local"`.
+3. Define plugins as the user-visible categories (`local-skills`, `vendor-fullstack-nextjs`, `vendor-misc`, etc.) — one plugin per group header you want in the picker.
+4. Each `plugins[]` entry: include `name` (drives the header — `npx skills` titlecases it), `description`, `source`, `skills: [...]`. Optionally add `category`/`tags`/`version` — they cost nothing and are honored by Claude Code's native `/plugin` UI even though `npx skills` ignores them.
+5. **Omit `version`** during active development so every commit ships to users (matches `anthropics/skills`, which has no version on its plugin entries).
+
+Plan (B) — a generated catalog — is **not justified yet**: only one consumer reads it, and `marketplace.json` is already the broadest-reach format. Add a generator only if you ever need a second native target (e.g. a Cursor/OpenCode catalog), not preemptively.
+
+Relevant local files: `/Volumes/Data/Program/Personal/agent-skills/CLAUDE.md` (current vendor/local layout — your `pluginRoot: "./skills"` aligns with it), `/Volumes/Data/Program/Personal/agent-skills/vendor.yaml` (already provides per-skill metadata you could codegen `plugins[].skills` from if desired).
+
+Plan file to write next (per plan-mode requirement): `/Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry-agent-a1cb4b04e77fa6abd.md` — let me know if you want me to draft the concrete `marketplace.json` shape there before any implementation.
+
+_**Agent (claude-opus-4-7 2026-04-28 08:47:25Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:47:28Z)**_
+
+Strong findings — all verified against the actual `npx skills` source code (`vercel-labs/skills`). Key corrections to fold in:
+
+- The marketplace `name` field **cannot** be `agent-skills` — it's on the reserved list. Use `daviddwlee84-skills`.
+- `npx skills` only groups on `plugins[].name` (titlecased via `kebabToTitle`). It ignores `category`, `tags`, `version`, `description`, `strict`. Claude Code's native `/plugin` UI does honor them — cheap to add.
+- We do **not** need `.claude-plugin/plugin.json` (that's for single-plugin repos; we're a multi-plugin catalog).
+- No catalog generator layer is justified yet — only one consumer reads this file.
+
+Let me update the plan to lock these in.
+
+_**Agent (claude-opus-4-7 2026-04-28 08:48:11Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Add category groupings to the `npx skills@latest add` selection UI
+
+## Context
+
+`npx skills@latest add anthropics/skills` shows skills grouped under
+**Document Skills**, **Example Skills**, **Claude Api**, **Other** (see
+the user's screenshot). This repo (`daviddwlee84/agent-skills`) currently
+presents all 22 skills as a flat list. Goal: same grouped UX so picking a
+subset is easier — especially as the repo now spans unrelated domains
+(ML, notebooks, fullstack web, skill authoring, project hygiene, job
+queues, docs).
+
+## Why `.claude-plugin/marketplace.json` (and only that)
+
+Verified by reading the `npx skills` source (npm package `skills` =
+`vercel-labs/skills`, `src/plugin-manifest.ts` and `src/add.ts`):
+
+- `npx skills` only ever opens two paths:
+  `.claude-plugin/marketplace.json` (catalog of plugins) and
+  `.claude-plugin/plugin.json` (single-plugin repo). **There is no native
+  `skills.json` / `skills.yaml` / catalog format.** Greppable in the source.
+- Group headers in the picker = `kebabToTitle(plugins[].name)`. Anything not
+  listed in any plugin auto-falls into **Other**.
+- Fields read by `npx skills` for grouping: only `plugins[].name`,
+  `plugins[].source`, `plugins[].skills`. `category`, `tags`, `version`,
+  `description`, `strict`, `author` pass through but **are not used by the
+  picker** — they are, however, honored by Claude Code's native `/plugin`
+  marketplace UI, so it's cheap to include them.
+- `plugin.json` is **not** needed for us. It's for single-plugin repos;
+  `anthropics/skills` ships none, and neither should we.
+- A canonical `skills.catalog.yaml` + generator (the layered design ChatGPT
+  proposed) is **not** justified yet: only one consumer reads this metadata.
+  Adding a generator before a second native target exists is overdesign.
+
+### Verified gotchas (all from official Claude Code plugin-marketplaces docs)
+
+- **Reserved marketplace `name`s** include `agent-skills`,
+  `claude-code-marketplace`, `claude-code-plugins`,
+  `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`,
+  `knowledge-work-plugins`, `life-sciences`, plus impersonations like
+  `official-claude-plugins`. So this repo's marketplace `name` will be
+  **`daviddwlee84-skills`** (folder name `agent-skills` is fine — only the
+  `name` field is restricted).
+- `source: "./..."` is relative to the marketplace **root** (= repo root),
+  not relative to `.claude-plugin/`.
+- Omitting `metadata.version` while hosting in git makes every commit a
+  new version. Desired during active dev. Match `anthropics/skills`, which
+  ships no version.
 
 ## Plan
 
 ### 1. Create `.claude-plugin/marketplace.json`
 
-Single new file. Source paths are relative to repo root and must match the
-on-disk skill directory exactly (the CLI matches by path, not name).
+Top-level shape modeled on upstream, with the corrections above:
 
-Proposed grouping for this repo's 22 skills:
+\```json
+{
+  "name": "daviddwlee84-skills",
+  "owner": { "name": "Da-Wei Lee", "email": "trader3206@gmail.com" },
+  "metadata": {
+    "description": "Personal collection of authored + vendored agent skills",
+    "version": "1.0.0"
+  },
+  "plugins": [ ... ]
+}
+\```
 
-| Plugin name | Skills |
-|---|---|
-| `skill-authoring` | `skills/local/skill-author`, `skills/vendor/skill-creator` |
-| `project-memory` | `skills/local/project-knowledge-harness`, `skills/local/agent-history-hygiene` |
-| `ml-workflow` | `skills/local/mlflow-tracking`, `skills/local/dvc-ml-workflow`, `skills/local/marimo-batch-mlflow`, `skills/local/quantatitive-factor-researcher` |
-| `notebooks` | `skills/vendor/marimo-notebook`, `skills/vendor/streamlit-to-marimo`, `skills/vendor/anywidget` |
-| `fullstack-nextjs` | the 9 skills under `skills/vendor/fullstack-nextjs/` |
-| `infra-and-docs` | `skills/local/mkdocs-site-bootstrap`, `skills/local/pueue-job-queue` |
+Plugin groupings (6 plugins, all 22 skills accounted for; no skills will
+fall under "Other" by default). The "UI label" column shows what
+`kebabToTitle(name)` will render in the picker — names chosen so the
+casing reads sensibly:
 
-(If we leave any skill out of the above, the CLI will surface it under
-**Other** automatically — that's a valid escape hatch and matches upstream.)
+| `name` | UI label | Skill paths |
+|---|---|---|
+| `skill-authoring` | Skill Authoring | `./skills/local/skill-author`, `./skills/vendor/skill-creator` |
+| `project-memory` | Project Memory | `./skills/local/project-knowledge-harness`, `./skills/local/agent-history-hygiene` |
+| `ml-workflow` | Ml Workflow | `./skills/local/mlflow-tracking`, `./skills/local/dvc-ml-workflow`, `./skills/local/marimo-batch-mlflow`, `./skills/local/quantatitive-factor-researcher` |
+| `notebooks` | Notebooks | `./skills/vendor/marimo-notebook`, `./skills/vendor/streamlit-to-marimo`, `./skills/vendor/anywidget` |
+| `fullstack-nextjs` | Fullstack Nextjs | the 9 dirs under `./skills/vendor/fullstack-nextjs/` |
+| `infra-and-docs` | Infra And Docs | `./skills/local/mkdocs-site-bootstrap`, `./skills/local/pueue-job-queue` |
 
-### 2. Tooling integration (decided via AskUserQuestion)
+(If the "Ml Workflow" / "Fullstack Nextjs" titlecasing looks ugly, we can
+rename to e.g. `machine-learning` → "Machine Learning", `nextjs-stack` →
+"Nextjs Stack". Easy to tweak.)
 
-This decision is pending; see the question after this plan. Options:
+Each `plugins[]` entry includes `name`, `description`, `source: "./"`,
+`strict: false`, `skills: [...]`. We will additionally include `category`
+and `tags` per plugin (ignored by `npx skills`, honored by Claude Code's
+native `/plugin` UI — zero downside). No `version` field — match upstream.
 
-- **(A) Hand-edit only.** Document in `CLAUDE.md` that adding/moving a skill
-  also requires editing `.claude-plugin/marketplace.json`. Simple, but
-  drift-prone.
-- **(B) Validator only.** Add `scripts/validate-marketplace.sh` (called by
-  `make kanban` or a new `make marketplace` target) that asserts every
-  on-disk skill is either listed in some plugin or intentionally falls
-  through to "Other", and that every listed path exists. No auto-update.
-- **(C) Validator + auto-insert.** Extend `scripts/add-vendor.sh` with a
-  `--plugin <name>` flag that appends the new skill path into the matching
-  plugin in `marketplace.json` (using `jq`/`yq`). Mirror behaviour for
-  `cd skills/local && npx skills@latest init` would require a separate
-  helper script (e.g. `scripts/add-local-skill.sh`).
+### 2. Add `scripts/validate-marketplace.sh`
 
-Recommendation: **B**. It's the smallest addition that prevents drift
-without bloating tooling. Plugins change rarely; hand-editing is fine.
+Bash + `jq` validator (jq already used by `scripts/sync-vendor.sh`).
+Checks:
 
-### 3. README + CLAUDE.md updates
+1. `.claude-plugin/marketplace.json` parses as JSON.
+2. `name` is not in the reserved list (hard-coded inside the script).
+3. Every `plugins[].skills[]` path exists and contains a `SKILL.md`.
+4. No path is listed in more than one plugin.
+5. Every on-disk `skills/**/SKILL.md` (one or four levels deep, matching
+   `CLAUDE.md`'s discovery rules) is either listed in some plugin or
+   logged as a warning that it will fall through to **Other**.
 
-- README: short section explaining "Categories shown in the install UI come
-  from `.claude-plugin/marketplace.json`. Edit it when adding a skill."
-- CLAUDE.md: one-line pointer in the existing "Vendor System" / "Commands"
-  area saying the same thing, plus the validate command if option B is taken.
+Wire as `make marketplace`. Exit non-zero on errors (1–4); warnings only
+for (5) so adding a skill mid-edit doesn't break the build.
+
+### 3. Documentation touch-ups
+
+- **`README.md`** — short "Categories in the install UI" section pointing
+  at `.claude-plugin/marketplace.json` and `make marketplace`.
+- **`CLAUDE.md`** — one bullet under Commands (`make marketplace`) and
+  one line in "Vendor System" reminding that adding a skill also means
+  editing `marketplace.json` (or accepting the "Other" fallback).
 
 ## Critical files
 
-- **New:** `.claude-plugin/marketplace.json` — the only file the CLI cares about
-- **New (option B/C only):** `scripts/validate-marketplace.sh`
-- **Edit:** `README.md` — document the categories file
-- **Edit:** `CLAUDE.md` — one-line workflow note
+- **New:** `.claude-plugin/marketplace.json` — the only file the CLI reads
+- **New:** `scripts/validate-marketplace.sh`
+- **Edit:** `Makefile` — add `marketplace` target
+- **Edit:** `README.md` — categories section
+- **Edit:** `CLAUDE.md` — workflow note + new command bullet
 - **Reference (do not change):** `vendor.yaml` — different purpose
-  (governs upstream syncing, not user-facing grouping). The `series:` field
-  in `vendor.yaml` is independent of `marketplace.json` plugins.
+  (governs upstream syncing, not user-facing grouping); the `series:`
+  field is independent of `marketplace.json`. Both can coexist.
 
 ## Verification
 
-After implementation:
+1. `jq . .claude-plugin/marketplace.json` — well-formed JSON.
+2. `bash scripts/validate-marketplace.sh` — exits 0; no broken paths,
+   no duplicates, all 22 skills accounted for.
+3. `make marketplace` — invokes the validator and passes.
+4. Push to `main`, then from an unrelated directory run
+   `npx skills@latest add daviddwlee84/agent-skills`. Confirm the picker
+   shows the 6 group headers and an empty/absent **Other**. The CLI pulls
+   from the GitHub remote, not the working tree, so changes must be
+   pushed first.
+5. Sanity check: temporarily remove one path from `marketplace.json`,
+   re-run `npx skills@latest add daviddwlee84/agent-skills`, confirm
+   that skill now lives under **Other** — then revert.
 
-1. `cat .claude-plugin/marketplace.json | jq .` — well-formed JSON.
-2. `jq -r '.plugins[].skills[]' .claude-plugin/marketplace.json | xargs -I{} test -f {}/SKILL.md && echo OK`
-   — every listed skill path exists on disk.
-3. From an unrelated directory, run
-   `npx skills@latest add daviddwlee84/agent-skills` and confirm the
-   selection UI now shows the proposed groups instead of a flat list.
-   (This requires the changes to be pushed to `main` first — the CLI
-   pulls from the GitHub remote, not the working tree.)
-4. Confirm any unlisted skill appears under **Other** as expected.
-`
-- planFilePath: `/Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md`
+```
 
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md has been updated successfully.
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:13Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="ExitPlanMode"><details>
+<summary>Tool use: **ExitPlanMode**</summary>
+
+```text
+User has approved your plan. You can now start coding. Start with updating your todo list if applicable
+
+Your plan has been saved to: /Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+You can refer back to it if needed during implementation.
+
+## Approved Plan (edited by user):
+# Add category groupings to the `npx skills@latest add` selection UI
+
+## Context
+
+`npx skills@latest add anthropics/skills` shows skills grouped under
+**Document Skills**, **Example Skills**, **Claude Api**, **Other** (see
+the user's screenshot). This repo (`daviddwlee84/agent-skills`) currently
+presents all 22 skills as a flat list. Goal: same grouped UX so picking a
+subset is easier — especially as the repo now spans unrelated domains
+(ML, notebooks, fullstack web, skill authoring, project hygiene, job
+queues, docs).
+
+## Why `.claude-plugin/marketplace.json` (and only that)
+
+Verified by reading the `npx skills` source (npm package `skills` =
+`vercel-labs/skills`, `src/plugin-manifest.ts` and `src/add.ts`):
+
+- `npx skills` only ever opens two paths:
+  `.claude-plugin/marketplace.json` (catalog of plugins) and
+  `.claude-plugin/plugin.json` (single-plugin repo). **There is no native
+  `skills.json` / `skills.yaml` / catalog format.** Greppable in the source.
+- Group headers in the picker = `kebabToTitle(plugins[].name)`. Anything not
+  listed in any plugin auto-falls into **Other**.
+- Fields read by `npx skills` for grouping: only `plugins[].name`,
+  `plugins[].source`, `plugins[].skills`. `category`, `tags`, `version`,
+  `description`, `strict`, `author` pass through but **are not used by the
+  picker** — they are, however, honored by Claude Code's native `/plugin`
+  marketplace UI, so it's cheap to include them.
+- `plugin.json` is **not** needed for us. It's for single-plugin repos;
+  `anthropics/skills` ships none, and neither should we.
+- A canonical `skills.catalog.yaml` + generator (the layered design ChatGPT
+  proposed) is **not** justified yet: only one consumer reads this metadata.
+  Adding a generator before a second native target exists is overdesign.
+
+### Verified gotchas (all from official Claude Code plugin-marketplaces docs)
+
+- **Reserved marketplace `name`s** include `agent-skills`,
+  `claude-code-marketplace`, `claude-code-plugins`,
+  `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`,
+  `knowledge-work-plugins`, `life-sciences`, plus impersonations like
+  `official-claude-plugins`. So this repo's marketplace `name` will be
+  **`daviddwlee84-skills`** (folder name `agent-skills` is fine — only the
+  `name` field is restricted).
+- `source: "./..."` is relative to the marketplace **root** (= repo root),
+  not relative to `.claude-plugin/`.
+- Omitting `metadata.version` while hosting in git makes every commit a
+  new version. Desired during active dev. Match `anthropics/skills`, which
+  ships no version.
+
+## Plan
+
+### 1. Create `.claude-plugin/marketplace.json`
+
+Top-level shape modeled on upstream, with the corrections above:
+
+```json
+{
+  "name": "daviddwlee84-skills",
+  "owner": { "name": "Da-Wei Lee", "email": "daviddwlee84@gmail.com" },
+  "metadata": {
+    "description": "Personal collection of authored + vendored agent skills",
+    "version": "1.0.0"
+  },
+  "plugins": [ ... ]
+}
+```
+
+Plugin groupings (6 plugins, all 22 skills accounted for; no skills will
+fall under "Other" by default). The "UI label" column shows what
+`kebabToTitle(name)` will render in the picker — names chosen so the
+casing reads sensibly:
+
+| `name` | UI label | Skill paths |
+|---|---|---|
+| `skill-authoring` | Skill Authoring | `./skills/local/skill-author`, `./skills/vendor/skill-creator` |
+| `project-memory` | Project Memory | `./skills/local/project-knowledge-harness`, `./skills/local/agent-history-hygiene` |
+| `ml-workflow` | Ml Workflow | `./skills/local/mlflow-tracking`, `./skills/local/dvc-ml-workflow`, `./skills/local/marimo-batch-mlflow`, `./skills/local/quantatitive-factor-researcher` |
+| `notebooks` | Notebooks | `./skills/vendor/marimo-notebook`, `./skills/vendor/streamlit-to-marimo`, `./skills/vendor/anywidget` |
+| `fullstack-nextjs` | Fullstack Nextjs | the 9 dirs under `./skills/vendor/fullstack-nextjs/` |
+| `infra-and-docs` | Infra And Docs | `./skills/local/mkdocs-site-bootstrap`, `./skills/local/pueue-job-queue` |
+
+(If the "Ml Workflow" / "Fullstack Nextjs" titlecasing looks ugly, we can
+rename to e.g. `machine-learning` → "Machine Learning", `nextjs-stack` →
+"Nextjs Stack". Easy to tweak.)
+
+Each `plugins[]` entry includes `name`, `description`, `source: "./"`,
+`strict: false`, `skills: [...]`. We will additionally include `category`
+and `tags` per plugin (ignored by `npx skills`, honored by Claude Code's
+native `/plugin` UI — zero downside). No `version` field — match upstream.
+
+### 2. Add `scripts/validate-marketplace.sh`
+
+Bash + `jq` validator (jq already used by `scripts/sync-vendor.sh`).
+Checks:
+
+1. `.claude-plugin/marketplace.json` parses as JSON.
+2. `name` is not in the reserved list (hard-coded inside the script).
+3. Every `plugins[].skills[]` path exists and contains a `SKILL.md`.
+4. No path is listed in more than one plugin.
+5. Every on-disk `skills/**/SKILL.md` (one or four levels deep, matching
+   `CLAUDE.md`'s discovery rules) is either listed in some plugin or
+   logged as a warning that it will fall through to **Other**.
+
+Wire as `make marketplace`. Exit non-zero on errors (1–4); warnings only
+for (5) so adding a skill mid-edit doesn't break the build.
+
+### 3. Documentation touch-ups
+
+- **`README.md`** — short "Categories in the install UI" section pointing
+  at `.claude-plugin/marketplace.json` and `make marketplace`.
+- **`CLAUDE.md`** — one bullet under Commands (`make marketplace`) and
+  one line in "Vendor System" reminding that adding a skill also means
+  editing `marketplace.json` (or accepting the "Other" fallback).
+
+## Critical files
+
+- **New:** `.claude-plugin/marketplace.json` — the only file the CLI reads
+- **New:** `scripts/validate-marketplace.sh`
+- **Edit:** `Makefile` — add `marketplace` target
+- **Edit:** `README.md` — categories section
+- **Edit:** `CLAUDE.md` — workflow note + new command bullet
+- **Reference (do not change):** `vendor.yaml` — different purpose
+  (governs upstream syncing, not user-facing grouping); the `series:`
+  field is independent of `marketplace.json`. Both can coexist.
+
+## Verification
+
+1. `jq . .claude-plugin/marketplace.json` — well-formed JSON.
+2. `bash scripts/validate-marketplace.sh` — exits 0; no broken paths,
+   no duplicates, all 22 skills accounted for.
+3. `make marketplace` — invokes the validator and passes.
+4. Push to `main`, then from an unrelated directory run
+   `npx skills@latest add daviddwlee84/agent-skills`. Confirm the picker
+   shows the 6 group headers and an empty/absent **Other**. The CLI pulls
+   from the GitHub remote, not the working tree, so changes must be
+   pushed first.
+5. Sanity check: temporarily remove one path from `marketplace.json`,
+   re-run `npx skills@latest add daviddwlee84/agent-skills`, confirm
+   that skill now lives under **Other** — then revert.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:18Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:19Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ToolSearch"><details>
+<summary>Tool use: **ToolSearch**</summary>
+
+**Input:**
+
+- max_results: `2`
+- query: `select:TaskCreate,TaskUpdate`
+
+**Result:**
+
+```
+
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./Makefile`
+
+```text
+1	.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill
+2	
+3	sync:
+4		./scripts/sync-vendor.sh
+5	
+6	sync-check:
+7		./scripts/sync-vendor.sh --check
+8	
+9	# Usage: make add-vendor SOURCE=owner/repo/path/to/skill
+10	add-vendor:
+11		./scripts/add-vendor.sh $(SOURCE)
+12	
+13	kanban:
+14		./scripts/todo-kanban.sh
+15	
+16	# Convenience wrappers around scripts/add-todo.sh, promote-todo.sh, sweep-inbox.sh.
+17	# For full flags use the scripts directly.
+18	# Usage: make add-todo ARGS="--priority P3 --effort M --title 'X' --description 'Y'"
+19	add-todo:
+20		./scripts/add-todo.sh $(ARGS)
+21	
+22	# Usage: make promote-todo ARGS="--title 'substring' --summary 'shipped summary'"
+23	promote-todo:
+24		./scripts/promote-todo.sh $(ARGS)
+25	
+26	sweep-inbox:
+27		./scripts/sweep-inbox.sh $(ARGS)
+28	
+29	# Docs site: MkDocs Material + mkdocs-llmstxt + mkdocs-copy-to-llm.
+30	# Requires `uv sync --extra docs` once.
+31	docs-serve:
+32		uv run mkdocs serve
+33	
+34	docs-build:
+35		uv run mkdocs build --strict
+36	
+37	# Manual one-shot deploy (CI handles this on push to main).
+38	docs-deploy:
+39		uv run mkdocs gh-deploy --force
+40	
+41	# Test the agent-history-hygiene skill: pytest (unit + corpus) + bash
+42	# exit-code contract. Requires `uv sync --extra dev` once, plus
+43	# `gitleaks` on PATH for the corpus + shell tests (they skip gracefully
+44	# if missing).
+45	test-skill:
+46		uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
+47		bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+48
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./README.md`
+
+```text
+1	# Agent Skills
+2	
+3	A personal collection of [agent skills](https://agentskills.io/home) — both custom-authored and cherry-picked from upstream repos — installable as a single package.
+4	
+5	📚 **[Read the docs](https://daviddwlee84.github.io/agent-skills/)** for the full guide, conventions, and skill index.
+6	
+7	## Install
+8	
+9	<!-- snippet:install (keep in sync with docs/_snippets/install.md) -->
+10	```bash
+11	npx skills@latest add daviddwlee84/agent-skills/skills
+12	```
+13	
+14	> **Note**
+15	> The trailing `/skills` matters. Without it, `npx skills` will look in
+16	> `.agents/skills/` of the upstream repo, which contains a different
+17	> layout. The `skills/` suffix points the installer at the
+18	> `skills/local/` and `skills/vendor/` trees.
+19	<!-- /snippet:install -->
+20	
+21	## What's in here
+22	
+23	- **`skills/local/`** — custom-authored skills.
+24	  - [`project-knowledge-harness`](skills/local/project-knowledge-harness/) — TODO + backlog + pitfalls structure with init / kanban / promote / add-todo / sweep-inbox toolkit. ([docs](https://daviddwlee84.github.io/agent-skills/skills/project-knowledge-harness/))
+25	  - [`quantatitive-factor-researcher`](skills/local/quantatitive-factor-researcher/) — Python quant-research persona. ([docs](https://daviddwlee84.github.io/agent-skills/skills/quantatitive-factor-researcher/))
+26	  - [`skill-author`](skills/local/skill-author/) — Author new skills following [agentskills.io](https://agentskills.io/skill-creation/best-practices) best practices; ships `new-skill.sh` scaffolder and `lint-skill.sh` linter. ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-author/))
+27	  - [`mkdocs-site-bootstrap`](skills/local/mkdocs-site-bootstrap/) — Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated via `.skills/preferences.yaml`; ongoing `add-docs-page.sh` helper. ([docs](https://daviddwlee84.github.io/agent-skills/skills/mkdocs-site-bootstrap/))
+28	  - [`marimo-batch-mlflow`](skills/local/marimo-batch-mlflow/) — Opinionated fork of upstream `marimo-batch`: Tyro CLI (dataclass or Pydantic) + MLflow tracking + live `mlflow-widgets` chart, dual-mode (`mo.app_meta().mode == "script"`) UI/CLI from one notebook. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-batch-mlflow/))
+29	  - [`dvc-ml-workflow`](skills/local/dvc-ml-workflow/) — DVC ([treeverse/dvc](https://github.com/treeverse/dvc)) pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships `init-dvc-project.sh`, `queue-helper.sh` (with `grid` cartesian-product enqueue), `lint-dvcyaml.sh`. ([docs](https://daviddwlee84.github.io/agent-skills/skills/dvc-ml-workflow/))
+30	  - [`mlflow-tracking`](skills/local/mlflow-tracking/) — Generic [MLflow](https://mlflow.org/docs/latest) skill: SQLite + `mlflow ui` for solo, vendored PostgreSQL + MinIO docker-compose stack for teams; covers LLM tracing, model registry (aliases), and autologging across all officially-supported frameworks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/mlflow-tracking/))
+31	  - [`agent-history-hygiene`](skills/local/agent-history-hygiene/) — Commit SpecStory chat transcripts + `.claude/plans/*.md` alongside feature diffs; bootstrap pre-commit + gitleaks + secret-redactor into new repos; enforce rotate-first, rewrite-last leak remediation (never reflexive `git push --force`). ([docs](https://daviddwlee84.github.io/agent-skills/skills/agent-history-hygiene/))
+32	- **`skills/vendor/`** — third-party skills synced from upstream via [`vendor.yaml`](vendor.yaml). Do not edit these locally; `make sync` will clobber changes. Skills can be flat (`skills/vendor/<name>/`) or grouped into a **series** (`skills/vendor/<series>/<name>/`).
+33	  - Flat:
+34	    - [`marimo-notebook`](skills/vendor/marimo-notebook/) — from [marimo-team/skills](https://github.com/marimo-team/skills); general marimo authoring conventions. ([docs](https://daviddwlee84.github.io/agent-skills/skills/marimo-notebook/))
+35	    - [`streamlit-to-marimo`](skills/vendor/streamlit-to-marimo/) — from [marimo-team/skills](https://github.com/marimo-team/skills); convert Streamlit apps to marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/streamlit-to-marimo/))
+36	    - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
+37	    - [`skill-creator`](skills/vendor/skill-creator/) — from [anthropics/skills](https://github.com/anthropics/skills); evaluate, benchmark, and optimize skill trigger descriptions. Complements local [`skill-author`](skills/local/skill-author/). ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-creator/))
+38	  - Series **`fullstack-nextjs`** — Next.js (App Router) + Supabase (Postgres) + shadcn/ui + Tailwind CSS + design/testing skills, all from official orgs. See the [series overview](https://daviddwlee84.github.io/agent-skills/skills/#fullstack-next-js-series).
+39	    - [`nextjs`](skills/vendor/fullstack-nextjs/nextjs/) — Next.js App Router expert from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+40	    - [`shadcn`](skills/vendor/fullstack-nextjs/shadcn/) — shadcn/ui CLI + components from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+41	    - [`react-best-practices`](skills/vendor/fullstack-nextjs/react-best-practices/) — TSX reviewer (70+ rules) from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+42	    - [`vercel-storage`](skills/vendor/fullstack-nextjs/vercel-storage/) — Blob/Edge Config + Supabase/Prisma integration from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+43	    - [`supabase`](skills/vendor/fullstack-nextjs/supabase/) — full Supabase product surface from [supabase/agent-skills](https://github.com/supabase/agent-skills)
+44	    - [`supabase-postgres-best-practices`](skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/) — Postgres perf rules from [supabase/agent-skills](https://github.com/supabase/agent-skills)
+45	    - [`web-design-guidelines`](skills/vendor/fullstack-nextjs/web-design-guidelines/) — UI audit reviewer from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills)
+46	    - [`frontend-design`](skills/vendor/fullstack-nextjs/frontend-design/) — anti-AI-slop aesthetics from [anthropics/skills](https://github.com/anthropics/skills)
+47	    - [`webapp-testing`](skills/vendor/fullstack-nextjs/webapp-testing/) — Playwright toolkit from [anthropics/skills](https://github.com/anthropics/skills)
+48	
+49	## Repo memory
+50	
+51	This repo dogfoods `project-knowledge-harness` on itself:
+52	
+53	- [`TODO.md`](TODO.md) — priority/effort-tagged backlog.
+54	- [`backlog/`](backlog/) — research notes for `P?` items (when populated).
+55	- [`backlog/inbox.md`](backlog/) — quick-capture inbox; sweep into `TODO.md` later.
+56	- [`pitfalls/`](pitfalls/) — symptom-grep-able knowledge base of past traps (when populated).
+57	
+58	```bash
+59	# Validate TODO.md and render kanban-style board
+60	make kanban
+61	
+62	# Quick add structured TODO entry
+63	./scripts/add-todo.sh --priority P3 --effort M --title "..." --description "..."
+64	
+65	# Move an active TODO to ## Done in same commit as the implementation
+66	./scripts/promote-todo.sh --title "<substring>" --summary "<shipped summary>"
+67	
+68	# Triage backlog/inbox.md interactively
+69	./scripts/sweep-inbox.sh
+70	```
+71	
+72	Full workflow: [Project memory](https://daviddwlee84.github.io/agent-skills/workflows/project-memory/).
+73	
+74	## Vendor system
+75	
+76	```bash
+77	# Add a vendored skill (auto-syncs)
+78	./scripts/add-vendor.sh owner/repo/path/to/skill
+79	# or via Makefile
+80	make add-vendor SOURCE=owner/repo/path/to/skill
+81	
+82	# Group into a series subdir (skills/vendor/<series>/<name>/)
+83	./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+84	
+85	# Sync all vendored skills from upstream
+86	make sync
+87	
+88	# Check for upstream updates (dry-run)
+89	make sync-check
+90	```
+91	
+92	Full workflow: [Adding vendor skills](https://daviddwlee84.github.io/agent-skills/workflows/adding-vendor-skills/).
+93	
+94	**Dependencies:** `gh` (GitHub CLI, authenticated) and `yq` (YAML processor).
+95	
+96	## Docs site
+97	
+98	The docs site is built with MkDocs Material + `mkdocs-llmstxt` + `mkdocs-copy-to-llm`.
+99	
+100	```bash
+101	uv sync --extra docs
+102	make docs-serve         # http://127.0.0.1:8000/
+103	make docs-build         # produces ./site/
+104	```
+105	
+106	Deployed automatically to GitHub Pages on push to `main` via [`.github/workflows/docs.yml`](.github/workflows/docs.yml).
+107	
+108	If you want to apply the same docs stack to your own project, see [Downstream docs stack recipe](https://daviddwlee84.github.io/agent-skills/reference/docs-stack-recipe/).
+109	
+110	## Adding a new local skill
+111	
+112	Use the bundled scaffolder (recommended — seeds the agentskills.io best-practice template):
+113	
+114	```bash
+115	bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+116	bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
+117	```
+118	
+119	Or with the upstream init:
+120	
+121	```bash
+122	cd skills/local
+123	npx skills@latest init [skill-name]
+124	```
+125	
+126	See [Creating local skills](https://daviddwlee84.github.io/agent-skills/workflows/creating-local-skills/) for the layout rules and authoring guidance.
+127	
+128	## Resources
+129	
+130	### Skills managers
+131	
+132	- [vercel-labs/skills](https://github.com/vercel-labs/skills) — `npx skills` itself
+133	  - [The Agent Skills Directory](https://skills.sh/)
+134	- [Skill.Fish](https://www.skill.fish/) — alternative skill manager
+135	  - [knoxgraeme/skillfish](https://github.com/knoxgraeme/skillfish)
+136	
+137	### Curated skill collections
+138	
+139	- [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main)
+140	- [mattpocock/skills](https://github.com/mattpocock/skills)
+141	- [anthropics/skills](https://github.com/anthropics/skills)
+142	- [anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins/tree/main)
+143	- [marimo-team/skills](https://github.com/marimo-team/skills)
+144	- [streamlit/agent-skills](https://github.com/streamlit/agent-skills)
+145	- [RKiding/Awesome-finance-skills](https://github.com/RKiding/Awesome-finance-skills)
+146	- [Orchestra-Research/AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-research-SKILLs)
+147	
+148	### Articles
+149	
+150	- [Building Agent Skills with skill-creator](https://medium.com/google-cloud/building-agent-skills-with-skill-creator-855f18e785cf)
+151	- [Introducing: React Best Practices (Vercel)](https://vercel.com/blog/introducing-react-best-practices) — paired with [`react-best-practices`](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices)
+152	- [Six skills for financial service professionals (Claude)](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
+153	
+154	### Skill candidates
+155	
+156	- [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)
+157	- [The Twelve-Factor App](https://12factor.net/)
+158	- [FrancyJGLisboa/agent-skill-creator](https://github.com/FrancyJGLisboa/agent-skill-creator)
+159	- [find-skills (vercel-labs/skills)](https://skills.sh/vercel-labs/skills/find-skills)
+160
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:40Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:42Z)**_
+
+Before implementing, I want to verify one critical detail: the README says `npx skills@latest add daviddwlee84/agent-skills/skills` (with trailing `/skills`). I need to confirm whether the CLI still finds `marketplace.json` at repo root in this case, or whether it would look inside `skills/`.
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Fetch vercel-labs/skills plugin-manifest.ts
+
+`gh api repos/vercel-labs/skills/contents/src/plugin-manifest.ts --jq '.content' | base64 -d 2>&1 | head -150`
+
+```text
+import { readFile } from 'fs/promises';
+import { join, dirname, resolve, normalize, sep } from 'path';
+
+/**
+ * Check if a path is contained within a base directory.
+ * Prevents path traversal attacks via `..` segments or absolute paths.
+ */
+function isContainedIn(targetPath: string, basePath: string): boolean {
+  const normalizedBase = normalize(resolve(basePath));
+  const normalizedTarget = normalize(resolve(targetPath));
+  return normalizedTarget.startsWith(normalizedBase + sep) || normalizedTarget === normalizedBase;
+}
+
+/**
+ * Validate that a relative path follows Claude Code conventions.
+ * Paths must start with './' per the plugin manifest spec.
+ */
+function isValidRelativePath(path: string): boolean {
+  return path.startsWith('./');
+}
+
+/**
+ * Plugin manifest types
+ */
+interface PluginManifestEntry {
+  source?: string | { source: string; repo?: string };
+  skills?: string[];
+  /** Optional name for grouping skills (e.g., "document-skills") */
+  name?: string;
+}
+
+interface MarketplaceManifest {
+  metadata?: { pluginRoot?: string };
+  plugins?: PluginManifestEntry[];
+}
+
+interface PluginManifest {
+  skills?: string[];
+  name?: string;
+}
+
+/**
+ * Extract skill search directories from plugin manifests.
+ * Handles both marketplace.json (multi-plugin) and plugin.json (single plugin).
+ * Only resolves local paths - remote sources are skipped.
+ *
+ * Returns directories that CONTAIN skills (to be searched for child SKILL.md files).
+ * For explicit skill paths in manifests, adds the parent directory so the
+ * existing discovery loop finds them.
+ */
+export async function getPluginSkillPaths(basePath: string): Promise<string[]> {
+  const searchDirs: string[] = [];
+
+  // Helper: add skill paths for a plugin at a given base path
+  // Only adds paths that are contained within basePath (security: prevents traversal)
+  const addPluginSkillPaths = (pluginBase: string, skills?: string[]) => {
+    // Validate pluginBase itself is contained
+    if (!isContainedIn(pluginBase, basePath)) return;
+
+    if (skills && skills.length > 0) {
+      // Plugin explicitly declares skill paths - add parent dirs so existing loop finds them
+      for (const skillPath of skills) {
+        // Validate skill path starts with './' (per Claude Code convention)
+        if (!isValidRelativePath(skillPath)) continue;
+
+        const skillDir = dirname(join(pluginBase, skillPath));
+        if (isContainedIn(skillDir, basePath)) {
+          searchDirs.push(skillDir);
+        }
+      }
+    }
+    // Always add conventional skills/ directory for discovery
+    // (deduplication happens via seenNames in discoverSkills)
+    searchDirs.push(join(pluginBase, 'skills'));
+  };
+
+  // Try marketplace.json (multi-plugin catalog)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');
+    const manifest: MarketplaceManifest = JSON.parse(content);
+    const pluginRoot = manifest.metadata?.pluginRoot;
+
+    // Validate pluginRoot starts with './' if provided (per Claude Code convention)
+    const validPluginRoot = pluginRoot === undefined || isValidRelativePath(pluginRoot);
+
+    if (validPluginRoot) {
+      for (const plugin of manifest.plugins ?? []) {
+        // Skip remote sources (object with source/repo) - only handle local string paths
+        if (typeof plugin.source !== 'string' && plugin.source !== undefined) continue;
+
+        // Validate source starts with './' if provided (per Claude Code convention)
+        if (plugin.source !== undefined && !isValidRelativePath(plugin.source)) continue;
+
+        const pluginBase = join(basePath, pluginRoot ?? '', plugin.source ?? '');
+        addPluginSkillPaths(pluginBase, plugin.skills);
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  // Try plugin.json (single plugin at root)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/plugin.json'), 'utf-8');
+    const manifest: PluginManifest = JSON.parse(content);
+    addPluginSkillPaths(basePath, manifest.skills);
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  return searchDirs;
+}
+
+/**
+ * Get a map of skill directory paths to plugin names from plugin manifests.
+ * This allows grouping skills by their parent plugin.
+ *
+ * Returns Map<AbsolutePath, PluginName>
+ */
+export async function getPluginGroupings(basePath: string): Promise<Map<string, string>> {
+  const groupings = new Map<string, string>();
+
+  // Try marketplace.json (multi-plugin catalog)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');
+    const manifest: MarketplaceManifest = JSON.parse(content);
+    const pluginRoot = manifest.metadata?.pluginRoot;
+
+    // Validate pluginRoot starts with './' if provided (per Claude Code convention)
+    const validPluginRoot = pluginRoot === undefined || isValidRelativePath(pluginRoot);
+
+    if (validPluginRoot) {
+      for (const plugin of manifest.plugins ?? []) {
+        if (!plugin.name) continue;
+
+        // Skip remote sources (object with source/repo) - only handle local string paths
+        if (typeof plugin.source !== 'string' && plugin.source !== undefined) continue;
+
+        // Validate source starts with './' if provided (per Claude Code convention)
+        if (plugin.source !== undefined && !isValidRelativePath(plugin.source)) continue;
+
+        const pluginBase = join(basePath, pluginRoot ?? '', plugin.source ?? '');
+
+        // Validate pluginBase itself is contained
+        if (!isContainedIn(pluginBase, basePath)) continue;
+
+        if (plugin.skills && plugin.skills.length > 0) {
+          for (const skillPath of plugin.skills) {
+            // Validate skill path starts with './' (per Claude Code convention)
+            if (!isValidRelativePath(skillPath)) continue;
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:54:46Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List src/ files in vercel-labs/skills
+
+`gh api repos/vercel-labs/skills/contents/src --jq '.[] | "\(.name) \(.size)"' 2>&1`
+
+```text
+add-prompt.test.ts 3718
+add.test.ts 15132
+add.ts 64384
+agents.ts 15855
+blob.ts 13140
+cli.test.ts 3023
+cli.ts 31539
+constants.ts 130
+find.ts 10408
+frontmatter.ts 595
+git.ts 4568
+init.test.ts 3562
+install.ts 3016
+installer.ts 33478
+list.test.ts 11590
+list.ts 5751
+local-lock.ts 5802
+plugin-manifest.ts 6778
+prompts 0
+providers 0
+remove.test.ts 11365
+remove.ts 9419
+sanitize.ts 2712
+skill-lock.ts 8578
+skills.ts 8035
+source-parser.test.ts 4348
+source-parser.ts 13161
+sync.ts 13366
+telemetry.ts 4328
+test-utils.ts 2067
+types.ts 2421
+update-source.test.ts 2851
+update-source.ts 1920
+```
+</details></tool-use>
+
+---
+
+_**User (2026-04-28 08:58:10Z)**_
+
+Continue from where you left off.
+
+---
+
+_**Agent (<synthetic> 2026-04-28 08:58:10Z)**_
+
+No response requested.
+
+---
+
+_**User (2026-04-28 08:59:04Z)**_
+
+continue (and remember to 固化我們對於 npx skills 是如何fetch metadata, .claude-plugin/marketplace.json, .claude-plugin/plugin.json 等等的那些知識到docs中)
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:17Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:18Z)**_
+
+Let me check `add.ts` to confirm how `basePath` is determined when the user passes `repo/path` (with the `/skills` suffix).
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Download add.ts
+
+`gh api repos/vercel-labs/skills/contents/src/add.ts --jq '.content' | base64 -d > /tmp/skills-add.ts 2>&1 && echo "downloaded $(wc -l < /tmp/skills-add.ts) lines"`
+
+```text
+downloaded     1929 lines
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:39Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find basePath resolution in add.ts
+
+`grep -n "getPluginGroupings\|getPluginSkillPaths\|basePath\|tempDir\|cloneDir\|pathSegment\|sourceDir" /tmp/skills-add.ts | head -60`
+
+```text
+936:  let tempDir: string | null = null;
+1041:        tempDir = await cloneRepo(parsed.url, parsed.ref);
+1045:        skills = await discoverSkills(tempDir, parsed.subpath, {
+1053:      tempDir = await cloneRepo(parsed.url, parsed.ref);
+1057:      skills = await discoverSkills(tempDir, parsed.subpath, {
+1068:      await cleanup(tempDir);
+1122:      await cleanup(tempDir);
+1141:        await cleanup(tempDir);
+1212:        await cleanup(tempDir);
+1242:        await cleanup(tempDir);
+1273:            await cleanup(tempDir);
+1295:          await cleanup(tempDir);
+1327:        await cleanup(tempDir);
+1356:        await cleanup(tempDir);
+1476:        await cleanup(tempDir);
+1534:      } else if (tempDir && skill.path === tempDir) {
+1537:      } else if (tempDir && skill.path.startsWith(tempDir + sep)) {
+1538:        // Compute path relative to repo root (tempDir), not search path
+1542:            .slice(tempDir.length + 1)
+1617:            } else if (skillPathValue && tempDir) {
+1618:              const skillDir = join(tempDir, dirname(skillPathValue));
+1791:    await cleanup(tempDir);
+1796:async function cleanup(tempDir: string | null) {
+1797:  if (tempDir) {
+1799:      await cleanupTempDir(tempDir);
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:42Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find discoverSkills usage
+
+`grep -n "discoverSkills" /tmp/skills-add.ts | head -10`
+
+```text
+26:import { discoverSkills, getSkillDisplayName, filterSkills } from './skills.ts';
+1010:      skills = await discoverSkills(parsed.localPath!, parsed.subpath, {
+1045:        skills = await discoverSkills(tempDir, parsed.subpath, {
+1057:      skills = await discoverSkills(tempDir, parsed.subpath, {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check find.ts for discoverSkills
+
+`gh api repos/vercel-labs/skills/contents/src/find.ts --jq '.content' | base64 -d > /tmp/skills-find.ts && grep -n "getPluginGroupings\|getPluginSkillPaths\|basePath\|discoverSkills\|searchDir" /tmp/skills-find.ts | head -40`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:59:50Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check skills.ts
+
+`gh api repos/vercel-labs/skills/contents/src/skills.ts --jq '.content' | base64 -d > /tmp/skills-skills.ts && grep -n "discoverSkills\|getPluginGroupings\|getPluginSkillPaths\|basePath\|subpath" /tmp/skills-skills.ts | head -40`
+
+```text
+6:import { getPluginSkillPaths, getPluginGroupings } from './plugin-manifest.ts';
+98: * Validates that a resolved subpath stays within the base directory.
+99: * Prevents path traversal attacks where subpath contains ".." segments
+102:export function isSubpathSafe(basePath: string, subpath: string): boolean {
+103:  const normalizedBase = normalize(resolve(basePath));
+104:  const normalizedTarget = normalize(resolve(join(basePath, subpath)));
+109:export async function discoverSkills(
+110:  basePath: string,
+111:  subpath?: string,
+117:  // Validate subpath doesn't escape basePath (prevent path traversal)
+118:  if (subpath && !isSubpathSafe(basePath, subpath)) {
+120:      `Invalid subpath: "${subpath}" resolves outside the repository directory. Subpath must not contain ".." segments that escape the base path.`
+124:  const searchPath = subpath ? join(basePath, subpath) : basePath;
+128:  const pluginGroupings = await getPluginGroupings(searchPath);
+187:  prioritySearchDirs.push(...(await getPluginSkillPaths(searchPath)));
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:09Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:10Z)**_
+
+This is a critical finding — let me read the rest of `getPluginGroupings` to confirm path resolution.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read remainder of plugin-manifest.ts
+
+`gh api repos/vercel-labs/skills/contents/src/plugin-manifest.ts --jq '.content' | base64 -d | tail -80`
+
+```text
+    const content = await readFile(join(basePath, '.claude-plugin/plugin.json'), 'utf-8');
+    const manifest: PluginManifest = JSON.parse(content);
+    addPluginSkillPaths(basePath, manifest.skills);
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  return searchDirs;
+}
+
+/**
+ * Get a map of skill directory paths to plugin names from plugin manifests.
+ * This allows grouping skills by their parent plugin.
+ *
+ * Returns Map<AbsolutePath, PluginName>
+ */
+export async function getPluginGroupings(basePath: string): Promise<Map<string, string>> {
+  const groupings = new Map<string, string>();
+
+  // Try marketplace.json (multi-plugin catalog)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/marketplace.json'), 'utf-8');
+    const manifest: MarketplaceManifest = JSON.parse(content);
+    const pluginRoot = manifest.metadata?.pluginRoot;
+
+    // Validate pluginRoot starts with './' if provided (per Claude Code convention)
+    const validPluginRoot = pluginRoot === undefined || isValidRelativePath(pluginRoot);
+
+    if (validPluginRoot) {
+      for (const plugin of manifest.plugins ?? []) {
+        if (!plugin.name) continue;
+
+        // Skip remote sources (object with source/repo) - only handle local string paths
+        if (typeof plugin.source !== 'string' && plugin.source !== undefined) continue;
+
+        // Validate source starts with './' if provided (per Claude Code convention)
+        if (plugin.source !== undefined && !isValidRelativePath(plugin.source)) continue;
+
+        const pluginBase = join(basePath, pluginRoot ?? '', plugin.source ?? '');
+
+        // Validate pluginBase itself is contained
+        if (!isContainedIn(pluginBase, basePath)) continue;
+
+        if (plugin.skills && plugin.skills.length > 0) {
+          for (const skillPath of plugin.skills) {
+            // Validate skill path starts with './' (per Claude Code convention)
+            if (!isValidRelativePath(skillPath)) continue;
+
+            const skillDir = join(pluginBase, skillPath);
+            if (isContainedIn(skillDir, basePath)) {
+              // Store absolute path as key for reliable matching
+              groupings.set(resolve(skillDir), plugin.name);
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  // Try plugin.json (single plugin at root)
+  try {
+    const content = await readFile(join(basePath, '.claude-plugin/plugin.json'), 'utf-8');
+    const manifest: PluginManifest = JSON.parse(content);
+    if (manifest.name && manifest.skills && manifest.skills.length > 0) {
+      for (const skillPath of manifest.skills) {
+        if (!isValidRelativePath(skillPath)) continue;
+        const skillDir = join(basePath, skillPath);
+        if (isContainedIn(skillDir, basePath)) {
+          groupings.set(resolve(skillDir), manifest.name);
+        }
+      }
+    }
+  } catch {
+    // File doesn't exist or invalid JSON
+  }
+
+  return groupings;
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:51Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:53Z)**_
+
+**Critical finding from the source.** When the user passes `daviddwlee84/agent-skills/skills`, the CLI sets `searchPath = repo/skills`, and reads `<repo>/skills/.claude-plugin/marketplace.json` — **not** the repo root. So the marketplace.json must live at `skills/.claude-plugin/marketplace.json` (paths relative to `skills/`), not at the repo root like `anthropics/skills`. That's because anthropics is invoked without a subpath.
+
+Let me set up tasks and begin implementation with this corrected location.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:55Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Write the marketplace.json with 6 plugin groupings. Paths relative to skills/ (not repo root) because README's install command uses /skills subpath.
+
+```text
+Task #1 created successfully: Create skills/.claude-plugin/marketplace.json
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:00:57Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Validator: JSON parses, name not reserved, all paths exist with SKILL.md, no duplicates, on-disk skills covered (warn for unlisted). Wire as `make marketplace`.
+
+```text
+Task #2 created successfully: Add scripts/validate-marketplace.sh + make target
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:00Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Capture verified knowledge: how npx skills resolves basePath+subpath, where marketplace.json must live, plugin.json vs marketplace.json, kebabToTitle UI grouping, reserved names. Add to docs/ and CLAUDE.md.
+
+```text
+Task #3 created successfully: Document npx skills metadata model in docs
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:01Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Add Categories section to README, add make marketplace bullet + workflow note to CLAUDE.md.
+
+```text
+Task #4 created successfully: Update README + CLAUDE.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:02Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+jq parse, run validator, run make marketplace.
+
+```text
+Task #5 created successfully: Run validation
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check .agents/ contents
+
+`ls -la /Volumes/Data/Program/Personal/agent-skills/.agents/ 2>&1`
+
+```text
+drwxr-xr-x@ - daviddwlee84 28 Apr 16:27  **skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List docs/ structure
+
+`ls /Volumes/Data/Program/Personal/agent-skills/docs/ 2>&1`
+
+```text
+ **_snippets
+ **assets
+ **reference
+ **skills
+ **workflows
+ changelog.md
+ conventions.md
+ getting-started.md
+ index.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:06Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #1 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:10Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List reference docs
+
+`ls /Volumes/Data/Program/Personal/agent-skills/docs/reference/ 2>&1`
+
+```text
+ docs-stack-recipe.md
+ pitfalls.md
+ scripts.md
+ tag-schema.md
+ todo-format.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:10Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./CLAUDE.md`
+
+```text
+1	# CLAUDE.md
+2	
+3	This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+4	
+5	## Project Overview
+6	
+7	A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
+8	
+9	The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior — including vendor `series` subdirs (e.g. `skills/vendor/fullstack-nextjs/<name>/SKILL.md` at depth 4).
+10	
+11	## Commands
+12	
+13	```bash
+14	# Sync all vendored skills from upstream
+15	make sync
+16	
+17	# Check for upstream updates (dry-run)
+18	make sync-check
+19	
+20	# Validate and render the repo backlog board
+21	make kanban
+22	
+23	# Add a new vendored skill (auto-syncs)
+24	./scripts/add-vendor.sh owner/repo/path/to/skill
+25	./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
+26	# Group under a series subdir (skills/vendor/<series>/<name>/)
+27	./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+28	
+29	# Add a structured TODO entry (preferred over editing TODO.md by hand)
+30	./scripts/add-todo.sh --priority P3 --effort M \
+31	  --title "Title" --description "Description"
+32	
+33	# Triage backlog/inbox.md (loose captures) into TODO.md
+34	./scripts/sweep-inbox.sh             # interactive
+35	./scripts/sweep-inbox.sh --batch     # only formalize parseable key=value lines
+36	
+37	# Move an active TODO item to ## Done with the right syntax
+38	./scripts/promote-todo.sh --title "<substring>" --summary "<shipped summary>"
+39	
+40	# Create a new local skill
+41	cd skills/local && npx skills@latest init [skill-name]
+42	
+43	# Docs site (MkDocs Material + llmstxt + copy-to-llm)
+44	uv sync --extra docs
+45	make docs-serve     # http://127.0.0.1:8000/
+46	make docs-build     # produces ./site/
+47	```
+48	
+49	## Vendor System
+50	
+51	- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; entries without `series` stay flat at `skills/vendor/<name>/`
+52	- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations
+53	- `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates; pass `--series <name>` to group into a series subdir
+54	
+55	Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA.
+56	
+57	Active series in this repo:
+58	- `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
+59	
+60	## SKILL.md Format
+61	
+62	Each skill is a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body with instructions, conventions, and examples. Vendored skills may include `references/` subdirectories.
+63	
+64	## Project Memory Workflow
+65	
+66	### Long-term backlog -> `TODO.md` + `backlog/`
+67	
+68	When work is explicitly deferred, add it to [`TODO.md`](TODO.md) using the
+69	fixed section order `P1`, `P2`, `P3`, `P?`, `Done`.
+70	
+71	- Active items must use `- [ ] **[Effort] Title** — description`
+72	- `P?` items must use `- [ ] **[?/Effort] Title** — description`
+73	- Non-trivial research should be linked as `→ [research](backlog/<slug>.md)`
+74	
+75	`TODO.md` is parsed by [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), so
+76	do not invent alternate headings, nested bullets, or ad hoc checkbox formats.
+77	
+78	#### Three ways to add a TODO entry (preferred order)
+79	
+80	1. **Structured CLI — `scripts/add-todo.sh`** (default):
+81	
+82	   ```bash
+83	   ./scripts/add-todo.sh --priority P3 --effort M \
+84	     --title "Title" --description "Description"
+85	   # add --backlog to also scaffold backlog/<slug>.md
+86	   ```
+87	
+88	   This inserts a canonically-formatted line into the right `## P*` lane
+89	   and re-runs the validator. Refuses to write a malformed entry.
+90	
+91	2. **Quick capture — `backlog/inbox.md`** (when priority/effort unclear):
+92	
+93	   ```bash
+94	   echo "- maybe add docs versioning with mike" >> backlog/inbox.md
+95	   ```
+96	
+97	   When the user asks "sweep the inbox" or "clear inbox.md", run
+98	   [`./scripts/sweep-inbox.sh`](scripts/sweep-inbox.sh). It prompts for
+99	   priority/effort/title/description per loose line and calls
+100	   `add-todo.sh`. Use `--batch` for non-interactive runs that only
+101	   formalize lines with parseable `key=value` pairs.
+102	
+103	3. **Direct edit of `TODO.md`** — fine if the format is fresh in your
+104	   head; run `make kanban` (or `./scripts/todo-kanban.sh --validate-only`)
+105	   afterwards to catch drift.
+106	
+107	#### Promote a TODO when implementing it
+108	
+109	When implementing a TODO item, in the same commit run:
+110	
+111	```bash
+112	./scripts/promote-todo.sh --title "<substring>" --summary "<one-line shipped summary>"
+113	```
+114	
+115	That moves the matched active item into `## Done` with the dated `Done`
+116	syntax and re-validates the file. If a `backlog/<slug>.md` exists for the
+117	item, also mark it as shipped (don't delete — keep it as historical record).
+118	
+119	Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
+120	when it contains items from a previous calendar year or grows past 20 entries.
+121	
+122	### Past pitfalls -> `pitfalls/`
+123	
+124	When a debugging session uncovers a non-obvious trap that could realistically be
+125	hit again, write `pitfalls/<slug>.md` with:
+126	
+127	1. The verbatim symptom or error text
+128	2. The root cause
+129	3. The workaround
+130	4. Prevention guidance or the hard invariant that supersedes it
+131	
+132	Use symptom-first titles so future agents can grep the failure they see, not
+133	the explanation they do not know yet.
+134
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:31Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:31Z)**_
+
+Now creating the marketplace.json at the corrected location.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:42Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```json
+{
+  "name": "daviddwlee84-skills",
+  "owner": {
+    "name": "Da-Wei Lee",
+    "email": "daviddwlee84@gmail.com"
+  },
+  "metadata": {
+    "description": "Personal collection of authored + vendored agent skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-authoring",
+      "description": "Author, refactor, and evaluate Claude Code skills",
+      "category": "Authoring",
+      "tags": ["skill", "authoring", "evaluation"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/skill-author",
+        "./vendor/skill-creator"
+      ]
+    },
+    {
+      "name": "project-memory",
+      "description": "Project memory, TODO tracking, and agent-history hygiene",
+      "category": "Workflow",
+      "tags": ["project-memory", "todo", "hygiene", "specstory"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/project-knowledge-harness",
+        "./local/agent-history-hygiene"
+      ]
+    },
+    {
+      "name": "ml-workflow",
+      "description": "ML experiment tracking, DVC pipelines, batch notebooks, and quant research",
+      "category": "ML",
+      "tags": ["mlflow", "dvc", "marimo", "quant"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/mlflow-tracking",
+        "./local/dvc-ml-workflow",
+        "./local/marimo-batch-mlflow",
+        "./local/quantatitive-factor-researcher"
+      ]
+    },
+    {
+      "name": "notebooks",
+      "description": "marimo notebooks, Streamlit migration, and anywidget components",
+      "category": "Notebooks",
+      "tags": ["marimo", "streamlit", "anywidget"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/marimo-notebook",
+        "./vendor/streamlit-to-marimo",
+        "./vendor/anywidget"
+      ]
+    },
+    {
+      "name": "fullstack-nextjs",
+      "description": "Next.js App Router + Supabase + shadcn/ui + design + testing series",
+      "category": "Web",
+      "tags": ["nextjs", "supabase", "shadcn", "react", "playwright"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/fullstack-nextjs/nextjs",
+        "./vendor/fullstack-nextjs/shadcn",
+        "./vendor/fullstack-nextjs/react-best-practices",
+        "./vendor/fullstack-nextjs/vercel-storage",
+        "./vendor/fullstack-nextjs/supabase",
+        "./vendor/fullstack-nextjs/supabase-postgres-best-practices",
+        "./vendor/fullstack-nextjs/web-design-guidelines",
+        "./vendor/fullstack-nextjs/frontend-design",
+        "./vendor/fullstack-nextjs/webapp-testing"
+      ]
+    },
+    {
+      "name": "infra-and-docs",
+      "description": "Documentation site bootstrap and pueue job queue orchestration",
+      "category": "Infra",
+      "tags": ["mkdocs", "pueue", "job-queue", "docs"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/mkdocs-site-bootstrap",
+        "./local/pueue-job-queue"
+      ]
+    }
+  ]
+}
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/skills/.claude-plugin/marketplace.json
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate JSON and count skill paths
+
+`jq . /Volumes/Data/Program/Personal/agent-skills/skills/.claude-plugin/marketplace.json > /dev/null && echo "JSON OK" && jq -r '.plugins[].skills[]' /Volumes/Data/Program/Personal/agent-skills/skills/.claude-plugin/marketplace.json | wc -l`
+
+```text
+JSON OK
+      22
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:47Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check each skill path resolves to SKILL.md
+
+`cd /Volumes/Data/Program/Personal/agent-skills/skills && jq -r '.plugins[].skills[]' .claude-plugin/marketplace.json | while read p; do test -f "$p/SKILL.md" && echo "OK $p" || echo "MISSING $p"; done`
+
+```text
+zoxide: detected a possible configuration issue.
+Please ensure that zoxide is initialized right at the end of your shell configuration file (usually ~/.zshrc).
+
+If the issue persists, consider filing an issue at:
+https://github.com/ajeetdsouza/zoxide/issues
+
+Disable this message by setting _ZO_DOCTOR=0.
+
+OK ./local/skill-author
+OK ./vendor/skill-creator
+OK ./local/project-knowledge-harness
+OK ./local/agent-history-hygiene
+OK ./local/mlflow-tracking
+OK ./local/dvc-ml-workflow
+OK ./local/marimo-batch-mlflow
+OK ./local/quantatitive-factor-researcher
+OK ./vendor/marimo-notebook
+OK ./vendor/streamlit-to-marimo
+OK ./vendor/anywidget
+OK ./vendor/fullstack-nextjs/nextjs
+OK ./vendor/fullstack-nextjs/shadcn
+OK ./vendor/fullstack-nextjs/react-best-practices
+OK ./vendor/fullstack-nextjs/vercel-storage
+OK ./vendor/fullstack-nextjs/supabase
+OK ./vendor/fullstack-nextjs/supabase-postgres-best-practices
+OK ./vendor/fullstack-nextjs/web-design-guidelines
+OK ./vendor/fullstack-nextjs/frontend-design
+OK ./vendor/fullstack-nextjs/webapp-testing
+OK ./local/mkdocs-site-bootstrap
+OK ./local/pueue-job-queue
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:48Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #1 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:48Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #2 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:51Z)**_
+
+All 22 skill paths resolve. Now the validator script.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:01:51Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./scripts/sync-vendor.sh`
+
+```text
+1	#!/usr/bin/env bash
+2	set -euo pipefail
+3	
+4	REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+5	VENDOR_YAML="$REPO_ROOT/vendor.yaml"
+6	VENDOR_DIR="$REPO_ROOT/skills/vendor"
+7	
+8	# Colors
+9	RED='\033[0;31m'
+10	GREEN='\033[0;32m'
+11	YELLOW='\033[1;33m'
+12	NC='\033[0m' # No Color
+13	
+14	usage() {
+15	  cat <<EOF
+16	Usage: $(basename "$0") [OPTIONS] [SKILL_NAME]
+17	
+18	Sync vendored skills from upstream repositories.
+19	
+20	Options:
+21	  --check    Dry-run: check for upstream updates without syncing
+22	  -h, --help Show this help message
+23	
+24	Arguments:
+25	  SKILL_NAME  Optional: sync only the named skill (default: sync all)
+26	
+27	Dependencies: gh (GitHub CLI), yq (YAML processor)
+28	EOF
+29	}
+30
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:18Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```sh
+#!/usr/bin/env bash
+# Validate skills/.claude-plugin/marketplace.json — the catalog manifest
+# read by `npx skills@latest add daviddwlee84/agent-skills/skills`.
+#
+# Checks:
+#   1. JSON parses
+#   2. `name` is not on the official reserved list
+#   3. Every plugins[].skills[] path exists and contains SKILL.md
+#   4. No skill path is listed under more than one plugin
+#   5. (warn) Every on-disk SKILL.md under skills/ is either listed in
+#      some plugin or will fall through to "Other" in the picker UI.
+#
+# Errors (1-4) exit non-zero; (5) is warn-only so the build doesn't break
+# while a skill is mid-add.
+#
+# Reference: docs/reference/npx-skills-metadata.md
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SKILLS_DIR="$REPO_ROOT/skills"
+MANIFEST="$SKILLS_DIR/.claude-plugin/marketplace.json"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+errors=0
+warnings=0
+
+err()  { printf "${RED}ERROR:${NC} %s\n"   "$*" >&2; errors=$((errors+1)); }
+warn() { printf "${YELLOW}WARN:${NC}  %s\n" "$*" >&2; warnings=$((warnings+1)); }
+ok()   { printf "${GREEN}OK:${NC}    %s\n"  "$*"; }
+
+# 1. File exists + valid JSON
+if [[ ! -f "$MANIFEST" ]]; then
+  err "manifest not found: $MANIFEST"
+  exit 1
+fi
+if ! jq empty "$MANIFEST" 2>/dev/null; then
+  err "manifest is not valid JSON: $MANIFEST"
+  exit 1
+fi
+ok "JSON parses"
+
+# 2. Marketplace name is not reserved.
+# Source: https://code.claude.com/docs/en/plugin-marketplaces (reserved names section).
+RESERVED=(
+  claude-code-marketplace
+  claude-code-plugins
+  claude-plugins-official
+  anthropic-marketplace
+  anthropic-plugins
+  agent-skills
+  knowledge-work-plugins
+  life-sciences
+)
+name="$(jq -r '.name // ""' "$MANIFEST")"
+if [[ -z "$name" ]]; then
+  err "manifest has no top-level 'name' field"
+fi
+for r in "${RESERVED[@]}"; do
+  if [[ "$name" == "$r" ]]; then
+    err "marketplace name '$name' is on the reserved list"
+  fi
+done
+[[ $errors -eq 0 ]] && ok "marketplace name '$name' is not reserved"
+
+# 3. Every plugins[].skills[] path exists with a SKILL.md.
+# Skills paths are relative to the manifest directory ($SKILLS_DIR).
+declare -A seen_paths=()
+duplicates=0
+while IFS=$'\t' read -r plugin_name skill_path; do
+  # Resolve relative to skills/
+  resolved="$SKILLS_DIR/${skill_path#./}"
+  if [[ ! -d "$resolved" ]]; then
+    err "plugin '$plugin_name': directory not found: $skill_path  (resolved: $resolved)"
+    continue
+  fi
+  if [[ ! -f "$resolved/SKILL.md" ]]; then
+    err "plugin '$plugin_name': missing SKILL.md in $skill_path"
+    continue
+  fi
+  if [[ -n "${seen_paths[$skill_path]+x}" ]]; then
+    err "duplicate skill path '$skill_path' (also under plugin '${seen_paths[$skill_path]}')"
+    duplicates=$((duplicates+1))
+  else
+    seen_paths[$skill_path]="$plugin_name"
+  fi
+done < <(jq -r '.plugins[] | .name as $n | .skills[]? | [$n, .] | @tsv' "$MANIFEST")
+
+listed_count=${#seen_paths[@]}
+ok "$listed_count skill paths listed; all exist with SKILL.md"
+[[ $duplicates -eq 0 ]] && ok "no duplicate skill paths across plugins"
+
+# 4. (already covered by duplicates check above)
+
+# 5. Warn for on-disk skills not covered by any plugin (will fall under "Other").
+# Discovery: depth 2 (skills/<top>/<name>/SKILL.md) + depth 3 (skills/vendor/<series>/<name>/SKILL.md).
+on_disk_paths=$(
+  find "$SKILLS_DIR" -maxdepth 4 -name SKILL.md -not -path '*/.claude-plugin/*' \
+    | sed "s|^$SKILLS_DIR/||; s|/SKILL.md\$||" \
+    | sort
+)
+unlisted=0
+while IFS= read -r rel; do
+  [[ -z "$rel" ]] && continue
+  key="./$rel"
+  if [[ -z "${seen_paths[$key]+x}" ]]; then
+    warn "skill '$rel' not listed in any plugin — will appear under 'Other'"
+    unlisted=$((unlisted+1))
+  fi
+done <<< "$on_disk_paths"
+
+if [[ $unlisted -eq 0 ]]; then
+  ok "all on-disk skills are covered by a plugin (no fallback to 'Other')"
+fi
+
+echo
+if [[ $errors -gt 0 ]]; then
+  printf "${RED}FAILED${NC}: %d error(s), %d warning(s)\n" "$errors" "$warnings" >&2
+  exit 1
+fi
+printf "${GREEN}PASSED${NC}: 0 errors, %d warning(s)\n" "$warnings"
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/scripts/validate-marketplace.sh
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run the new validator
+
+`chmod +x /Volumes/Data/Program/Personal/agent-skills/scripts/validate-marketplace.sh && bash /Volumes/Data/Program/Personal/agent-skills/scripts/validate-marketplace.sh`
+
+```text
+OK:    JSON parses
+OK:    marketplace name 'daviddwlee84-skills' is not reserved
+OK:    22 skill paths listed; all exist with SKILL.md
+OK:    no duplicate skill paths across plugins
+OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+
+PASSED: 0 errors, 0 warning(s)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:23Z)**_
+
+Validator passes. Now wire it into the Makefile and add the docs.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:25Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/Makefile has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/Makefile has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test make marketplace target
+
+`cd /Volumes/Data/Program/Personal/agent-skills && make marketplace`
+
+```text
+zoxide: detected a possible configuration issue.
+Please ensure that zoxide is initialized right at the end of your shell configuration file (usually ~/.zshrc).
+
+If the issue persists, consider filing an issue at:
+https://github.com/ajeetdsouza/zoxide/issues
+
+Disable this message by setting _ZO_DOCTOR=0.
+
+./scripts/validate-marketplace.sh
+OK:    JSON parses
+OK:    marketplace name 'daviddwlee84-skills' is not reserved
+OK:    22 skill paths listed; all exist with SKILL.md
+OK:    no duplicate skill paths across plugins
+OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+
+PASSED: 0 errors, 0 warning(s)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:29Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #2 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:29Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:32Z)**_
+
+Now the docs page that captures all the verified knowledge about how `npx skills` resolves metadata.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:02:32Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./mkdocs.yml`
+
+```text
+1	site_name: Agent Skills
+2	site_description: Personal collection of agent skills — both custom-authored and cherry-picked from upstream repos.
+3	site_url: https://daviddwlee84.github.io/agent-skills/
+4	repo_url: https://github.com/daviddwlee84/agent-skills
+5	repo_name: daviddwlee84/agent-skills
+6	edit_uri: edit/main/docs/
+7	
+8	theme:
+9	  name: material
+10	  palette:
+11	    - scheme: default
+12	      primary: indigo
+13	      accent: indigo
+14	      toggle:
+15	        icon: material/brightness-7
+16	        name: Switch to dark mode
+17	    - scheme: slate
+18	      primary: indigo
+19	      accent: indigo
+20	      toggle:
+21	        icon: material/brightness-4
+22	        name: Switch to light mode
+23	  features:
+24	    - navigation.instant
+25	    - navigation.instant.progress
+26	    - navigation.sections
+27	    - navigation.expand
+28	    - navigation.top
+29	    - navigation.indexes
+30	    - search.suggest
+31	    - search.highlight
+32	    - search.share
+33	    - content.code.copy
+34	    - content.code.annotate
+35	    - toc.follow
+36	
+37	plugins:
+38	  - search
+39	  - llmstxt:
+40	      full_output: llms-full.txt
+41	      markdown_description: >
+42	        Personal collection of agent skills — local custom-authored skills under
+43	        skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via
+44	        the vendor.yaml manifest. Includes project-knowledge-harness (a
+45	        TODO/backlog/pitfalls memory harness with bundled init/kanban/promote
+46	        scripts) and quantatitive-factor-researcher (a Python quant-research
+47	        persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
+48	      sections:
+49	        Guides:
+50	          - index.md
+51	          - getting-started.md
+52	          - conventions.md
+53	        Workflows:
+54	          - workflows/*.md
+55	        Skills:
+56	          - skills/*.md
+57	        Reference:
+58	          - reference/*.md
+59	        Changelog:
+60	          - changelog.md
+61	  - copy-to-llm:
+62	      repo_url: "https://daviddwlee84.github.io/agent-skills"
+63	      button_hover_color: "var(--md-primary-fg-color)"
+64	      toast_bg_color: "var(--md-primary-fg-color)"
+65	
+66	markdown_extensions:
+67	  - admonition
+68	  - attr_list
+69	  - def_list
+70	  - footnotes
+71	  - tables
+72	  - md_in_html
+73	  - toc:
+74	      permalink: true
+75	  - pymdownx.details
+76	  - pymdownx.superfences
+77	  - pymdownx.highlight:
+78	      anchor_linenums: true
+79	  - pymdownx.inlinehilite
+80	  - pymdownx.snippets:
+81	      base_path:
+82	        - .
+83	        - docs
+84	        - docs/_snippets
+85	      check_paths: true
+86	  - pymdownx.tabbed:
+87	      alternate_style: true
+88	
+89	nav:
+90	  - Home: index.md
+91	  - Getting Started: getting-started.md
+92	  - Conventions: conventions.md
+93	  - Workflows:
+94	      - Adding vendor skills: workflows/adding-vendor-skills.md
+95	      - Creating local skills: workflows/creating-local-skills.md
+96	      - Project memory: workflows/project-memory.md
+97	  - Skills:
+98	      - Overview: skills/index.md
+99	      - Local:
+100	          - project-knowledge-harness: skills/project-knowledge-harness.md
+101	          - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
+102	          - skill-author: skills/skill-author.md
+103	          - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
+104	          - marimo-batch-mlflow: skills/marimo-batch-mlflow.md
+105	          - dvc-ml-workflow: skills/dvc-ml-workflow.md
+106	          - mlflow-tracking: skills/mlflow-tracking.md
+107	          - agent-history-hygiene: skills/agent-history-hygiene.md
+108	          - pueue-job-queue: skills/pueue-job-queue.md
+109	      - Vendored:
+110	          - marimo-notebook: skills/marimo-notebook.md
+111	          - streamlit-to-marimo: skills/streamlit-to-marimo.md
+112	          - anywidget: skills/anywidget.md
+113	          - skill-creator: skills/skill-creator.md
+114	          - Fullstack Next.js:
+115	              - nextjs: skills/nextjs.md
+116	              - shadcn: skills/shadcn.md
+117	              - supabase: skills/supabase.md
+118	              - supabase-postgres-best-practices: skills/supabase-postgres-best-practices.md
+119	              - react-best-practices: skills/react-best-practices.md
+120	              - vercel-storage: skills/vercel-storage.md
+121	              - web-design-guidelines: skills/web-design-guidelines.md
+122	              - frontend-design: skills/frontend-design.md
+123	              - webapp-testing: skills/webapp-testing.md
+124	  - Reference:
+125	      - TODO format: reference/todo-format.md
+126	      - Tag schema: reference/tag-schema.md
+127	      - Pitfalls format: reference/pitfalls.md
+128	      - Bundled scripts: reference/scripts.md
+129	      - Downstream docs stack recipe: reference/docs-stack-recipe.md
+130	  - Changelog: changelog.md
+131	
+132	extra:
+133	  social:
+134	    - icon: fontawesome/brands/github
+135	      link: https://github.com/daviddwlee84/agent-skills
+136	
+137	# `_snippets/` are meant to be included via pymdownx.snippets, never
+138	# rendered as their own page. `not_in_nav` suppresses the INFO warning.
+139	not_in_nav: |
+140	  /_snippets/
+141	
+142	# Validation: keep strict mode useful but don't fail on links to files
+143	# that exist in the *built* site/ but not in docs/ source (e.g.
+144	# llms.txt and llms-full.txt produced by mkdocs-llmstxt at build time,
+145	# and per-page <page>/index.md raw-markdown URLs which are directory
+146	# URLs that only exist post-build).
+147	# Demote 'not_found' from warn -> info so --strict still passes; keep
+148	# everything else at defaults (anchors/absolute_links stay warn-able).
+149	validation:
+150	  links:
+151	    not_found: info
+152
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:35Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# How `npx skills` reads catalog metadata
+
+This page captures the verified mechanism behind the grouped install UI
+of `npx skills@latest add ...`. Everything below was confirmed by reading
+the actual source of the npm package (`vercel-labs/skills`,
+[`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)
+and [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts))
+and the official [Claude Code plugin-marketplaces docs](https://code.claude.com/docs/en/plugin-marketplaces).
+
+## TL;DR for this repo
+
+- The grouped picker UI you see when running
+  `npx skills@latest add daviddwlee84/agent-skills/skills` is driven by
+  `skills/.claude-plugin/marketplace.json` — **inside** the `skills/`
+  directory, not at the repo root.
+- Every group header is `kebabToTitle(plugins[].name)`. Skills not listed
+  under any plugin fall through to the **Other** group.
+- Edit the manifest by hand; run `make marketplace` (= `bash
+  scripts/validate-marketplace.sh`) to catch broken paths, duplicates, or
+  on-disk skills that would silently fall under "Other".
+- We do **not** ship `.claude-plugin/plugin.json` — that's only for
+  single-plugin repos.
+
+## How the CLI resolves the manifest path
+
+The user's argument to `npx skills add` is parsed into `repo` + optional
+`subpath`. For this repo:
+
+\```
+npx skills@latest add daviddwlee84/agent-skills/skills
+                       └────────── repo ──────────┘ └sub┘
+\```
+
+Inside the CLI ([`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)):
+
+\```ts
+const searchPath = subpath ? join(basePath, subpath) : basePath;
+// ...
+const pluginGroupings = await getPluginGroupings(searchPath);
+\```
+
+So when the install command **includes** a subpath, the CLI reads the
+catalog from `<repo>/<subpath>/.claude-plugin/marketplace.json`.
+
+| Invocation | Where the CLI looks for the manifest |
+|---|---|
+| `npx skills add anthropics/skills` | `<repo>/.claude-plugin/marketplace.json` |
+| `npx skills add daviddwlee84/agent-skills/skills` | `<repo>/skills/.claude-plugin/marketplace.json` |
+| `npx skills add foo/bar/some/dir` | `<repo>/some/dir/.claude-plugin/marketplace.json` |
+
+This repo uses the second form because the `skills/local/` and
+`skills/vendor/` trees live under `skills/`, not at the repo root.
+
+!!! warning "Common pitfall"
+    Putting `.claude-plugin/marketplace.json` at the repo root and then
+    invoking the CLI with a subpath silently disables grouping — the
+    file at the root is never read, and every skill ends up in **Other**.
+    Match the manifest's location to the install command's subpath.
+
+## Manifest shape
+
+Reference: official [marketplace manifest schema](https://code.claude.com/docs/en/plugin-marketplaces).
+
+\```json
+{
+  "name": "<unique-marketplace-id>",
+  "owner": { "name": "...", "email": "..." },
+  "metadata": {
+    "description": "...",
+    "version": "1.0.0",
+    "pluginRoot": "./"
+  },
+  "plugins": [
+    {
+      "name": "<group-name-kebab-case>",
+      "description": "Short description of the plugin / category",
+      "category": "<for Claude Code /plugin UI>",
+      "tags": ["...", "..."],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./relative/path/to/skill-dir",
+        "./another/skill-dir"
+      ]
+    }
+  ]
+}
+\```
+
+What the `npx skills` picker actually consumes:
+
+| Field | Used by `npx skills`? | Used by Claude Code `/plugin` UI? |
+|---|---|---|
+| `metadata.pluginRoot` | yes (resolves `source`) | yes |
+| `plugins[].name` | **yes — drives the group header label** | yes |
+| `plugins[].source` | yes (must be a string starting with `./`; object/remote sources are skipped) | yes |
+| `plugins[].skills[]` | yes (must start with `./`) | yes |
+| `plugins[].description` / `category` / `tags` / `version` / `strict` | **no — pass through** | yes |
+
+So `category` and `tags` are essentially free metadata for now: they cost
+nothing to include in the manifest, and any future native consumer
+(Claude Code's `/plugin` browser, downstream catalog tooling) can use
+them without us migrating the file.
+
+## Group header rendering — `kebabToTitle`
+
+The picker turns each plugin `name` into a header label by splitting on
+hyphens and titlecasing each token. So:
+
+| `plugins[].name` | UI header |
+|---|---|
+| `document-skills` | Document Skills |
+| `claude-api` | Claude Api |
+| `ml-workflow` | Ml Workflow |
+| `fullstack-nextjs` | Fullstack Nextjs |
+| `notebooks` | Notebooks |
+
+Pick names that titlecase legibly. `claude-api` → "Claude Api" is the
+official upstream choice and ships in the user-facing UI of
+`anthropics/skills`, so awkward casing is a known quirk; do not work
+around it with weird name fields.
+
+## "Other" — the auto-fallback group
+
+Any SKILL.md the CLI discovers under the search root that is **not**
+listed in any `plugins[].skills[]` entry shows up under the **Other**
+group header. This is how `anthropics/skills`'s `template-skill` ends up
+under "Other" — it's not listed in their manifest's `plugins[]`.
+
+Use this to your advantage: a skill that doesn't fit any category yet
+can simply be omitted from `marketplace.json` and it will still install,
+just under "Other". Our `make marketplace` validator emits a warning (not
+an error) for unlisted on-disk skills so they're easy to notice.
+
+## Path resolution rules (gotchas)
+
+- `source: "./..."` and `skills[]: "./..."` are **relative to the
+  marketplace root** (the directory containing `.claude-plugin/`), not
+  relative to the JSON file itself or the `.claude-plugin/` dir.
+- The CLI rejects any path that does not start with `./` — `../` and
+  absolute paths are not allowed (path-traversal protection in
+  [`isContainedIn`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)).
+- `metadata.pluginRoot` (optional) is prepended to every plugin's
+  `source`. We don't use it; we set `source: "./"` per plugin so each
+  plugin path resolves directly under the manifest root (`skills/`).
+
+## Reserved marketplace `name`s
+
+These cannot be used as the `name` field, per official docs:
+
+- `claude-code-marketplace`, `claude-code-plugins`,
+  `claude-plugins-official`
+- `anthropic-marketplace`, `anthropic-plugins`
+- `agent-skills`
+- `knowledge-work-plugins`, `life-sciences`
+- Any name that impersonates an official marketplace
+  (e.g. `official-claude-plugins`, `anthropic-tools-v2`)
+
+This repo's manifest uses **`daviddwlee84-skills`** — the GitHub repo
+folder is still allowed to be `agent-skills`; only the `name` field
+inside the manifest is restricted. The validator script enforces this.
+
+## Versioning
+
+- If `metadata.version` is **omitted** and the marketplace is hosted in
+  git, every commit is treated as a new version — users always see
+  whatever's on `main`. This matches `anthropics/skills`.
+- If `metadata.version` is **set**, users only see updates when the
+  number changes (semver-style).
+
+We currently set `metadata.version: "1.0.0"` as a baseline. To switch to
+"every commit is latest" semantics, drop the field.
+
+## `marketplace.json` vs `plugin.json`
+
+| File | Purpose | When to use |
+|---|---|---|
+| `.claude-plugin/marketplace.json` | Catalog of multiple plugins / categories | Multi-category collections (this repo, `anthropics/skills`) |
+| `.claude-plugin/plugin.json` | Manifest for a **single** plugin | Single-plugin repos (one bundle of skills, no grouping) |
+
+The two files are not redundant. `anthropics/skills` ships only
+`marketplace.json`; we do the same. A repo can technically ship both,
+but for a multi-category catalog like this one, `plugin.json` is
+unnecessary.
+
+## Cross-agent portability
+
+`npx skills` is a one-way installer: it reads the manifest, then copies
+SKILL.md files into each target agent's native skills directory
+(supported targets enumerated in
+[`src/types.ts`](https://github.com/vercel-labs/skills/blob/main/src/types.ts)).
+Other agents (OpenCode, Codex, Cursor, Aider, …) do **not** read
+`.claude-plugin/marketplace.json` natively — they have their own
+conventions (`.opencode/`, `AGENTS.md`, `.cursor/rules/`, etc.).
+
+So the trade-off is:
+
+- One `marketplace.json` is enough for cross-agent **install** via
+  `npx skills add`.
+- Native discovery in non-Claude agents requires whatever that agent
+  expects, separate from this manifest.
+
+If we ever need a second native catalog format, the cleanest
+intermediate is to start treating `marketplace.json` as a *generated*
+artifact from a canonical YAML and add a generator script. We have not
+done that yet — single-consumer hand-edit is fine.
+
+## Working with the manifest in this repo
+
+\```bash
+# Validate the manifest (parses, name not reserved, all paths exist,
+# no duplicates, on-disk skills covered).
+make marketplace
+
+# Or run the script directly with verbose output.
+bash scripts/validate-marketplace.sh
+\```
+
+After adding a new local or vendored skill:
+
+1. Place the SKILL.md as usual under `skills/local/<name>/` or
+   `skills/vendor/<name>/`.
+2. Open `skills/.claude-plugin/marketplace.json` and add the new path
+   (relative to `skills/`) to the appropriate plugin's `skills[]` array,
+   **or** intentionally leave it out so it falls under "Other".
+3. Run `make marketplace`. It will warn for unlisted skills and error
+   for broken paths.
+
+## Source references
+
+- `npx skills` package source:
+  [vercel-labs/skills](https://github.com/vercel-labs/skills) on GitHub,
+  npm package
+  [`skills`](https://www.npmjs.com/package/skills).
+- Manifest read logic:
+  [`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts).
+- Subpath + searchPath logic:
+  [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts).
+- Picker UI grouping:
+  [`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+  (search for `groupMultiselect` and `kebabToTitle`).
+- Official Claude Code docs:
+  [plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces),
+  [plugins-reference](https://code.claude.com/docs/en/plugins-reference).
+- Reference manifest in this repo:
+  [`skills/.claude-plugin/marketplace.json`](../../skills/.claude-plugin/marketplace.json).
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/docs/reference/npx-skills-metadata.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:37Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/mkdocs.yml has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:37Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #3 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:38Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #4 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:40Z)**_
+
+Now the README + CLAUDE.md updates.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:48Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/README.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/CLAUDE.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:03:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/CLAUDE.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:00Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #4 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:00Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #5 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:02Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Final validation
+
+`jq . skills/.claude-plugin/marketplace.json > /dev/null && echo "JSON OK" && make marketplace 2>&1 | tail -20`
+
+```text
+JSON OK
+./scripts/validate-marketplace.sh
+OK:    JSON parses
+OK:    marketplace name 'daviddwlee84-skills' is not reserved
+OK:    22 skill paths listed; all exist with SKILL.md
+OK:    no duplicate skill paths across plugins
+OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+
+PASSED: 0 errors, 0 warning(s)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:04Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build docs to confirm new page renders cleanly
+
+`make docs-build 2>&1 | tail -20`
+
+```text
+ │  × All plugins will stop working – the plugin system has been removed
+ │  × All theme overrides will break – the theming system has been rewritten
+ │  × No migration path exists – existing projects cannot be upgraded
+ │  × Closed contribution model – community members can't report bugs
+ │  × Currently unlicensed – unsuitable for production use
+ │
+ │  Our full analysis:
+ │
+ │  https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /Volumes/Data/Program/Personal/agent-skills/site
+INFO    -  Doc file 'index.md' contains a link 'llms.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'llms-full.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'getting-started/index.md', but the target is not found among documentation files.
+INFO    -  Doc file 'reference/npx-skills-metadata.md' contains a link '../../skills/.claude-plugin/marketplace.json', but the target '../skills/.claude-plugin/marketplace.json' is not found among documentation files.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../backlog/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../pitfalls/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../scripts/', it was left as is.
+INFO    -  Documentation built in 0.75 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:11Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:11Z)**_
+
+The build succeeded. One info note about a relative link to `marketplace.json` from outside `docs/` — let me make it an absolute GitHub link.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:13Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/npx-skills-metadata.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Rebuild docs
+
+`make docs-build 2>&1 | tail -8`
+
+```text
+INFO    -  Building documentation to directory: /Volumes/Data/Program/Personal/agent-skills/site
+INFO    -  Doc file 'index.md' contains a link 'llms.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'llms-full.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'getting-started/index.md', but the target is not found among documentation files.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../backlog/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../pitfalls/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../scripts/', it was left as is.
+INFO    -  Documentation built in 0.72 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:17Z)**_
+
+Clean build. Final sanity check on the full tree.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Final summary of new/changed files
+
+`git status --short && echo "---" && ls skills/.claude-plugin/ && echo "---" && head -3 scripts/validate-marketplace.sh`
+
+```text
+ M .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+ M .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+ M CLAUDE.md
+ M Makefile
+ M README.md
+ M mkdocs.yml
+?? .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+?? docs/reference/npx-skills-metadata.md
+?? scripts/validate-marketplace.sh
+?? skills/.claude-plugin/
+---
+ marketplace.json
+---
+#!/usr/bin/env bash
+# Validate skills/.claude-plugin/marketplace.json — the catalog manifest
+# read by `npx skills@latest add daviddwlee84/agent-skills/skills`.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:19Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #5 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:04:34Z)**_
+
+All changes ready. Summary:
+
+**New files:**
+- `skills/.claude-plugin/marketplace.json` — 6 plugin groupings (`skill-authoring`, `project-memory`, `ml-workflow`, `notebooks`, `fullstack-nextjs`, `infra-and-docs`) covering all 22 skills. Located **inside** `skills/` (not repo root) because the install command uses `/skills` subpath — verified against `vercel-labs/skills/src/skills.ts`: `searchPath = join(basePath, subpath)`.
+- `scripts/validate-marketplace.sh` — checks JSON parses, marketplace name not on the reserved list (`agent-skills`, etc.), all paths exist with SKILL.md, no duplicates; warns for any on-disk skill that would fall through to "Other".
+- `docs/reference/npx-skills-metadata.md` — captured knowledge: `basePath + subpath` resolution, `kebabToTitle` group naming, manifest field consumption table (which fields `npx skills` reads vs. ignores), reserved names, versioning behavior, `marketplace.json` vs `plugin.json`, cross-agent portability. Linked into `mkdocs.yml` nav.
+
+**Edits:**
+- `Makefile` — added `make marketplace` target.
+- `README.md` — new "Categories in the install UI" section.
+- `CLAUDE.md` — `make marketplace` bullet under Commands; new "Marketplace Catalog" section explaining the path convention.
+
+**Verification passed:**
+- `make marketplace` → 0 errors, 0 warnings, all 22 skills covered.
+- `make docs-build` → builds cleanly.
+
+To see the result in the picker UI, push to `main` and run `npx skills@latest add daviddwlee84/agent-skills/skills` from anywhere — the CLI pulls from the GitHub remote, not the working tree.
+
+Want me to `/schedule` an agent in 2 weeks to verify the picker UI shows the 6 groups as expected after first `npx skills` install by users (and open a follow-up if any group label looks wrong)?
+
+---
+
+_**User (2026-04-28 09:06:46Z)**_
+
+git commit for me
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 09:06:56Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:06:57Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show working tree status
+
+`git status`
+
+```text
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+	modified:   .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+	modified:   CLAUDE.md
+	modified:   Makefile
+	modified:   README.md
+	modified:   mkdocs.yml
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+	docs/reference/npx-skills-metadata.md
+	scripts/validate-marketplace.sh
+	skills/.claude-plugin/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:06:57Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Diff stat for unstaged changes
+
+`git diff --stat`
+
+```text
+ .../2026-04-28_08-19-42Z-agent-skills-on-main.md   |   94 +-
+ ...-04-28_08-24-41Z-https-github-com-anthropics.md | 4686 +++++++++++++++++++-
+ CLAUDE.md                                          |   21 +
+ Makefile                                           |    7 +-
+ README.md                                          |   21 +
+ mkdocs.yml                                         |    1 +
+ 6 files changed, 4742 insertions(+), 88 deletions(-)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:06:58Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Recent commit messages
+
+`git log --oneline -10`
+
+```text
+7ebe0ba skills-lock: backfill skillPath for find-skills + skill-creator
+20f3ae7 mkdocs-site-bootstrap: bilingual docs (zh-TW) via static-i18n
+043c2ca agent-history-hygiene: document active-writer redact loop trap
+15a657f pueue-job-queue: --isolated-group, cleanup.sh, QUERY DSL recipes
+bac1248 Slim pueue-job-queue stderr noise; auto-warn DAG width vs group parallelism
+8c177fd Add pueue-job-queue local skill with docs and tests
+b7ff463 Archive specstory transcripts from agent-history-hygiene dogfood session
+6435e5c Add test suite for agent-history-hygiene (pytest + bash contract)
+f92604f Add agent-history-hygiene local skill
+b7fc327 Add fullstack-nextjs vendor series with 9 official-org skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:07:02Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage feature files + chat/plan transcripts
+
+`git add skills/.claude-plugin/marketplace.json scripts/validate-marketplace.sh docs/reference/npx-skills-metadata.md CLAUDE.md Makefile README.md mkdocs.yml .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md && git status --short`
+
+```text
+A  .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+M  .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+M  .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+M  CLAUDE.md
+M  Makefile
+M  README.md
+A  docs/reference/npx-skills-metadata.md
+M  mkdocs.yml
+A  scripts/validate-marketplace.sh
+A  skills/.claude-plugin/marketplace.json
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:07:13Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Create commit
+
+```bash
+git commit -m "$(cat <<'EOF'
+marketplace.json: 6 plugin groupings for npx skills picker UI
+
+Add skills/.claude-plugin/marketplace.json so the install picker groups
+the 22 skills under skill-authoring / project-memory / ml-workflow /
+notebooks / fullstack-nextjs / infra-and-docs instead of a flat list.
+Manifest sits inside skills/ (not repo root) because the install command
+uses /skills subpath — the npx skills CLI reads
+<basePath>/<subpath>/.claude-plugin/marketplace.json (verified in
+vercel-labs/skills src/skills.ts).
+
+Bundles a validator (scripts/validate-marketplace.sh + make marketplace)
+that checks JSON parses, name not on the reserved list, all paths
+resolve to a SKILL.md, no duplicates, and warns for on-disk skills that
+would silently fall under "Other".
+
+Captures the verified npx-skills metadata model (basePath+subpath
+resolution, kebabToTitle group naming, marketplace.json vs plugin.json,
+reserved names, version semantics) in
+docs/reference/npx-skills-metadata.md.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+```text
+[main 31f1a32] marketplace.json: 6 plugin groupings for npx skills picker UI
+ 10 files changed, 5425 insertions(+), 88 deletions(-)
+ create mode 100644 .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+ create mode 100644 docs/reference/npx-skills-metadata.md
+ create mode 100755 scripts/validate-marketplace.sh
+ create mode 100644 skills/.claude-plugin/marketplace.json
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:07:23Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify clean tree and new commit
+
+`git status && echo "---" && git log --oneline -3`
+
+```text
+On branch main
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+---
+31f1a32 marketplace.json: 6 plugin groupings for npx skills picker UI
+7ebe0ba skills-lock: backfill skillPath for find-skills + skill-creator
+20f3ae7 mkdocs-site-bootstrap: bilingual docs (zh-TW) via static-i18n
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:07:26Z)**_
+
+Committed as `31f1a32`. The specstory transcript got fresh appends during the commit itself (the active-writer loop that's documented as a known trap) — leaving that for the next session. You're now 2 commits ahead of `origin/main`; push when ready.

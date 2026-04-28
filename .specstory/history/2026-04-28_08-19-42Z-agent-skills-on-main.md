@@ -765,11 +765,103 @@ Restore .claude symlink to HEAD target
 ```
 </details></tool-use>
 
-_**Agent (claude-opus-4-7 2026-04-28 08:33:35Z)**_
+_**Agent (claude-opus-4-7 2026-04-28 08:33:37Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
 Stage remaining intended changes
 
 `git add skills-lock.json .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md && git status --short`
+
+```text
+M  .agents/skills/skill-creator/LICENSE.txt
+A  .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+A  .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+A  .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+M  skills-lock.json
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:33:40Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:33:41Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Final lock diff verification
+
+`git diff --cached -- skills-lock.json`
+
+```text
+diff --git a/skills-lock.json b/skills-lock.json
+index c19a345..ca33b4a 100644
+--- a/skills-lock.json
++++ b/skills-lock.json
+@@ -4,12 +4,14 @@
+     "find-skills": {
+       "source": "vercel-labs/skills",
+       "sourceType": "github",
+-      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
++      "skillPath": "skills/find-skills/SKILL.md",
++      "computedHash": "9e1c8b3103f92fa8092568a44fe64858de7c5c9dc65ce4bea8f168080e889cfd"
+     },
+     "skill-creator": {
+       "source": "anthropics/skills",
+       "sourceType": "github",
+-      "computedHash": "b122f4d1e91aa1d83027e050b5b37c3156203ee85458d7b1360bc48167c9e02a"
++      "skillPath": "skills/skill-creator/SKILL.md",
++      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
+     }
+   }
+ }
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:33:48Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit cleaned-up lock + transcripts
+
+```bash
+git commit -m "$(cat <<'EOF'
+skills-lock: backfill skillPath for find-skills + skill-creator
+
+Re-ran `npx skills add` for the two pre-skillPath entries so future
+`npx skills update` can refresh them in place. Kept mkdocs-site-bootstrap
+as a symlink to skills/local/ (out of the lock — managed locally).
+Includes upstream skill-creator LICENSE.txt placeholder fix.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)" && git status --short
+```
+
+```text
+[main a56cfea] skills-lock: backfill skillPath for find-skills + skill-creator
+ 5 files changed, 3322 insertions(+), 3 deletions(-)
+ create mode 100644 .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+ create mode 100644 .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+ create mode 100644 .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+ M .specstory/history/2026-04-28_08-19-42Z-agent-skills-on-main.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 08:34:01Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 08:34:06Z)**_
+
+Done — commit `a56cfea` 上去了：
+
+```
+skills-lock: backfill skillPath for find-skills + skill-creator
+```
+
+包含：
+- `skills-lock.json`：兩個舊條目補上 `skillPath`，移除 `mkdocs-site-bootstrap` 條目（已是純本地 symlink）
+- `.agents/skills/skill-creator/LICENSE.txt`：upstream placeholder 修正
+- `.specstory/history/*.md` ×2 + `.claude/plans/*.md`：本次 session artifacts（redact hook 已自動跑過）
+
+`.agents/skills/mkdocs-site-bootstrap` 與 `.claude/skills/mkdocs-site-bootstrap` 都還原成 symlink，與 HEAD 一致、不在 commit 裡。
+
+最後那個 ` M .specstory/history/...` 是 redact hook 寫回工作區後 specstory 又繼續 append 本對話的後續行（active-writer 慣例現象，下次一起 commit 就好），不需要處理。

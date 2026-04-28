@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace
 
 sync:
 	./scripts/sync-vendor.sh
@@ -12,6 +12,11 @@ add-vendor:
 
 kanban:
 	./scripts/todo-kanban.sh
+
+# Validate skills/.claude-plugin/marketplace.json — the catalog manifest
+# read by `npx skills@latest add daviddwlee84/agent-skills/skills`.
+marketplace:
+	./scripts/validate-marketplace.sh
 
 # Convenience wrappers around scripts/add-todo.sh, promote-todo.sh, sweep-inbox.sh.
 # For full flags use the scripts directly.

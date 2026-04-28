@@ -1,0 +1,95 @@
+{
+  "name": "daviddwlee84-skills",
+  "owner": {
+    "name": "Da-Wei Lee",
+    "email": "daviddwlee84@gmail.com"
+  },
+  "metadata": {
+    "description": "Personal collection of authored + vendored agent skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-authoring",
+      "description": "Author, refactor, and evaluate Claude Code skills",
+      "category": "Authoring",
+      "tags": ["skill", "authoring", "evaluation"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/skill-author",
+        "./vendor/skill-creator"
+      ]
+    },
+    {
+      "name": "project-memory",
+      "description": "Project memory, TODO tracking, and agent-history hygiene",
+      "category": "Workflow",
+      "tags": ["project-memory", "todo", "hygiene", "specstory"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/project-knowledge-harness",
+        "./local/agent-history-hygiene"
+      ]
+    },
+    {
+      "name": "ml-workflow",
+      "description": "ML experiment tracking, DVC pipelines, batch notebooks, and quant research",
+      "category": "ML",
+      "tags": ["mlflow", "dvc", "marimo", "quant"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/mlflow-tracking",
+        "./local/dvc-ml-workflow",
+        "./local/marimo-batch-mlflow",
+        "./local/quantatitive-factor-researcher"
+      ]
+    },
+    {
+      "name": "notebooks",
+      "description": "marimo notebooks, Streamlit migration, and anywidget components",
+      "category": "Notebooks",
+      "tags": ["marimo", "streamlit", "anywidget"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/marimo-notebook",
+        "./vendor/streamlit-to-marimo",
+        "./vendor/anywidget"
+      ]
+    },
+    {
+      "name": "fullstack-nextjs",
+      "description": "Next.js App Router + Supabase + shadcn/ui + design + testing series",
+      "category": "Web",
+      "tags": ["nextjs", "supabase", "shadcn", "react", "playwright"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/fullstack-nextjs/nextjs",
+        "./vendor/fullstack-nextjs/shadcn",
+        "./vendor/fullstack-nextjs/react-best-practices",
+        "./vendor/fullstack-nextjs/vercel-storage",
+        "./vendor/fullstack-nextjs/supabase",
+        "./vendor/fullstack-nextjs/supabase-postgres-best-practices",
+        "./vendor/fullstack-nextjs/web-design-guidelines",
+        "./vendor/fullstack-nextjs/frontend-design",
+        "./vendor/fullstack-nextjs/webapp-testing"
+      ]
+    },
+    {
+      "name": "infra-and-docs",
+      "description": "Documentation site bootstrap and pueue job queue orchestration",
+      "category": "Infra",
+      "tags": ["mkdocs", "pueue", "job-queue", "docs"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/mkdocs-site-bootstrap",
+        "./local/pueue-job-queue"
+      ]
+    }
+  ]
+}

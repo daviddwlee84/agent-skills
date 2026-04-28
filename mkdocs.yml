@@ -127,6 +127,7 @@ nav:
       - Pitfalls format: reference/pitfalls.md
       - Bundled scripts: reference/scripts.md
       - Downstream docs stack recipe: reference/docs-stack-recipe.md
+      - npx skills metadata model: reference/npx-skills-metadata.md
   - Changelog: changelog.md
 
 extra:

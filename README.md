@@ -46,6 +46,27 @@ npx skills@latest add daviddwlee84/agent-skills/skills
     - [`frontend-design`](skills/vendor/fullstack-nextjs/frontend-design/) — anti-AI-slop aesthetics from [anthropics/skills](https://github.com/anthropics/skills)
     - [`webapp-testing`](skills/vendor/fullstack-nextjs/webapp-testing/) — Playwright toolkit from [anthropics/skills](https://github.com/anthropics/skills)
 
+## Categories in the install UI
+
+The grouped picker UI of `npx skills@latest add daviddwlee84/agent-skills/skills`
+is driven by [`skills/.claude-plugin/marketplace.json`](skills/.claude-plugin/marketplace.json) —
+six plugin groupings (`skill-authoring`, `project-memory`, `ml-workflow`,
+`notebooks`, `fullstack-nextjs`, `infra-and-docs`) covering all skills in
+this repo. Anything not listed there falls under **Other** automatically.
+
+```bash
+# Validate the manifest (paths exist, no duplicates, name not reserved,
+# on-disk skills covered).
+make marketplace
+```
+
+The manifest lives under `skills/`, **not** at the repo root, because the
+install command's `/skills` subpath makes the CLI read
+`<repo>/skills/.claude-plugin/marketplace.json`. See
+[npx skills metadata model](https://daviddwlee84.github.io/agent-skills/reference/npx-skills-metadata/)
+for the full mechanism, the `kebabToTitle` group naming rule, reserved
+marketplace names, and the `marketplace.json` vs `plugin.json` distinction.
+
 ## Repo memory
 
 This repo dogfoods `project-knowledge-harness` on itself:
