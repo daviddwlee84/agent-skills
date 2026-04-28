@@ -7107,3 +7107,699 @@ no changes added to commit (use "git add" and/or "git commit -a")
 _**Agent (claude-opus-4-7 2026-04-28 09:07:26Z)**_
 
 Committed as `31f1a32`. The specstory transcript got fresh appends during the commit itself (the active-writer loop that's documented as a known trap) — leaving that for the next session. You're now 2 commits ahead of `origin/main`; push when ready.
+
+---
+
+_**User (2026-04-28 09:11:42Z)**_
+
+我想知道 [Image #2] tree是否最多就是nested兩層還是能更多(能區分我自己做的vs Vendor)
+另外 是否能透過metadata hide一些我想deprecated的skill (但我還想保留在repo中 等等)
+
+_**User (2026-04-28 09:11:42Z)**_
+
+[Image: source: /Users/daviddwlee84/.claude/image-cache/b7263ca1-b5f7-456d-af5e-bf5cf2a1a62e/2.png]
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 09:12:12Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:12:13Z)**_
+
+Both good questions. Let me verify by reading the picker UI code and the discovery filter, since either could surprise us.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:12:14Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check picker UI grouping code
+
+`grep -n "groupMultiselect\|grouped\|kebabToTitle\|pluginName" /tmp/skills-add.ts | head -30`
+
+```text
+1081:      const groupedSkills: Record<string, Skill[]> = {};
+1082:      const ungroupedSkills: Skill[] = [];
+1085:        if (skill.pluginName) {
+1086:          const group = skill.pluginName;
+1087:          if (!groupedSkills[group]) groupedSkills[group] = [];
+1088:          groupedSkills[group].push(skill);
+1090:          ungroupedSkills.push(skill);
+1095:      const sortedGroups = Object.keys(groupedSkills).sort();
+1104:        for (const skill of groupedSkills[group]!) {
+1111:      // Print ungrouped
+1112:      if (ungroupedSkills.length > 0) {
+1114:        for (const skill of ungroupedSkills) {
+1159:        if (a.pluginName && !b.pluginName) return -1;
+1160:        if (!a.pluginName && b.pluginName) return 1;
+1161:        if (a.pluginName && b.pluginName && a.pluginName !== b.pluginName) {
+1162:          return a.pluginName.localeCompare(b.pluginName);
+1168:      const hasGroups = sortedSkills.some((s) => s.pluginName);
+1173:        // Build grouped options for groupMultiselect
+1174:        const kebabToTitle = (s: string) =>
+1180:        const grouped: Record<string, p.Option<Skill>[]> = {};
+1182:          const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+1183:          if (!grouped[groupName]) grouped[groupName] = [];
+1184:          grouped[groupName]!.push({
+1191:        selected = await p.groupMultiselect({
+1193:          options: grouped,
+1391:    const groupedSummary: Record<string, Skill[]> = {};
+1392:    const ungroupedSummary: Skill[] = [];
+1395:      if (skill.pluginName) {
+1396:        const group = skill.pluginName;
+1397:        if (!groupedSummary[group]) groupedSummary[group] = [];
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:12:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read discoverSkills filter logic
+
+`cat /tmp/skills-skills.ts | head -200`
+
+```text
+import { readdir, readFile, stat } from 'fs/promises';
+import { join, basename, dirname, resolve, normalize, sep } from 'path';
+import { parseFrontmatter } from './frontmatter.ts';
+import { sanitizeMetadata } from './sanitize.ts';
+import type { Skill } from './types.ts';
+import { getPluginSkillPaths, getPluginGroupings } from './plugin-manifest.ts';
+
+const SKIP_DIRS = ['node_modules', '.git', 'dist', 'build', '__pycache__'];
+
+/**
+ * Check if internal skills should be installed.
+ * Internal skills are hidden by default unless INSTALL_INTERNAL_SKILLS=1 is set.
+ */
+export function shouldInstallInternalSkills(): boolean {
+  const envValue = process.env.INSTALL_INTERNAL_SKILLS;
+  return envValue === '1' || envValue === 'true';
+}
+
+async function hasSkillMd(dir: string): Promise<boolean> {
+  try {
+    const skillPath = join(dir, 'SKILL.md');
+    const stats = await stat(skillPath);
+    return stats.isFile();
+  } catch {
+    return false;
+  }
+}
+
+export async function parseSkillMd(
+  skillMdPath: string,
+  options?: { includeInternal?: boolean }
+): Promise<Skill | null> {
+  try {
+    const content = await readFile(skillMdPath, 'utf-8');
+    const { data } = parseFrontmatter(content);
+
+    if (!data.name || !data.description) {
+      return null;
+    }
+
+    // Ensure name and description are strings (YAML can parse numbers, booleans, etc.)
+    if (typeof data.name !== 'string' || typeof data.description !== 'string') {
+      return null;
+    }
+
+    // Skip internal skills unless:
+    // 1. INSTALL_INTERNAL_SKILLS=1 is set, OR
+    // 2. includeInternal option is true (e.g., when user explicitly requests a skill)
+    const isInternal = data.metadata?.internal === true;
+    if (isInternal && !shouldInstallInternalSkills() && !options?.includeInternal) {
+      return null;
+    }
+
+    return {
+      name: sanitizeMetadata(data.name),
+      description: sanitizeMetadata(data.description),
+      path: dirname(skillMdPath),
+      rawContent: content,
+      metadata: data.metadata,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function findSkillDirs(dir: string, depth = 0, maxDepth = 5): Promise<string[]> {
+  if (depth > maxDepth) return [];
+
+  try {
+    const [hasSkill, entries] = await Promise.all([
+      hasSkillMd(dir),
+      readdir(dir, { withFileTypes: true }).catch(() => []),
+    ]);
+
+    const currentDir = hasSkill ? [dir] : [];
+
+    // Search subdirectories in parallel
+    const subDirResults = await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory() && !SKIP_DIRS.includes(entry.name))
+        .map((entry) => findSkillDirs(join(dir, entry.name), depth + 1, maxDepth))
+    );
+
+    return [...currentDir, ...subDirResults.flat()];
+  } catch {
+    return [];
+  }
+}
+
+export interface DiscoverSkillsOptions {
+  /** Include internal skills (e.g., when user explicitly requests a skill by name) */
+  includeInternal?: boolean;
+  /** Search all subdirectories even when a root SKILL.md exists */
+  fullDepth?: boolean;
+}
+
+/**
+ * Validates that a resolved subpath stays within the base directory.
+ * Prevents path traversal attacks where subpath contains ".." segments
+ * that would escape the cloned repository directory.
+ */
+export function isSubpathSafe(basePath: string, subpath: string): boolean {
+  const normalizedBase = normalize(resolve(basePath));
+  const normalizedTarget = normalize(resolve(join(basePath, subpath)));
+
+  return normalizedTarget.startsWith(normalizedBase + sep) || normalizedTarget === normalizedBase;
+}
+
+export async function discoverSkills(
+  basePath: string,
+  subpath?: string,
+  options?: DiscoverSkillsOptions
+): Promise<Skill[]> {
+  const skills: Skill[] = [];
+  const seenNames = new Set<string>();
+
+  // Validate subpath doesn't escape basePath (prevent path traversal)
+  if (subpath && !isSubpathSafe(basePath, subpath)) {
+    throw new Error(
+      `Invalid subpath: "${subpath}" resolves outside the repository directory. Subpath must not contain ".." segments that escape the base path.`
+    );
+  }
+
+  const searchPath = subpath ? join(basePath, subpath) : basePath;
+
+  // Get plugin groupings to map skills to their parent plugin
+  // We search for plugin definitions from the base search path
+  const pluginGroupings = await getPluginGroupings(searchPath);
+
+  // Helper to assign plugin name if available
+  const enhanceSkill = (skill: Skill) => {
+    const resolvedPath = resolve(skill.path);
+    if (pluginGroupings.has(resolvedPath)) {
+      skill.pluginName = pluginGroupings.get(resolvedPath);
+    }
+    return skill;
+  };
+
+  // If pointing directly at a skill, add it (and return early unless fullDepth is set)
+  if (await hasSkillMd(searchPath)) {
+    let skill = await parseSkillMd(join(searchPath, 'SKILL.md'), options);
+    if (skill) {
+      skill = enhanceSkill(skill);
+      skills.push(skill);
+      seenNames.add(skill.name);
+      // Only return early if fullDepth is not set
+      if (!options?.fullDepth) {
+        return skills;
+      }
+    }
+  }
+
+  // Search common skill locations first
+  const prioritySearchDirs = [
+    searchPath,
+    join(searchPath, 'skills'),
+    join(searchPath, 'skills/.curated'),
+    join(searchPath, 'skills/.experimental'),
+    join(searchPath, 'skills/.system'),
+    join(searchPath, '.agents/skills'),
+    join(searchPath, '.claude/skills'),
+    join(searchPath, '.cline/skills'),
+    join(searchPath, '.codebuddy/skills'),
+    join(searchPath, '.codex/skills'),
+    join(searchPath, '.commandcode/skills'),
+    join(searchPath, '.continue/skills'),
+
+    join(searchPath, '.github/skills'),
+    join(searchPath, '.goose/skills'),
+    join(searchPath, '.iflow/skills'),
+    join(searchPath, '.junie/skills'),
+    join(searchPath, '.kilocode/skills'),
+    join(searchPath, '.kiro/skills'),
+    join(searchPath, '.mux/skills'),
+    join(searchPath, '.neovate/skills'),
+    join(searchPath, '.opencode/skills'),
+    join(searchPath, '.openhands/skills'),
+    join(searchPath, '.pi/skills'),
+    join(searchPath, '.qoder/skills'),
+    join(searchPath, '.roo/skills'),
+    join(searchPath, '.trae/skills'),
+    join(searchPath, '.windsurf/skills'),
+    join(searchPath, '.zencoder/skills'),
+  ];
+
+  // Add skill paths declared in plugin manifests
+  prioritySearchDirs.push(...(await getPluginSkillPaths(searchPath)));
+
+  for (const dir of prioritySearchDirs) {
+    try {
+      const entries = await readdir(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillDir = join(dir, entry.name);
+          if (await hasSkillMd(skillDir)) {
+            let skill = await parseSkillMd(join(skillDir, 'SKILL.md'), options);
+            if (skill && !seenNames.has(skill.name)) {
+              skill = enhanceSkill(skill);
+              skills.push(skill);
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:13:01Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:13:15Z)**_
+
+Both answered concretely from the source.
+
+## Q1: Picker tree is **always exactly one level deep**
+
+From `vercel-labs/skills/src/add.ts` (lines 1180-1191):
+
+```ts
+const grouped: Record<string, p.Option<Skill>[]> = {};
+const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+grouped[groupName]!.push({ ... });
+selected = await p.groupMultiselect({ options: grouped, ... });
+```
+
+`grouped` is a flat `Record<string, Option[]>` — `clack`'s `groupMultiselect` does **not** support nested groups. Each skill is assigned to exactly one plugin = one header. The "skills" word at the top of your screenshot is just the install banner, not a parent in a tree.
+
+To split mine vs vendor, the only mechanism is to **prefix plugin names**. Two practical options:
+
+**(A) Prefix every plugin** with `local-` / `vendor-`. Splits the current mixed plugins (e.g., `skill-authoring` currently mixes my `skill-author` with vendor `skill-creator`). Result — 8 groups, alphabetically: `Local Infra And Docs`, `Local Ml Workflow`, `Local Project Memory`, `Local Skill Authoring`, `Vendor Fullstack Nextjs`, `Vendor Notebooks`, `Vendor Skill Authoring`.
+
+**(B) Coarse two-tier** — just `local` and `vendor` as the only two plugins. Simpler but loses thematic grouping.
+
+I recommend (A) if ownership matters more than topic grouping; otherwise leave as-is.
+
+## Q2: Yes — `metadata.internal: true` in SKILL.md frontmatter
+
+This is **officially supported, exactly for your use case**. From `vercel-labs/skills/src/skills.ts` (lines 47-54):
+
+```ts
+const isInternal = data.metadata?.internal === true;
+if (isInternal && !shouldInstallInternalSkills() && !options?.includeInternal) {
+  return null;
+}
+```
+
+Behavior:
+- Skill stays in the repo, files unchanged.
+- **Hidden from the picker UI by default.**
+- Still installable on request: `npx skills add <repo> <skill-name>` (explicit name → `includeInternal: true` is set), or set env `INSTALL_INTERNAL_SKILLS=1` to show all of them in the picker.
+
+Add to the SKILL.md frontmatter:
+
+```yaml
+---
+name: my-deprecated-skill
+description: ...
+metadata:
+  internal: true
+---
+```
+
+When you do this, also remove the skill's path from `marketplace.json` `plugins[].skills[]` (or it's a dead listing; the validator should flag this — I'll add a check).
+
+## Want me to apply both?
+
+1. Switch `marketplace.json` to the `local-` / `vendor-` prefix scheme (option A above)?
+2. Extend `scripts/validate-marketplace.sh` to: (a) parse `metadata.internal: true` from each SKILL.md, (b) error if an internal skill is listed in `marketplace.json` (mutually exclusive), (c) skip the "falls under Other" warning for internal skills?
+3. Add a "Hiding / deprecating skills" section to `docs/reference/npx-skills-metadata.md` documenting the `metadata.internal` mechanism?
+
+Each is independent — say which you want.
+
+---
+
+_**User (2026-04-28 09:18:05Z)**_
+
+也許先做 3. 再考慮 2. 值不值得做 而 1. 則先不用 (或是說metadata中還有沒有什麼欄位比如description 可以在不override任何skills內容的情況下標注 並且能在npx skills add的過程中看到的；要是不行就算了)
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:19Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:20Z)**_
+
+Let me check what fields the picker actually shows for each skill row — `label`, `hint`, anything? Then I'll write the docs section.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:20Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read picker option construction
+
+`sed -n '1180,1210p' /tmp/skills-add.ts`
+
+```text
+        const grouped: Record<string, p.Option<Skill>[]> = {};
+        for (const s of sortedSkills) {
+          const groupName = s.pluginName ? kebabToTitle(s.pluginName) : 'Other';
+          if (!grouped[groupName]) grouped[groupName] = [];
+          grouped[groupName]!.push({
+            value: s,
+            label: getSkillDisplayName(s),
+            hint: s.description.length > 60 ? s.description.slice(0, 57) + '...' : s.description,
+          });
+        }
+
+        selected = await p.groupMultiselect({
+          message: `Select skills to install ${pc.dim('(space to toggle)')}`,
+          options: grouped,
+          required: true,
+        });
+      } else {
+        const skillChoices = sortedSkills.map((s) => ({
+          value: s,
+          label: getSkillDisplayName(s),
+          hint: s.description.length > 60 ? s.description.slice(0, 57) + '...' : s.description,
+        }));
+
+        selected = await multiselect({
+          message: 'Select skills to install',
+          options: skillChoices,
+          required: true,
+        });
+      }
+
+      if (p.isCancel(selected)) {
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:31Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find getSkillDisplayName implementation
+
+`grep -n "getSkillDisplayName" /tmp/skills-skills.ts /tmp/skills-add.ts | head -20`
+
+```text
+/tmp/skills-skills.ts:228:export function getSkillDisplayName(skill: Skill): string {
+/tmp/skills-skills.ts:241:    const displayName = getSkillDisplayName(skill).toLowerCase();
+/tmp/skills-add.ts:26:import { discoverSkills, getSkillDisplayName, filterSkills } from './skills.ts';
+/tmp/skills-add.ts:1105:          p.log.message(`  ${pc.cyan(getSkillDisplayName(skill))}`);
+/tmp/skills-add.ts:1115:          p.log.message(`  ${pc.cyan(getSkillDisplayName(skill))}`);
+/tmp/skills-add.ts:1139:          p.log.message(`  - ${getSkillDisplayName(s)}`);
+/tmp/skills-add.ts:1146:        `Selected ${selectedSkills.length} skill${selectedSkills.length !== 1 ? 's' : ''}: ${selectedSkills.map((s) => pc.cyan(getSkillDisplayName(s))).join(', ')}`
+/tmp/skills-add.ts:1151:      p.log.info(`Skill: ${pc.cyan(getSkillDisplayName(firstSkill))}`);
+/tmp/skills-add.ts:1164:        return getSkillDisplayName(a).localeCompare(getSkillDisplayName(b));
+/tmp/skills-add.ts:1186:            label: getSkillDisplayName(s),
+/tmp/skills-add.ts:1199:          label: getSkillDisplayName(s),
+/tmp/skills-add.ts:1225:          selectedSkills.map((s) => getSkillDisplayName(s))
+/tmp/skills-add.ts:1458:            slug: getSkillDisplayName(s),
+/tmp/skills-add.ts:1459:            displayName: getSkillDisplayName(s),
+/tmp/skills-add.ts:1514:          skill: getSkillDisplayName(skill),
+/tmp/skills-add.ts:1605:        const skillDisplayName = getSkillDisplayName(skill);
+/tmp/skills-add.ts:1643:        const skillDisplayName = getSkillDisplayName(skill);
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read getSkillDisplayName
+
+`sed -n '225,250p' /tmp/skills-skills.ts`
+
+```text
+  return skills;
+}
+
+export function getSkillDisplayName(skill: Skill): string {
+  return skill.name || basename(skill.path);
+}
+
+/**
+ * Filter skills based on user input (case-insensitive direct matching).
+ * Multi-word skill names must be quoted on the command line.
+ */
+export function filterSkills(skills: Skill[], inputNames: string[]): Skill[] {
+  const normalizedInputs = inputNames.map((n) => n.toLowerCase());
+
+  return skills.filter((skill) => {
+    const name = skill.name.toLowerCase();
+    const displayName = getSkillDisplayName(skill).toLowerCase();
+
+    return normalizedInputs.some((input) => input === name || input === displayName);
+  });
+}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:52Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:54Z)**_
+
+Confirmed: the picker row label is just `skill.name` from SKILL.md (with description as a truncated hint). **No `marketplace.json` field is ever rendered for a skill row** — only the plugin name becomes the group header. Adding that to the docs along with the deprecation section.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:18:54Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/npx-skills-metadata.md`
+
+```text
+90	What the `npx skills` picker actually consumes:
+91	
+92	| Field | Used by `npx skills`? | Used by Claude Code `/plugin` UI? |
+93	|---|---|---|
+94	| `metadata.pluginRoot` | yes (resolves `source`) | yes |
+95	| `plugins[].name` | **yes — drives the group header label** | yes |
+96	| `plugins[].source` | yes (must be a string starting with `./`; object/remote sources are skipped) | yes |
+97	| `plugins[].skills[]` | yes (must start with `./`) | yes |
+98	| `plugins[].description` / `category` / `tags` / `version` / `strict` | **no — pass through** | yes |
+99	
+100	So `category` and `tags` are essentially free metadata for now: they cost
+101	nothing to include in the manifest, and any future native consumer
+102	(Claude Code's `/plugin` browser, downstream catalog tooling) can use
+103	them without us migrating the file.
+104	
+105	## Group header rendering — `kebabToTitle`
+106	
+107	The picker turns each plugin `name` into a header label by splitting on
+108	hyphens and titlecasing each token. So:
+109	
+110	| `plugins[].name` | UI header |
+111	|---|---|
+112	| `document-skills` | Document Skills |
+113	| `claude-api` | Claude Api |
+114	| `ml-workflow` | Ml Workflow |
+115	| `fullstack-nextjs` | Fullstack Nextjs |
+116	| `notebooks` | Notebooks |
+117	
+118	Pick names that titlecase legibly. `claude-api` → "Claude Api" is the
+119	official upstream choice and ships in the user-facing UI of
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:19:09Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/npx-skills-metadata.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:19:26Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/npx-skills-metadata.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:19:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify docs still build
+
+`make docs-build 2>&1 | tail -10`
+
+```text
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /Volumes/Data/Program/Personal/agent-skills/site
+INFO    -  Doc file 'index.md' contains a link 'llms.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'llms-full.txt', but the target is not found among documentation files.
+INFO    -  Doc file 'index.md' contains a link 'getting-started/index.md', but the target is not found among documentation files.
+INFO    -  Doc file 'reference/npx-skills-metadata.md' contains a link '../../skills/.claude-plugin/marketplace.json', but the target '../skills/.claude-plugin/marketplace.json' is not found among documentation files.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../backlog/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../pitfalls/', it was left as is.
+INFO    -  Doc file 'skills/project-knowledge-harness.md' contains an unrecognized relative link '../../scripts/', it was left as is.
+INFO    -  Documentation built in 0.85 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:19:38Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:19:45Z)**_
+
+Docs updated and build clean. Summary of what's in `docs/reference/npx-skills-metadata.md` now:
+
+**New "What the picker actually shows for a skill row" subsection** — verified from `add.ts` line 1184-1188 that each row is just `label = skill.name` + `hint = skill.description.slice(0,57)+'…'`, both pulled from SKILL.md. So **no marketplace.json field** (`description`, `category`, `tags`, `version`, `strict`) is ever rendered for an individual skill. The plugin `name` only appears as the group header. Bottom line: SKILL.md is the only knob for per-skill annotation.
+
+**New "Hiding / deprecating a skill without deleting it" section** — documents `metadata.internal: true` in SKILL.md frontmatter:
+- ✅ Stays in repo
+- ✅ Hidden from picker by default
+- ✅ Installable by name (`npx skills add <repo> <skill-name>`)
+- ✅ `INSTALL_INTERNAL_SKILLS=1` shows them in the picker
+- Note to also remove its path from `marketplace.json` (mutually exclusive with being listed)
+- Why-not-delete rationale (docs reachable, `vendor.yaml` history, grace-period installs, git history)
+- "Validator coverage (today)" note that the script doesn't yet parse frontmatter, with extension #2 sketched if/when it becomes worth doing
+
+Item (1) — local-/vendor- prefix on plugin names — left untouched per your call.
+
+Want me to commit these doc additions?
+
+---
+
+_**User (2026-04-28 09:21:36Z)**_
+
+sure
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 09:21:43Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:21:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show changes to commit
+
+`git status --short && echo "---" && git diff --stat`
+
+```text
+ M .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+ M docs/reference/npx-skills-metadata.md
+---
+ ...-04-28_08-24-41Z-https-github-com-anthropics.md | 573 +++++++++++++++++++++
+ docs/reference/npx-skills-metadata.md              |  92 ++++
+ 2 files changed, 665 insertions(+)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:21:54Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:21:54Z)**_
+
+Plan mode is active, so I can't run `git commit` directly. Let me append the commit plan to the existing plan file and exit plan mode for approval.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:22:14Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:22:14Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ToolSearch"><details>
+<summary>Tool use: **ToolSearch**</summary>
+
+**Input:**
+
+- max_results: `1`
+- query: `select:ExitPlanMode`
+
+**Result:**
+
+```
+
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:22:17Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:22:29Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage docs + transcript + plan
+
+`git add docs/reference/npx-skills-metadata.md .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md && git status --short`
+
+```text
+M  .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+M  .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+M  docs/reference/npx-skills-metadata.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:22:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit docs + verify
+
+```bash
+git commit -m "$(cat <<'EOF'
+docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+
+Document `metadata.internal: true` in SKILL.md frontmatter as the
+officially-supported hide mechanism for deprecated-but-kept skills,
+verified in vercel-labs/skills src/skills.ts. Skill stays in the repo,
+hidden from the picker by default, still installable by name or with
+INSTALL_INTERNAL_SKILLS=1.
+
+Also clarify that no marketplace.json field is rendered per skill row
+(label = SKILL.md name, hint = SKILL.md description) — plugin name only
+appears as the group header. Sketch validator extension #2 (parse
+SKILL.md frontmatter, error if internal-flagged skills are listed in
+marketplace.json) as a deferred TODO.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)" && git status --short && git log --oneline -3
+```
+
+```text
+[main 819fc7b] docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+ 2 files changed, 731 insertions(+)
+ M .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+ M .specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md
+819fc7b docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+4e6b541 marketplace.json: 6 plugin groupings for npx skills picker UI
+7ebe0ba skills-lock: backfill skillPath for find-skills + skill-creator
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:23:07Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:23:09Z)**_
+
+Committed as `819fc7b`. The plan and specstory files show `M` again — that's the active-writer transcript loop appending in real-time, expected behavior; they'll be picked up in the next commit cycle.
+
+You're now 3 commits ahead of `origin/main`:
+- `819fc7b` — docs: hide/deprecate mechanism + per-row picker rendering
+- `4e6b541` — marketplace.json: 6 plugin groupings
+- (`7ebe0ba` was already there)
+
+Push when ready.

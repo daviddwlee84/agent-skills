@@ -137,3 +137,58 @@ for (5) so adding a skill mid-edit doesn't break the build.
 5. Sanity check: temporarily remove one path from `marketplace.json`,
    re-run `npx skills@latest add daviddwlee84/agent-skills`, confirm
    that skill now lives under **Other** — then revert.
+
+---
+
+## Follow-up commit: docs additions for hide/deprecate + per-row rendering
+
+Question raised after the first commit: are there `marketplace.json`
+fields that annotate a skill in the picker UI without modifying SKILL.md,
+and is there a way to hide a deprecated skill while keeping it in the
+repo?
+
+Verified from `vercel-labs/skills` source:
+
+- **No external annotation.** Per `src/add.ts` lines 1184-1188, each
+  picker row is `{ label: skill.name, hint: skill.description.slice(0,57)+'…' }`
+  — both pulled from SKILL.md. Nothing in `marketplace.json` is rendered
+  for an individual skill row. Plugin `name` only appears as the group
+  header.
+- **Hide mechanism exists.** Per `src/skills.ts` lines 47-54, setting
+  `metadata.internal: true` in SKILL.md frontmatter hides the skill
+  from the picker by default. Still installable by name, with
+  `INSTALL_INTERNAL_SKILLS=1`, or via `--include-internal`.
+
+### Changes (already applied to working tree, awaiting commit)
+
+- `docs/reference/npx-skills-metadata.md` — added two subsections:
+  - **"What the picker actually shows for a skill row"** (under Manifest
+    shape) — clarifies SKILL.md is the only knob for per-skill
+    annotations.
+  - **"Hiding / deprecating a skill without deleting it"** — documents
+    `metadata.internal: true`, the install-by-name override, the
+    interaction with `marketplace.json` (mutually exclusive), and a
+    sketch of validator extension #2 left as a deferred TODO.
+- `.specstory/history/2026-04-28_08-24-41Z-https-github-com-anthropics.md`
+  — auto-appended chat transcript (per `agent-history-hygiene`).
+
+### Commit
+
+Single commit, message focused on documentation.
+
+```
+docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+
+Document `metadata.internal: true` in SKILL.md frontmatter as the
+officially-supported hide mechanism for deprecated-but-kept skills,
+verified in vercel-labs/skills src/skills.ts. Also clarify that no
+marketplace.json field is rendered per skill row (label = SKILL.md name,
+hint = SKILL.md description) — plugin name only appears as the group
+header. Sketch validator extension #2 as a deferred TODO.
+```
+
+### Verification
+
+- `make docs-build` — already verified, builds cleanly.
+- `git diff --stat` — only `docs/reference/npx-skills-metadata.md`
+  (+92) and the specstory transcript should be in the commit.

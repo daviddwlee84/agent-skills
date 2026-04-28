@@ -102,6 +102,30 @@ nothing to include in the manifest, and any future native consumer
 (Claude Code's `/plugin` browser, downstream catalog tooling) can use
 them without us migrating the file.
 
+### What the picker actually shows for a skill row
+
+Per [`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+(the `groupMultiselect` call), each skill row is constructed as:
+
+```ts
+{
+  value: s,
+  label: getSkillDisplayName(s),        // = s.name (SKILL.md frontmatter)
+  hint:  s.description.slice(0, 57)+'…' // = SKILL.md description, truncated to 60 chars
+}
+```
+
+So the **only** thing the user sees per skill is `name` + truncated
+`description` from that skill's SKILL.md. **Nothing in `marketplace.json`
+is shown per-skill** — not `plugins[].description`, not `category`, not
+`tags`, not anything. The plugin's `name` only ever appears as the group
+header above the skill rows.
+
+This means: if you want to annotate / re-label / "tag as deprecated" /
+override the description for a single skill in the picker, the SKILL.md
+itself is the only knob. There is no "external annotation" mechanism in
+the catalog manifest.
+
 ## Group header rendering — `kebabToTitle`
 
 The picker turns each plugin `name` into a header label by splitting on
@@ -204,6 +228,74 @@ If we ever need a second native catalog format, the cleanest
 intermediate is to start treating `marketplace.json` as a *generated*
 artifact from a canonical YAML and add a generator script. We have not
 done that yet — single-consumer hand-edit is fine.
+
+## Hiding / deprecating a skill without deleting it
+
+The CLI has a built-in hide mechanism via SKILL.md frontmatter — set
+`metadata.internal: true` and the skill becomes invisible in the picker
+while staying in the repo.
+
+Per [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts):
+
+```ts
+const isInternal = data.metadata?.internal === true;
+if (isInternal && !shouldInstallInternalSkills() && !options?.includeInternal) {
+  return null;
+}
+```
+
+```yaml
+---
+name: my-deprecated-skill
+description: ...
+metadata:
+  internal: true   # <- hides this skill from `npx skills add` picker UI
+---
+```
+
+What this does:
+
+- ✅ Skill stays in the repo, files unchanged.
+- ✅ Hidden from the interactive picker by default.
+- ✅ Still installable on direct request: `npx skills add <repo> my-deprecated-skill`
+  passes `includeInternal: true` so the by-name lookup finds it.
+- ✅ Power-user override: `INSTALL_INTERNAL_SKILLS=1 npx skills add ...`
+  shows internal skills in the picker as well.
+- ✅ Compatible with discovery elsewhere (Claude Code's auto-discovery,
+  this repo's docs site) — `metadata.internal` is a `npx skills` convention
+  only.
+
+When marking a skill as internal, also **remove its path from
+`plugins[].skills[]`** in `marketplace.json` — otherwise you have a dead
+catalog entry pointing at a hidden skill. The two settings should not
+coexist for the same skill.
+
+### Why not just delete it?
+
+Reasons to use `metadata.internal` over deletion:
+
+- Keep the docs page reachable (the skill still renders on the docs site).
+- Preserve `vendor.yaml` history and `last_sync` dates for vendored skills.
+- Allow opt-in installs by name during a deprecation grace period.
+- Keep `git log` / `git blame` continuity for future debugging.
+
+If you want it gone for good, delete the directory and remove the entry
+from `marketplace.json` and (for vendored skills) `vendor.yaml`.
+
+### Validator coverage (today)
+
+`scripts/validate-marketplace.sh` does **not** currently parse SKILL.md
+frontmatter, so it won't flag the "internal skill listed in
+`marketplace.json`" mistake. If we hit this in practice, the validator
+can be extended to:
+
+1. Parse each SKILL.md's frontmatter (e.g. via `yq` or python-frontmatter).
+2. Error if any path listed in `plugins[].skills[]` resolves to a skill with
+   `metadata.internal: true`.
+3. Skip the "falls under Other" warning for internal skills (they
+   wouldn't show up in the picker at all, so the warning is misleading).
+
+This is a deferred enhancement — see TODO if/when it becomes worth it.
 
 ## Working with the manifest in this repo
 
