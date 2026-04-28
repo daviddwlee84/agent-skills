@@ -10,8 +10,13 @@ dependencies = []
 
 [project.optional-dependencies]
 docs = [
-  "mkdocs>=1.6",
-  "mkdocs-material>=9.5",
+  # Cap mkdocs/mkdocs-material below the next major: MkDocs 2.0 removes the
+  # plugin system entirely (no llmstxt / static-i18n / copy-to-llm under 2.x)
+  # and Material for MkDocs is shipping a separate replacement (Zensical)
+  # rather than upgrading. Stay on 1.x until Zensical or another successor
+  # lands a stable release with i18n + llmstxt support.
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.5,<10",
   "mkdocs-llmstxt>=0.1",
   "mkdocs-copy-to-llm>=0.1",
   "mkdocs-static-i18n>=1.2",

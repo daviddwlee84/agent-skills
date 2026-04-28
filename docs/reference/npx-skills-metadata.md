@@ -335,4 +335,4 @@ After adding a new local or vendored skill:
   [plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces),
   [plugins-reference](https://code.claude.com/docs/en/plugins-reference).
 - Reference manifest in this repo:
-  [`skills/.claude-plugin/marketplace.json`](../../skills/.claude-plugin/marketplace.json).
+  [`skills/.claude-plugin/marketplace.json`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/.claude-plugin/marketplace.json).

@@ -159,8 +159,9 @@ See the workflow above. Notable flags:
 ## How this repo uses the skill on itself
 
 The repo's own [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md),
-[`backlog/`](../../backlog/) (when populated), [`pitfalls/`](../../pitfalls/)
-(when populated), and [`scripts/`](../../scripts/) `todo-kanban.sh` /
+[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog) (when populated),
+[`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls) (when populated),
+and [`scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/scripts) `todo-kanban.sh` /
 `promote-todo.sh` are a live example of the harness applied to a real
 project. The [`make kanban`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
 target wraps the validator/renderer.
