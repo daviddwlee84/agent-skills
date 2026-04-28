@@ -7929,3 +7929,8311 @@ M  skills/local/mkdocs-site-bootstrap/scripts/add-language.sh
 M  uv.lock
 ```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:35:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the skill flip + dogfood run
+
+```bash
+git add .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+git commit -m "$(cat <<'EOF'
+mkdocs-site-bootstrap: keep llmstxt by default + dogfood zh-TW on this repo
+
+Behaviour flip in scripts/add-language.sh: --keep-llmstxt becomes the
+default (most users adopted this stack BECAUSE of /llms.txt) and the
+script now offers --remove-llmstxt as the opt-out. Pairs with the new
+--drop-strict flag, which patches .github/workflows/docs.yml and Makefile
+to remove --strict from any 'mkdocs build --strict' invocation — the only
+combo that lets llmstxt and mkdocs-static-i18n coexist (llmstxt's source-
+URI lookups don't survive reconfigure_material's page-index remap).
+
+Dogfood applied to this repo: ran add-language.sh --lang zh-TW
+--drop-strict, producing 36 *.zh-TW.md stub siblings under docs/ (each
+carrying the verbatim 「中文 (English original)」 terminology admonition),
+inserting plugins.i18n into mkdocs.yml, removing navigation.instant from
+theme.features, dropping --strict from CI/Makefile, and recording the
+choice in .skills/preferences.yaml. mkdocs-static-i18n>=1.2 added to
+pyproject.toml docs extras (script's auto-uncomment path didn't fire
+because this repo's pyproject pre-dates the templated commented form).
+
+Build verified: 'uv run mkdocs build' passes; site/zh-TW/ populated;
+/llms.txt produced (Workflows + Skills + Reference sections fully
+indexed; Guides + Changelog explicit-path entries fall through to llmstxt
+warnings, which are now non-fatal). Translation bodies are intentional
+stubs — translators replace the 'Translation pending' admonition while
+preserving the terminology rule above it.
+
+SKILL.md gotchas, step 7 walkthrough, and references/i18n-guide.md all
+updated to describe the new keep-by-default semantics and the --drop-strict
+flow as the recommended path.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+echo "---"
+git log --oneline -3
+```
+
+```text
+[main cbb269d] mkdocs-site-bootstrap: keep llmstxt by default + dogfood zh-TW on this repo
+ 46 files changed, 1894 insertions(+), 67 deletions(-)
+ create mode 100644 .skills/preferences.yaml
+ create mode 100644 docs/changelog.zh-TW.md
+ create mode 100644 docs/conventions.zh-TW.md
+ create mode 100644 docs/getting-started.zh-TW.md
+ create mode 100644 docs/index.zh-TW.md
+ create mode 100644 docs/reference/docs-stack-recipe.zh-TW.md
+ create mode 100644 docs/reference/npx-skills-metadata.zh-TW.md
+ create mode 100644 docs/reference/pitfalls.zh-TW.md
+ create mode 100644 docs/reference/scripts.zh-TW.md
+ create mode 100644 docs/reference/tag-schema.zh-TW.md
+ create mode 100644 docs/reference/todo-format.zh-TW.md
+ create mode 100644 docs/skills/agent-history-hygiene.zh-TW.md
+ create mode 100644 docs/skills/anywidget.zh-TW.md
+ create mode 100644 docs/skills/dvc-ml-workflow.zh-TW.md
+ create mode 100644 docs/skills/frontend-design.zh-TW.md
+ create mode 100644 docs/skills/index.zh-TW.md
+ create mode 100644 docs/skills/marimo-batch-mlflow.zh-TW.md
+ create mode 100644 docs/skills/marimo-notebook.zh-TW.md
+ create mode 100644 docs/skills/mkdocs-site-bootstrap.zh-TW.md
+ create mode 100644 docs/skills/mlflow-tracking.zh-TW.md
+ create mode 100644 docs/skills/nextjs.zh-TW.md
+ create mode 100644 docs/skills/project-knowledge-harness.zh-TW.md
+ create mode 100644 docs/skills/pueue-job-queue.zh-TW.md
+ create mode 100644 docs/skills/quantatitive-factor-researcher.zh-TW.md
+ create mode 100644 docs/skills/react-best-practices.zh-TW.md
+ create mode 100644 docs/skills/shadcn.zh-TW.md
+ create mode 100644 docs/skills/skill-author.zh-TW.md
+ create mode 100644 docs/skills/skill-creator.zh-TW.md
+ create mode 100644 docs/skills/streamlit-to-marimo.zh-TW.md
+ create mode 100644 docs/skills/supabase-postgres-best-practices.zh-TW.md
+ create mode 100644 docs/skills/supabase.zh-TW.md
+ create mode 100644 docs/skills/vercel-storage.zh-TW.md
+ create mode 100644 docs/skills/web-design-guidelines.zh-TW.md
+ create mode 100644 docs/skills/webapp-testing.zh-TW.md
+ create mode 100644 docs/workflows/adding-vendor-skills.zh-TW.md
+ create mode 100644 docs/workflows/creating-local-skills.zh-TW.md
+ create mode 100644 docs/workflows/project-memory.zh-TW.md
+---
+cbb269d mkdocs-site-bootstrap: keep llmstxt by default + dogfood zh-TW on this repo
+36f4050 docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+4e6b541 marketplace.json: 6 plugin groupings for npx skills picker UI
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:36:12Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:36:12Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #14 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:36:30Z)**_
+
+完成 dogfood + 偏好 baked into the skill。
+
+## Skill 行為翻轉（給未來所有用 add-language.sh 的 project）
+
+| Flag | Before | After |
+|---|---|---|
+| `--keep-llmstxt` | flag 存在，default 是移除 llmstxt | **移除** |
+| `--remove-llmstxt` | (無) | **新增** opt-out — flip 回原本的 default-remove |
+| `--drop-strict` | (無) | **新增** — auto-patch `.github/workflows/docs.yml` 與 `Makefile` 移除 `--strict`，idempotent |
+
+預設行為現在是「**保留 llmstxt** + 用 `--drop-strict` 把 CI 改成不 strict」 —— 因為大多數人用這個 stack 的 reason 就是 `/llms.txt`。
+
+## 對 agent-skills 這個 repo 做了什麼（commit `cbb269d`）
+
+- 36 個 `*.zh-TW.md` stub（每個都帶 verbatim「中文 (English original)」terminology admonition）
+- `mkdocs.yml`：i18n plugin 插入、`navigation.instant` 移除、`theme.language: en` 設定、llmstxt 保留
+- `.github/workflows/docs.yml` + `Makefile`：`mkdocs build --strict` → `mkdocs build`
+- `pyproject.toml`：加 `mkdocs-static-i18n>=1.2`（這個 repo 的 pyproject 早於 template 的 commented-form，所以手動加；script 印了 hint）
+- `.skills/preferences.yaml`：`languages: [en, zh-TW]` 等
+- Build 驗證通過：`uv run mkdocs build` 產出 `site/` 含 `site/zh-TW/`，`/llms.txt` 54 行（Workflows + Skills + Reference 完整 indexed；Guides + Changelog 的 explicit-path entries 因 i18n path remap 落到 warning，但因為已 drop strict 不會 abort）
+
+Branch 現在 5 commits ahead of origin/main，沒 push（按你的習慣）。
+
+接下來翻譯就是逐頁編輯 `*.zh-TW.md` body，把「Translation pending」admonition 換掉、保留上方的 terminology rule。`add-docs-page.sh` 之後新建頁面也會自動產生 zh-TW stub。
+
+---
+
+_**User (2026-04-28 09:44:43Z)**_
+
+好 開始逐頁翻譯吧!
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:09Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:10Z)**_
+
+開始翻譯。先掃 source pages 的篇幅來規劃 batch，然後從首頁開始。
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Survey source page lengths to plan batches
+
+```bash
+wc -l docs/index.md docs/getting-started.md docs/conventions.md docs/changelog.md docs/workflows/*.md docs/reference/*.md docs/skills/index.md 2>&1 | grep -v zh-TW
+echo "--- skills/ source files line counts ---"
+wc -l docs/skills/*.md | grep -v zh-TW | sort -n | head -40
+```
+
+```text
+      51 docs/index.md
+      60 docs/getting-started.md
+      61 docs/conventions.md
+      37 docs/changelog.md
+     106 docs/workflows/adding-vendor-skills.md
+      65 docs/workflows/creating-local-skills.md
+     150 docs/workflows/project-memory.md
+      44 docs/reference/docs-stack-recipe.md
+     338 docs/reference/npx-skills-metadata.md
+      67 docs/reference/pitfalls.md
+     168 docs/reference/scripts.md
+      49 docs/reference/tag-schema.md
+      78 docs/reference/todo-format.md
+      71 docs/skills/index.md
+    1444 total
+--- skills/ source files line counts ---
+      32 docs/skills/marimo-notebook.md
+      33 docs/skills/streamlit-to-marimo.md
+      34 docs/skills/vercel-storage.md
+      35 docs/skills/supabase-postgres-best-practices.md
+      35 docs/skills/web-design-guidelines.md
+      35 docs/skills/webapp-testing.md
+      36 docs/skills/react-best-practices.md
+      38 docs/skills/nextjs.md
+      39 docs/skills/frontend-design.md
+      40 docs/skills/shadcn.md
+      40 docs/skills/supabase.md
+      45 docs/skills/skill-creator.md
+      62 docs/skills/skill-author.md
+      71 docs/skills/index.md
+      74 docs/skills/marimo-batch-mlflow.md
+      75 docs/skills/anywidget.md
+      78 docs/skills/quantatitive-factor-researcher.md
+      86 docs/skills/dvc-ml-workflow.md
+     108 docs/skills/mkdocs-site-bootstrap.md
+     125 docs/skills/agent-history-hygiene.md
+     131 docs/skills/mlflow-tracking.md
+     153 docs/skills/pueue-job-queue.md
+     166 docs/skills/project-knowledge-harness.md
+    1824 total
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:29Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:30Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/index.md`
+
+```text
+1	# Agent Skills
+2	
+3	A personal collection of [agent skills](https://agentskills.io/home) — both
+4	custom-authored and cherry-picked from upstream repos — installable as a
+5	single package.
+6	
+7	## Install
+8	
+9	--8<-- "_snippets/install.md"
+10	
+11	## What's in here
+12	
+13	Two flavors of skills live under `skills/`:
+14	
+15	- **`skills/local/`** — custom-authored skills maintained in this repo.
+16	  See the [Skills overview](skills/index.md) for the index.
+17	- **`skills/vendor/`** — third-party skills synced from upstream repos via
+18	  the [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+19	  manifest. See [Adding vendor skills](workflows/adding-vendor-skills.md).
+20	
+21	The repo is also a live example of the
+22	[`project-knowledge-harness`](skills/project-knowledge-harness.md) skill
+23	applied to itself: [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md),
+24	[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog),
+25	and [`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls)
+26	sit at repo root, with [`scripts/`](reference/scripts.md) wrapping the
+27	validator/promoter/inbox toolkit.
+28	
+29	## Where to go next
+30	
+31	| If you want to… | Read |
+32	|---|---|
+33	| Install and try the skills | [Getting Started](getting-started.md) |
+34	| Understand naming / layout rules | [Conventions](conventions.md) |
+35	| Add a third-party skill | [Adding vendor skills](workflows/adding-vendor-skills.md) |
+36	| Author a new local skill | [Creating local skills](workflows/creating-local-skills.md) |
+37	| Capture a TODO or pitfall in a project | [Project memory workflow](workflows/project-memory.md) |
+38	| Browse what skills exist | [Skills overview](skills/index.md) |
+39	| Build a docs site for your own project | [Downstream docs stack recipe](reference/docs-stack-recipe.md) |
+40	
+41	## For AI assistants
+42	
+43	This site exposes LLM-friendly endpoints (per the [llmstxt.org](https://llmstxt.org/) spec):
+44	
+45	- [`llms.txt`](llms.txt) — compact index of all pages
+46	- [`llms-full.txt`](llms-full.txt) — every page concatenated into one file
+47	- Every page is also available as raw Markdown by appending `/index.md` to its
+48	  URL (e.g. [`getting-started/index.md`](getting-started/index.md)).
+49	
+50	If you're an agent reading this, prefer `llms-full.txt` for a single-shot
+51	context dump, or fetch individual `*/index.md` paths for the page you need.
+52
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:30Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/getting-started.md`
+
+```text
+1	# Getting Started
+2	
+3	## Install the skills
+4	
+5	--8<-- "_snippets/install.md"
+6	
+7	This populates `.agents/skills/` in your project with everything under
+8	`skills/local/` and `skills/vendor/` from this repo.
+9	
+10	## Render the repo backlog
+11	
+12	If you want to see the kanban view of the repo's own TODO list:
+13	
+14	```bash
+15	git clone https://github.com/daviddwlee84/agent-skills
+16	cd agent-skills
+17	make kanban
+18	```
+19	
+20	`make kanban` runs [`scripts/todo-kanban.sh`](reference/scripts.md#todo-kanbansh),
+21	which validates [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)
+22	and prints a Markdown board grouped by lane.
+23	
+24	## Build the docs locally
+25	
+26	The docs site you're reading is a [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
+27	site. To preview it locally:
+28	
+29	```bash
+30	# From the repo root
+31	uv sync --extra docs
+32	uv run mkdocs serve
+33	```
+34	
+35	Then open <http://127.0.0.1:8000/>.
+36	
+37	To produce the static site (what GitHub Pages serves):
+38	
+39	```bash
+40	uv run mkdocs build --strict
+41	```
+42	
+43	`make docs-serve` and `make docs-build` are convenience wrappers around
+44	those two commands.
+45	
+46	## Apply the project-knowledge-harness skill to your own project
+47	
+48	If you just want the TODO + backlog + pitfalls structure in another repo,
+49	the bundled init script does the whole setup in one shot:
+50	
+51	```bash
+52	git clone https://github.com/daviddwlee84/agent-skills /tmp/agent-skills
+53	/tmp/agent-skills/skills/local/project-knowledge-harness/scripts/init.sh \
+54	  --target /path/to/your/project \
+55	  --project-name "Your Project" \
+56	  --deployment chezmoi   # or npm | pip | docker | none
+57	```
+58	
+59	See the [`project-knowledge-harness` page](skills/project-knowledge-harness.md)
+60	for what the script does and what flags it supports.
+61
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:30Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/conventions.md`
+
+```text
+1	# Conventions
+2	
+3	These are the rules every local skill in this repo follows. They exist so
+4	the package shipped via `npx skills` stays predictable and so adding a new
+5	skill is mechanical, not a design exercise.
+6	
+7	## Local skill layout
+8	
+9	Each `skills/local/<skill>/` directory should contain:
+10	
+11	- **`SKILL.md`** — required, with YAML frontmatter (`name`, `description`)
+12	  and a body that follows the
+13	  [agentskills.io best practices](https://agentskills.io/skill-creation/best-practices)
+14	  (lean SKILL.md under ~500 lines, defaults over menus, procedures over
+15	  declarations).
+16	- **`assets/`** — templates the skill copies into a target project
+17	  (e.g. `TODO.md.template`, `pitfall-doc.md.template`).
+18	- **`scripts/`** — executable helpers the agent should invoke instead of
+19	  re-implementing logic in chat. Bash 3.2 compatible (so they run on stock
+20	  macOS without homebrew bash).
+21	- **`references/`** — long-form material the agent loads on demand
+22	  (decision tables, schema cheatsheets, anti-pattern lists). Push detail
+23	  here rather than swelling `SKILL.md`.
+24	
+25	## Mirror scripts to top-level `scripts/`
+26	
+27	Where a skill ships scripts that this repo also wants to run directly
+28	(currently only [`project-knowledge-harness`](skills/project-knowledge-harness.md)),
+29	copy them into the top-level [`scripts/`](reference/scripts.md) directory
+30	so `make` targets and CI can invoke them. Keep the canonical copy inside
+31	the skill so the package shipped via `npx skills` stays self-contained.
+32	
+33	The pair must stay byte-identical. The repo doesn't (yet) enforce this in
+34	CI; if you edit one, edit the other in the same commit.
+35	
+36	## Vendor skill layout
+37	
+38	`skills/vendor/<skill>/` mirrors the upstream layout exactly. Don't edit
+39	vendored skills in place — modifications get overwritten by `make sync`.
+40	If you need to customize a vendored skill, fork it into `skills/local/`
+41	and update [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+42	to drop the upstream entry.
+43	
+44	## Documentation
+45	
+46	Every local skill should also have a page under `docs/skills/<skill>.md`.
+47	The skill's `SKILL.md` is for the agent (concise, machine-aimed); the
+48	`docs/skills/<skill>.md` page is for humans deciding whether to use it.
+49	Both surfaces are valuable — don't try to merge them.
+50	
+51	Long-form references that the agent loads on demand
+52	(`skills/local/<skill>/references/*.md`) can be mirrored or summarized
+53	under `docs/reference/` when the audience extends to humans browsing the
+54	site, but the canonical copy still lives next to `SKILL.md`.
+55	
+56	## Personal scratch areas
+57	
+58	`Collections.md` and `notes/` at the repo root are personal scratch space
+59	for the maintainer and are intentionally not part of the published docs
+60	site or the agent-facing surface. Don't link into them from `SKILL.md` or
+61	from any docs page.
+62
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:31Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/changelog.md`
+
+```text
+1	# Changelog
+2	
+3	This page summarizes notable changes. Day-to-day commit history lives in
+4	[git log](https://github.com/daviddwlee84/agent-skills/commits/main); this
+5	file curates the milestones.
+6	
+7	## Unreleased
+8	
+9	- Bootstrapped a [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
+10	  documentation site with `mkdocs-llmstxt` and `mkdocs-copy-to-llm`,
+11	  deployable to GitHub Pages.
+12	- Added `scripts/add-todo.sh` for structured TODO inserts and
+13	  `scripts/sweep-inbox.sh` for triaging loose captures from
+14	  `backlog/inbox.md`. See [Project memory workflow](workflows/project-memory.md).
+15	- Added [Downstream docs stack recipe](reference/docs-stack-recipe.md) so
+16	  projects consuming our skills can mirror the same docs setup.
+17	
+18	## 2026-04 — `project-knowledge-harness` restructure
+19	
+20	- Loosened `scripts/todo-kanban.sh` validator to ignore prose,
+21	  blockquotes, HTML comments, `---` rules, and indented sub-bullets.
+22	  Added `--validate-only` and `--json` flags. Allowed extra `## ...`
+23	  headings after `## Done`.
+24	- Added `scripts/init.sh` for one-shot setup of `TODO.md` + `backlog/` +
+25	  `pitfalls/` + agent-guidance + README snippet in any target repo.
+26	- Added `scripts/promote-todo.sh` for atomic active-→-Done moves with
+27	  re-validation and dry-run support.
+28	- Slimmed `SKILL.md` (~350 → ~170 lines) and pushed detail into
+29	  `references/{tag-schema,when-to-add-docs,anti-patterns,deployment-exclusion}.md`
+30	  for [progressive disclosure](https://agentskills.io/specification#progressive-disclosure).
+31	
+32	## 2026-03 and earlier
+33	
+34	- Initial vendor system (`vendor.yaml`, `scripts/add-vendor.sh`,
+35	  `scripts/sync-vendor.sh`, `make sync` / `make sync-check`).
+36	- Initial `project-knowledge-harness` skill (formerly `backlog-harness`).
+37	- `quantatitive-factor-researcher` persona skill.
+38
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:45:45Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:46:08Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Agent Skills
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+個人收藏的 [agent skills](https://agentskills.io/home) —— 包含自製的 skill 與從
+upstream repo 精選 (cherry-picked) 過來的 skill —— 可作為單一套件 (package) 安裝。
+
+## 安裝 (Install)
+
+--8<-- "_snippets/install.md"
+
+## 內容概覽
+
+`skills/` 底下有兩種 skill：
+
+- **`skills/local/`** —— 在這個 repo 內自製維護的 skill。索引請看
+  [Skills 總覽](skills/index.md)。
+- **`skills/vendor/`** —— 透過
+  [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+  manifest 從 upstream repo 同步過來的第三方 skill。詳見
+  [Adding vendor skills](workflows/adding-vendor-skills.md)。
+
+這個 repo 同時也是
+[`project-knowledge-harness`](skills/project-knowledge-harness.md) skill 套用在
+自己身上的活範例：[`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)、
+[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog)、
+[`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls)
+位於 repo 根目錄，搭配 [`scripts/`](reference/scripts.md) 包裝
+validator / promoter / inbox 工具組。
+
+## 接下來去哪？
+
+| 你的目的 | 該讀的頁面 |
+|---|---|
+| 安裝並試用這些 skill | [Getting Started](getting-started.md) |
+| 了解命名 / 佈局規則 | [Conventions](conventions.md) |
+| 加入第三方 skill | [Adding vendor skills](workflows/adding-vendor-skills.md) |
+| 自己寫一個 local skill | [Creating local skills](workflows/creating-local-skills.md) |
+| 在你的 project 裡記錄 TODO 或 pitfall | [Project memory workflow](workflows/project-memory.md) |
+| 瀏覽現有的 skill | [Skills 總覽](skills/index.md) |
+| 為自己的 project 建立 docs 站 (site) | [Downstream docs stack recipe](reference/docs-stack-recipe.md) |
+
+## 給 AI assistant 的入口
+
+這個站點依照 [llmstxt.org](https://llmstxt.org/) 規範提供 LLM-friendly endpoint：
+
+- [`llms.txt`](llms.txt) —— 所有頁面的精簡索引 (index)
+- [`llms-full.txt`](llms-full.txt) —— 所有頁面串接成的單一檔案
+- 任何頁面在 URL 後面加上 `/index.md` 就能取得 raw Markdown
+  （例如 [`getting-started/index.md`](getting-started/index.md)）。
+
+如果你是讀這頁的 agent，建議用 `llms-full.txt` 一次拿到完整 context，
+或是抓特定頁面的 `*/index.md` 路徑。
+
+```
+
+```text
+<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:46:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Getting Started — 快速開始
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+## 安裝 skill
+
+--8<-- "_snippets/install.md"
+
+這會把這個 repo 中 `skills/local/` 與 `skills/vendor/` 底下的東西，
+全部安裝到你 project 的 `.agents/skills/`。
+
+## 渲染 (render) repo 自己的 backlog
+
+如果你想看這個 repo TODO 清單的看板 (kanban) 視圖：
+
+\```bash
+git clone https://github.com/daviddwlee84/agent-skills
+cd agent-skills
+make kanban
+\```
+
+`make kanban` 會跑 [`scripts/todo-kanban.sh`](reference/scripts.md#todo-kanbansh)，
+驗證 [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)
+並印出依 lane 分組的 Markdown 看板。
+
+## 在本機建構 docs
+
+你正在讀的這個 docs 站是個
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) 站。
+本機預覽：
+
+\```bash
+# 在 repo 根目錄
+uv sync --extra docs
+uv run mkdocs serve
+\```
+
+然後打開 <http://127.0.0.1:8000/>。
+
+要產生靜態站 (GitHub Pages 服務的就是這個產物)：
+
+\```bash
+uv run mkdocs build
+\```
+
+`make docs-serve` 跟 `make docs-build` 是這兩個指令的便利包裝。
+
+## 把 project-knowledge-harness skill 套到你自己的 project
+
+如果你只想要把 TODO + backlog + pitfalls 的結構帶到另一個 repo，
+內建的 init script 一行搞定：
+
+\```bash
+git clone https://github.com/daviddwlee84/agent-skills /tmp/agent-skills
+/tmp/agent-skills/skills/local/project-knowledge-harness/scripts/init.sh \
+  --target /path/to/your/project \
+  --project-name "Your Project" \
+  --deployment chezmoi   # 或 npm | pip | docker | none
+\```
+
+script 做了什麼、支援哪些 flag，請看
+[`project-knowledge-harness` 頁面](skills/project-knowledge-harness.md)。
+
+```
+
+```text
+<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:46:38Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Conventions — 慣例
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這些是這個 repo 中每一個 local skill 都遵守的規則。它們存在的目的：
+讓透過 `npx skills` 出貨的 package 維持可預測，新增 skill 是個機械式
+(mechanical) 的動作，而不是一場設計練習。
+
+## Local skill 佈局 (layout)
+
+每個 `skills/local/<skill>/` 目錄應該包含：
+
+- **`SKILL.md`** —— 必要檔案，包含 YAML frontmatter（`name`、`description`）
+  以及遵循
+  [agentskills.io best practices](https://agentskills.io/skill-creation/best-practices)
+  的內文（精簡的 SKILL.md，控制在 ~500 行以內；偏好預設值勝過選單；
+  程序 (procedure) 勝過宣告 (declaration)）。
+- **`assets/`** —— skill 會複製到目標 project 的樣板 (template)
+  （例如 `TODO.md.template`、`pitfall-doc.md.template`）。
+- **`scripts/`** —— agent 應該調用的可執行輔助 script，避免在對話裡
+  重新實作邏輯。Bash 3.2 相容（這樣才能在沒裝 homebrew bash 的
+  原生 macOS 上跑）。
+- **`references/`** —— agent 按需載入的長篇資料（決策表、schema
+  快查表、anti-pattern 列表）。把細節推到這裡，避免 `SKILL.md` 變肥。
+
+## 把 script 鏡射 (mirror) 到頂層 `scripts/`
+
+當一個 skill 出貨的 script 同時也是這個 repo 自己想直接跑的（目前只有
+[`project-knowledge-harness`](skills/project-knowledge-harness.md)），
+就把它複製到頂層的 [`scripts/`](reference/scripts.md) 目錄，這樣
+`make` target 跟 CI 才能直接調用。canonical 副本仍然保留在 skill 內，
+這樣透過 `npx skills` 出貨的 package 才能保持自包含 (self-contained)。
+
+這對副本必須維持 byte-identical。repo 目前還沒在 CI 強制檢查；
+你改一邊，要在同一個 commit 內改另一邊。
+
+## Vendor skill 佈局
+
+`skills/vendor/<skill>/` 完全鏡射 upstream 的佈局。**不要在原地編輯**
+vendored skill —— 修改會被 `make sync` 蓋掉。如果你需要客製化某個 vendored
+skill，把它 fork 到 `skills/local/`，然後更新
+[`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+拿掉那個 upstream 條目。
+
+## 文件 (Documentation)
+
+每個 local skill 也應該在 `docs/skills/<skill>.md` 有一頁。skill 的
+`SKILL.md` 是給 agent 看的（精簡、針對機器）；`docs/skills/<skill>.md`
+是給準備決定要不要用它的人看的。兩個介面 (surface) 都有價值 —— 不要
+試圖把它們合併。
+
+Agent 按需載入的長篇 reference (`skills/local/<skill>/references/*.md`)
+當受眾擴及瀏覽 docs 站的人時，可以鏡射或摘要到 `docs/reference/`，
+但 canonical 副本仍然放在 `SKILL.md` 旁邊。
+
+## 個人塗鴉區 (scratch area)
+
+repo 根目錄的 `Collections.md` 跟 `notes/` 是維護者的個人塗鴉空間，
+**刻意**不在發布的 docs 站、也不在 agent 看得到的介面內。不要從
+`SKILL.md` 或任何 docs 頁面連結進去。
+
+```
+
+```text
+<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:46:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Changelog
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁摘要值得標註的變更。每天的 commit 歷史在
+[git log](https://github.com/daviddwlee84/agent-skills/commits/main)；
+這個檔案只挑里程碑 (milestone)。
+
+## Unreleased
+
+- 用 `mkdocs-llmstxt` 跟 `mkdocs-copy-to-llm` 啟動了一個
+  [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) docs 站，
+  可部署到 GitHub Pages。
+- 新增 `scripts/add-todo.sh` 用來結構化插入 TODO，以及
+  `scripts/sweep-inbox.sh` 把 `backlog/inbox.md` 的零散捕獲做分流
+  (triage)。詳見 [Project memory workflow](workflows/project-memory.md)。
+- 新增 [Downstream docs stack recipe](reference/docs-stack-recipe.md)，
+  讓使用我們 skill 的 project 可以鏡射同樣的 docs setup。
+- 新增 zh-TW 雙語 docs 支援（透過 `mkdocs-static-i18n`），保留
+  「中文 (English original)」術語慣例。
+
+## 2026-04 — `project-knowledge-harness` 結構整理
+
+- 放寬 `scripts/todo-kanban.sh` 的 validator，會略過散文 (prose)、
+  blockquote、HTML 註解、`---` 分隔線、以及縮排的 sub-bullet。
+  新增 `--validate-only` 跟 `--json` flag。允許 `## Done` 之後再有額外
+  的 `## ...` heading。
+- 新增 `scripts/init.sh`，可以一行把 `TODO.md` + `backlog/` +
+  `pitfalls/` + agent 指引 + README 片段一次設置到任何目標 repo。
+- 新增 `scripts/promote-todo.sh`，原子性地把 active 條目搬到 Done，
+  並重新驗證、支援 dry-run。
+- 把 `SKILL.md` 瘦身（~350 → ~170 行），細節推到
+  `references/{tag-schema,when-to-add-docs,anti-patterns,deployment-exclusion}.md`，
+  做[漸進式揭露 (progressive disclosure)](https://agentskills.io/specification#progressive-disclosure)。
+
+## 2026-03 與更早
+
+- 最早的 vendor 系統 (`vendor.yaml`、`scripts/add-vendor.sh`、
+  `scripts/sync-vendor.sh`、`make sync` / `make sync-check`)。
+- 最早的 `project-knowledge-harness` skill（前身為 `backlog-harness`）。
+- `quantatitive-factor-researcher` persona skill。
+
+```
+
+```text
+<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:03Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:06Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+Replace stub bodies with actual zh-TW translations. Preserve terminology admonition; translate prose, drop "Translation pending" warning. Batch by section: top-level (4) → workflows (3) → reference (6) → skills/index + custom-authored skills (10) → vendored skills (16). Build after each batch.
+
+```text
+Task #15 created successfully: Translate 36 zh-TW stubs page-by-page
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:06Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #15 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/index.zh-TW.md`
+
+```text
+1	# Agent Skills
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/getting-started.zh-TW.md`
+
+```text
+1	# Getting Started
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/conventions.zh-TW.md`
+
+```text
+1	# Conventions
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/changelog.zh-TW.md`
+
+```text
+1	# Changelog
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:31Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Agent Skills
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+個人收藏的 [agent skills](https://agentskills.io/home) —— 包含自製的 skill 與從
+upstream repo 精選 (cherry-picked) 過來的 skill —— 可作為單一套件 (package) 安裝。
+
+## 安裝 (Install)
+
+--8<-- "_snippets/install.md"
+
+## 內容概覽
+
+`skills/` 底下有兩種 skill：
+
+- **`skills/local/`** —— 在這個 repo 內自製維護的 skill。索引請看
+  [Skills 總覽](skills/index.md)。
+- **`skills/vendor/`** —— 透過
+  [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+  manifest 從 upstream repo 同步過來的第三方 skill。詳見
+  [Adding vendor skills](workflows/adding-vendor-skills.md)。
+
+這個 repo 同時也是
+[`project-knowledge-harness`](skills/project-knowledge-harness.md) skill 套用在
+自己身上的活範例：[`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)、
+[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog)、
+[`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls)
+位於 repo 根目錄，搭配 [`scripts/`](reference/scripts.md) 包裝
+validator / promoter / inbox 工具組。
+
+## 接下來去哪？
+
+| 你的目的 | 該讀的頁面 |
+|---|---|
+| 安裝並試用這些 skill | [Getting Started](getting-started.md) |
+| 了解命名 / 佈局規則 | [Conventions](conventions.md) |
+| 加入第三方 skill | [Adding vendor skills](workflows/adding-vendor-skills.md) |
+| 自己寫一個 local skill | [Creating local skills](workflows/creating-local-skills.md) |
+| 在你的 project 裡記錄 TODO 或 pitfall | [Project memory workflow](workflows/project-memory.md) |
+| 瀏覽現有的 skill | [Skills 總覽](skills/index.md) |
+| 為自己的 project 建立 docs 站 (site) | [Downstream docs stack recipe](reference/docs-stack-recipe.md) |
+
+## 給 AI assistant 的入口
+
+這個站點依照 [llmstxt.org](https://llmstxt.org/) 規範提供 LLM-friendly endpoint：
+
+- [`llms.txt`](llms.txt) —— 所有頁面的精簡索引 (index)
+- [`llms-full.txt`](llms-full.txt) —— 所有頁面串接成的單一檔案
+- 任何頁面在 URL 後面加上 `/index.md` 就能取得 raw Markdown
+  （例如 [`getting-started/index.md`](getting-started/index.md)）。
+
+如果你是讀這頁的 agent，建議用 `llms-full.txt` 一次拿到完整 context，
+或是抓特定頁面的 `*/index.md` 路徑。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/index.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:47:44Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Getting Started — 快速開始
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+## 安裝 skill
+
+--8<-- "_snippets/install.md"
+
+這會把這個 repo 中 `skills/local/` 與 `skills/vendor/` 底下的東西，
+全部安裝到你 project 的 `.agents/skills/`。
+
+## 渲染 (render) repo 自己的 backlog
+
+如果你想看這個 repo TODO 清單的看板 (kanban) 視圖：
+
+\```bash
+git clone https://github.com/daviddwlee84/agent-skills
+cd agent-skills
+make kanban
+\```
+
+`make kanban` 會跑 [`scripts/todo-kanban.sh`](reference/scripts.md#todo-kanbansh)，
+驗證 [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)
+並印出依 lane 分組的 Markdown 看板。
+
+## 在本機建構 docs
+
+你正在讀的這個 docs 站是個
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) 站。
+本機預覽：
+
+\```bash
+# 在 repo 根目錄
+uv sync --extra docs
+uv run mkdocs serve
+\```
+
+然後打開 <http://127.0.0.1:8000/>。
+
+要產生靜態站 (GitHub Pages 服務的就是這個產物)：
+
+\```bash
+uv run mkdocs build
+\```
+
+`make docs-serve` 跟 `make docs-build` 是這兩個指令的便利包裝。
+
+## 把 project-knowledge-harness skill 套到你自己的 project
+
+如果你只想要把 TODO + backlog + pitfalls 的結構帶到另一個 repo，
+內建的 init script 一行搞定：
+
+\```bash
+git clone https://github.com/daviddwlee84/agent-skills /tmp/agent-skills
+/tmp/agent-skills/skills/local/project-knowledge-harness/scripts/init.sh \
+  --target /path/to/your/project \
+  --project-name "Your Project" \
+  --deployment chezmoi   # 或 npm | pip | docker | none
+\```
+
+script 做了什麼、支援哪些 flag，請看
+[`project-knowledge-harness` 頁面](skills/project-knowledge-harness.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/getting-started.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:10Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Conventions — 慣例
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這些是這個 repo 中每一個 local skill 都遵守的規則。它們存在的目的：
+讓透過 `npx skills` 出貨的 package 維持可預測，新增 skill 是個機械式
+(mechanical) 的動作，而不是一場設計練習。
+
+## Local skill 佈局 (layout)
+
+每個 `skills/local/<skill>/` 目錄應該包含：
+
+- **`SKILL.md`** —— 必要檔案，包含 YAML frontmatter（`name`、`description`）
+  以及遵循
+  [agentskills.io best practices](https://agentskills.io/skill-creation/best-practices)
+  的內文（精簡的 SKILL.md，控制在 ~500 行以內；偏好預設值勝過選單；
+  程序 (procedure) 勝過宣告 (declaration)）。
+- **`assets/`** —— skill 會複製到目標 project 的樣板 (template)
+  （例如 `TODO.md.template`、`pitfall-doc.md.template`）。
+- **`scripts/`** —— agent 應該調用的可執行輔助 script，避免在對話裡
+  重新實作邏輯。Bash 3.2 相容（這樣才能在沒裝 homebrew bash 的
+  原生 macOS 上跑）。
+- **`references/`** —— agent 按需載入的長篇資料（決策表、schema
+  快查表、anti-pattern 列表）。把細節推到這裡，避免 `SKILL.md` 變肥。
+
+## 把 script 鏡射 (mirror) 到頂層 `scripts/`
+
+當一個 skill 出貨的 script 同時也是這個 repo 自己想直接跑的（目前只有
+[`project-knowledge-harness`](skills/project-knowledge-harness.md)），
+就把它複製到頂層的 [`scripts/`](reference/scripts.md) 目錄，這樣
+`make` target 跟 CI 才能直接調用。canonical 副本仍然保留在 skill 內，
+這樣透過 `npx skills` 出貨的 package 才能保持自包含 (self-contained)。
+
+這對副本必須維持 byte-identical。repo 目前還沒在 CI 強制檢查；
+你改一邊，要在同一個 commit 內改另一邊。
+
+## Vendor skill 佈局
+
+`skills/vendor/<skill>/` 完全鏡射 upstream 的佈局。**不要在原地編輯**
+vendored skill —— 修改會被 `make sync` 蓋掉。如果你需要客製化某個 vendored
+skill，把它 fork 到 `skills/local/`，然後更新
+[`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+拿掉那個 upstream 條目。
+
+## 文件 (Documentation)
+
+每個 local skill 也應該在 `docs/skills/<skill>.md` 有一頁。skill 的
+`SKILL.md` 是給 agent 看的（精簡、針對機器）；`docs/skills/<skill>.md`
+是給準備決定要不要用它的人看的。兩個介面 (surface) 都有價值 —— 不要
+試圖把它們合併。
+
+Agent 按需載入的長篇 reference (`skills/local/<skill>/references/*.md`)
+當受眾擴及瀏覽 docs 站的人時，可以鏡射或摘要到 `docs/reference/`，
+但 canonical 副本仍然放在 `SKILL.md` 旁邊。
+
+## 個人塗鴉區 (scratch area)
+
+repo 根目錄的 `Collections.md` 跟 `notes/` 是維護者的個人塗鴉空間，
+**刻意**不在發布的 docs 站、也不在 agent 看得到的介面內。不要從
+`SKILL.md` 或任何 docs 頁面連結進去。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/conventions.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Changelog
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁摘要值得標註的變更。每天的 commit 歷史在
+[git log](https://github.com/daviddwlee84/agent-skills/commits/main)；
+這個檔案只挑里程碑 (milestone)。
+
+## Unreleased
+
+- 用 `mkdocs-llmstxt` 跟 `mkdocs-copy-to-llm` 啟動了一個
+  [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) docs 站，
+  可部署到 GitHub Pages。
+- 新增 `scripts/add-todo.sh` 用來結構化插入 TODO，以及
+  `scripts/sweep-inbox.sh` 把 `backlog/inbox.md` 的零散捕獲做分流
+  (triage)。詳見 [Project memory workflow](workflows/project-memory.md)。
+- 新增 [Downstream docs stack recipe](reference/docs-stack-recipe.md)，
+  讓使用我們 skill 的 project 可以鏡射同樣的 docs setup。
+- 新增 zh-TW 雙語 docs 支援（透過 `mkdocs-static-i18n`），保留
+  「中文 (English original)」術語慣例。
+
+## 2026-04 — `project-knowledge-harness` 結構整理
+
+- 放寬 `scripts/todo-kanban.sh` 的 validator，會略過散文 (prose)、
+  blockquote、HTML 註解、`---` 分隔線、以及縮排的 sub-bullet。
+  新增 `--validate-only` 跟 `--json` flag。允許 `## Done` 之後再有額外
+  的 `## ...` heading。
+- 新增 `scripts/init.sh`，可以一行把 `TODO.md` + `backlog/` +
+  `pitfalls/` + agent 指引 + README 片段一次設置到任何目標 repo。
+- 新增 `scripts/promote-todo.sh`，原子性地把 active 條目搬到 Done，
+  並重新驗證、支援 dry-run。
+- 把 `SKILL.md` 瘦身（~350 → ~170 行），細節推到
+  `references/{tag-schema,when-to-add-docs,anti-patterns,deployment-exclusion}.md`，
+  做[漸進式揭露 (progressive disclosure)](https://agentskills.io/specification#progressive-disclosure)。
+
+## 2026-03 與更早
+
+- 最早的 vendor 系統 (`vendor.yaml`、`scripts/add-vendor.sh`、
+  `scripts/sync-vendor.sh`、`make sync` / `make sync-check`)。
+- 最早的 `project-knowledge-harness` skill（前身為 `backlog-harness`）。
+- `quantatitive-factor-researcher` persona skill。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/changelog.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:31Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:31Z)**_
+
+Batch 1 (top-level) done. Build check, then batch 2 (workflows).
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:38Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify build still passes after batch 1
+
+`uv run mkdocs build 2>&1 | tail -3`
+
+```text
+WARNING -  mkdocs_llmstxt: Page URI 'reference/todo-format.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'changelog.md' not found in the generated pages. Skipping.
+INFO    -  Documentation built in 0.99 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/adding-vendor-skills.md`
+
+```text
+1	# Adding vendor skills
+2	
+3	Vendor skills are third-party skills cherry-picked from upstream repos
+4	into [`skills/vendor/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/vendor).
+5	The [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+6	manifest tracks each upstream source plus the last-synced date and commit
+7	SHA, so re-syncing is reproducible.
+8	
+9	## Quick add
+10	
+11	```bash
+12	./scripts/add-vendor.sh owner/repo/path/to/skill
+13	
+14	# Examples
+15	./scripts/add-vendor.sh marimo-team/skills/skills/marimo-notebook
+16	./scripts/add-vendor.sh vercel-labs/agent-skills/skills/next-js
+17	./scripts/add-vendor.sh --name my-name --branch dev owner/repo/skills/some-skill
+18	
+19	# Group into a series subdir
+20	./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+21	
+22	# Or via Makefile
+23	make add-vendor SOURCE=owner/repo/path/to/skill
+24	
+25	# GitHub URLs also work
+26	./scripts/add-vendor.sh https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook
+27	```
+28	
+29	This verifies the upstream path exists, adds an entry to `vendor.yaml`, and
+30	syncs the skill immediately. Pass `--no-sync` to only add the entry without
+31	downloading.
+32	
+33	**Dependencies:** `gh` (GitHub CLI, authenticated) and `yq` (YAML processor).
+34	
+35	## Series grouping
+36	
+37	When you're vendoring a coherent set of skills around a single tech stack
+38	(e.g. Next.js + Supabase + shadcn), pass `--series <name>` so the skills
+39	land in `skills/vendor/<series>/<name>/` instead of being flat. The
+40	`series` field is recorded in `vendor.yaml` and honored by `sync-vendor.sh`.
+41	
+42	```yaml
+43	# vendor.yaml
+44	- name: nextjs
+45	  series: fullstack-nextjs              # ← optional, omit for flat layout
+46	  upstream:
+47	    owner: vercel
+48	    repo: vercel-plugin
+49	    path: skills/nextjs
+50	    branch: main
+51	  last_sync: { date: "...", commit: "..." }
+52	```
+53	
+54	This results in `skills/vendor/fullstack-nextjs/nextjs/SKILL.md`. The
+55	`npx skills@latest add` discovery does a 5-level fallback recursive
+56	search, so series subdirs are still discovered.
+57	
+58	Existing flat entries (no `series` field) keep working unchanged. Active
+59	series in this repo:
+60	
+61	- **`fullstack-nextjs`** — see [Skills overview > Fullstack Next.js series](../skills/index.md#fullstack-nextjs-series)
+62	
+63	## Manual config
+64	
+65	If you'd rather edit `vendor.yaml` by hand:
+66	
+67	```yaml
+68	- name: my-skill
+69	  upstream:
+70	    owner: org-name
+71	    repo: skills-repo
+72	    path: skills/my-skill
+73	    branch: main
+74	  last_sync:
+75	    date: ""
+76	    commit: ""
+77	```
+78	
+79	Then run `make sync` to download and stamp `last_sync`.
+80	
+81	## Check for upstream updates
+82	
+83	```bash
+84	make sync-check
+85	```
+86	
+87	This dry-runs the sync against the recorded `last_sync.commit` for each
+88	entry and prints which skills have new commits upstream. Run `make sync`
+89	to apply.
+90	
+91	## Why not just install upstream directly?
+92	
+93	`npx skills add owner/repo/path/to/skill` works one skill at a time and
+94	leaves no manifest. Vendoring into this repo gives you:
+95	
+96	- A single install command for the whole curated set
+97	  (`npx skills@latest add daviddwlee84/agent-skills/skills`).
+98	- A pinned commit per skill so a reckless upstream change doesn't surprise you.
+99	- A diff in your repo when you re-sync, which is your chance to read what
+100	  changed before accepting it.
+101	
+102	## Don't edit vendored skills in place
+103	
+104	Modifications under `skills/vendor/` get overwritten by `make sync`. If you
+105	need to customize a vendored skill, fork it into `skills/local/` and drop
+106	the upstream entry from `vendor.yaml`. See [Conventions](../conventions.md).
+107
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/creating-local-skills.md`
+
+```text
+1	# Creating local skills
+2	
+3	A local skill is a custom-authored skill maintained in this repo under
+4	[`skills/local/<skill-name>/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local).
+5	
+6	## Scaffold a new skill
+7	
+8	```bash
+9	cd skills/local
+10	npx skills@latest init [skill-name]
+11	```
+12	
+13	This creates `skills/local/<skill-name>/SKILL.md` with the required YAML
+14	frontmatter (`name`, `description`).
+15	
+16	## Required structure
+17	
+18	See [Conventions](../conventions.md) for the full layout rules. In short:
+19	
+20	- `SKILL.md` — required, lean (under ~500 lines).
+21	- `assets/` — templates the skill copies into target projects.
+22	- `scripts/` — executable helpers (Bash 3.2 compatible).
+23	- `references/` — long-form material loaded on demand.
+24	
+25	## Author the SKILL.md following agentskills.io best practices
+26	
+27	The two highest-leverage rules from the
+28	[agentskills.io best practices](https://agentskills.io/skill-creation/best-practices):
+29	
+30	1. **Procedures over declarations.** Tell the agent what to *do*, not what
+31	   to *be*. A SKILL.md that says "follow these three steps" is much more
+32	   reliable than one that says "be a careful and methodical helper".
+33	2. **Defaults over menus.** Pick one workflow as the default; offer
+34	   alternatives via flags or in `references/`. Letting the agent choose
+35	   between three equivalent options at every step is a debugging nightmare.
+36	
+37	A third rule we apply in this repo:
+38	
+39	- **Bundle the workflow as a script if you can.** If the skill keeps asking
+40	  the agent to perform the same multi-step procedure, write it as a shell
+41	  script in `scripts/` and make the SKILL.md call the script. The
+42	  [`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+43	  skill is the reference for this pattern.
+44	
+45	## Add a docs page
+46	
+47	Every local skill should also have a page under `docs/skills/<skill>.md`
+48	that explains, for a human reader, what the skill is for, when it
+49	triggers, and what it costs to use. The `SKILL.md` is the agent-facing
+50	contract; the docs page is the human-facing pitch. Both are valuable.
+51	
+52	When you create the docs page, also link it from
+53	[`docs/skills/index.md`](../skills/index.md) and from `mkdocs.yml`'s `nav:`
+54	block at the repo root.
+55	
+56	## Test by installing into a scratch project
+57	
+58	```bash
+59	mkdir /tmp/scratch && cd /tmp/scratch
+60	git init
+61	npx skills@latest add daviddwlee84/agent-skills/skills
+62	```
+63	
+64	This pulls the new skill into `.agents/skills/` of a clean project so you
+65	can verify the SKILL.md activates as you expect.
+66
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/project-memory.md`
+
+```text
+1	# Project memory workflow
+2	
+3	This page describes how to add and maintain entries in this repo's
+4	[`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md),
+5	[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog),
+6	and [`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls)
+7	directories. The same workflow applies to any project that has run
+8	[`project-knowledge-harness`'s `init.sh`](../skills/project-knowledge-harness.md).
+9	
+10	## Three ways to add a TODO
+11	
+12	| Method | Best for | Validation |
+13	|---|---|---|
+14	| **`scripts/add-todo.sh`** | Structured items where you know priority + effort | Enforced — refuses to write a malformed entry |
+15	| **`backlog/inbox.md`** | Quick captures from the maintainer; "I'll triage this later" | None — formalized later by `sweep-inbox.sh` |
+16	| **Edit `TODO.md` directly** | Bulk import; agents that are happy following the format spec | Run `make kanban` after to catch drift |
+17	
+18	`add-todo.sh` and the inbox sweeper are bundled with the
+19	[`project-knowledge-harness`](../skills/project-knowledge-harness.md) skill
+20	and mirrored into the top-level [`scripts/`](../reference/scripts.md).
+21	
+22	### Method 1 — `scripts/add-todo.sh`
+23	
+24	```bash
+25	./scripts/add-todo.sh \
+26	  --priority P3 \
+27	  --effort M \
+28	  --title "Add docs versioning" \
+29	  --description "Use mike for versioned docs"
+30	
+31	# P? items use --unknown-priority; effort can also be unknown:
+32	./scripts/add-todo.sh \
+33	  --priority "P?" \
+34	  --effort "?" \
+35	  --title "Try Rspress for docs" \
+36	  --description "Evaluate AI-native docs framework alternative"
+37	
+38	# Add a backlog research doc at the same time
+39	./scripts/add-todo.sh \
+40	  --priority P2 \
+41	  --effort L \
+42	  --title "Migrate kanban to Python" \
+43	  --description "Bash 3.2 compat is getting expensive" \
+44	  --backlog
+45	```
+46	
+47	What it does:
+48	
+49	1. Builds the canonical line for the chosen lane.
+50	2. Inserts it under the matching `## P?` heading in `TODO.md`.
+51	3. If `--backlog` is set, scaffolds `backlog/<slug>.md` from
+52	   the skill's `assets/backlog-doc.md.template` and appends
+53	   ` → [research](backlog/<slug>.md)` to the new TODO line.
+54	4. Re-runs the validator. If validation fails, the original `TODO.md` is
+55	   restored.
+56	
+57	See [`scripts/add-todo.sh --help`](../reference/scripts.md#add-todosh) for
+58	the full flag list.
+59	
+60	### Method 2 — `backlog/inbox.md`
+61	
+62	For loose captures where you don't yet know the priority or effort:
+63	
+64	```bash
+65	echo "- maybe add docs versioning with mike" >> backlog/inbox.md
+66	echo "- the find-skills bootstrap UX is rough" >> backlog/inbox.md
+67	```
+68	
+69	Anything goes in `inbox.md` — free-form prose, dashed lists, half-thoughts.
+70	The validator does **not** look at this file.
+71	
+72	When you (or an agent) are ready to triage, run:
+73	
+74	```bash
+75	./scripts/sweep-inbox.sh
+76	```
+77	
+78	The sweeper reads `inbox.md` line by line, prompts for the priority /
+79	effort / formal title / description for each one, calls `add-todo.sh`, and
+80	removes the line from the inbox once it's been formalized. Use
+81	`--dry-run` to preview without mutating either file.
+82	
+83	If you're working with an agent, the easier path is to ask it: *"sweep
+84	the inbox"* or *"clear `backlog/inbox.md`"*. The
+85	[`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+86	SKILL.md instructs the agent to invoke `sweep-inbox.sh` and to ask the
+87	maintainer for the missing fields one item at a time.
+88	
+89	### Method 3 — edit `TODO.md` directly
+90	
+91	Sometimes the fastest path. The format is small enough to memorize:
+92	
+93	```markdown
+94	## P2
+95	
+96	- [ ] **[M] Title here** — description goes after the em-dash
+97	
+98	## P?
+99	
+100	- [ ] **[?/L] Unsure-priority item** — description
+101	```
+102	
+103	After editing, run `make kanban` (or `./scripts/todo-kanban.sh --validate-only`)
+104	to catch typos before committing. The full grammar lives in
+105	[Reference → TODO format](../reference/todo-format.md).
+106	
+107	## Promoting a finished item
+108	
+109	When you ship a TODO item, in the same commit:
+110	
+111	```bash
+112	./scripts/promote-todo.sh \
+113	  --title "<substring of the item's title>" \
+114	  --summary "<one-line shipped summary>"
+115	```
+116	
+117	This atomically moves the matched active item into `## Done` with the
+118	dated `Done` syntax and re-validates. It refuses to run if the substring
+119	matches zero or more than one active item, so refine the substring if it
+120	errors out.
+121	
+122	If a `backlog/<slug>.md` exists for the item, set its `Status: shipped`
+123	in the same commit — don't delete it. Historical research often informs
+124	adjacent decisions.
+125	
+126	## When to write a `backlog/` doc
+127	
+128	Write `backlog/<slug>.md` when the conversation produced something worth
+129	re-reading later: research notes, design trade-offs, error traces from a
+130	failed spike, vendor comparison tables. The TODO line is the *index*;
+131	the backlog doc is the *content*.
+132	
+133	A useful filter: *"if I came back to this in three months with no memory,
+134	would the TODO line alone be enough?"* If no, write the backlog doc.
+135	
+136	The skill's [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
+137	has the full decision tree.
+138	
+139	## When to write a `pitfalls/` doc
+140	
+141	Write `pitfalls/<symptom-slug>.md` immediately after debugging something
+142	non-obvious that could plausibly happen again. The title should be the
+143	**symptom** (what you typed into a search bar), not the root cause.
+144	
+145	Copy verbatim error messages — never paraphrase, it kills grep-ability.
+146	
+147	If the trap is severe (silent data corruption, cross-machine recurrence,
+148	non-obvious workaround), graduate it to a Hard invariant in `AGENTS.md` /
+149	`CLAUDE.md`. The pitfall doc stays as the historical record; the
+150	invariant is the rule that prevents recurrence.
+151
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/adding-vendor-skills.zh-TW.md`
+
+```text
+1	# Adding vendor skills
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:44Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/creating-local-skills.zh-TW.md`
+
+```text
+1	# Creating local skills
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:48:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/workflows/project-memory.zh-TW.md`
+
+```text
+1	# Project memory workflow
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:49:18Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Adding vendor skills — 加入 vendor skill
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+Vendor skill 是從 upstream repo 精選 (cherry-picked) 進
+[`skills/vendor/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/vendor)
+的第三方 skill。
+[`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+這個 manifest 追蹤每個 upstream 來源、最後同步日期、commit SHA，
+讓重新同步可重現。
+
+## 快速加入 (Quick add)
+
+\```bash
+./scripts/add-vendor.sh owner/repo/path/to/skill
+
+# Examples
+./scripts/add-vendor.sh marimo-team/skills/skills/marimo-notebook
+./scripts/add-vendor.sh vercel-labs/agent-skills/skills/next-js
+./scripts/add-vendor.sh --name my-name --branch dev owner/repo/skills/some-skill
+
+# 用 series 子目錄分組 (group)
+./scripts/add-vendor.sh --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+
+# 或透過 Makefile
+make add-vendor SOURCE=owner/repo/path/to/skill
+
+# GitHub URL 也可以
+./scripts/add-vendor.sh https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook
+\```
+
+這會驗證 upstream 路徑存在、把條目寫進 `vendor.yaml`、並立即同步該
+skill。傳 `--no-sync` 可以只新增條目而不下載。
+
+**依賴項目 (Dependencies)：** `gh`（已認證的 GitHub CLI）跟 `yq`
+（YAML processor）。
+
+## Series 分組 (grouping)
+
+當你要 vendor 一組圍繞同一個技術組合 (stack) 的 skill（例如 Next.js +
+Supabase + shadcn），傳 `--series <name>`，這樣 skill 會落到
+`skills/vendor/<series>/<name>/` 而不是平鋪 (flat) 結構。`series`
+欄位記錄在 `vendor.yaml`，`sync-vendor.sh` 會尊重它。
+
+\```yaml
+# vendor.yaml
+- name: nextjs
+  series: fullstack-nextjs              # ← 可選，省略代表平鋪佈局
+  upstream:
+    owner: vercel
+    repo: vercel-plugin
+    path: skills/nextjs
+    branch: main
+  last_sync: { date: "...", commit: "..." }
+\```
+
+結果是 `skills/vendor/fullstack-nextjs/nextjs/SKILL.md`。
+`npx skills@latest add` 的探索做 5 層 fallback 遞迴搜尋，
+所以 series 子目錄一樣會被找到。
+
+既有的平鋪條目（沒有 `series` 欄位）行為不變。這個 repo 目前活躍的 series：
+
+- **`fullstack-nextjs`** —— 詳見 [Skills 總覽 > Fullstack Next.js series](../skills/index.md#fullstack-nextjs-series)
+
+## 手動 config
+
+如果你比較想直接編輯 `vendor.yaml`：
+
+\```yaml
+- name: my-skill
+  upstream:
+    owner: org-name
+    repo: skills-repo
+    path: skills/my-skill
+    branch: main
+  last_sync:
+    date: ""
+    commit: ""
+\```
+
+接著跑 `make sync` 下載並寫入 `last_sync` 戳記。
+
+## 檢查 upstream 是否有更新
+
+\```bash
+make sync-check
+\```
+
+這會對每個條目記錄的 `last_sync.commit` 做 dry-run，並印出哪些 skill
+有 upstream 新 commit。跑 `make sync` 套用更新。
+
+## 為什麼不直接從 upstream 安裝？
+
+`npx skills add owner/repo/path/to/skill` 一次只裝一個 skill，
+而且不留 manifest。把 skill vendor 進這個 repo 帶來：
+
+- 整套精選集合的單一安裝指令
+  (`npx skills@latest add daviddwlee84/agent-skills/skills`)。
+- 每個 skill 都鎖定 (pin) 某個 commit，避免上游粗糙更新時被打到。
+- 重新同步時 repo 會出現 diff，那就是你閱讀這次變更、決定要不要接受
+  的時機。
+
+## 不要在原地編輯 vendored skill
+
+`skills/vendor/` 底下的修改會被 `make sync` 蓋掉。如果你需要客製化
+某個 vendored skill，把它 fork 到 `skills/local/`，然後從
+`vendor.yaml` 拿掉那個 upstream 條目。詳見
+[Conventions](../conventions.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/workflows/adding-vendor-skills.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:49:37Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Creating local skills — 建立 local skill
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+Local skill 是這個 repo 內、放在
+[`skills/local/<skill-name>/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local)
+的自製 skill。
+
+## 起手新 skill
+
+\```bash
+cd skills/local
+npx skills@latest init [skill-name]
+\```
+
+這會建立 `skills/local/<skill-name>/SKILL.md`，包含必要的 YAML
+frontmatter（`name`、`description`）。
+
+## 必要結構
+
+完整佈局規則見 [Conventions](../conventions.md)。簡言之：
+
+- `SKILL.md` —— 必要，精簡（控制在 ~500 行以內）。
+- `assets/` —— skill 複製到目標 project 的 template。
+- `scripts/` —— 可執行輔助 (Bash 3.2 相容)。
+- `references/` —— 按需載入的長篇資料。
+
+## 依照 agentskills.io best practices 寫 SKILL.md
+
+[agentskills.io best practices](https://agentskills.io/skill-creation/best-practices)
+中槓桿最大的兩條：
+
+1. **程序勝過宣告 (Procedures over declarations)。** 告訴 agent 該**做什麼**，
+   不要告訴它**該成為誰**。寫「跟著這三步」遠比寫
+   「要當一個謹慎、有條理的助手」可靠。
+2. **預設勝過選單 (Defaults over menus)。** 挑一條工作流程當預設；
+   其他選項透過 flag 或 `references/` 提供。每一步都讓 agent 在三個
+   等價選項間挑，是除錯惡夢。
+
+我們在這個 repo 套用的第三條：
+
+- **能寫成 script 就寫成 script。** 如果 skill 一直在叫 agent 做同樣的
+  多步驟程序，乾脆把它寫成 `scripts/` 下的 shell script，然後讓
+  SKILL.md 去呼叫該 script。
+  [`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+  skill 是這個 pattern 的範本。
+
+## 加一頁 docs
+
+每個 local skill 也應該在 `docs/skills/<skill>.md` 有一頁，
+向人類讀者說明這個 skill 是做什麼用的、何時會觸發、用它的成本是什麼。
+`SKILL.md` 是面向 agent 的契約；docs 頁面是面向人類的推銷。
+兩者都有價值。
+
+建立 docs 頁面時，也要從
+[`docs/skills/index.md`](../skills/index.md) 連結它，並加進 repo 根目錄
+`mkdocs.yml` 的 `nav:` 區段。
+
+## 用一個 scratch project 來測試安裝
+
+\```bash
+mkdir /tmp/scratch && cd /tmp/scratch
+git init
+npx skills@latest add daviddwlee84/agent-skills/skills
+\```
+
+這會把新 skill 拉進一個乾淨 project 的 `.agents/skills/`，讓你驗證
+SKILL.md 是否如預期被觸發。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/workflows/creating-local-skills.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:20Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Project memory workflow — 專案記憶工作流程
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁說明如何在這個 repo 的
+[`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)、
+[`backlog/`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog)、
+[`pitfalls/`](https://github.com/daviddwlee84/agent-skills/tree/main/pitfalls)
+裡新增與維護條目。同樣的工作流程也適用於任何跑過
+[`project-knowledge-harness` 的 `init.sh`](../skills/project-knowledge-harness.md)
+的 project。
+
+## 三種新增 TODO 的方式
+
+| 方式 | 適用情境 | 驗證 |
+|---|---|---|
+| **`scripts/add-todo.sh`** | 已知 priority + effort 的結構化條目 | 強制執行 —— 拒絕寫入格式不符的條目 |
+| **`backlog/inbox.md`** | 維護者快速捕獲；「之後再分流 (triage)」 | 無 —— 之後由 `sweep-inbox.sh` 形式化 |
+| **直接編輯 `TODO.md`** | 大量導入；熟悉格式規範的 agent | 編輯後跑 `make kanban` 抓 drift |
+
+`add-todo.sh` 跟 inbox sweeper 隨
+[`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+skill 出貨，並鏡射到頂層 [`scripts/`](../reference/scripts.md)。
+
+### 方式 1 — `scripts/add-todo.sh`
+
+\```bash
+./scripts/add-todo.sh \
+  --priority P3 \
+  --effort M \
+  --title "Add docs versioning" \
+  --description "Use mike for versioned docs"
+
+# P? 條目用 --unknown-priority；effort 也可以是 unknown：
+./scripts/add-todo.sh \
+  --priority "P?" \
+  --effort "?" \
+  --title "Try Rspress for docs" \
+  --description "Evaluate AI-native docs framework alternative"
+
+# 同時建立一份 backlog 研究文件
+./scripts/add-todo.sh \
+  --priority P2 \
+  --effort L \
+  --title "Migrate kanban to Python" \
+  --description "Bash 3.2 compat is getting expensive" \
+  --backlog
+\```
+
+它做的事：
+
+1. 為選擇的 lane 組出 canonical 的條目行。
+2. 插入到 `TODO.md` 中對應的 `## P?` heading 底下。
+3. 如果有 `--backlog`，從 skill 的 `assets/backlog-doc.md.template`
+   產生 `backlog/<slug>.md`，並在新 TODO 行尾追加
+   ` → [research](backlog/<slug>.md)`。
+4. 重新跑 validator。如果驗證失敗，原本的 `TODO.md` 會被還原。
+
+完整 flag 列表見 [`scripts/add-todo.sh --help`](../reference/scripts.md#add-todosh)。
+
+### 方式 2 — `backlog/inbox.md`
+
+當你還不知道 priority / effort 的零散捕獲：
+
+\```bash
+echo "- maybe add docs versioning with mike" >> backlog/inbox.md
+echo "- the find-skills bootstrap UX is rough" >> backlog/inbox.md
+\```
+
+`inbox.md` 內什麼都行 —— 散文、橫線清單、半成形的想法。
+validator **不會**看這個檔案。
+
+當你（或 agent）準備分流時：
+
+\```bash
+./scripts/sweep-inbox.sh
+\```
+
+sweeper 會逐行讀 `inbox.md`，為每行詢問 priority / effort / 正式
+title / description，呼叫 `add-todo.sh`，並在條目被形式化後從 inbox
+移除該行。`--dry-run` 可以預覽而不修改任何檔案。
+
+如果你跟 agent 一起工作，更簡單的方式是直接說：「sweep the inbox」
+或「clear `backlog/inbox.md`」。
+[`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+的 SKILL.md 會指示 agent 調用 `sweep-inbox.sh`，並一條一條跟維護者
+詢問缺失欄位。
+
+### 方式 3 — 直接編輯 `TODO.md`
+
+有時這是最快的路徑。格式小到可以背：
+
+\```markdown
+## P2
+
+- [ ] **[M] Title here** — description goes after the em-dash
+
+## P?
+
+- [ ] **[?/L] Unsure-priority item** — description
+\```
+
+編輯後跑 `make kanban`（或 `./scripts/todo-kanban.sh --validate-only`）
+在 commit 前抓出 typo。完整文法在
+[Reference → TODO format](../reference/todo-format.md)。
+
+## 完成條目的提升 (Promoting)
+
+當你交付 (ship) 一個 TODO 條目時，在同一個 commit：
+
+\```bash
+./scripts/promote-todo.sh \
+  --title "<substring of the item's title>" \
+  --summary "<one-line shipped summary>"
+\```
+
+這會原子性地把匹配到的 active 條目搬到 `## Done`，使用日期化的
+`Done` 語法，並重新驗證。如果 substring 匹配 0 個或多個 active
+條目，它會拒絕執行 —— 出錯就把 substring 寫精準一點。
+
+如果該條目有對應的 `backlog/<slug>.md`，在同一個 commit 把它的
+`Status:` 設為 `shipped` —— **不要刪除**。歷史研究經常會啟發
+相關決策。
+
+## 何時要寫 `backlog/` 文件
+
+當對話產生了之後值得回頭再讀的東西時：研究筆記、設計取捨
+(trade-off)、失敗 spike 的錯誤 trace、廠商比較表。TODO 行是 *index*；
+backlog 文件是 *內容*。
+
+一個有用的判斷準則：「**三個月後重看，光憑 TODO 那一行夠嗎？**」
+如果不夠，就寫 backlog 文件。
+
+skill 的
+[`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
+有完整決策樹。
+
+## 何時要寫 `pitfalls/` 文件
+
+當你剛除錯完一個非顯而易見、且合理可能再發生的問題時，**立刻**寫
+`pitfalls/<symptom-slug>.md`。標題應該是**症狀**（你會丟進搜尋框
+的字串），不是 root cause。
+
+逐字複製錯誤訊息 —— **不要**改寫，會殺掉 grep-ability。
+
+如果這個陷阱很嚴重（靜默資料毀損、跨機器復發、非顯而易見的
+workaround），把它升級成 `AGENTS.md` / `CLAUDE.md` 中的硬性
+不變條件 (Hard invariant)。pitfall 文件留作歷史紀錄；
+invariant 才是防止復發的規則。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/workflows/project-memory.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:24Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:25Z)**_
+
+Batch 2 (workflows) done. Batch 3: reference/ (6 pages, biggest is npx-skills-metadata at 338 lines).
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:25Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/docs-stack-recipe.md`
+
+```text
+1	# Downstream docs stack recipe
+2	
+3	> This page is now maintained as part of the `mkdocs-site-bootstrap` skill.
+4	>
+5	> The full recipe lives in the skill's reference file:
+6	> [`skills/local/mkdocs-site-bootstrap/references/docs-stack-recipe.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/docs-stack-recipe.md)
+7	>
+8	> The skill also bundles ready-to-copy templates for `mkdocs.yml`,
+9	> `pyproject.toml`, the GitHub Actions workflow, and a docs skeleton — see
+10	> the skill's [`assets/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/mkdocs-site-bootstrap/assets)
+11	> directory.
+12	
+13	## Quick start
+14	
+15	If your project doesn't yet use `mkdocs-site-bootstrap`, the easiest way to
+16	apply the same docs stack is to invoke the skill in your repo:
+17	
+18	```bash
+19	# From your project's repo root
+20	bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
+21	  --site-name "My Project" \
+22	  --repo-slug owner/repo \
+23	  --site-url https://owner.github.io/repo/
+24	```
+25	
+26	Then enable GitHub Pages and trigger the first deploy:
+27	
+28	```bash
+29	bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/enable-pages.sh \
+30	  --repo owner/repo
+31	```
+32	
+33	For details on what the stack actually includes (Material theme +
+34	mkdocs-llmstxt + mkdocs-copy-to-llm + pymdownx.snippets), the linking rules
+35	that strict mode enforces, and how the GitHub Actions workflow is wired,
+36	read the canonical reference linked above.
+37	
+38	## See also
+39	
+40	- [Skill page: mkdocs-site-bootstrap](../skills/mkdocs-site-bootstrap.md) —
+41	  detailed walkthrough of the full skill workflow including consent gates,
+42	  preferences, and existing-docs handling.
+43	- [Conventions](../conventions.md#documentation) — repo-specific rules that
+44	  apply to *this* repo's `docs/` tree.
+45
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/pitfalls.md`
+
+```text
+1	# Pitfalls format
+2	
+3	A `pitfalls/` directory captures non-obvious traps you've already debugged
+4	once, so the next agent (or future you) can grep the symptom and skip
+5	straight to the fix.
+6	
+7	This page documents the format used by
+8	[`project-knowledge-harness`](../skills/project-knowledge-harness.md). Same
+9	shape ships in any project that has run the skill's `init.sh`.
+10	
+11	## File layout
+12	
+13	```
+14	pitfalls/
+15	├── README.md                              # index + cross-reference table
+16	├── <symptom-slug-1>.md                    # one trap per file
+17	├── <symptom-slug-2>.md
+18	└── …
+19	```
+20	
+21	The slug is the **symptom**, not the root cause. You search by what you
+22	see in the error, not by the explanation you eventually learned.
+23	
+24	## Single pitfall doc — required sections
+25	
+26	Each `pitfalls/<slug>.md` should answer four questions in this order:
+27	
+28	1. **Symptom** — the verbatim error text or behavior. Copy-paste, don't
+29	   paraphrase. Paraphrasing kills `grep`.
+30	2. **Root cause** — the underlying mechanism, in one or two paragraphs.
+31	3. **Workaround** — exact steps to recover. Code blocks where applicable.
+32	4. **Prevention** — the invariant that, if applied, would have prevented
+33	   the trap. If the prevention is severe enough (silent corruption,
+34	   cross-machine recurrence), graduate it to a Hard invariant in
+35	   `AGENTS.md` / `CLAUDE.md` and link both ways.
+36	
+37	The full template lives at
+38	[`skills/local/project-knowledge-harness/assets/pitfall-doc.md.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/assets/pitfall-doc.md.template).
+39	
+40	## Title / slug guidance
+41	
+42	Write the title the way the search query would look:
+43	
+44	| ✅ Symptom-first | ❌ Root-cause-first |
+45	|---|---|
+46	| `gh-api-404-on-tree-endpoint.md` | `vendor-yaml-branch-handling.md` |
+47	| `npx-skills-empty-after-install.md` | `skills-discovery-depth-fallback.md` |
+48	| `mkdocs-strict-fails-on-relative-md.md` | `mkdocs-link-validation-rules.md` |
+49	
+50	The agent reading the pitfall is asking *"is this what just happened to
+51	me?"* — the title needs to match the question, not the answer.
+52	
+53	## When NOT to use `pitfalls/`
+54	
+55	- **Project-specific bugs that are already fixed.** Use `git log` /
+56	  CHANGELOG instead. Pitfalls are for traps that can recur.
+57	- **Onboarding gaps.** That's documentation; put it in `docs/` or the
+58	  README.
+59	- **Generic "things to watch out for" lists.** Without a specific symptom,
+60	  there's nothing to grep, so the pitfall doesn't earn its keep.
+61	
+62	## Cross-referencing
+63	
+64	`pitfalls/README.md` should keep a small table of pitfalls that live
+65	*outside* the directory — for example, a known trap explained inside a
+66	specific design doc. The table lets future agents grep the symptom
+67	keyword from one place even when the explanation lives elsewhere.
+68
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:27Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/tag-schema.md`
+
+```text
+1	# Tag schema (priority × effort)
+2	
+3	This is the human-readable mirror of
+4	[`skills/local/project-knowledge-harness/references/tag-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/tag-schema.md),
+5	which is what the agent loads on demand. Same content, available here so
+6	maintainers don't have to dig into the skill directory.
+7	
+8	Two orthogonal axes prevent the "important but unimplementable" trap.
+9	
+10	## Priority
+11	
+12	- `P1` — likely next batch (you'd reach for this if you sat down today)
+13	- `P2` — worth doing, no rush
+14	- `P3` — someday / nice-to-have
+15	- `P?` — needs evaluation first; spike before committing to a priority
+16	
+17	## Effort
+18	
+19	- `S` — under an hour
+20	- `M` — half day
+21	- `L` — multi-day
+22	- `XL` — architectural; design doc required before code
+23	
+24	## Useful combinations
+25	
+26	- `P?` + `[?/L]` — explicit "unknown of size L"; the most honest tag
+27	- `P3` + `[S]` — "small enough to slip into any free moment"
+28	- `P1` + `[XL]` — warns "you said this is urgent but it's actually huge — re-scope"
+29	
+30	## Heading and item syntax (validator-checked)
+31	
+32	[`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) enforces this exact
+33	form. The full grammar lives in [TODO format](todo-format.md). The
+34	short version:
+35	
+36	- Section headings, in order: `## P1`, `## P2`, `## P3`, `## P?`, `## Done`
+37	- Active items in `P1` / `P2` / `P3`:
+38	  `- [ ] **[Effort] Title** — description`
+39	- Active items in `P?`:
+40	  `- [ ] **[?/Effort] Title** — description`
+41	- Shipped items in `Done`:
+42	  `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
+43	- Optional trailing on active items:
+44	  `→ [research](backlog/<slug>.md)`
+45	
+46	Anything that is **not** a top-level `- [ ]` / `- ✅` item — prose
+47	paragraphs, blockquotes, HTML comments, `---` rules, indented sub-bullets —
+48	is ignored by the validator. Use this room for explanatory text without
+49	breaking machine-readability of the lanes.
+50
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:27Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/todo-format.md`
+
+```text
+1	# TODO format
+2	
+3	This page documents the exact grammar that
+4	[`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) validates. It applies
+5	to this repo's own [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)
+6	and to any project that has run
+7	[`project-knowledge-harness`'s `init.sh`](../skills/project-knowledge-harness.md).
+8	
+9	## File-level structure
+10	
+11	1. The first non-empty heading **must** be `# TODO`.
+12	2. Sections **must** appear in this order:
+13	   `## P1`, `## P2`, `## P3`, `## P?`, `## Done`.
+14	3. After `## Done`, additional `## ...` headings are allowed (e.g. a
+15	   `## Notes` section, a prune log). The validator stops checking item
+16	   format at that point.
+17	4. Anything that is **not** a top-level `- [ ]` / `- ✅` item — prose
+18	   paragraphs, blockquotes, HTML comments, `---` rules, indented
+19	   sub-bullets — is ignored. You can write inline guidance under each
+20	   section heading without breaking validation.
+21	
+22	## Item-level grammar
+23	
+24	| Lane | Format |
+25	|---|---|
+26	| `P1` / `P2` / `P3` | `- [ ] **[Effort] Title** — description` |
+27	| `P?` | `- [ ] **[?/Effort] Title** — description` |
+28	| `Done` | `- ✅ [YYYY-MM-DD] [P#/Effort] Title — summary` |
+29	
+30	Where:
+31	
+32	- **Effort** is one of `S`, `M`, `L`, `XL`. For `P?` items where effort
+33	  is also unknown, use `[?/?]`.
+34	- **Title** must not contain `*` (the validator uses the closing `**` as
+35	  a delimiter).
+36	- **Description / summary** can be free text after the em-dash
+37	  (`—`, U+2014). Plain hyphens (`-`) are not accepted.
+38	- Active items may end with ` → [research](backlog/<slug>.md)` to link
+39	  the index entry to a `backlog/` doc.
+40	- `Done` items use a date in `YYYY-MM-DD` format. UTC by convention; the
+41	  promote script uses `date -u +%Y-%m-%d`.
+42	
+43	## Examples
+44	
+45	```markdown
+46	## P1
+47	
+48	- [ ] **[S] Wire up GitHub Pages** — first deploy of the docs site
+49	
+50	## P2
+51	
+52	- [ ] **[L] Migrate kanban to Python** — Bash 3.2 compat is getting expensive → [research](backlog/kanban-python.md)
+53	
+54	## P?
+55	
+56	- [ ] **[?/M] Try Rspress for docs** — evaluate AI-native docs framework alternative
+57	- [ ] **[?/?] Skill-set lint** — vague idea, needs scoping
+58	
+59	## Done
+60	
+61	- ✅ [2026-04-23] [P1/M] Restructure project-knowledge-harness — looser validator, init/promote scripts, references/ progressive disclosure
+62	```
+63	
+64	## Tools that depend on this format
+65	
+66	- [`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) — validator and
+67	  Markdown / JSON board renderer.
+68	- [`scripts/promote-todo.sh`](scripts.md#promote-todosh) — atomic move
+69	  from active lane to `## Done`.
+70	- [`scripts/add-todo.sh`](scripts.md#add-todosh) — structured insert into
+71	  the right lane.
+72	- [`scripts/sweep-inbox.sh`](scripts.md#sweep-inboxsh) — formalize loose
+73	  captures from `backlog/inbox.md` via repeated `add-todo.sh` calls.
+74	
+75	If you find yourself wanting a syntax that isn't here, it's worth asking
+76	whether the new shape is genuinely useful or whether it's another
+77	`IDEAS.md` file in disguise — see
+78	[`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md).
+79
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:27Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/scripts.md`
+
+```text
+1	# Bundled scripts
+2	
+3	Every script in this repo's [`scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/scripts)
+4	directory is also bundled inside the skill that owns it (so the package
+5	shipped via `npx skills` stays self-contained). The pair must stay
+6	byte-identical — see [Conventions](../conventions.md).
+7	
+8	Scripts are written in **Bash 3.2** so they run on stock macOS without
+9	homebrew bash.
+10	
+11	## Vendor system
+12	
+13	### `add-vendor.sh`
+14	
+15	```bash
+16	./scripts/add-vendor.sh owner/repo/path/to/skill
+17	./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
+18	./scripts/add-vendor.sh --name custom --branch dev owner/repo/skills/some-skill
+19	./scripts/add-vendor.sh --no-sync owner/repo/path/to/skill
+20	```
+21	
+22	Verifies the upstream path exists via `gh api`, deduplicates against
+23	existing entries in [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml),
+24	appends the new entry, and triggers `sync-vendor.sh` (skip with
+25	`--no-sync`).
+26	
+27	**Dependencies:** `gh` (authenticated) and `yq`.
+28	
+29	### `sync-vendor.sh`
+30	
+31	```bash
+32	./scripts/sync-vendor.sh           # download all vendored skills
+33	./scripts/sync-vendor.sh --check   # dry-run: report which entries have new upstream commits
+34	```
+35	
+36	Iterates `vendor.yaml`, downloads each skill via the GitHub trees API,
+37	and updates `last_sync.{date,commit}` on success. `--check` prints what
+38	would change without writing.
+39	
+40	## Project memory
+41	
+42	These ship with [`project-knowledge-harness`](../skills/project-knowledge-harness.md);
+43	the canonical copies live at
+44	[`skills/local/project-knowledge-harness/scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/project-knowledge-harness/scripts).
+45	
+46	### `todo-kanban.sh`
+47	
+48	```bash
+49	./scripts/todo-kanban.sh                    # default: TODO.md, Markdown board
+50	./scripts/todo-kanban.sh path/to/TODO.md    # explicit file
+51	./scripts/todo-kanban.sh --validate-only    # exit code only, no rendering
+52	./scripts/todo-kanban.sh --json             # machine-readable lane summary
+53	```
+54	
+55	Validates the [TODO format](todo-format.md) and renders a kanban-style
+56	board to stdout. Anything that's not a top-level `- [ ]` / `- ✅` item is
+57	ignored, so you can sprinkle prose under section headings.
+58	
+59	Exit codes: `0` valid; `1` validation failure (line number printed to
+60	stderr); `2` usage error.
+61	
+62	### `add-todo.sh`
+63	
+64	```bash
+65	./scripts/add-todo.sh \
+66	  --priority P3 \
+67	  --effort M \
+68	  --title "Add docs versioning" \
+69	  --description "Use mike for versioned docs"
+70	
+71	./scripts/add-todo.sh \
+72	  --priority "P?" \
+73	  --effort "?" \
+74	  --title "Try Rspress for docs" \
+75	  --description "Evaluate AI-native docs framework alternative"
+76	
+77	./scripts/add-todo.sh \
+78	  --priority P2 --effort L \
+79	  --title "Migrate kanban to Python" \
+80	  --description "Bash 3.2 compat is getting expensive" \
+81	  --backlog
+82	```
+83	
+84	Inserts a canonically-formatted entry into the matching `## P*` lane. With
+85	`--backlog`, also scaffolds `backlog/<slug>.md` from the skill's template
+86	and appends ` → [research](backlog/<slug>.md)` to the new line.
+87	
+88	After writing, re-runs the validator. If validation fails, the original
+89	`TODO.md` is restored.
+90	
+91	Flags:
+92	
+93	- `--priority {P1|P2|P3|P?}` — required.
+94	- `--effort {S|M|L|XL|?}` — required. `?` is only valid with `P?`.
+95	- `--title TEXT` — required. Must not contain `*`.
+96	- `--description TEXT` — required. Free-form after the em-dash.
+97	- `--backlog` — also create the backlog research doc.
+98	- `--file PATH` — TODO file (default `TODO.md`).
+99	- `--dry-run` — print the rewritten file to stdout instead of mutating.
+100	
+101	### `promote-todo.sh`
+102	
+103	```bash
+104	./scripts/promote-todo.sh \
+105	  --title "<substring of the item's title>" \
+106	  --summary "<one-line shipped summary>"
+107	```
+108	
+109	Atomically moves an active item from its lane into `## Done` with the
+110	dated `Done` syntax, then re-validates. Refuses to run if the substring
+111	matches zero or more than one active item — refine the substring.
+112	
+113	Flags:
+114	
+115	- `--title SUBSTRING` — required. Case-sensitive substring of the title.
+116	- `--summary TEXT` — required.
+117	- `--file PATH` — TODO file (default `TODO.md`).
+118	- `--date YYYY-MM-DD` — override completion date (default: today, UTC).
+119	- `--dry-run` — print to stdout, don't modify.
+120	- `--validator PATH` — override validator path (default: sibling `todo-kanban.sh`).
+121	
+122	### `sweep-inbox.sh`
+123	
+124	```bash
+125	./scripts/sweep-inbox.sh                # interactive triage of backlog/inbox.md
+126	./scripts/sweep-inbox.sh --dry-run      # preview without modifying inbox or TODO
+127	./scripts/sweep-inbox.sh --batch        # non-interactive: skip lines that need a prompt
+128	```
+129	
+130	Reads [`backlog/inbox.md`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog)
+131	line by line. For each non-empty, non-comment line it prompts for the
+132	priority / effort / formal title / description (defaulting where
+133	possible), calls `add-todo.sh`, and removes the line from the inbox once
+134	the entry is committed.
+135	
+136	`--batch` is intended for agent workflows: lines whose `priority:` /
+137	`effort:` / `title:` / `description:` are inferable get formalized
+138	automatically; ambiguous ones are left in the inbox for the next
+139	interactive sweep.
+140	
+141	Inbox-line conventions (all optional; loose lines are also accepted):
+142	
+143	```text
+144	# Comments and blank lines are ignored.
+145	- maybe add docs versioning with mike
+146	- priority=P3 effort=M title="Add docs versioning" desc="Use mike for versioned docs"
+147	- the find-skills bootstrap UX is rough
+148	```
+149	
+150	The first form requires interactive prompting. The second form is fully
+151	parseable and works in `--batch` mode.
+152	
+153	### `init.sh`
+154	
+155	Lives only inside the skill (not mirrored to top-level `scripts/`):
+156	[`skills/local/project-knowledge-harness/scripts/init.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/scripts/init.sh).
+157	
+158	```bash
+159	skills/local/project-knowledge-harness/scripts/init.sh \
+160	  --target /path/to/project \
+161	  --project-name "My Project" \
+162	  --deployment chezmoi   # or npm | pip | docker | none
+163	```
+164	
+165	One-shot setup of `TODO.md` + `backlog/` + `pitfalls/` + agent guidance
+166	snippet + README snippet for any target repo. Idempotent. See
+167	[`project-knowledge-harness`](../skills/project-knowledge-harness.md) for
+168	the full flag list.
+169
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:28Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/npx-skills-metadata.md`
+
+```text
+1	# How `npx skills` reads catalog metadata
+2	
+3	This page captures the verified mechanism behind the grouped install UI
+4	of `npx skills@latest add ...`. Everything below was confirmed by reading
+5	the actual source of the npm package (`vercel-labs/skills`,
+6	[`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)
+7	and [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts))
+8	and the official [Claude Code plugin-marketplaces docs](https://code.claude.com/docs/en/plugin-marketplaces).
+9	
+10	## TL;DR for this repo
+11	
+12	- The grouped picker UI you see when running
+13	  `npx skills@latest add daviddwlee84/agent-skills/skills` is driven by
+14	  `skills/.claude-plugin/marketplace.json` — **inside** the `skills/`
+15	  directory, not at the repo root.
+16	- Every group header is `kebabToTitle(plugins[].name)`. Skills not listed
+17	  under any plugin fall through to the **Other** group.
+18	- Edit the manifest by hand; run `make marketplace` (= `bash
+19	  scripts/validate-marketplace.sh`) to catch broken paths, duplicates, or
+20	  on-disk skills that would silently fall under "Other".
+21	- We do **not** ship `.claude-plugin/plugin.json` — that's only for
+22	  single-plugin repos.
+23	
+24	## How the CLI resolves the manifest path
+25	
+26	The user's argument to `npx skills add` is parsed into `repo` + optional
+27	`subpath`. For this repo:
+28	
+29	```
+30	npx skills@latest add daviddwlee84/agent-skills/skills
+31	                       └────────── repo ──────────┘ └sub┘
+32	```
+33	
+34	Inside the CLI ([`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)):
+35	
+36	```ts
+37	const searchPath = subpath ? join(basePath, subpath) : basePath;
+38	// ...
+39	const pluginGroupings = await getPluginGroupings(searchPath);
+40	```
+41	
+42	So when the install command **includes** a subpath, the CLI reads the
+43	catalog from `<repo>/<subpath>/.claude-plugin/marketplace.json`.
+44	
+45	| Invocation | Where the CLI looks for the manifest |
+46	|---|---|
+47	| `npx skills add anthropics/skills` | `<repo>/.claude-plugin/marketplace.json` |
+48	| `npx skills add daviddwlee84/agent-skills/skills` | `<repo>/skills/.claude-plugin/marketplace.json` |
+49	| `npx skills add foo/bar/some/dir` | `<repo>/some/dir/.claude-plugin/marketplace.json` |
+50	
+51	This repo uses the second form because the `skills/local/` and
+52	`skills/vendor/` trees live under `skills/`, not at the repo root.
+53	
+54	!!! warning "Common pitfall"
+55	    Putting `.claude-plugin/marketplace.json` at the repo root and then
+56	    invoking the CLI with a subpath silently disables grouping — the
+57	    file at the root is never read, and every skill ends up in **Other**.
+58	    Match the manifest's location to the install command's subpath.
+59	
+60	## Manifest shape
+61	
+62	Reference: official [marketplace manifest schema](https://code.claude.com/docs/en/plugin-marketplaces).
+63	
+64	```json
+65	{
+66	  "name": "<unique-marketplace-id>",
+67	  "owner": { "name": "...", "email": "..." },
+68	  "metadata": {
+69	    "description": "...",
+70	    "version": "1.0.0",
+71	    "pluginRoot": "./"
+72	  },
+73	  "plugins": [
+74	    {
+75	      "name": "<group-name-kebab-case>",
+76	      "description": "Short description of the plugin / category",
+77	      "category": "<for Claude Code /plugin UI>",
+78	      "tags": ["...", "..."],
+79	      "source": "./",
+80	      "strict": false,
+81	      "skills": [
+82	        "./relative/path/to/skill-dir",
+83	        "./another/skill-dir"
+84	      ]
+85	    }
+86	  ]
+87	}
+88	```
+89	
+90	What the `npx skills` picker actually consumes:
+91	
+92	| Field | Used by `npx skills`? | Used by Claude Code `/plugin` UI? |
+93	|---|---|---|
+94	| `metadata.pluginRoot` | yes (resolves `source`) | yes |
+95	| `plugins[].name` | **yes — drives the group header label** | yes |
+96	| `plugins[].source` | yes (must be a string starting with `./`; object/remote sources are skipped) | yes |
+97	| `plugins[].skills[]` | yes (must start with `./`) | yes |
+98	| `plugins[].description` / `category` / `tags` / `version` / `strict` | **no — pass through** | yes |
+99	
+100	So `category` and `tags` are essentially free metadata for now: they cost
+101	nothing to include in the manifest, and any future native consumer
+102	(Claude Code's `/plugin` browser, downstream catalog tooling) can use
+103	them without us migrating the file.
+104	
+105	### What the picker actually shows for a skill row
+106	
+107	Per [`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+108	(the `groupMultiselect` call), each skill row is constructed as:
+109	
+110	```ts
+111	{
+112	  value: s,
+113	  label: getSkillDisplayName(s),        // = s.name (SKILL.md frontmatter)
+114	  hint:  s.description.slice(0, 57)+'…' // = SKILL.md description, truncated to 60 chars
+115	}
+116	```
+117	
+118	So the **only** thing the user sees per skill is `name` + truncated
+119	`description` from that skill's SKILL.md. **Nothing in `marketplace.json`
+120	is shown per-skill** — not `plugins[].description`, not `category`, not
+121	`tags`, not anything. The plugin's `name` only ever appears as the group
+122	header above the skill rows.
+123	
+124	This means: if you want to annotate / re-label / "tag as deprecated" /
+125	override the description for a single skill in the picker, the SKILL.md
+126	itself is the only knob. There is no "external annotation" mechanism in
+127	the catalog manifest.
+128	
+129	## Group header rendering — `kebabToTitle`
+130	
+131	The picker turns each plugin `name` into a header label by splitting on
+132	hyphens and titlecasing each token. So:
+133	
+134	| `plugins[].name` | UI header |
+135	|---|---|
+136	| `document-skills` | Document Skills |
+137	| `claude-api` | Claude Api |
+138	| `ml-workflow` | Ml Workflow |
+139	| `fullstack-nextjs` | Fullstack Nextjs |
+140	| `notebooks` | Notebooks |
+141	
+142	Pick names that titlecase legibly. `claude-api` → "Claude Api" is the
+143	official upstream choice and ships in the user-facing UI of
+144	`anthropics/skills`, so awkward casing is a known quirk; do not work
+145	around it with weird name fields.
+146	
+147	## "Other" — the auto-fallback group
+148	
+149	Any SKILL.md the CLI discovers under the search root that is **not**
+150	listed in any `plugins[].skills[]` entry shows up under the **Other**
+151	group header. This is how `anthropics/skills`'s `template-skill` ends up
+152	under "Other" — it's not listed in their manifest's `plugins[]`.
+153	
+154	Use this to your advantage: a skill that doesn't fit any category yet
+155	can simply be omitted from `marketplace.json` and it will still install,
+156	just under "Other". Our `make marketplace` validator emits a warning (not
+157	an error) for unlisted on-disk skills so they're easy to notice.
+158	
+159	## Path resolution rules (gotchas)
+160	
+161	- `source: "./..."` and `skills[]: "./..."` are **relative to the
+162	  marketplace root** (the directory containing `.claude-plugin/`), not
+163	  relative to the JSON file itself or the `.claude-plugin/` dir.
+164	- The CLI rejects any path that does not start with `./` — `../` and
+165	  absolute paths are not allowed (path-traversal protection in
+166	  [`isContainedIn`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)).
+167	- `metadata.pluginRoot` (optional) is prepended to every plugin's
+168	  `source`. We don't use it; we set `source: "./"` per plugin so each
+169	  plugin path resolves directly under the manifest root (`skills/`).
+170	
+171	## Reserved marketplace `name`s
+172	
+173	These cannot be used as the `name` field, per official docs:
+174	
+175	- `claude-code-marketplace`, `claude-code-plugins`,
+176	  `claude-plugins-official`
+177	- `anthropic-marketplace`, `anthropic-plugins`
+178	- `agent-skills`
+179	- `knowledge-work-plugins`, `life-sciences`
+180	- Any name that impersonates an official marketplace
+181	  (e.g. `official-claude-plugins`, `anthropic-tools-v2`)
+182	
+183	This repo's manifest uses **`daviddwlee84-skills`** — the GitHub repo
+184	folder is still allowed to be `agent-skills`; only the `name` field
+185	inside the manifest is restricted. The validator script enforces this.
+186	
+187	## Versioning
+188	
+189	- If `metadata.version` is **omitted** and the marketplace is hosted in
+190	  git, every commit is treated as a new version — users always see
+191	  whatever's on `main`. This matches `anthropics/skills`.
+192	- If `metadata.version` is **set**, users only see updates when the
+193	  number changes (semver-style).
+194	
+195	We currently set `metadata.version: "1.0.0"` as a baseline. To switch to
+196	"every commit is latest" semantics, drop the field.
+197	
+198	## `marketplace.json` vs `plugin.json`
+199	
+200	| File | Purpose | When to use |
+201	|---|---|---|
+202	| `.claude-plugin/marketplace.json` | Catalog of multiple plugins / categories | Multi-category collections (this repo, `anthropics/skills`) |
+203	| `.claude-plugin/plugin.json` | Manifest for a **single** plugin | Single-plugin repos (one bundle of skills, no grouping) |
+204	
+205	The two files are not redundant. `anthropics/skills` ships only
+206	`marketplace.json`; we do the same. A repo can technically ship both,
+207	but for a multi-category catalog like this one, `plugin.json` is
+208	unnecessary.
+209	
+210	## Cross-agent portability
+211	
+212	`npx skills` is a one-way installer: it reads the manifest, then copies
+213	SKILL.md files into each target agent's native skills directory
+214	(supported targets enumerated in
+215	[`src/types.ts`](https://github.com/vercel-labs/skills/blob/main/src/types.ts)).
+216	Other agents (OpenCode, Codex, Cursor, Aider, …) do **not** read
+217	`.claude-plugin/marketplace.json` natively — they have their own
+218	conventions (`.opencode/`, `AGENTS.md`, `.cursor/rules/`, etc.).
+219	
+220	So the trade-off is:
+221	
+222	- One `marketplace.json` is enough for cross-agent **install** via
+223	  `npx skills add`.
+224	- Native discovery in non-Claude agents requires whatever that agent
+225	  expects, separate from this manifest.
+226	
+227	If we ever need a second native catalog format, the cleanest
+228	intermediate is to start treating `marketplace.json` as a *generated*
+229	artifact from a canonical YAML and add a generator script. We have not
+230	done that yet — single-consumer hand-edit is fine.
+231	
+232	## Hiding / deprecating a skill without deleting it
+233	
+234	The CLI has a built-in hide mechanism via SKILL.md frontmatter — set
+235	`metadata.internal: true` and the skill becomes invisible in the picker
+236	while staying in the repo.
+237	
+238	Per [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts):
+239	
+240	```ts
+241	const isInternal = data.metadata?.internal === true;
+242	if (isInternal && !shouldInstallInternalSkills() && !options?.includeInternal) {
+243	  return null;
+244	}
+245	```
+246	
+247	```yaml
+248	---
+249	name: my-deprecated-skill
+250	description: ...
+251	metadata:
+252	  internal: true   # <- hides this skill from `npx skills add` picker UI
+253	---
+254	```
+255	
+256	What this does:
+257	
+258	- ✅ Skill stays in the repo, files unchanged.
+259	- ✅ Hidden from the interactive picker by default.
+260	- ✅ Still installable on direct request: `npx skills add <repo> my-deprecated-skill`
+261	  passes `includeInternal: true` so the by-name lookup finds it.
+262	- ✅ Power-user override: `INSTALL_INTERNAL_SKILLS=1 npx skills add ...`
+263	  shows internal skills in the picker as well.
+264	- ✅ Compatible with discovery elsewhere (Claude Code's auto-discovery,
+265	  this repo's docs site) — `metadata.internal` is a `npx skills` convention
+266	  only.
+267	
+268	When marking a skill as internal, also **remove its path from
+269	`plugins[].skills[]`** in `marketplace.json` — otherwise you have a dead
+270	catalog entry pointing at a hidden skill. The two settings should not
+271	coexist for the same skill.
+272	
+273	### Why not just delete it?
+274	
+275	Reasons to use `metadata.internal` over deletion:
+276	
+277	- Keep the docs page reachable (the skill still renders on the docs site).
+278	- Preserve `vendor.yaml` history and `last_sync` dates for vendored skills.
+279	- Allow opt-in installs by name during a deprecation grace period.
+280	- Keep `git log` / `git blame` continuity for future debugging.
+281	
+282	If you want it gone for good, delete the directory and remove the entry
+283	from `marketplace.json` and (for vendored skills) `vendor.yaml`.
+284	
+285	### Validator coverage (today)
+286	
+287	`scripts/validate-marketplace.sh` does **not** currently parse SKILL.md
+288	frontmatter, so it won't flag the "internal skill listed in
+289	`marketplace.json`" mistake. If we hit this in practice, the validator
+290	can be extended to:
+291	
+292	1. Parse each SKILL.md's frontmatter (e.g. via `yq` or python-frontmatter).
+293	2. Error if any path listed in `plugins[].skills[]` resolves to a skill with
+294	   `metadata.internal: true`.
+295	3. Skip the "falls under Other" warning for internal skills (they
+296	   wouldn't show up in the picker at all, so the warning is misleading).
+297	
+298	This is a deferred enhancement — see TODO if/when it becomes worth it.
+299	
+300	## Working with the manifest in this repo
+301	
+302	```bash
+303	# Validate the manifest (parses, name not reserved, all paths exist,
+304	# no duplicates, on-disk skills covered).
+305	make marketplace
+306	
+307	# Or run the script directly with verbose output.
+308	bash scripts/validate-marketplace.sh
+309	```
+310	
+311	After adding a new local or vendored skill:
+312	
+313	1. Place the SKILL.md as usual under `skills/local/<name>/` or
+314	   `skills/vendor/<name>/`.
+315	2. Open `skills/.claude-plugin/marketplace.json` and add the new path
+316	   (relative to `skills/`) to the appropriate plugin's `skills[]` array,
+317	   **or** intentionally leave it out so it falls under "Other".
+318	3. Run `make marketplace`. It will warn for unlisted skills and error
+319	   for broken paths.
+320	
+321	## Source references
+322	
+323	- `npx skills` package source:
+324	  [vercel-labs/skills](https://github.com/vercel-labs/skills) on GitHub,
+325	  npm package
+326	  [`skills`](https://www.npmjs.com/package/skills).
+327	- Manifest read logic:
+328	  [`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts).
+329	- Subpath + searchPath logic:
+330	  [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts).
+331	- Picker UI grouping:
+332	  [`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+333	  (search for `groupMultiselect` and `kebabToTitle`).
+334	- Official Claude Code docs:
+335	  [plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces),
+336	  [plugins-reference](https://code.claude.com/docs/en/plugins-reference).
+337	- Reference manifest in this repo:
+338	  [`skills/.claude-plugin/marketplace.json`](../../skills/.claude-plugin/marketplace.json).
+339
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:43Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:44Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/docs-stack-recipe.zh-TW.md`
+
+```text
+1	# Downstream docs stack recipe
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/pitfalls.zh-TW.md`
+
+```text
+1	# Pitfalls format
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:45Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/tag-schema.zh-TW.md`
+
+```text
+1	# Tag schema (priority × effort)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:46Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/todo-format.zh-TW.md`
+
+```text
+1	# TODO format
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:46Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/scripts.zh-TW.md`
+
+```text
+1	# Bundled scripts
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:50:47Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/npx-skills-metadata.zh-TW.md`
+
+```text
+1	# How `npx skills` reads catalog metadata
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:51:06Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Downstream docs stack recipe — 下游 docs 技術組合配方
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+> 這頁現在由 `mkdocs-site-bootstrap` skill 維護。
+>
+> 完整配方在該 skill 的 reference 檔案：
+> [`skills/local/mkdocs-site-bootstrap/references/docs-stack-recipe.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/docs-stack-recipe.md)
+>
+> 該 skill 也綁了現成可複製的 template 給 `mkdocs.yml`、
+> `pyproject.toml`、GitHub Actions workflow，跟 docs 骨架 (skeleton) ——
+> 詳見該 skill 的 [`assets/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/mkdocs-site-bootstrap/assets)
+> 目錄。
+
+## 快速開始 (Quick start)
+
+如果你的 project 還沒用 `mkdocs-site-bootstrap`，套用同樣 docs 技術組合
+的最簡單方式是在你的 repo 中調用該 skill：
+
+\```bash
+# 在你 project 的 repo 根目錄
+bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
+  --site-name "My Project" \
+  --repo-slug owner/repo \
+  --site-url https://owner.github.io/repo/
+\```
+
+接著啟用 GitHub Pages 並觸發第一次部署 (deploy)：
+
+\```bash
+bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/enable-pages.sh \
+  --repo owner/repo
+\```
+
+關於這個技術組合實際包含什麼 (Material theme + mkdocs-llmstxt +
+mkdocs-copy-to-llm + pymdownx.snippets)、strict mode 強制的連結規則、
+以及 GitHub Actions workflow 的接線方式，請讀上面連結的 canonical
+reference。
+
+## 另見 (See also)
+
+- [Skill 頁面: mkdocs-site-bootstrap](../skills/mkdocs-site-bootstrap.md) ——
+  完整 skill 工作流程的詳細導覽，包含 consent gate、preferences、
+  以及既有 docs 處理。
+- [Conventions](../conventions.md#documentation) —— 套用在**這個** repo
+  的 `docs/` 樹的特定規則。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/docs-stack-recipe.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:51:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Pitfalls format — Pitfalls 格式
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+`pitfalls/` 目錄收錄你已經除錯過一次的非顯而易見陷阱 (pitfall)，
+這樣下一個 agent（或未來的你）可以 grep 該症狀，直接跳到修正方式。
+
+這頁文件化
+[`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+所使用的格式。任何跑過該 skill `init.sh` 的 project 都採用同一形狀。
+
+## 檔案佈局
+
+\```
+pitfalls/
+├── README.md                              # 索引 + 交叉引用 (cross-reference) 表
+├── <symptom-slug-1>.md                    # 一個陷阱一個檔案
+├── <symptom-slug-2>.md
+└── …
+\```
+
+slug 是 **症狀 (symptom)**，不是 root cause。你以你看到的錯誤來搜尋，
+不是用最終學到的解釋來搜尋。
+
+## 單一 pitfall 文件 —— 必要區段
+
+每個 `pitfalls/<slug>.md` 應該按順序回答四個問題：
+
+1. **症狀 (Symptom)** —— 逐字 (verbatim) 的錯誤文字或行為。複製貼上，
+   **不要改寫**。改寫會殺掉 `grep`。
+2. **Root cause** —— 底層機制，一兩段話帶過。
+3. **Workaround** —— 復原的精確步驟。適用時用 code block。
+4. **預防 (Prevention)** —— 套用後可以預防陷阱的不變條件 (invariant)。
+   如果預防嚴重到（靜默毀損、跨機器復發），把它升級成
+   `AGENTS.md` / `CLAUDE.md` 的硬性 invariant，然後雙向連結。
+
+完整 template 在
+[`skills/local/project-knowledge-harness/assets/pitfall-doc.md.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/assets/pitfall-doc.md.template)。
+
+## 標題 / slug 指引
+
+把標題寫成搜尋 query 會長的樣子：
+
+| ✅ 症狀為先 | ❌ Root-cause 為先 |
+|---|---|
+| `gh-api-404-on-tree-endpoint.md` | `vendor-yaml-branch-handling.md` |
+| `npx-skills-empty-after-install.md` | `skills-discovery-depth-fallback.md` |
+| `mkdocs-strict-fails-on-relative-md.md` | `mkdocs-link-validation-rules.md` |
+
+讀 pitfall 的 agent 在問的問題是：「我剛碰到的就是這個嗎？」 ——
+標題要符合那個問題，不是答案。
+
+## 不要使用 `pitfalls/` 的時機
+
+- **已經修好的 project-specific bug。** 改用 `git log` / CHANGELOG。
+  pitfall 是給可能會復發的陷阱用的。
+- **入門 (onboarding) 缺口。** 那是文件，放在 `docs/` 或 README。
+- **沒有具體症狀的「需要注意的事項」清單。** 沒有具體症狀就沒有東西
+  可以 grep，pitfall 就沒有發揮作用。
+
+## 交叉引用 (cross-referencing)
+
+`pitfalls/README.md` 應該維護一份小表格，列出住在目錄**外**的 pitfall
+—— 例如某個設計文件中已說明的已知陷阱。表格讓未來的 agent 可以從
+一個地方 grep 症狀關鍵字，即使解釋住在別處。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/pitfalls.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:51:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Tag schema (priority × effort) — 標籤 schema (priority × effort)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這是
+[`skills/local/project-knowledge-harness/references/tag-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/tag-schema.md)
+給人類讀者看的版本（agent 按需載入的是那一份）。內容相同，
+這裡提供讓維護者不用挖進 skill 目錄。
+
+兩條正交軸 (orthogonal axis) 防止「重要但無法實作」的陷阱。
+
+## Priority
+
+- `P1` —— 大概是下一個 batch（如果你今天坐下就會著手的）
+- `P2` —— 值得做，但不急
+- `P3` —— 有空再說 / nice-to-have
+- `P?` —— 需要先評估；在決定 priority 前先做 spike
+
+## Effort
+
+- `S` —— 一小時內
+- `M` —— 半天
+- `L` —— 多天
+- `XL` —— 架構性 (architectural)；寫 code 前必須先寫設計文件
+
+## 有用的組合
+
+- `P?` + `[?/L]` —— 顯式的「未知 priority、size 為 L」；最誠實的標籤
+- `P3` + `[S]` —— 「小到任何空閒時間都能塞進去」
+- `P1` + `[XL]` —— 警告「你說緊急但其實是巨無霸 —— 重新 scope」
+
+## Heading 跟條目語法（validator 會檢查）
+
+[`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) 強制這個精確
+形式。完整文法在 [TODO format](todo-format.md)。簡短版：
+
+- Section heading，依序：`## P1`、`## P2`、`## P3`、`## P?`、`## Done`
+- `P1` / `P2` / `P3` 中的 active 條目：
+  `- [ ] **[Effort] Title** — description`
+- `P?` 中的 active 條目：
+  `- [ ] **[?/Effort] Title** — description`
+- `Done` 中的已交付 (shipped) 條目：
+  `- ✅ [YYYY-MM-DD] [P#/Effort] Title — one-line shipped summary`
+- active 條目可選的尾綴：
+  `→ [research](backlog/<slug>.md)`
+
+任何**不是**頂層 `- [ ]` / `- ✅` 條目的東西 —— 散文段落、blockquote、
+HTML 註解、`---` 分隔線、縮排的 sub-bullet —— 都會被 validator 忽略。
+利用這個彈性寫解釋性文字，不會破壞各 lane 的 machine-readability。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/tag-schema.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:52:12Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# TODO format — TODO 格式
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁文件化
+[`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) 驗證的精確文法。
+適用於這個 repo 自己的
+[`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)
+與任何跑過
+[`project-knowledge-harness` 的 `init.sh`](../skills/project-knowledge-harness.md)
+的 project。
+
+## 檔案層級結構
+
+1. 第一個非空 heading **必須**是 `# TODO`。
+2. Section **必須**按此順序出現：
+   `## P1`、`## P2`、`## P3`、`## P?`、`## Done`。
+3. `## Done` 之後，允許再有額外的 `## ...` heading（例如 `## Notes`
+   區段、prune 紀錄）。validator 會在那一刻停止檢查條目格式。
+4. 任何**不是**頂層 `- [ ]` / `- ✅` 條目的東西 —— 散文段落、
+   blockquote、HTML 註解、`---` 分隔線、縮排的 sub-bullet —— 都會
+   被忽略。你可以在每個 section heading 底下寫內聯 (inline) 指引，
+   不會破壞驗證。
+
+## 條目層級文法
+
+| Lane | 格式 |
+|---|---|
+| `P1` / `P2` / `P3` | `- [ ] **[Effort] Title** — description` |
+| `P?` | `- [ ] **[?/Effort] Title** — description` |
+| `Done` | `- ✅ [YYYY-MM-DD] [P#/Effort] Title — summary` |
+
+其中：
+
+- **Effort** 是 `S`、`M`、`L`、`XL` 之一。`P?` 條目若 effort 也未知，
+  使用 `[?/?]`。
+- **Title** 不能含 `*`（validator 用尾隨 `**` 當分隔符）。
+- **Description / summary** em-dash (`—`，U+2014) 後可以是任意文字。
+  普通連字號 (`-`) 不被接受。
+- Active 條目可以以 ` → [research](backlog/<slug>.md)` 結尾，把索引
+  條目連到 `backlog/` 文件。
+- `Done` 條目使用 `YYYY-MM-DD` 格式日期。慣例採 UTC；promote script
+  使用 `date -u +%Y-%m-%d`。
+
+## 範例
+
+\```markdown
+## P1
+
+- [ ] **[S] Wire up GitHub Pages** — first deploy of the docs site
+
+## P2
+
+- [ ] **[L] Migrate kanban to Python** — Bash 3.2 compat is getting expensive → [research](backlog/kanban-python.md)
+
+## P?
+
+- [ ] **[?/M] Try Rspress for docs** — evaluate AI-native docs framework alternative
+- [ ] **[?/?] Skill-set lint** — vague idea, needs scoping
+
+## Done
+
+- ✅ [2026-04-23] [P1/M] Restructure project-knowledge-harness — looser validator, init/promote scripts, references/ progressive disclosure
+\```
+
+## 依賴此格式的工具
+
+- [`scripts/todo-kanban.sh`](scripts.md#todo-kanbansh) —— validator 與
+  Markdown / JSON 看板渲染器 (renderer)。
+- [`scripts/promote-todo.sh`](scripts.md#promote-todosh) —— 從 active
+  lane 原子性地搬到 `## Done`。
+- [`scripts/add-todo.sh`](scripts.md#add-todosh) —— 結構化插入到對應
+  lane。
+- [`scripts/sweep-inbox.sh`](scripts.md#sweep-inboxsh) —— 透過反覆呼叫
+  `add-todo.sh` 把 `backlog/inbox.md` 的零散捕獲形式化。
+
+如果你發現自己想要這裡沒有的某種語法，值得問問新形狀是真的有用，
+還是只是另一個偽裝過的 `IDEAS.md` —— 詳見
+[`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/todo-format.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:52:58Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Bundled scripts — 附帶的 script
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這個 repo
+[`scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/scripts)
+目錄裡的每一個 script 也都被打包進擁有它的 skill 內（這樣透過
+`npx skills` 出貨的 package 才能維持自包含 (self-contained)）。
+這對副本必須保持 byte-identical —— 詳見 [Conventions](../conventions.md)。
+
+Script 用 **Bash 3.2** 寫（這樣才能在沒裝 homebrew bash 的原生 macOS 上跑）。
+
+## Vendor 系統
+
+### `add-vendor.sh`
+
+\```bash
+./scripts/add-vendor.sh owner/repo/path/to/skill
+./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill
+./scripts/add-vendor.sh --name custom --branch dev owner/repo/skills/some-skill
+./scripts/add-vendor.sh --no-sync owner/repo/path/to/skill
+\```
+
+透過 `gh api` 驗證 upstream 路徑存在、對
+[`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+中既有條目去重 (deduplicate)、追加新條目、並觸發 `sync-vendor.sh`
+（用 `--no-sync` 跳過）。
+
+**依賴項目：** `gh`（已認證）跟 `yq`。
+
+### `sync-vendor.sh`
+
+\```bash
+./scripts/sync-vendor.sh           # 下載所有 vendored skill
+./scripts/sync-vendor.sh --check   # dry-run：報告哪些條目有 upstream 新 commit
+\```
+
+迭代 `vendor.yaml`，透過 GitHub trees API 下載每個 skill，
+成功時更新 `last_sync.{date,commit}`。`--check` 印出會改變什麼但不寫入。
+
+## Project memory
+
+這些隨
+[`project-knowledge-harness`](../skills/project-knowledge-harness.md)
+出貨；canonical 副本在
+[`skills/local/project-knowledge-harness/scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/project-knowledge-harness/scripts)。
+
+### `todo-kanban.sh`
+
+\```bash
+./scripts/todo-kanban.sh                    # 預設：TODO.md，Markdown 看板
+./scripts/todo-kanban.sh path/to/TODO.md    # 顯式指定檔案
+./scripts/todo-kanban.sh --validate-only    # 只回 exit code，不渲染
+./scripts/todo-kanban.sh --json             # 機器可讀的 lane 摘要
+\```
+
+驗證 [TODO format](todo-format.md) 並渲染看板樣式 (kanban-style) 的板子
+到 stdout。任何不是頂層 `- [ ]` / `- ✅` 條目的東西都會被忽略，
+所以你可以在 section heading 底下灑點散文。
+
+Exit code：`0` 有效；`1` 驗證失敗（行號印到 stderr）；`2` 用法錯誤。
+
+### `add-todo.sh`
+
+\```bash
+./scripts/add-todo.sh \
+  --priority P3 \
+  --effort M \
+  --title "Add docs versioning" \
+  --description "Use mike for versioned docs"
+
+./scripts/add-todo.sh \
+  --priority "P?" \
+  --effort "?" \
+  --title "Try Rspress for docs" \
+  --description "Evaluate AI-native docs framework alternative"
+
+./scripts/add-todo.sh \
+  --priority P2 --effort L \
+  --title "Migrate kanban to Python" \
+  --description "Bash 3.2 compat is getting expensive" \
+  --backlog
+\```
+
+把符合 canonical 格式的條目插入到對應的 `## P*` lane。
+帶 `--backlog` 時也會從 skill template 產生 `backlog/<slug>.md`，
+並在新行尾追加 ` → [research](backlog/<slug>.md)`。
+
+寫入後重新跑 validator。如果驗證失敗，原本的 `TODO.md` 會被還原。
+
+Flag：
+
+- `--priority {P1|P2|P3|P?}` —— 必要。
+- `--effort {S|M|L|XL|?}` —— 必要。`?` 只在 `P?` 時有效。
+- `--title TEXT` —— 必要。不能含 `*`。
+- `--description TEXT` —— 必要。em-dash 後是自由形式。
+- `--backlog` —— 同時建立 backlog 研究文件。
+- `--file PATH` —— TODO 檔案 (預設 `TODO.md`)。
+- `--dry-run` —— 把改寫後的檔案印到 stdout，不修改原檔。
+
+### `promote-todo.sh`
+
+\```bash
+./scripts/promote-todo.sh \
+  --title "<substring of the item's title>" \
+  --summary "<one-line shipped summary>"
+\```
+
+原子性地把 active 條目從其 lane 搬到 `## Done`，使用日期化的
+`Done` 語法，並重新驗證。如果 substring 匹配 0 個或多於一個
+active 條目就拒絕執行 —— 把 substring 寫精準一點。
+
+Flag：
+
+- `--title SUBSTRING` —— 必要。標題的 case-sensitive substring。
+- `--summary TEXT` —— 必要。
+- `--file PATH` —— TODO 檔案 (預設 `TODO.md`)。
+- `--date YYYY-MM-DD` —— 覆寫完成日期 (預設：今天，UTC)。
+- `--dry-run` —— 印到 stdout，不修改檔案。
+- `--validator PATH` —— 覆寫 validator 路徑 (預設：sibling `todo-kanban.sh`)。
+
+### `sweep-inbox.sh`
+
+\```bash
+./scripts/sweep-inbox.sh                # backlog/inbox.md 的互動式分流
+./scripts/sweep-inbox.sh --dry-run      # 預覽不修改 inbox 或 TODO
+./scripts/sweep-inbox.sh --batch        # 非互動：跳過需要 prompt 的行
+\```
+
+逐行讀
+[`backlog/inbox.md`](https://github.com/daviddwlee84/agent-skills/tree/main/backlog)。
+對每一行非空、非註解的行，prompt 詢問 priority / effort / 正式
+title / description（盡量提供預設），呼叫 `add-todo.sh`，並在條目
+被 commit 後從 inbox 移除該行。
+
+`--batch` 是設計給 agent 工作流程：當行能推斷出 `priority:` /
+`effort:` / `title:` / `description:` 就自動形式化；模糊的留在 inbox
+等下一次互動式 sweep。
+
+Inbox 行慣例（全部可選；零散行也接受）：
+
+\```text
+# 註解跟空行被忽略。
+- maybe add docs versioning with mike
+- priority=P3 effort=M title="Add docs versioning" desc="Use mike for versioned docs"
+- the find-skills bootstrap UX is rough
+\```
+
+第一種需要互動 prompt。第二種完全可解析，在 `--batch` 模式有效。
+
+### `init.sh`
+
+只住在 skill 內（**沒有**鏡射到頂層 `scripts/`）：
+[`skills/local/project-knowledge-harness/scripts/init.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/scripts/init.sh)。
+
+\```bash
+skills/local/project-knowledge-harness/scripts/init.sh \
+  --target /path/to/project \
+  --project-name "My Project" \
+  --deployment chezmoi   # 或 npm | pip | docker | none
+\```
+
+對任何目標 repo 一次設置 `TODO.md` + `backlog/` + `pitfalls/` +
+agent 指引片段 + README 片段。Idempotent。完整 flag 列表見
+[`project-knowledge-harness`](../skills/project-knowledge-harness.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/scripts.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:53:03Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:54:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# How `npx skills` reads catalog metadata — `npx skills` 怎麼讀 catalog metadata
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁記錄 `npx skills@latest add ...` 分組安裝 UI 背後的已驗證機制。
+以下內容全部由實際閱讀 npm package 原始碼（`vercel-labs/skills`，
+[`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)
+和 [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)）
+以及官方
+[Claude Code plugin-marketplaces 文件](https://code.claude.com/docs/en/plugin-marketplaces)
+確認。
+
+## 給這個 repo 的 TL;DR
+
+- 你跑 `npx skills@latest add daviddwlee84/agent-skills/skills` 時看到的
+  分組 picker UI 是由 `skills/.claude-plugin/marketplace.json` 驅動的 ——
+  **在** `skills/` 目錄**裡面**，不是 repo 根目錄。
+- 每個分組標頭 (group header) 是 `kebabToTitle(plugins[].name)`。
+  沒被列在任何 plugin 底下的 skill 會 fall through 到 **Other** 分組。
+- 用手編輯 manifest；跑 `make marketplace`（= `bash
+  scripts/validate-marketplace.sh`）抓出壞掉的路徑、重複條目、
+  或會被靜默歸到 "Other" 的 on-disk skill。
+- 我們**不**出貨 `.claude-plugin/plugin.json` —— 那只是給單一 plugin
+  repo 用的。
+
+## CLI 怎麼解析 manifest 路徑
+
+使用者給 `npx skills add` 的引數會被解析成 `repo` + 可選的 `subpath`。
+以這個 repo 為例：
+
+\```
+npx skills@latest add daviddwlee84/agent-skills/skills
+                       └────────── repo ──────────┘ └sub┘
+\```
+
+CLI 內部
+([`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts))：
+
+\```ts
+const searchPath = subpath ? join(basePath, subpath) : basePath;
+// ...
+const pluginGroupings = await getPluginGroupings(searchPath);
+\```
+
+所以當安裝指令**包含** subpath 時，CLI 會從
+`<repo>/<subpath>/.claude-plugin/marketplace.json` 讀 catalog。
+
+| 調用 | CLI 找 manifest 的位置 |
+|---|---|
+| `npx skills add anthropics/skills` | `<repo>/.claude-plugin/marketplace.json` |
+| `npx skills add daviddwlee84/agent-skills/skills` | `<repo>/skills/.claude-plugin/marketplace.json` |
+| `npx skills add foo/bar/some/dir` | `<repo>/some/dir/.claude-plugin/marketplace.json` |
+
+這個 repo 用第二種形式，因為 `skills/local/` 跟 `skills/vendor/` 樹住在
+`skills/` 底下，不是 repo 根目錄。
+
+!!! warning "常見陷阱 (Common pitfall)"
+    把 `.claude-plugin/marketplace.json` 放在 repo 根目錄、
+    然後用帶 subpath 的指令調用 CLI，會靜默地停用分組 ——
+    根目錄的檔案永遠不會被讀，每個 skill 都會落到 **Other**。
+    讓 manifest 的位置匹配安裝指令的 subpath。
+
+## Manifest 形狀
+
+參考：官方
+[marketplace manifest schema](https://code.claude.com/docs/en/plugin-marketplaces)。
+
+\```json
+{
+  "name": "<unique-marketplace-id>",
+  "owner": { "name": "...", "email": "..." },
+  "metadata": {
+    "description": "...",
+    "version": "1.0.0",
+    "pluginRoot": "./"
+  },
+  "plugins": [
+    {
+      "name": "<group-name-kebab-case>",
+      "description": "Short description of the plugin / category",
+      "category": "<for Claude Code /plugin UI>",
+      "tags": ["...", "..."],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./relative/path/to/skill-dir",
+        "./another/skill-dir"
+      ]
+    }
+  ]
+}
+\```
+
+`npx skills` picker 實際上消費的：
+
+| 欄位 | 給 `npx skills` 用？ | 給 Claude Code `/plugin` UI 用？ |
+|---|---|---|
+| `metadata.pluginRoot` | yes (解析 `source`) | yes |
+| `plugins[].name` | **yes — 驅動分組標頭文字** | yes |
+| `plugins[].source` | yes (必須是以 `./` 開頭的字串；object/remote source 會被跳過) | yes |
+| `plugins[].skills[]` | yes (必須以 `./` 開頭) | yes |
+| `plugins[].description` / `category` / `tags` / `version` / `strict` | **no — pass through** | yes |
+
+所以 `category` 跟 `tags` 目前算是免費的 metadata：放進 manifest
+不花成本，未來任何原生消費者（Claude Code 的 `/plugin` 瀏覽器、
+下游 catalog 工具）可以用它們，我們不用搬移檔案。
+
+### picker 對每個 skill 列實際顯示什麼
+
+依
+[`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+（`groupMultiselect` 呼叫），每個 skill 列被建構為：
+
+\```ts
+{
+  value: s,
+  label: getSkillDisplayName(s),        // = s.name (SKILL.md frontmatter)
+  hint:  s.description.slice(0, 57)+'…' // = SKILL.md description, truncated to 60 chars
+}
+\```
+
+所以使用者每個 skill 看到的**只有** SKILL.md 的 `name` + 截斷的
+`description`。**`marketplace.json` 中沒有任何東西會 per-skill 顯示**
+—— 不是 `plugins[].description`，不是 `category`，不是 `tags`，什麼都不是。
+plugin 的 `name` 只會以分組標頭出現在 skill 列上方。
+
+意思是：如果你想對 picker 中單一 skill 加註解 / 改標籤 /「標為棄用」/
+覆寫 description，**SKILL.md 本身是唯一的旋鈕 (knob)**。catalog manifest
+中沒有「外部註解」機制。
+
+## 分組標頭渲染 —— `kebabToTitle`
+
+picker 把每個 plugin `name` 用連字號 (hyphen) 切開、每個 token 做
+titlecase，組成標頭文字。所以：
+
+| `plugins[].name` | UI 標頭 |
+|---|---|
+| `document-skills` | Document Skills |
+| `claude-api` | Claude Api |
+| `ml-workflow` | Ml Workflow |
+| `fullstack-nextjs` | Fullstack Nextjs |
+| `notebooks` | Notebooks |
+
+挑 titlecase 起來能讀的名字。`claude-api` → "Claude Api" 是官方
+upstream 的選擇，現役在 `anthropics/skills` 的使用者介面中出現，
+所以彆扭的 casing 是已知怪癖；不要用奇怪的 name 欄位來繞過。
+
+## "Other" —— 自動 fallback 分組
+
+CLI 在搜尋根目錄底下發現的 SKILL.md，**只要不在**任何
+`plugins[].skills[]` 條目中，都會出現在 **Other** 分組標頭底下。
+這就是為什麼 `anthropics/skills` 的 `template-skill` 落在 "Other"
+—— 因為它沒被列在他們 manifest 的 `plugins[]`。
+
+利用這點：暫時不適合任何分類的 skill，可以單純從 `marketplace.json`
+省略，它仍然會被安裝，只是落在 "Other"。我們的 `make marketplace`
+validator 對沒列出的 on-disk skill 發 warning（不是 error），
+這樣容易注意到。
+
+## 路徑解析規則（陷阱）
+
+- `source: "./..."` 跟 `skills[]: "./..."` 是**相對於 marketplace 根目錄**
+  （含 `.claude-plugin/` 的目錄）的路徑，不是相對於 JSON 檔案本身或
+  `.claude-plugin/` 目錄。
+- CLI 拒絕任何不以 `./` 開頭的路徑 —— `../` 跟絕對路徑都不允許
+  （路徑遍歷保護 (path-traversal protection) 在
+  [`isContainedIn`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)）。
+- `metadata.pluginRoot`（可選）會被前置 (prepend) 到每個 plugin 的
+  `source`。我們沒用它；我們在每個 plugin 設 `source: "./"`，這樣
+  每個 plugin 路徑直接解析在 manifest 根目錄底下 (`skills/`)。
+
+## 保留的 marketplace `name`
+
+依官方文件，這些不能用作 `name` 欄位：
+
+- `claude-code-marketplace`、`claude-code-plugins`、
+  `claude-plugins-official`
+- `anthropic-marketplace`、`anthropic-plugins`
+- `agent-skills`
+- `knowledge-work-plugins`、`life-sciences`
+- 任何冒充官方 marketplace 的名字
+  （例如 `official-claude-plugins`、`anthropic-tools-v2`）
+
+這個 repo 的 manifest 使用 **`daviddwlee84-skills`** —— GitHub repo
+資料夾仍然可以叫 `agent-skills`；只有 manifest 內的 `name` 欄位被限制。
+validator script 會強制這條。
+
+## Versioning
+
+- 如果 `metadata.version` **省略**且 marketplace 是 git-hosted，
+  每個 commit 都被當成新版本 —— 使用者永遠看到 `main` 上的東西。
+  這跟 `anthropics/skills` 一致。
+- 如果 `metadata.version` **有設**，使用者只在數字改變時看到更新
+  （semver 風格）。
+
+我們目前設 `metadata.version: "1.0.0"` 當作基線。要切到「每個 commit
+都是 latest」的語義，就拿掉這個欄位。
+
+## `marketplace.json` vs `plugin.json`
+
+| 檔案 | 目的 | 何時使用 |
+|---|---|---|
+| `.claude-plugin/marketplace.json` | 多個 plugin / 分類的 catalog | 多分類集合（這個 repo、`anthropics/skills`） |
+| `.claude-plugin/plugin.json` | **單一** plugin 的 manifest | 單一 plugin 的 repo（一捆 skill，沒分組） |
+
+兩個檔案不是冗餘的。`anthropics/skills` 只出貨 `marketplace.json`；
+我們做一樣的事。一個 repo 技術上可以兩個都出貨，但對於這種多分類
+catalog 來說，`plugin.json` 是不必要的。
+
+## Cross-agent portability
+
+`npx skills` 是個單向安裝器：它讀 manifest，然後把 SKILL.md 檔案
+複製到每個目標 agent 的原生 skills 目錄（支援的目標列在
+[`src/types.ts`](https://github.com/vercel-labs/skills/blob/main/src/types.ts)）。
+其他 agent (OpenCode、Codex、Cursor、Aider、…) **不會**原生讀
+`.claude-plugin/marketplace.json` —— 它們有自己的慣例
+(`.opencode/`、`AGENTS.md`、`.cursor/rules/` 等)。
+
+所以取捨是：
+
+- 一個 `marketplace.json` 對於透過 `npx skills add` 做 cross-agent
+  **install** 是夠用的。
+- 在非 Claude agent 中做原生發現需要那個 agent 期望的東西，跟這個
+  manifest 分開。
+
+如果哪天我們需要第二種原生 catalog 格式，最乾淨的中介方案是把
+`marketplace.json` 當成由 canonical YAML **生成 (generated)** 的產物，
+並加一個 generator script。我們還沒這樣做 —— 單一消費者手動編輯目前是 OK 的。
+
+## 不刪除而是隱藏 / 棄用 (deprecate) 一個 skill
+
+CLI 透過 SKILL.md frontmatter 內建一個隱藏機制 —— 設
+`metadata.internal: true`，skill 在 picker 中變不可見，但留在 repo 內。
+
+依 [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)：
+
+\```ts
+const isInternal = data.metadata?.internal === true;
+if (isInternal && !shouldInstallInternalSkills() && !options?.includeInternal) {
+  return null;
+}
+\```
+
+\```yaml
+---
+name: my-deprecated-skill
+description: ...
+metadata:
+  internal: true   # <- 把這個 skill 從 `npx skills add` picker UI 隱藏
+---
+\```
+
+這做的事：
+
+- ✅ Skill 留在 repo，檔案不變。
+- ✅ 預設從互動 picker 隱藏。
+- ✅ 直接請求仍可安裝：`npx skills add <repo> my-deprecated-skill`
+  傳 `includeInternal: true` 所以按名字查找會找到它。
+- ✅ 進階使用者覆寫：`INSTALL_INTERNAL_SKILLS=1 npx skills add ...`
+  也會把 internal skill 顯示在 picker 中。
+- ✅ 與其他地方的發現相容 (Claude Code 的自動發現、這個 repo 的
+  docs 站) —— `metadata.internal` 只是 `npx skills` 慣例。
+
+把 skill 標為 internal 時，也要**從 `marketplace.json` 的
+`plugins[].skills[]` 移除它的路徑** —— 不然你會有指向一個隱藏 skill
+的死 catalog 條目。同一個 skill 不應該同時有這兩種設定。
+
+### 為什麼不直接刪？
+
+用 `metadata.internal` 而不是刪除的理由：
+
+- 保留 docs 頁面可達 (skill 仍會在 docs 站渲染)。
+- 為 vendored skill 保留 `vendor.yaml` 歷史與 `last_sync` 日期。
+- 在棄用寬限期 (deprecation grace period) 允許按名字 opt-in 安裝。
+- 為未來 debug 保留 `git log` / `git blame` 連續性。
+
+如果你想要永久消失，刪除目錄、從 `marketplace.json` 移除條目、
+（vendored skill 的話）也從 `vendor.yaml` 移除。
+
+### Validator 涵蓋範圍（今日）
+
+`scripts/validate-marketplace.sh` 目前**不**解析 SKILL.md frontmatter，
+所以它不會抓出「internal skill 被列在 `marketplace.json`」這種錯誤。
+如果我們在實務上撞到這個問題，validator 可以擴充成：
+
+1. 解析每個 SKILL.md 的 frontmatter（例如透過 `yq` 或 python-frontmatter）。
+2. 如果 `plugins[].skills[]` 中的任何路徑解析到帶 `metadata.internal: true`
+   的 skill 就 error。
+3. 對 internal skill 跳過「fall under Other」的 warning（它們根本不會
+   在 picker 出現，所以 warning 是誤導的）。
+
+這是個延期的增強 —— 看 TODO，當變得值得做時再說。
+
+## 在這個 repo 裡操作 manifest
+
+\```bash
+# 驗證 manifest（解析、name 沒被保留、所有路徑存在、
+# 沒重複、on-disk skill 都有覆蓋）。
+make marketplace
+
+# 或直接跑 script 取得 verbose 輸出。
+bash scripts/validate-marketplace.sh
+\```
+
+加入新的 local 或 vendored skill 後：
+
+1. 一如往常把 SKILL.md 放在 `skills/local/<name>/` 或
+   `skills/vendor/<name>/`。
+2. 打開 `skills/.claude-plugin/marketplace.json`，把新路徑（相對於
+   `skills/`）加到對應 plugin 的 `skills[]` 陣列中，**或者**故意省略
+   讓它落到 "Other"。
+3. 跑 `make marketplace`。它會對沒列出的 skill 發 warning、對壞掉的
+   路徑發 error。
+
+## 原始碼參考
+
+- `npx skills` package 原始碼：
+  [vercel-labs/skills](https://github.com/vercel-labs/skills) on GitHub，
+  npm package
+  [`skills`](https://www.npmjs.com/package/skills)。
+- Manifest 讀取邏輯：
+  [`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)。
+- Subpath + searchPath 邏輯：
+  [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)。
+- Picker UI 分組：
+  [`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+  （搜尋 `groupMultiselect` 與 `kebabToTitle`）。
+- 官方 Claude Code 文件：
+  [plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)、
+  [plugins-reference](https://code.claude.com/docs/en/plugins-reference)。
+- 這個 repo 的參考 manifest：
+  [`skills/.claude-plugin/marketplace.json`](../../skills/.claude-plugin/marketplace.json)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/reference/npx-skills-metadata.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:54:55Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build check after batch 3 (reference)
+
+`uv run mkdocs build 2>&1 | tail -3`
+
+```text
+WARNING -  mkdocs_llmstxt: Page URI 'reference/todo-format.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'changelog.md' not found in the generated pages. Skipping.
+INFO    -  Documentation built in 1.13 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:12Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/index.md`
+
+```text
+1	# Skills overview
+2	
+3	This page indexes the skills bundled in this repo.
+4	
+5	- **Local skills** (`skills/local/`) are authored and maintained here.
+6	- **Vendored skills** (`skills/vendor/`) are cherry-picked from upstream
+7	  repos and synced via the
+8	  [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+9	  manifest — see [Adding vendor skills](../workflows/adding-vendor-skills.md).
+10	  Do not edit vendored SKILL.md files locally; changes will be clobbered
+11	  on the next `make sync`.
+12	
+13	## Local skills
+14	
+15	Custom-authored, curated to this repo's conventions (see
+16	[Conventions](../conventions.md)).
+17	
+18	| Skill | One-line | Detailed page |
+19	|---|---|---|
+20	| [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls structure with a bundled validator/init/promote toolkit | [docs](project-knowledge-harness.md) |
+21	| [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
+22	| [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
+23	| [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
+24	| [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
+25	| [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
+26	| [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |
+27	| [`agent-history-hygiene`](agent-history-hygiene.md) | Commit SpecStory transcripts + plan files with feature diffs; bootstrap pre-commit + gitleaks + redactor; rotate-first leak runbook | [docs](agent-history-hygiene.md) |
+28	| [`pueue-job-queue`](pueue-job-queue.md) | Drive Nukesor/pueue for queued/parallel/scheduled shell jobs; submit-one + DAG submitter + JSON-summary waiter; observed pueue 4.0.2 schema | [docs](pueue-job-queue.md) |
+29	
+30	## Vendored skills
+31	
+32	3rd-party skills cherry-picked because they fill a gap the local skills
+33	don't cover, or because the upstream is the canonical authority on the
+34	topic. The linked detail page shows what each skill teaches, upstream
+35	provenance, and last-sync commit is tracked in `vendor.yaml`.
+36	
+37	Vendored skills can be **flat** (`skills/vendor/<name>/`) or grouped into
+38	a **series** (`skills/vendor/<series>/<name>/`). See
+39	[Adding vendor skills](../workflows/adding-vendor-skills.md#series-grouping)
+40	for how series work.
+41	
+42	### Flat (notebooks + meta)
+43	
+44	| Skill | Upstream | Detailed page |
+45	|---|---|---|
+46	| [`marimo-notebook`](marimo-notebook.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook) | [docs](marimo-notebook.md) |
+47	| [`streamlit-to-marimo`](streamlit-to-marimo.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo) | [docs](streamlit-to-marimo.md) |
+48	| [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
+49	| [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
+50	
+51	### Fullstack Next.js series
+52	
+53	`series: fullstack-nextjs` — Next.js (App Router) + Supabase (Postgres) +
+54	shadcn/ui + Tailwind CSS + design/testing skills. All from official orgs
+55	(Vercel, vercel-labs, Supabase, Anthropic).
+56	
+57	| Skill | Upstream | Detailed page |
+58	|---|---|---|
+59	| [`nextjs`](nextjs.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs) | [docs](nextjs.md) |
+60	| [`shadcn`](shadcn.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn) | [docs](shadcn.md) |
+61	| [`react-best-practices`](react-best-practices.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/react-best-practices) | [docs](react-best-practices.md) |
+62	| [`vercel-storage`](vercel-storage.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/vercel-storage) | [docs](vercel-storage.md) |
+63	| [`supabase`](supabase.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase) | [docs](supabase.md) |
+64	| [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices) | [docs](supabase-postgres-best-practices.md) |
+65	| [`web-design-guidelines`](web-design-guidelines.md) | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines) | [docs](web-design-guidelines.md) |
+66	| [`frontend-design`](frontend-design.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | [docs](frontend-design.md) |
+67	| [`webapp-testing`](webapp-testing.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/webapp-testing) | [docs](webapp-testing.md) |
+68	
+69	For the rules every local skill follows (layout, naming, scripts,
+70	references), see [Conventions](../conventions.md). For how vendoring
+71	works end-to-end, see [Adding vendor skills](../workflows/adding-vendor-skills.md).
+72
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/anywidget.md`
+
+```text
+1	# anywidget (vendored)
+2	
+3	Vendored from
+4	[marimo-team/skills/skills/anywidget](https://github.com/marimo-team/skills/tree/main/skills/anywidget).
+5	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+6	do not edit
+7	[`skills/vendor/anywidget/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+8	locally — changes will be clobbered on the next sync.
+9	
+10	> **Note on the runtime name:** the SKILL.md frontmatter declares
+11	> `name: anywidget-generator`. Skill discovery uses the frontmatter name,
+12	> not the directory name. The directory is kept as `anywidget/` to mirror
+13	> the upstream path.
+14	
+15	## What it teaches
+16	
+17	Generating [anywidget](https://anywidget.dev/) components for marimo
+18	notebooks:
+19	
+20	- Vanilla JavaScript in `_esm` with a `render({ model, el })` function.
+21	- `_css` styling that works in both light and dark mode (via
+22	  `@media (prefers-color-scheme: dark)`).
+23	- The `model.get` / `model.set` / `model.save_changes` pattern for
+24	  syncing state between Python (`traitlets.Int(0).tag(sync=True)`) and JS.
+25	- Wrapping for marimo display: `widget = mo.ui.anywidget(MyWidget())`.
+26	- Reading `_esm` / `_css` from external files via `pathlib` when the
+27	  widget grows large.
+28	
+29	## Quick example
+30	
+31	```python
+32	import anywidget
+33	import traitlets
+34	import marimo as mo
+35	
+36	class CounterWidget(anywidget.AnyWidget):
+37	    _esm = """
+38	    function render({ model, el }) {
+39	      let count = () => model.get("number");
+40	      let btn = document.createElement("button");
+41	      btn.innerHTML = `count is ${count()}`;
+42	      btn.addEventListener("click", () => {
+43	        model.set("number", count() + 1);
+44	        model.save_changes();
+45	      });
+46	      model.on("change:number", () => {
+47	        btn.innerHTML = `count is ${count()}`;
+48	      });
+49	      el.appendChild(btn);
+50	    }
+51	    export default { render };
+52	    """
+53	    _css = "button { font-size: 14px; }"
+54	    number = traitlets.Int(0).tag(sync=True)
+55	
+56	widget = mo.ui.anywidget(CounterWidget())
+57	widget
+58	```
+59	
+60	Then from another cell, `widget.value["number"]` gives you the current count.
+61	
+62	## Related skills
+63	
+64	- [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+65	  — general marimo authoring (vendored from marimo-team).
+66	- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) — uses `mlflow-widgets`
+67	  (an anywidget-based MLflow component library) for live training charts;
+68	  this skill is what you'd reach for if you needed to build a custom
+69	  variant.
+70	
+71	## Canonical SKILL.md
+72	
+73	See
+74	[skills/vendor/anywidget/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+75	for the full triggering description and best-practices section.
+76
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/frontend-design.md`
+
+```text
+1	# frontend-design (vendored)
+2	
+3	Vendored from
+4	[anthropics/skills/skills/frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/frontend-design/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/frontend-design/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Create distinctive, production-grade frontend interfaces with high design
+14	> quality. Use this skill when the user asks to build web components, pages,
+15	> artifacts, posters, or applications (examples include websites, landing
+16	> pages, dashboards, React components, HTML/CSS layouts, or when
+17	> styling/beautifying any web UI). Generates creative, polished code and
+18	> UI design that avoids generic AI aesthetics.
+19	
+20	## What it teaches
+21	
+22	Aesthetic direction skill — encourages a bold, intentional point of view
+23	(brutally minimal, maximalist, retro-futuristic, editorial, …) and refined
+24	typography choices instead of default Inter/Arial. Anti-AI-slop guardrails.
+25	Use as the creative counterpart to [`web-design-guidelines`](web-design-guidelines.md)'s
+26	audit role.
+27	
+28	## Related fullstack-nextjs skills
+29	
+30	- [`shadcn`](shadcn.md) — components to express the chosen aesthetic
+31	- [`web-design-guidelines`](web-design-guidelines.md) — a11y/perf audit after the look is in
+32	- [`webapp-testing`](webapp-testing.md) — Playwright loop to verify the result visually
+33	
+34	## Canonical SKILL.md
+35	
+36	See
+37	[skills/vendor/fullstack-nextjs/frontend-design/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/frontend-design/SKILL.md)
+38	for the full instructions. Upstream source:
+39	[anthropics/skills](https://github.com/anthropics/skills).
+40
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/marimo-notebook.md`
+
+```text
+1	# marimo-notebook (vendored)
+2	
+3	Vendored from
+4	[marimo-team/skills/skills/marimo-notebook](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook).
+5	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+6	do not edit
+7	[`skills/vendor/marimo-notebook/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+8	locally — changes will be clobbered on the next sync.
+9	
+10	## Upstream frontmatter description
+11	
+12	> Write a marimo notebook in a Python file in the right format.
+13	
+14	## What it teaches
+15	
+16	General-purpose marimo authoring conventions — how cells, reactive
+17	dependencies, and the `.py` notebook file format work. This is the
+18	foundational skill you want loaded any time a user is writing marimo
+19	code from scratch.
+20	
+21	## Related local skills
+22	
+23	- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) — dual-mode (UI + batch
+24	  CLI) notebooks with Tyro + MLflow, built on top of these authoring
+25	  conventions.
+26	
+27	## Canonical SKILL.md
+28	
+29	See
+30	[skills/vendor/marimo-notebook/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+31	for the full instructions. Upstream source:
+32	[marimo-team/skills](https://github.com/marimo-team/skills).
+33
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/nextjs.md`
+
+```text
+1	# nextjs (vendored)
+2	
+3	Vendored from
+4	[vercel/vercel-plugin/skills/nextjs](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/nextjs/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/nextjs/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Next.js App Router expert guidance. Use when building, debugging, or
+14	> architecting Next.js applications — routing, Server Components, Server
+15	> Actions, Cache Components, layouts, middleware/proxy, data fetching,
+16	> rendering strategies, and deployment on Vercel.
+17	
+18	## What it teaches
+19	
+20	The flagship Next.js skill in this repo. Ships an 18 KB SKILL.md plus 20+
+21	reference files under `references/` (app-router-files, async-patterns,
+22	hydration-error, parallel-routes, rsc-boundaries, …) and an `overlay.yaml`
+23	metadata layer with `pathPatterns` for `app/**`, `pages/**`,
+24	`tailwind.config.*`, `tsconfig.json`. Triggers automatically when editing
+25	Next.js code.
+26	
+27	## Related fullstack-nextjs skills
+28	
+29	- [`shadcn`](shadcn.md) — UI component layer on top of Next.js
+30	- [`react-best-practices`](react-best-practices.md) — TSX-level review checklist
+31	- [`vercel-storage`](vercel-storage.md) — DB / Blob / KV integration patterns
+32	
+33	## Canonical SKILL.md
+34	
+35	See
+36	[skills/vendor/fullstack-nextjs/nextjs/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/nextjs/SKILL.md)
+37	for the full instructions. Upstream source:
+38	[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin).
+39
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:22Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:23Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/react-best-practices.md`
+
+```text
+1	# react-best-practices (vendored)
+2	
+3	Vendored from
+4	[vercel/vercel-plugin/skills/react-best-practices](https://github.com/vercel/vercel-plugin/tree/main/skills/react-best-practices)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> React best-practices reviewer for TSX files. Triggers after editing
+14	> multiple TSX components to run a condensed quality checklist covering
+15	> component structure, hooks usage, accessibility, performance, and
+16	> TypeScript patterns.
+17	
+18	## What it teaches
+19	
+20	70+ rules across 8 categories from Vercel Engineering. Includes a `validate`
+21	rule that nudges legacy CSS-in-JS / MUI / Chakra users toward shadcn/ui +
+22	Tailwind for the modern Vercel stack. Auto-triggers when editing
+23	`src/components/**/*.tsx`, `app/components/**/*.tsx` etc.
+24	
+25	## Related fullstack-nextjs skills
+26	
+27	- [`nextjs`](nextjs.md) — same upstream repo, deeper Next.js framework knowledge
+28	- [`shadcn`](shadcn.md) — component library this skill explicitly recommends
+29	
+30	## Canonical SKILL.md
+31	
+32	See
+33	[skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md)
+34	for the full instructions. Upstream source:
+35	[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin). See also
+36	[Introducing: React Best Practices (Vercel blog)](https://vercel.com/blog/introducing-react-best-practices).
+37
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:23Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/shadcn.md`
+
+```text
+1	# shadcn (vendored)
+2	
+3	Vendored from
+4	[vercel/vercel-plugin/skills/shadcn](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/shadcn/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/shadcn/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> shadcn/ui expert guidance — CLI, component installation, composition
+14	> patterns, custom registries, theming, Tailwind CSS integration, and
+15	> high-quality interface design. Use when initializing shadcn, adding
+16	> components, composing product UI, building custom registries, configuring
+17	> themes, or troubleshooting component issues.
+18	
+19	## What it teaches
+20	
+21	Covers the full shadcn workflow: `init`, `add`, `build`, `search`, `migrate`,
+22	`info`, `view`, custom registries, theming, Tailwind integration. Triggers on
+23	`components.json`, `components/ui/**`, and any `npx shadcn@latest <subcmd>`.
+24	Includes a `validate` rule warning about Base UI / Radix incompatibility with
+25	AI Elements.
+26	
+27	## Related fullstack-nextjs skills
+28	
+29	- [`nextjs`](nextjs.md) — App Router context where shadcn components live
+30	- [`web-design-guidelines`](web-design-guidelines.md) — a11y/perf review for shadcn UIs
+31	- [`frontend-design`](frontend-design.md) — aesthetic direction beyond default shadcn looks
+32	
+33	## Canonical SKILL.md
+34	
+35	See
+36	[skills/vendor/fullstack-nextjs/shadcn/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/shadcn/SKILL.md)
+37	for the full instructions. Upstream source:
+38	[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin) (shadcn was
+39	acquired by Vercel; this is the same canonical guidance redistributed under
+40	the Vercel plugin).
+41
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:24Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/skill-creator.md`
+
+```text
+1	# skill-creator (vendored)
+2	
+3	Vendored from
+4	[anthropics/skills/skills/skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator).
+5	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+6	do not edit
+7	[`skills/vendor/skill-creator/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/skill-creator/SKILL.md)
+8	locally — changes will be clobbered on the next sync.
+9	
+10	## Upstream frontmatter description
+11	
+12	> Create new skills, modify and improve existing skills, and measure
+13	> skill performance. Use when users want to create a skill from scratch,
+14	> edit, or optimize an existing skill, run evals to test a skill,
+15	> benchmark skill performance with variance analysis, or optimize a
+16	> skill's description for better triggering accuracy.
+17	
+18	## What it teaches
+19	
+20	Anthropic's own methodology for authoring skills, including:
+21	
+22	- Evaluation harness for measuring how reliably a skill's `description`
+23	  actually triggers on the prompts it should.
+24	- Benchmarking with variance analysis (repeat runs to distinguish real
+25	  gains from noise).
+26	- Optimization loops for iterating on the `description` field until
+27	  trigger rate meets target.
+28	
+29	## `skill-creator` vs local `skill-author`
+30	
+31	| Aspect | `skill-creator` (vendored, this) | [`skill-author`](skill-author.md) (local) |
+32	|---|---|---|
+33	| Focus | **Evaluation** — test cases, trigger-rate benchmarks, variance | **Authoring** — scaffolding, linting, agentskills.io best practices |
+34	| Scripts | Eval harness, benchmarking | `new-skill.sh`, `lint-skill.sh` |
+35	| When to use | After authoring, to measure & optimize | While writing the SKILL.md + references + scripts |
+36	
+37	The two are complementary — use `skill-author` to build the skill, then
+38	`skill-creator` to evaluate and tune its trigger description.
+39	
+40	## Canonical SKILL.md
+41	
+42	See
+43	[skills/vendor/skill-creator/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/skill-creator/SKILL.md)
+44	for the full instructions. Upstream source:
+45	[anthropics/skills](https://github.com/anthropics/skills).
+46
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:24Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/streamlit-to-marimo.md`
+
+```text
+1	# streamlit-to-marimo (vendored)
+2	
+3	Vendored from
+4	[marimo-team/skills/skills/streamlit-to-marimo](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo).
+5	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+6	do not edit
+7	[`skills/vendor/streamlit-to-marimo/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/streamlit-to-marimo/SKILL.md)
+8	locally — changes will be clobbered on the next sync.
+9	
+10	## Upstream frontmatter description
+11	
+12	> Convert a Streamlit app to a marimo notebook.
+13	
+14	## What it teaches
+15	
+16	Migration patterns from Streamlit's imperative, re-run-the-whole-script
+17	model to marimo's reactive DAG. Covers how `st.session_state`,
+18	`st.cache_data`, and Streamlit widgets map to marimo equivalents —
+19	typically `mo.state`, `@functools.cache` or cell-level reactivity, and
+20	`mo.ui.*`.
+21	
+22	## Related local skills
+23	
+24	- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) — if the Streamlit app
+25	  was being used as both an interactive UI and a script, the converted
+26	  marimo notebook can adopt the dual-mode pattern.
+27	
+28	## Canonical SKILL.md
+29	
+30	See
+31	[skills/vendor/streamlit-to-marimo/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/streamlit-to-marimo/SKILL.md)
+32	for the full migration checklist. Upstream source:
+33	[marimo-team/skills](https://github.com/marimo-team/skills).
+34
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/supabase.md`
+
+```text
+1	# supabase (vendored)
+2	
+3	Vendored from
+4	[supabase/agent-skills/skills/supabase](https://github.com/supabase/agent-skills/tree/main/skills/supabase)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/supabase/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Use when doing ANY task involving Supabase. Triggers: Supabase products
+14	> (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues);
+15	> client libraries and SSR integrations (supabase-js, @supabase/ssr) in
+16	> Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout,
+17	> sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase
+18	> CLI or MCP server; schema changes, migrations, security audits, Postgres
+19	> extensions (pg_graphql, pg_cron, pg_vector).
+20	
+21	## What it teaches
+22	
+23	The single canonical Supabase skill. Covers the entire Supabase surface +
+24	explicit `@supabase/ssr` Next.js patterns. Includes a security checklist for
+25	Supabase-specific traps (e.g. **never use `user_metadata` in JWT-based
+26	authorization**, deleting a user does not invalidate tokens, RLS-by-default
+27	on exposed schemas).
+28	
+29	## Related fullstack-nextjs skills
+30	
+31	- [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) — performance rules from same upstream
+32	- [`vercel-storage`](vercel-storage.md) — Vercel-side integration patterns (its pathPatterns include `supabase/**`)
+33	- [`nextjs`](nextjs.md) — App Router context where `@supabase/ssr` is used
+34	
+35	## Canonical SKILL.md
+36	
+37	See
+38	[skills/vendor/fullstack-nextjs/supabase/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase/SKILL.md)
+39	for the full instructions. Upstream source:
+40	[supabase/agent-skills](https://github.com/supabase/agent-skills).
+41
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/supabase-postgres-best-practices.md`
+
+```text
+1	# supabase-postgres-best-practices (vendored)
+2	
+3	Vendored from
+4	[supabase/agent-skills/skills/supabase-postgres-best-practices](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Postgres performance optimization and best practices from Supabase. Use
+14	> this skill when writing, reviewing, or optimizing Postgres queries, schema
+15	> designs, or database configurations.
+16	
+17	## What it teaches
+18	
+19	Performance rules across 8 categories — query performance, indexes,
+20	connection management, RLS, pooling — prioritized by impact. Each rule has
+21	incorrect-vs-correct SQL examples, query-plan analysis, and target
+22	performance metrics. Complementary to the broader [`supabase`](supabase.md)
+23	skill which covers the full product surface.
+24	
+25	## Related fullstack-nextjs skills
+26	
+27	- [`supabase`](supabase.md) — full Supabase product coverage (auth, storage, edge fns, …)
+28	- [`vercel-storage`](vercel-storage.md) — Vercel-side integration patterns
+29	
+30	## Canonical SKILL.md
+31	
+32	See
+33	[skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md)
+34	for the full instructions. Upstream source:
+35	[supabase/agent-skills](https://github.com/supabase/agent-skills).
+36
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/vercel-storage.md`
+
+```text
+1	# vercel-storage (vendored)
+2	
+3	Vendored from
+4	[vercel/vercel-plugin/skills/vercel-storage](https://github.com/vercel/vercel-plugin/tree/main/skills/vercel-storage)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Vercel storage expert guidance — Blob, Edge Config, and Marketplace
+14	> storage (Neon Postgres, Upstash Redis). Use when choosing, configuring,
+15	> or using data storage with Vercel applications.
+16	
+17	## What it teaches
+18	
+19	Storage selection + integration for Vercel apps. Notably its `pathPatterns`
+20	include `supabase/**`, `lib/supabase.*`, `prisma/schema.prisma`, `prisma/**`
+21	— so the skill auto-triggers on Supabase and Prisma projects too, not just
+22	on Vercel-native storage.
+23	
+24	## Related fullstack-nextjs skills
+25	
+26	- [`supabase`](supabase.md) — full Supabase coverage when you go beyond integration
+27	- [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) — Postgres-side performance rules
+28	
+29	## Canonical SKILL.md
+30	
+31	See
+32	[skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md)
+33	for the full instructions. Upstream source:
+34	[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin).
+35
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:26Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/web-design-guidelines.md`
+
+```text
+1	# web-design-guidelines (vendored)
+2	
+3	Vendored from
+4	[vercel-labs/agent-skills/skills/web-design-guidelines](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Review UI code for Web Interface Guidelines compliance. Use when asked
+14	> to "review my UI", "check accessibility", "audit design", "review UX",
+15	> or "check my site against best practices".
+16	
+17	## What it teaches
+18	
+19	A reviewer skill — fetches the latest Web Interface Guidelines from
+20	`vercel-labs/web-interface-guidelines` and audits files against the rule
+21	set, returning findings in `file:line` format. Covers a11y, perf, and UX.
+22	Pairs naturally with [`shadcn`](shadcn.md) and [`react-best-practices`](react-best-practices.md).
+23	
+24	## Related fullstack-nextjs skills
+25	
+26	- [`shadcn`](shadcn.md) — UI components that this skill audits
+27	- [`react-best-practices`](react-best-practices.md) — overlapping component-level review
+28	- [`frontend-design`](frontend-design.md) — aesthetic direction (this skill is the auditor; that one is the creator)
+29	
+30	## Canonical SKILL.md
+31	
+32	See
+33	[skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md)
+34	for the full instructions. Upstream source:
+35	[vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills).
+36
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:27Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/webapp-testing.md`
+
+```text
+1	# webapp-testing (vendored)
+2	
+3	Vendored from
+4	[anthropics/skills/skills/webapp-testing](https://github.com/anthropics/skills/tree/main/skills/webapp-testing)
+5	(part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).
+6	Synced via [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile);
+7	do not edit
+8	[`skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md)
+9	locally — changes will be clobbered on the next sync.
+10	
+11	## Upstream frontmatter description
+12	
+13	> Toolkit for interacting with and testing local web applications using
+14	> Playwright. Supports verifying frontend functionality, debugging UI
+15	> behavior, capturing browser screenshots, and viewing browser logs.
+16	
+17	## What it teaches
+18	
+19	Native Python Playwright workflow with a `scripts/with_server.py` helper
+20	that manages server lifecycle (multiple servers supported). Decision tree:
+21	static HTML → read selectors directly; dynamic webapp → use the helper +
+22	write a simplified Playwright script. Black-box scripts run with `--help`
+23	first to keep them out of the context window.
+24	
+25	## Related fullstack-nextjs skills
+26	
+27	- [`nextjs`](nextjs.md) — the dev server that webapp-testing drives
+28	- [`frontend-design`](frontend-design.md) — close the loop: build → screenshot → critique
+29	
+30	## Canonical SKILL.md
+31	
+32	See
+33	[skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md)
+34	for the full instructions. Upstream source:
+35	[anthropics/skills](https://github.com/anthropics/skills).
+36
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:34Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:35Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/index.zh-TW.md`
+
+```text
+1	# Skills overview
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/anywidget.zh-TW.md`
+
+```text
+1	# anywidget (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:36Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/frontend-design.zh-TW.md`
+
+```text
+1	# frontend-design (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:37Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/marimo-notebook.zh-TW.md`
+
+```text
+1	# marimo-notebook (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:37Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/nextjs.zh-TW.md`
+
+```text
+1	# nextjs (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/react-best-practices.zh-TW.md`
+
+```text
+1	# react-best-practices (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:38Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/shadcn.zh-TW.md`
+
+```text
+1	# shadcn (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:39Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/skill-creator.zh-TW.md`
+
+```text
+1	# skill-creator (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:39Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/streamlit-to-marimo.zh-TW.md`
+
+```text
+1	# streamlit-to-marimo (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:40Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/supabase.zh-TW.md`
+
+```text
+1	# supabase (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:41Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/supabase-postgres-best-practices.zh-TW.md`
+
+```text
+1	# supabase-postgres-best-practices (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:41Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/vercel-storage.zh-TW.md`
+
+```text
+1	# vercel-storage (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:42Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/web-design-guidelines.zh-TW.md`
+
+```text
+1	# web-design-guidelines (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:42Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/webapp-testing.zh-TW.md`
+
+```text
+1	# webapp-testing (vendored)
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:55:46Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:56:26Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Skills overview — Skill 總覽
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+這頁列出這個 repo 打包的所有 skill。
+
+- **Local skill** (`skills/local/`) 在這裡撰寫與維護。
+- **Vendored skill** (`skills/vendor/`) 從 upstream repo 精選 (cherry-pick)
+  過來，透過
+  [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
+  manifest 同步 —— 詳見 [Adding vendor skills](../workflows/adding-vendor-skills.md)。
+  **不要**在本機編輯 vendored 的 SKILL.md 檔；變更會在下次 `make sync`
+  被蓋掉。
+
+## Local skills
+
+自製、依本 repo 慣例維護（詳見 [Conventions](../conventions.md)）。
+
+| Skill | 一行描述 | 詳細頁面 |
+|---|---|---|
+| [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls 結構，附帶 validator/init/promote 工具組 | [docs](project-knowledge-harness.md) |
+| [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | 給 Python 策略開發用的量化因子研究 persona | [docs](quantatitive-factor-researcher.md) |
+| [`skill-author`](skill-author.md) | 依 agentskills.io best practices 撰寫新 skill；附 `new-skill.sh` 與 `lint-skill.sh` | [docs](skill-author.md) |
+| [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | 啟動 MkDocs Material 站 + GitHub Pages 部署；以 `.skills/preferences.yaml` consent-gate | [docs](mkdocs-site-bootstrap.md) |
+| [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo 雙模式 (UI + batch CLI) notebook，搭配 Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
+| [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipeline + queued experiment，metrics 自動繫結到 ephemeral commit；附 init/queue/lint helper | [docs](dvc-ml-workflow.md) |
+| [`mlflow-tracking`](mlflow-tracking.md) | 通用 MLflow skill —— sqlite + `mlflow ui`、附帶 PostgreSQL + MinIO docker stack、LLM tracing、registry、autolog | [docs](mlflow-tracking.md) |
+| [`agent-history-hygiene`](agent-history-hygiene.md) | 把 SpecStory transcript + plan 檔跟功能 diff 一起 commit；初始化 pre-commit + gitleaks + redactor；rotate-first 洩漏處理流程 | [docs](agent-history-hygiene.md) |
+| [`pueue-job-queue`](pueue-job-queue.md) | 驅動 Nukesor/pueue 做佇列 (queued) / 平行 / 排程的 shell job；submit-one + DAG submitter + JSON-summary waiter；對應 pueue 4.0.2 schema | [docs](pueue-job-queue.md) |
+
+## Vendored skills
+
+第三方 skill 之所以被精選進來，是因為它們填補 local skill 沒涵蓋的
+缺口，或者 upstream 是該主題的 canonical 權威。連結頁面顯示每個 skill
+教什麼、upstream 來源、以及 `vendor.yaml` 中追蹤的 last-sync commit。
+
+Vendored skill 可以 **平鋪 (flat)** (`skills/vendor/<name>/`) 或被分組
+進一個 **series** (`skills/vendor/<series>/<name>/`)。
+series 怎麼運作見
+[Adding vendor skills](../workflows/adding-vendor-skills.md#series-grouping)。
+
+### Flat (notebooks + meta)
+
+| Skill | Upstream | 詳細頁面 |
+|---|---|---|
+| [`marimo-notebook`](marimo-notebook.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook) | [docs](marimo-notebook.md) |
+| [`streamlit-to-marimo`](streamlit-to-marimo.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo) | [docs](streamlit-to-marimo.md) |
+| [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
+| [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
+
+### Fullstack Next.js series
+
+`series: fullstack-nextjs` —— Next.js (App Router) + Supabase (Postgres) +
+shadcn/ui + Tailwind CSS + design / testing skill。全部來自官方組織
+(Vercel、vercel-labs、Supabase、Anthropic)。
+
+| Skill | Upstream | 詳細頁面 |
+|---|---|---|
+| [`nextjs`](nextjs.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs) | [docs](nextjs.md) |
+| [`shadcn`](shadcn.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn) | [docs](shadcn.md) |
+| [`react-best-practices`](react-best-practices.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/react-best-practices) | [docs](react-best-practices.md) |
+| [`vercel-storage`](vercel-storage.md) | [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin/tree/main/skills/vercel-storage) | [docs](vercel-storage.md) |
+| [`supabase`](supabase.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase) | [docs](supabase.md) |
+| [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) | [supabase/agent-skills](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices) | [docs](supabase-postgres-best-practices.md) |
+| [`web-design-guidelines`](web-design-guidelines.md) | [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines) | [docs](web-design-guidelines.md) |
+| [`frontend-design`](frontend-design.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) | [docs](frontend-design.md) |
+| [`webapp-testing`](webapp-testing.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/webapp-testing) | [docs](webapp-testing.md) |
+
+每個 local skill 都遵守的規則（佈局、命名、scripts、references）見
+[Conventions](../conventions.md)。vendor 從頭到尾怎麼運作見
+[Adding vendor skills](../workflows/adding-vendor-skills.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/index.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:56:44Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# anywidget (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[marimo-team/skills/skills/anywidget](https://github.com/marimo-team/skills/tree/main/skills/anywidget)
+vendor 過來。透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/anywidget/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+> **關於 runtime 名稱：** SKILL.md frontmatter 宣告
+> `name: anywidget-generator`。Skill 發現使用 frontmatter name，
+> 不是目錄名。目錄保留為 `anywidget/` 是為了鏡射 upstream 路徑。
+
+## 教什麼 (What it teaches)
+
+為 marimo notebook 產生 [anywidget](https://anywidget.dev/) component：
+
+- `_esm` 用原生 JavaScript 寫一個 `render({ model, el })` function。
+- `_css` 樣式同時支援淺色與深色模式（透過
+  `@media (prefers-color-scheme: dark)`）。
+- 用 `model.get` / `model.set` / `model.save_changes` 模式在
+  Python (`traitlets.Int(0).tag(sync=True)`) 與 JS 之間同步狀態。
+- 給 marimo 顯示用的包裝：`widget = mo.ui.anywidget(MyWidget())`。
+- widget 變大時用 `pathlib` 從外部檔讀 `_esm` / `_css`。
+
+## 快速範例 (Quick example)
+
+\```python
+import anywidget
+import traitlets
+import marimo as mo
+
+class CounterWidget(anywidget.AnyWidget):
+    _esm = """
+    function render({ model, el }) {
+      let count = () => model.get("number");
+      let btn = document.createElement("button");
+      btn.innerHTML = `count is ${count()}`;
+      btn.addEventListener("click", () => {
+        model.set("number", count() + 1);
+        model.save_changes();
+      });
+      model.on("change:number", () => {
+        btn.innerHTML = `count is ${count()}`;
+      });
+      el.appendChild(btn);
+    }
+    export default { render };
+    """
+    _css = "button { font-size: 14px; }"
+    number = traitlets.Int(0).tag(sync=True)
+
+widget = mo.ui.anywidget(CounterWidget())
+widget
+\```
+
+然後從另一個 cell，`widget.value["number"]` 給你目前的計數。
+
+## 相關 skill
+
+- [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+  —— 通用 marimo 撰寫慣例（從 marimo-team vendor）。
+- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) —— 使用 `mlflow-widgets`
+  （anywidget-based 的 MLflow component library）做即時訓練圖表；
+  如果你需要建客製化變體，這個 skill 就是你會用到的。
+
+## Canonical SKILL.md
+
+完整觸發描述與 best-practices 區段見
+[skills/vendor/anywidget/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/anywidget.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:56:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# frontend-design (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[anthropics/skills/skills/frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/frontend-design/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/frontend-design/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Create distinctive, production-grade frontend interfaces with high design
+> quality. Use this skill when the user asks to build web components, pages,
+> artifacts, posters, or applications (examples include websites, landing
+> pages, dashboards, React components, HTML/CSS layouts, or when
+> styling/beautifying any web UI). Generates creative, polished code and
+> UI design that avoids generic AI aesthetics.
+
+## 教什麼 (What it teaches)
+
+美學方向 (aesthetic direction) skill —— 鼓勵帶有大膽、刻意觀點
+（極簡 brutally minimal、極繁 maximalist、復古未來感 retro-futuristic、
+編輯風 editorial、…）以及精緻的 typography 選擇，而非預設的 Inter/Arial。
+含對抗 AI-slop 的護欄。把它當作
+[`web-design-guidelines`](web-design-guidelines.md) 稽核 (audit) 角色的
+創作 (creative) 對應。
+
+## 相關 fullstack-nextjs skill
+
+- [`shadcn`](shadcn.md) —— 表達所選美學的 component
+- [`web-design-guidelines`](web-design-guidelines.md) —— 視覺定調後做 a11y/perf 稽核
+- [`webapp-testing`](webapp-testing.md) —— Playwright 迴圈視覺驗證結果
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/frontend-design/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/frontend-design/SKILL.md)。
+Upstream 來源：
+[anthropics/skills](https://github.com/anthropics/skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/frontend-design.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:04Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# marimo-notebook (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[marimo-team/skills/skills/marimo-notebook](https://github.com/marimo-team/skills/tree/main/skills/marimo-notebook)
+vendor 過來。透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/marimo-notebook/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Write a marimo notebook in a Python file in the right format.
+
+## 教什麼 (What it teaches)
+
+通用 (general-purpose) marimo 撰寫慣例 —— cell、reactive 依賴、`.py`
+notebook 檔案格式怎麼運作。任何時候使用者要從零寫 marimo 程式碼，
+都該載入這個基礎 skill。
+
+## 相關 local skill
+
+- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) —— 雙模式 (dual-mode：
+  UI + batch CLI) notebook 搭配 Tyro + MLflow，建立在這些撰寫慣例之上。
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/marimo-notebook/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)。
+Upstream 來源：
+[marimo-team/skills](https://github.com/marimo-team/skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/marimo-notebook.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:14Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# nextjs (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[vercel/vercel-plugin/skills/nextjs](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/nextjs/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/nextjs/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Next.js App Router expert guidance. Use when building, debugging, or
+> architecting Next.js applications — routing, Server Components, Server
+> Actions, Cache Components, layouts, middleware/proxy, data fetching,
+> rendering strategies, and deployment on Vercel.
+
+## 教什麼 (What it teaches)
+
+這個 repo 中旗艦級的 Next.js skill。出貨 18 KB 的 SKILL.md 加上
+`references/` 底下 20+ 個 reference 檔（app-router-files、async-patterns、
+hydration-error、parallel-routes、rsc-boundaries、…）以及一個
+`overlay.yaml` metadata 層，包含 `pathPatterns`：`app/**`、`pages/**`、
+`tailwind.config.*`、`tsconfig.json`。在編輯 Next.js code 時自動觸發。
+
+## 相關 fullstack-nextjs skill
+
+- [`shadcn`](shadcn.md) —— Next.js 之上的 UI component 層
+- [`react-best-practices`](react-best-practices.md) —— TSX 層級的 review checklist
+- [`vercel-storage`](vercel-storage.md) —— DB / Blob / KV 整合 pattern
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/nextjs/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/nextjs/SKILL.md)。
+Upstream 來源：
+[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/nextjs.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:25Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# react-best-practices (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[vercel/vercel-plugin/skills/react-best-practices](https://github.com/vercel/vercel-plugin/tree/main/skills/react-best-practices)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> React best-practices reviewer for TSX files. Triggers after editing
+> multiple TSX components to run a condensed quality checklist covering
+> component structure, hooks usage, accessibility, performance, and
+> TypeScript patterns.
+
+## 教什麼 (What it teaches)
+
+來自 Vercel Engineering、橫跨 8 個分類的 70+ 條規則。包含一條
+`validate` 規則，把 legacy CSS-in-JS / MUI / Chakra 使用者推往
+shadcn/ui + Tailwind，配合現代的 Vercel stack。在編輯
+`src/components/**/*.tsx`、`app/components/**/*.tsx` 等時自動觸發。
+
+## 相關 fullstack-nextjs skill
+
+- [`nextjs`](nextjs.md) —— 同 upstream repo，更深的 Next.js 框架知識
+- [`shadcn`](shadcn.md) —— 這個 skill 明確推薦的 component library
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/react-best-practices/SKILL.md)。
+Upstream 來源：
+[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)。另見
+[Introducing: React Best Practices (Vercel blog)](https://vercel.com/blog/introducing-react-best-practices)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/react-best-practices.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:35Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# shadcn (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[vercel/vercel-plugin/skills/shadcn](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/shadcn/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/shadcn/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> shadcn/ui expert guidance — CLI, component installation, composition
+> patterns, custom registries, theming, Tailwind CSS integration, and
+> high-quality interface design. Use when initializing shadcn, adding
+> components, composing product UI, building custom registries, configuring
+> themes, or troubleshooting component issues.
+
+## 教什麼 (What it teaches)
+
+涵蓋 shadcn 完整工作流程：`init`、`add`、`build`、`search`、`migrate`、
+`info`、`view`、custom registry、theming、Tailwind 整合。在
+`components.json`、`components/ui/**`、以及任何 `npx shadcn@latest <subcmd>`
+時觸發。包含一條 `validate` 規則警告 Base UI / Radix 與 AI Elements
+的不相容性。
+
+## 相關 fullstack-nextjs skill
+
+- [`nextjs`](nextjs.md) —— shadcn component 所在的 App Router 環境
+- [`web-design-guidelines`](web-design-guidelines.md) —— 對 shadcn UI 做 a11y/perf review
+- [`frontend-design`](frontend-design.md) —— 超出預設 shadcn 視覺的美學方向
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/shadcn/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/shadcn/SKILL.md)。
+Upstream 來源：
+[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
+（shadcn 已被 Vercel 收購；這是同樣的 canonical 指引在 Vercel plugin
+下重新散布）。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/shadcn.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:48Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# skill-creator (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[anthropics/skills/skills/skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator)
+vendor 過來。透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/skill-creator/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/skill-creator/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Create new skills, modify and improve existing skills, and measure
+> skill performance. Use when users want to create a skill from scratch,
+> edit, or optimize an existing skill, run evals to test a skill,
+> benchmark skill performance with variance analysis, or optimize a
+> skill's description for better triggering accuracy.
+
+## 教什麼 (What it teaches)
+
+Anthropic 自己的 skill 撰寫方法論，包括：
+
+- 評估 (evaluation) harness，量測 skill `description` 在應該觸發的
+  prompt 上實際觸發的可靠度。
+- 變異分析 (variance analysis) 的 benchmark（重複跑來區分真實的提升
+  與雜訊）。
+- 優化 (optimization) 迴圈，迭代 `description` 欄位直到觸發率達標。
+
+## `skill-creator` vs local `skill-author`
+
+| 面向 | `skill-creator` (vendored，這個) | [`skill-author`](skill-author.md) (local) |
+|---|---|---|
+| 焦點 | **評估** —— 測試案例、觸發率 benchmark、變異 | **撰寫** —— 起手、lint、agentskills.io best practices |
+| Script | Eval harness、benchmark | `new-skill.sh`、`lint-skill.sh` |
+| 何時使用 | 撰寫後，量測與優化 | 撰寫 SKILL.md + references + scripts 期間 |
+
+兩者互補 —— 用 `skill-author` 建出 skill，再用 `skill-creator`
+評估與調校它的觸發描述。
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/skill-creator/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/skill-creator/SKILL.md)。
+Upstream 來源：
+[anthropics/skills](https://github.com/anthropics/skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/skill-creator.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:57:57Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# streamlit-to-marimo (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[marimo-team/skills/skills/streamlit-to-marimo](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo)
+vendor 過來。透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/streamlit-to-marimo/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/streamlit-to-marimo/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Convert a Streamlit app to a marimo notebook.
+
+## 教什麼 (What it teaches)
+
+從 Streamlit 命令式 (imperative)、整個 script 重跑的模型，遷移到 marimo
+反應式 (reactive) DAG 的 pattern。涵蓋 `st.session_state`、
+`st.cache_data`、Streamlit widget 對應到 marimo 等價物的方式 ——
+通常是 `mo.state`、`@functools.cache` 或 cell-level reactivity、
+以及 `mo.ui.*`。
+
+## 相關 local skill
+
+- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) —— 如果 Streamlit
+  app 同時當互動 UI 跟 script 用，轉換後的 marimo notebook 可以採用
+  雙模式 pattern。
+
+## Canonical SKILL.md
+
+完整 migration checklist 見
+[skills/vendor/streamlit-to-marimo/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/streamlit-to-marimo/SKILL.md)。
+Upstream 來源：
+[marimo-team/skills](https://github.com/marimo-team/skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/streamlit-to-marimo.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:11Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# supabase (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[supabase/agent-skills/skills/supabase](https://github.com/supabase/agent-skills/tree/main/skills/supabase)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/supabase/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Use when doing ANY task involving Supabase. Triggers: Supabase products
+> (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues);
+> client libraries and SSR integrations (supabase-js, @supabase/ssr) in
+> Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout,
+> sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase
+> CLI or MCP server; schema changes, migrations, security audits, Postgres
+> extensions (pg_graphql, pg_cron, pg_vector).
+
+## 教什麼 (What it teaches)
+
+唯一的 canonical Supabase skill。涵蓋整個 Supabase 表面 + 顯式的
+`@supabase/ssr` Next.js pattern。包含一份 Supabase 特有陷阱的安全性
+checklist（例如：**絕不在 JWT-based 授權中使用 `user_metadata`**、
+刪除使用者並不會使 token 失效、暴露的 schema 預設啟用 RLS）。
+
+## 相關 fullstack-nextjs skill
+
+- [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) —— 同 upstream 的效能規則
+- [`vercel-storage`](vercel-storage.md) —— Vercel 端整合 pattern (它的 pathPatterns 包含 `supabase/**`)
+- [`nextjs`](nextjs.md) —— 使用 `@supabase/ssr` 的 App Router 環境
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/supabase/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase/SKILL.md)。
+Upstream 來源：
+[supabase/agent-skills](https://github.com/supabase/agent-skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/supabase.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:18Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# supabase-postgres-best-practices (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[supabase/agent-skills/skills/supabase-postgres-best-practices](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Postgres performance optimization and best practices from Supabase. Use
+> this skill when writing, reviewing, or optimizing Postgres queries, schema
+> designs, or database configurations.
+
+## 教什麼 (What it teaches)
+
+橫跨 8 個分類的效能規則 —— query performance、index、connection
+management、RLS、pooling —— 依影響度排序。每條規則含錯誤對正確的
+SQL 範例、query plan 分析、以及目標效能 metric。是廣泛的
+[`supabase`](supabase.md) skill (涵蓋整個產品表面) 的補充。
+
+## 相關 fullstack-nextjs skill
+
+- [`supabase`](supabase.md) —— Supabase 完整產品涵蓋 (auth、storage、edge fns、…)
+- [`vercel-storage`](vercel-storage.md) —— Vercel 端整合 pattern
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/supabase-postgres-best-practices/SKILL.md)。
+Upstream 來源：
+[supabase/agent-skills](https://github.com/supabase/agent-skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/supabase-postgres-best-practices.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# vercel-storage (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[vercel/vercel-plugin/skills/vercel-storage](https://github.com/vercel/vercel-plugin/tree/main/skills/vercel-storage)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Vercel storage expert guidance — Blob, Edge Config, and Marketplace
+> storage (Neon Postgres, Upstash Redis). Use when choosing, configuring,
+> or using data storage with Vercel applications.
+
+## 教什麼 (What it teaches)
+
+Vercel app 的儲存選擇 + 整合。值得注意的是它的 `pathPatterns` 包含
+`supabase/**`、`lib/supabase.*`、`prisma/schema.prisma`、`prisma/**`
+—— 所以這個 skill 在 Supabase 跟 Prisma project 也會自動觸發，
+不只是 Vercel 原生 storage。
+
+## 相關 fullstack-nextjs skill
+
+- [`supabase`](supabase.md) —— 超出整合層級時的 Supabase 完整涵蓋
+- [`supabase-postgres-best-practices`](supabase-postgres-best-practices.md) —— Postgres 端的效能規則
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/vercel-storage/SKILL.md)。
+Upstream 來源：
+[vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/vercel-storage.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:37Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# web-design-guidelines (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例:依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[vercel-labs/agent-skills/skills/web-design-guidelines](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Review UI code for Web Interface Guidelines compliance. Use when asked
+> to "review my UI", "check accessibility", "audit design", "review UX",
+> or "check my site against best practices".
+
+## 教什麼 (What it teaches)
+
+reviewer 角色的 skill —— 從 `vercel-labs/web-interface-guidelines`
+拉最新的 Web Interface Guidelines，依規則集稽核 (audit) 檔案，
+以 `file:line` 格式回傳發現。涵蓋 a11y、perf、UX。
+與 [`shadcn`](shadcn.md) 跟
+[`react-best-practices`](react-best-practices.md) 自然搭配。
+
+## 相關 fullstack-nextjs skill
+
+- [`shadcn`](shadcn.md) —— 這個 skill 稽核的 UI component
+- [`react-best-practices`](react-best-practices.md) —— 重疊的 component 級 review
+- [`frontend-design`](frontend-design.md) —— 美學方向（這個 skill 是稽核者；那個是創作者）
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/web-design-guidelines/SKILL.md)。
+Upstream 來源：
+[vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/web-design-guidelines.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:46Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# webapp-testing (vendored)
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+從
+[anthropics/skills/skills/webapp-testing](https://github.com/anthropics/skills/tree/main/skills/webapp-testing)
+vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series）。
+透過 [`make sync`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+同步；不要在本機編輯
+[`skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md)
+—— 變更會在下次同步被蓋掉。
+
+## Upstream frontmatter description
+
+> Toolkit for interacting with and testing local web applications using
+> Playwright. Supports verifying frontend functionality, debugging UI
+> behavior, capturing browser screenshots, and viewing browser logs.
+
+## 教什麼 (What it teaches)
+
+原生 Python Playwright 工作流程，附帶一個 `scripts/with_server.py`
+helper 管理 server lifecycle (支援多個 server)。決策樹：靜態 HTML →
+直接讀 selector；動態 webapp → 用 helper + 寫一個簡化的 Playwright
+script。Black-box script 第一步先用 `--help` 跑，避免 context window
+被吃掉。
+
+## 相關 fullstack-nextjs skill
+
+- [`nextjs`](nextjs.md) —— webapp-testing 驅動的 dev server
+- [`frontend-design`](frontend-design.md) —— 閉環：build → screenshot → critique
+
+## Canonical SKILL.md
+
+完整指示見
+[skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/fullstack-nextjs/webapp-testing/SKILL.md)。
+Upstream 來源：
+[anthropics/skills](https://github.com/anthropics/skills)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/webapp-testing.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:54Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:54Z)**_
+
+Final batch: 9 custom-authored skill pages. Reading all source + stubs in parallel.
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:55Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/skill-author.md`
+
+```text
+1	# skill-author
+2	
+3	Authoring helper for **new agent skills**. Ships:
+4	
+5	- A scaffolder ([`new-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/new-skill.sh))
+6	  that creates `skills/local/<name>/` with the standard layout pre-seeded.
+7	- A linter ([`lint-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/lint-skill.sh))
+8	  that checks frontmatter, script hygiene, and reference reachability.
+9	- Two reference docs that condense the agentskills.io guides:
+10	  [authoring-patterns.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/authoring-patterns.md)
+11	  and [script-design.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/script-design.md).
+12	- A repo-specific conventions reference
+13	  ([this-repo-conventions.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/this-repo-conventions.md))
+14	  that explains layout, mirroring, and bash 3.2 compatibility.
+15	- Templates for SKILL.md, reference docs, bash scripts (with
+16	  `--help` / `--dry-run` / strict-mode boilerplate), and Python scripts (with
+17	  PEP 723 inline deps).
+18	
+19	## When to use this vs `skill-creator`
+20	
+21	| Task | Use |
+22	|---|---|
+23	| "I want to make a new skill for X" | **skill-author** |
+24	| Scaffold SKILL.md / a reference / a script | **skill-author** |
+25	| Lint a draft skill | **skill-author** |
+26	| Skill isn't triggering when expected | `skill-creator` (description optimization) |
+27	| Run test cases / benchmark a skill | `skill-creator` (eval loop) |
+28	
+29	If both apply, start with `skill-author`, then hand off to `skill-creator` once
+30	the structure is right.
+31	
+32	## Quick start
+33	
+34	```bash
+35	# 1. Scaffold
+36	bash skills/local/skill-author/scripts/new-skill.sh my-skill
+37	
+38	# 2. Edit skills/local/my-skill/SKILL.md to fill in the description and workflow
+39	
+40	# 3. Lint
+41	bash skills/local/skill-author/scripts/lint-skill.sh skills/local/my-skill
+42	
+43	# 4. (Optional) hand off to skill-creator for quantitative validation
+44	```
+45	
+46	## Why a separate skill?
+47	
+48	`skill-creator` (the Anthropic-published skill bundled at `.agents/skills/`) is
+49	the canonical authority for skill creation, but it's heavily focused on the
+50	**eval/iterate loop**: spawning subagents, grading, benchmarking, optimizing
+51	the description triggering rate. `skill-author` covers the **authoring
+52	patterns** that the agentskills.io best-practices and using-scripts pages
+53	document — gotchas sections, output templates, validation loops, calibrated
+54	specificity, and agentic CLI design — plus repo-specific conventions and
+55	working scaffolder/linter scripts.
+56	
+57	The two are complementary and explicitly cross-reference each other.
+58	
+59	## Canonical SKILL.md
+60	
+61	See [skills/local/skill-author/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/SKILL.md)
+62	for the full triggering description and workflow.
+63
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:55Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/mkdocs-site-bootstrap.md`
+
+```text
+1	# mkdocs-site-bootstrap
+2	
+3	Bootstrap a MkDocs Material documentation site for a repo and (optionally)
+4	deploy it to GitHub Pages — including the same stack this very docs site
+5	uses (Material + `mkdocs-llmstxt` + `mkdocs-copy-to-llm` + `pymdownx.snippets`,
+6	GitHub Pages workflow with paths-filter).
+7	
+8	This skill is **consent-gated**. It records preferences in
+9	`.skills/preferences.yaml` so it doesn't re-ask on every session, never
+10	auto-migrates a user's existing `docs/` content, and gates the
+11	`gh api -X POST .../pages` call on explicit user confirmation.
+12	
+13	## Quick start
+14	
+15	```bash
+16	# 1. Scaffold the site files
+17	bash skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
+18	  --site-name "My Project" \
+19	  --repo-slug owner/repo \
+20	  --site-url https://owner.github.io/repo/
+21	
+22	# 2. Verify locally
+23	uv sync --extra docs && uv run mkdocs build --strict
+24	
+25	# 3. Enable GitHub Pages and trigger first deploy (consent gate)
+26	bash skills/local/mkdocs-site-bootstrap/scripts/enable-pages.sh \
+27	  --repo owner/repo
+28	
+29	# 4. Add new pages over time
+30	bash skills/local/mkdocs-site-bootstrap/scripts/add-docs-page.sh \
+31	  --section Reference --title "API schema"
+32	```
+33	
+34	## Bundled scripts
+35	
+36	| Script | Purpose |
+37	|---|---|
+38	| `init-docs-site.sh` | Scaffold `mkdocs.yml`, `pyproject.toml`, `docs/`, `.github/workflows/docs.yml` |
+39	| `enable-pages.sh` | Enable Pages via `gh api` and trigger first deploy |
+40	| `add-docs-page.sh` | Create a new `docs/` page and insert it into `mkdocs.yml` nav |
+41	| `check-preferences.sh` | Read/set/reset entries in `.skills/preferences.yaml` |
+42	
+43	All scripts support `--help` and `--dry-run`.
+44	
+45	## Preferences
+46	
+47	The skill writes to `<repo>/.skills/preferences.yaml`:
+48	
+49	```yaml
+50	mkdocs_site_bootstrap:
+51	  enabled: true
+52	  decided_at: "2026-04-23"
+53	  stack: mkdocs-material
+54	  auto_deploy: true
+55	  pages_deployed: true
+56	  existing_docs_decision: skipped
+57	  site_url: https://owner.github.io/repo/
+58	  repo_slug: owner/repo
+59	```
+60	
+61	To change your mind:
+62	
+63	```bash
+64	# Reset (returns to "never asked" state)
+65	bash skills/local/mkdocs-site-bootstrap/scripts/check-preferences.sh \
+66	  --reset mkdocs_site_bootstrap
+67	
+68	# Or explicitly opt out so the agent stops asking
+69	bash skills/local/mkdocs-site-bootstrap/scripts/check-preferences.sh \
+70	  --set mkdocs_site_bootstrap.enabled=false
+71	```
+72	
+73	See [`references/preferences-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/preferences-schema.md)
+74	for the full schema and conventions for cross-skill preference use.
+75	
+76	## Existing `docs/` content
+77	
+78	The skill detects pre-existing `docs/` content and asks before doing
+79	anything. It will **never** auto-migrate, rename, or rewrite user files.
+80	Three consent options:
+81	
+82	- **skip** — leave docs alone, just create `mkdocs.yml` with empty nav (auto)
+83	- **wrap** — same, but populate `nav:` from existing files alphabetically
+84	- **manual** — bail out, user reorganizes first then re-runs
+85	
+86	See [`references/existing-docs-handling.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/existing-docs-handling.md)
+87	for the full decision tree.
+88	
+89	## Why a skill, not a one-shot script?
+90	
+91	Because docs sites are not a one-shot setup — they evolve. The skill exists
+92	to:
+93	
+94	1. Get the initial scaffold right (consent-gated, idempotent).
+95	2. Keep helping with `add-docs-page.sh` over time.
+96	3. Remember what the user already decided so future sessions don't pester.
+97	4. Provide a place to encode the gotchas (linking rules, snippets dir,
+98	   `pages: write` permission, etc.) so they don't get re-discovered every
+99	   project.
+100	
+101	The bundled `references/docs-stack-recipe.md` documents what the stack
+102	actually is, so a user who wants to apply pieces manually has the recipe
+103	without invoking the skill.
+104	
+105	## Canonical SKILL.md
+106	
+107	See [skills/local/mkdocs-site-bootstrap/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/SKILL.md)
+108	for the full triggering description, workflow, and gotchas.
+109
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:56Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/agent-history-hygiene.md`
+
+```text
+1	# agent-history-hygiene
+2	
+3	Keep coding-agent chat transcripts and plan files committed alongside
+4	the feature diff they produced, without leaking `.env` contents or API
+5	keys into git history.
+6	
+7	| Surface | Question it answers |
+8	|---|---|
+9	| `find-session.sh` | "Which transcript / plan file is *my* current session?" |
+10	| `stage-agent-artifacts.sh` | "Which agent files belong in the next commit?" |
+11	| `bootstrap-project.sh` | "How do I get pre-commit + gitleaks + redactor into a new repo?" |
+12	| `scan-staged.sh` | "Is there a leaked secret in what I'm about to commit?" |
+13	| `references/remediation.md` | "I already pushed a secret — now what?" |
+14	
+15	The skill exists to stop three common failure modes:
+16	
+17	1. Agents silently **dropping** `.specstory/history/*.md` and
+18	   `.claude/plans/*.md` from commits because they look like generated
+19	   artifacts.
+20	2. Accidental `.env` echoes inside chat transcripts that then get
+21	   committed and pushed.
+22	3. Reflexive `git push --force` after a leak — which doesn't actually
+23	   revoke the credential and often destroys teammate work.
+24	
+25	## When the skill triggers
+26	
+27	- "Commit my chat" / "save the specstory session" / "stage the plan
+28	  file" / "把 plan 跟 specstory 一起 commit 進去".
+29	- Untracked `.specstory/history/*.md` or `.claude/plans/*.md` during a
+30	  `git status`.
+31	- "Scrub this transcript" / "redact my key" / "gitleaks flagged my
+32	  chat history".
+33	- "Set up pre-commit for this repo" / "bootstrap secret scanning".
+34	- "I pushed a `.env`" / "a secret went to main" — the skill steers to
+35	  the rotate-first runbook instead of a history rewrite.
+36	
+37	## Structure
+38	
+39	```
+40	skills/local/agent-history-hygiene/
+41	├── SKILL.md                                  # ~260 lines
+42	├── scripts/
+43	│   ├── find-session.sh                       # locate current SpecStory + Claude session
+44	│   ├── stage-agent-artifacts.sh              # git-add the right artifacts
+45	│   ├── bootstrap-project.sh                  # install pre-commit + gitleaks + redactor
+46	│   └── scan-staged.sh                        # gitleaks wrapper with agent-friendly exit codes
+47	├── references/
+48	│   ├── transcript-session-discovery.md       # SpecStory / Claude session layouts
+49	│   ├── pre-commit-redaction-stack.md         # layered defense design
+50	│   └── remediation.md                        # rotate-first leak runbook
+51	└── assets/
+52	    ├── artifact-dirs.txt                     # configurable list of agent artifact dirs
+53	    ├── pre-commit-config.yaml.template
+54	    ├── gitleaks.toml.template
+55	    └── redact_secrets.py                     # bundled copy; chezmoi is upstream
+56	```
+57	
+58	## Integration with chezmoi
+59	
+60	The skill sits on top of the user's existing chezmoi infrastructure
+61	(if present):
+62	
+63	- `~/.config/git/hooks/pre-commit` (global `core.hooksPath`) runs the
+64	  repo-level `.pre-commit-config.yaml` this skill installs.
+65	- `~/.local/share/chezmoi/scripts/redact_secrets.py` is the upstream
+66	  source of truth for the bundled redactor; `bootstrap-project.sh
+67	  --from-chezmoi` symlinks rather than copies so fixes propagate.
+68	- `~/.local/share/chezmoi/.gitleaks.toml` shares rule IDs with the
+69	  skill's `gitleaks.toml.template` so `.gitleaksignore` / allowlist
+70	  tweaks stay portable across repos.
+71	
+72	For repos without chezmoi, `bootstrap-project.sh` produces a
+73	self-contained stack.
+74	
+75	## Default workflow: commit feature + chat together
+76	
+77	```bash
+78	# 1. Make sure the agent knows which session is "ours".
+79	bash skills/local/agent-history-hygiene/scripts/find-session.sh
+80	
+81	# 2. Stage code, then auto-add agent artifacts.
+82	git add path/to/feature.ts
+83	bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
+84	
+85	# 3. Belt-and-suspenders secret scan.
+86	bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+87	
+88	# 4. Commit. Pre-commit re-runs redact + gitleaks as a catch-all.
+89	git commit -m "feat: ..."
+90	```
+91	
+92	## Post-leak discipline
+93	
+94	`scan-staged.sh` exit codes branch on leak state (0 clean, 10 redacted,
+95	20 leaks, 30 no gitleaks). When a leak slips through:
+96	
+97	1. **Rotate at the provider.** The only act that revokes the
+98	   credential. Links in `references/remediation.md` §1.
+99	2. **Assess blast radius.** Local/unpushed? Feature branch? Main?
+100	3. **Scrub only if cheap.** Amend or `reset --soft` on unpushed commits;
+101	   `git filter-repo` + force-with-lease on feature branches; **never**
+102	   rewrite `main`.
+103	
+104	The runbook explicitly forbids `git push --force` against shared
+105	branches — see `references/remediation.md` §5.
+106	
+107	## Gotchas
+108	
+109	- Claude Code `plansDirectory` project-level is sometimes ignored
+110	  ([issue #19537](https://github.com/anthropics/claude-code/issues/19537));
+111	  set at the user level (`~/.claude/settings.json`) as the default.
+112	- `gitleaks protect` is deprecated since v8.19.0 — use `gitleaks git
+113	  --staged`. The skill uses the modern syntax everywhere.
+114	- `pre-commit install` is per-clone — each teammate (and CI) must run
+115	  it for hooks to fire.
+116	- Global `core.hooksPath` runs the repo's `.pre-commit-config.yaml`
+117	  only if it exists; a bare repo is unprotected until bootstrap.
+118	
+119	## See also
+120	
+121	- [Source](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/agent-history-hygiene)
+122	- [`project-knowledge-harness`](project-knowledge-harness.md) —
+123	  complementary memory harness that references `.claude/plans/` as
+124	  ephemeral scratchpads. This skill closes the loop by making sure
+125	  those scratchpads actually land in git.
+126
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:56Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/mlflow-tracking.md`
+
+```text
+1	# mlflow-tracking
+2	
+3	Generic [MLflow](https://mlflow.org/docs/latest) skill (upstream
+4	[mlflow/mlflow](https://github.com/mlflow/mlflow)) — covers experiment
+5	tracking, model registry, and LLM tracing for any Python project.
+6	
+7	This is the **general-purpose** MLflow skill. For the marimo-specific
+8	dual-mode (UI + batch CLI) variant, see
+9	[`marimo-batch-mlflow`](marimo-batch-mlflow.md) instead — that one is a
+10	specialization built on top of marimo notebooks.
+11	
+12	## Three deployment modes (pick one before writing code)
+13	
+14	| Mode | Tracking URI | When to choose |
+15	|---|---|---|
+16	| File | `file:./mlruns` (default) | One-off experiments, no UI, no model registry |
+17	| **SQLite + `mlflow ui`** ⭐ | `sqlite:///mlflow.db` | Solo work, want UI without running a server, model registry support |
+18	| **Docker Compose stack** ⭐ | `http://host:8000` (PostgreSQL + MinIO) | Team use, production, parallel jobs, large artifacts |
+19	| Databricks-managed | `databricks://` | Already paying for Databricks (out of scope) |
+20	
+21	The two starred modes cover ~95% of real use. **File mode does NOT support
+22	the model registry** — if the user wants `register_model`, they need SQLite
+23	or a server.
+24	
+25	## What ships
+26	
+27	- The full SKILL.md
+28	  ([skills/local/mlflow-tracking/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/SKILL.md))
+29	  with the deployment-mode decision table, the Manual-vs-Autolog choice,
+30	  and a gotchas section calibrated to actual production failures (the
+31	  `mlflow ui` `--backend-store-uri` trap, autolog ordering, deprecated
+32	  stages, etc.).
+33	- Six references — read on demand:
+34	    - [`sqlite-local.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/sqlite-local.md)
+35	      — SQLite mode setup, the `--backend-store-uri` gotcha, when to migrate
+36	      to PostgreSQL.
+37	    - [`docker-compose-server.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/docker-compose-server.md)
+38	      — production stack ops, `.env` customization, AWS S3 swap, basic auth,
+39	      backup strategy.
+40	    - [`llm-tracing.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/llm-tracing.md)
+41	      — autolog by provider (OpenAI, Anthropic, LangChain, LlamaIndex, DSPy,
+42	      AutoGen, CrewAI, LiteLLM, Bedrock, Gemini, …), `@mlflow.trace`, span
+43	      types, `search_traces`, comparison vs Weave/LangSmith/Langfuse.
+44	    - [`model-registry.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/model-registry.md)
+45	      — **aliases** (current API: Champion / Challenger) vs deprecated stages,
+46	      registration patterns, webhooks.
+47	    - [`autologging-by-framework.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/autologging-by-framework.md)
+48	      — every officially-supported framework with per-library gotchas
+49	      (sklearn, pytorch, lightning, tensorflow, keras, xgboost, lightgbm,
+50	      catboost, statsmodels, spark, fastai, paddle, transformers, …).
+51	    - [`mlflow-widgets-anywidget.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/mlflow-widgets-anywidget.md)
+52	      — using [mlflow-widgets](https://github.com/daviddwlee84/mlflow-widgets)
+53	      for live charts inside marimo / Jupyter without launching the full UI.
+54	- Three scripts:
+55	    - [`init-mlflow-sqlite.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/init-mlflow-sqlite.sh)
+56	      — idempotent SQLite-mode setup; prints the exact `mlflow ui` command
+57	      with the right `--backend-store-uri` (the #1 SQLite gotcha).
+58	    - [`start-mlflow-server.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/start-mlflow-server.sh)
+59	      — copies the bundled docker-compose stack into a target dir, generates
+60	      `.env` with rotated random secrets, runs `docker compose up -d`, waits
+61	      for the healthcheck, prints the URLs and client env vars to export.
+62	    - [`tail-runs.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/tail-runs.sh)
+63	      — PEP 723 inline-deps Python script (runs via `uv run`, no env setup)
+64	      that wraps `mlflow.search_runs` with JSON or CSV output for terminal use.
+65	- The vendored production stack in `assets/docker-compose-stack/`:
+66	    - [`docker-compose.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/docker-compose.yaml)
+67	      — PostgreSQL + MinIO + tracking server + bucket bootstrap, with
+68	      healthchecks and `depends_on` ordering.
+69	    - [`Dockerfile`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/Dockerfile)
+70	      — pinned MLflow image + `psycopg2-binary` + `boto3`.
+71	    - [`.env.example`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/.env.example)
+72	      — all knobs documented; default port 8000 to dodge macOS AirPlay on 5000.
+73	    - [`README.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/README.md)
+74	      — quick-start, troubleshooting, when to outgrow this stack.
+75	
+76	## Why this exists alongside `marimo-batch-mlflow`
+77	
+78	| Concern | `mlflow-tracking` (this) | `marimo-batch-mlflow` |
+79	|---|---|---|
+80	| Scope | Any Python project, any trainer | marimo notebooks specifically |
+81	| Focus | Tracking server setup, registry, LLM traces, autolog | Dual-mode notebook pattern (UI + CLI) using MLflow |
+82	| Includes Docker stack? | Yes, vendored from production | No |
+83	| Includes LLM tracing? | Yes, full reference | No |
+84	
+85	Use this skill when the user wants MLflow as a general tracking backend.
+86	Use `marimo-batch-mlflow` when they're specifically writing marimo notebooks
+87	that need to run as both an interactive UI and a batch CLI.
+88	
+89	## Quick start
+90	
+91	**SQLite (solo)**:
+92	
+93	```bash
+94	bash skills/local/mlflow-tracking/scripts/init-mlflow-sqlite.sh
+95	# → prints the exact `mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5001`
+96	```
+97	
+98	**Docker Compose stack (team)**:
+99	
+100	```bash
+101	bash skills/local/mlflow-tracking/scripts/start-mlflow-server.sh \
+102	  --target-dir infra/mlflow
+103	# → copies stack, rotates secrets in .env, launches, waits for healthcheck,
+104	#   prints the env vars to export on client machines
+105	```
+106	
+107	**In your training code** (works for any of the modes):
+108	
+109	```python
+110	import mlflow
+111	
+112	mlflow.set_tracking_uri("http://localhost:8000")    # or "sqlite:///mlflow.db"
+113	mlflow.set_experiment("my-project")
+114	mlflow.autolog()                                    # zero-touch logging
+115	
+116	with mlflow.start_run():
+117	    model.fit(X, y)                                 # params, metrics, model all logged
+118	```
+119	
+120	## Cross-references
+121	
+122	- Official docs: [mlflow.org/docs/latest](https://mlflow.org/docs/latest) —
+123	  always link these. MLflow ships every 4–6 weeks; LLM tracing especially
+124	  is a moving target.
+125	- Upstream repo: [github.com/mlflow/mlflow](https://github.com/mlflow/mlflow).
+126	- [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) —
+127	  anywidget-based charts/tables for embedding live MLflow data in marimo /
+128	  Jupyter cells. Demo:
+129	  [daviddwlee84.github.io/mlflow-widgets](https://daviddwlee84.github.io/mlflow-widgets/).
+130	- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) — the marimo-specific
+131	  variant for dual-mode (UI + batch CLI) notebooks.
+132
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:57Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/pueue-job-queue.md`
+
+```text
+1	# pueue-job-queue
+2	
+3	Drive [Nukesor/pueue](https://github.com/Nukesor/pueue) — a daemon-backed
+4	shell job queue — for queued, parallel, scheduled, and lightly-DAG'd shell
+5	work. The skill is a **CLI bridge**, not a custom scheduler: it wraps
+6	`pueue add --after`, `pueue status --json`, and `pueue log --json` so an
+7	agent can submit, batch, chain, wait, and retry without losing track of
+8	what's running.
+9	
+10	| Surface | Question it answers |
+11	|---|---|
+12	| `check-daemon.sh` | "Is `pueued` running, and where do logs live on this OS?" |
+13	| `submit.sh` | "Submit one task and give me a parseable `{task_id, label, group, after}`." |
+14	| `submit-dag.py` | "Submit this whole fan-out / fan-in pipeline with deps wired — in a fresh isolated group sized to the DAG width." |
+15	| `wait.py` | "Block until these tasks finish, then summarize success/failure." |
+16	| `cleanup.sh` | "Reclaim disk + status latency: prune old tasks, empty groups, log files." |
+17	| `references/cli-cheatsheet.md` | "What un-wrapped `pueue` subcommand do I reach for?" |
+18	| `references/json-schema.md` | "What does `pueue status --json` actually look like? What's the QUERY DSL syntax?" |
+19	| `references/dag-patterns.md` | "How do I express fan-out / fan-in / diamond shapes?" |
+20	| `references/daemon-and-config.md` | "How do I auto-start `pueued` on macOS / Linux?" |
+21	
+22	The skill exists to keep three things out of an agent's way:
+23	
+24	1. **Bookkeeping** — task ids, dependency wiring, group autocreate, defensive
+25	   id parsing of `pueue add --print-task-id`.
+26	2. **Schema drift** — `pueue status --json` uses serde tagged enums
+27	   (`{"Done": {"result": "Success" | "DependencyFailed" | "Killed" | {"Failed": <int>}}}`).
+28	   `wait.py` classifies all variants and returns predictable exit codes
+29	   (`0` ok, `5` any failure, `6` timeout).
+30	3. **Footguns** — `pueue add -- bash -c 'sleep 60'` does NOT preserve the
+31	   inner quote (pueue re-shells); `pueue kill --all` also pauses every
+32	   group; `pueue restart` (default) creates a NEW id; `pueue clean`
+33	   (default) wipes failures too. The SKILL.md has a 10-item gotcha list
+34	   covering each of these.
+35	
+36	## When the skill triggers
+37	
+38	- "Run these 30 commands, max 4 at a time" → set group parallelism, loop
+39	  `submit.sh --group sweep`.
+40	- "Kick off a long training job and let me close my laptop" → `submit.sh
+41	  -- ./train.sh` (pueue persists across reboots).
+42	- "Run task B only after task A succeeds" → `submit.sh --after $A_ID -- ./b.sh`.
+43	- "Fan out 4 trainings, then evaluate" → `submit-dag.py dag.yaml`.
+44	- "Schedule this for tonight" → `submit.sh --delay 6h -- ./nightly.sh`.
+45	- The user says **pueue / pueued / pueue add / pueue queue / pueue group**
+46	  or asks about a "task queue for shell jobs".
+47	
+48	## When it doesn't
+49	
+50	- One short shell command — just run it. Pueue adds daemon overhead.
+51	- Cross-host scheduling, OR-deps, conditional branching, retry-with-backoff,
+52	  typed task IO — escalate to **Airflow / Prefect / Dagster / DVC / Slurm**.
+53	  `references/dag-patterns.md` has a decision table.
+54	- Long-running services — that's `systemd` / `launchd`.
+55	
+56	## Structure
+57	
+58	```
+59	skills/local/pueue-job-queue/
+60	├── SKILL.md                                  # ~275 lines
+61	├── scripts/
+62	│   ├── check-daemon.sh                       # bash; daemon health + auto-start
+63	│   ├── submit.sh                             # bash; submit-one wrapper, JSON out, group autocreate
+64	│   ├── wait.py                               # PEP 723; block until terminal, state-change events, JSON summary
+65	│   ├── submit-dag.py                         # PEP 723 (pyyaml); DAG submitter with --isolated-group / --auto-parallel
+66	│   └── cleanup.sh                            # bash; prune tasks + empty groups + old log files
+67	├── references/
+68	│   ├── cli-cheatsheet.md                     # un-wrapped commands
+69	│   ├── json-schema.md                        # observed status --json shape (4.0.2) + QUERY DSL + jq recipes
+70	│   ├── dag-patterns.md                       # fan-out / fan-in / diamond + escalation table
+71	│   └── daemon-and-config.md                  # pueued setup per OS, config knobs, log paths
+72	├── assets/
+73	│   ├── dag.example.yaml                      # 5-task fan-out / fan-in fixture
+74	│   └── pueue.yml.example                     # config with `pause_group_on_failure: true`
+75	└── tests/
+76	    ├── conftest.py                           # isolated pueued fixture, skip if pueue absent
+77	    ├── test_submit.py                        # submit.sh paths + dependency failure
+78	    ├── test_dag.py                           # topo invariant, cycle/unknown/missing-cmd, isolated-group
+79	    ├── test_wait.py                          # success/failure/timeout exit codes
+80	    ├── test_contracts.sh                     # bash --help/error-code contract
+81	    └── fixtures/simple-dag.yaml              # 4-task diamond
+82	```
+83	
+84	## Always pass a label
+85	
+86	`pueue status` shows the **label** column before the command. In a busy
+87	queue, scanning labels is the only way to tell `train.py` runs apart at a
+88	glance. The skill's gotchas section opens with:
+89	
+90	> Always pass `--label` when submitting, and bias toward names that
+91	> distinguish *this* task from its siblings.
+92	
+93	Convention: `<verb>-<subject>-<key>` (≤30 chars). Encode the discriminator
+94	(seed, dataset slice, model variant) — not the command:
+95	
+96	| Good | Bad |
+97	|---|---|
+98	| `train-baseline-seed1` | `task1` |
+99	| `eval-prod-2026q1` | `python eval.py --quarter 2026q1` |
+100	| `nightly-featurize` (DAG) | `step-2-of-5` |
+101	
+102	`submit-dag.py --label-prefix <run>-` produces `<run>-<task_name>` so
+103	`wait.py --label-prefix <run>-` selects the whole graph and `pueue clean`
+104	can be filtered later.
+105	
+106	## Empirical schema
+107	
+108	Pueue's JSON output isn't formally documented in the wiki. The skill ships
+109	the observed shape on **pueue 4.0.2** in `references/json-schema.md`,
+110	including the diagnostic snippet to re-verify on a different major. Key
+111	shape:
+112	
+113	```json
+114	{
+115	  "tasks": {
+116	    "<id>": {
+117	      "id": 17,
+118	      "label": "train-baseline-seed1",
+119	      "group": "ml",
+120	      "dependencies": [12, 14],
+121	      "status": {
+122	        "Done": {
+123	          "enqueued_at": "...", "start": "...", "end": "...",
+124	          "result": "Success"            // or "DependencyFailed" | "Killed" | {"Failed": 1}
+125	        }
+126	      }
+127	    }
+128	  },
+129	  "groups": {
+130	    "default": {"status": "Running", "parallel_tasks": 1}
+131	  }
+132	}
+133	```
+134	
+135	`wait.py` classifies every variant; if a future pueue release adds one
+136	(say `Suspended`), the test suite catches it before the skill goes silent.
+137	
+138	## Verification
+139	
+140	The skill ships **22 pytest cases** that spin up an isolated `pueued`
+141	under a tempdir-scoped config — your real queue is never touched — plus a
+142	bash exit-code contract test. Both auto-skip if `pueue` / `pueued` aren't
+143	on `PATH`. `lint-skill --strict` is clean (0 errors, 0 warnings).
+144	
+145	```bash
+146	uv run --extra dev pytest skills/local/pueue-job-queue/tests/ -q
+147	bash skills/local/pueue-job-queue/tests/test_contracts.sh
+148	bash skills/local/skill-author/scripts/lint-skill.sh skills/local/pueue-job-queue --strict
+149	```
+150	
+151	The pytest fixture uses `pueue reset --force` between tests because plain
+152	`pueue kill --all` also pauses every group — a non-obvious failure mode
+153	worth documenting (see SKILL.md gotchas).
+154
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:57Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/project-knowledge-harness.md`
+
+```text
+1	# project-knowledge-harness
+2	
+3	A lightweight, file-based memory harness that gives any software project
+4	three sharply-separated surfaces:
+5	
+6	| Surface | Time direction | Question it answers | Access pattern |
+7	|---|---|---|---|
+8	| `TODO.md` | Future | "What might we do later?" | Read top to bottom (priority lanes) |
+9	| `backlog/<slug>.md` | Future | "What was the analysis behind this idea?" | Indexed from `TODO.md` |
+10	| `pitfalls/<slug>.md` | **Past** | **"I see error X — has this happened before?"** | **Grep symptom keywords** |
+11	
+12	The skill exists to stop two common failure modes: valuable investigation
+13	evaporating from chat history, and the graveyard of `IDEAS.md` /
+14	`ROADMAP.md` / `WISHLIST.md` / `LESSONS.md` files that nobody maintains.
+15	
+16	## When the skill triggers
+17	
+18	Future-direction signals: "where should ideas go?", "maybe later", "nice to
+19	have", "工程量太大需要再評估", "先記下來".
+20	
+21	Past-direction signals: "save this troubleshooting", "踩過的坑", scattered
+22	"Common issues" sections across `docs/`.
+23	
+24	Either: "is there a place for X?" where X is metadata about decisions or
+25	history rather than current features.
+26	
+27	## Structure of the skill itself
+28	
+29	```
+30	skills/local/project-knowledge-harness/
+31	├── SKILL.md                      # ~170-line entry point; loads on activation
+32	├── assets/                       # Copied into target projects
+33	│   ├── TODO.md.template
+34	│   ├── backlog-README.md.template
+35	│   ├── backlog-doc.md.template
+36	│   ├── pitfalls-README.md.template
+37	│   ├── pitfall-doc.md.template
+38	│   ├── agent-guidance.md.template   # Snippet for AGENTS.md / CLAUDE.md
+39	│   └── readme-roadmap.md.template   # Snippet for README.md
+40	├── scripts/                      # Executed during setup or by the agent
+41	│   ├── init.sh                   # One-shot setup of all of the above
+42	│   ├── todo-kanban.sh            # Validator + Markdown / JSON board renderer
+43	│   └── promote-todo.sh           # Atomic active → ## Done move + re-validate
+44	└── references/                   # Loaded on demand from SKILL.md links
+45	    ├── tag-schema.md             # Priority × effort schema and exact syntax
+46	    ├── when-to-add-docs.md       # Backlog vs pitfall vs invariant decision rules
+47	    ├── anti-patterns.md          # Mistakes to avoid
+48	    └── deployment-exclusion.md   # Per-mechanism ignore-rule cheatsheet
+49	```
+50	
+51	`SKILL.md` is intentionally short and points to `references/*.md` so the
+52	agent only loads decision detail when it needs it
+53	([progressive disclosure](https://agentskills.io/specification#progressive-disclosure)).
+54	
+55	## How to apply the skill in a fresh repo
+56	
+57	The default workflow is one command:
+58	
+59	```sh
+60	skills/local/project-knowledge-harness/scripts/init.sh \
+61	  --target /path/to/project \
+62	  --project-name "My Project" \
+63	  --deployment chezmoi   # or npm | pip | docker | none
+64	```
+65	
+66	This is idempotent — re-running it skips files that already exist and
+67	snippets whose sentinel marker is already present. Pass `--force` to
+68	overwrite the three template files; snippets are still appended only once.
+69	
+70	`init.sh` performs:
+71	
+72	1. Render `TODO.md`, `backlog/README.md`, `pitfalls/README.md` from
+73	   `assets/*.template`, substituting `<PROJECT NAME>`,
+74	   `<DEPLOYMENT MECHANISM>`, `<IGNORE FILE>`.
+75	2. Append the agent guidance snippet to `AGENTS.md` / `CLAUDE.md`
+76	   (auto-detected; override with `--agent-contract`).
+77	3. Append the "Roadmap & lessons learned" snippet to `README.md`
+78	   (skip with `--readme ""`).
+79	4. Run `todo-kanban.sh --validate-only TODO.md` to confirm the file is
+80	   machine-readable.
+81	5. Print the deployment-specific lines you should add to your ignore file.
+82	
+83	`init.sh` deliberately does **not** edit `.gitignore` /
+84	`.chezmoiignore.tmpl` / `.dockerignore` — the blast radius is too high
+85	for an automated tool. Use the printed cheatsheet as your TODO.
+86	
+87	## Bundled scripts in detail
+88	
+89	### `scripts/todo-kanban.sh`
+90	
+91	Validates the format and renders a kanban-style board.
+92	
+93	```sh
+94	scripts/todo-kanban.sh                    # default: TODO.md, Markdown board
+95	scripts/todo-kanban.sh path/to/TODO.md    # explicit file
+96	scripts/todo-kanban.sh --validate-only    # exit code only
+97	scripts/todo-kanban.sh --json             # machine-readable lane summary
+98	```
+99	
+100	Validation rules:
+101	
+102	- First non-empty heading must be `# TODO`.
+103	- Sections must appear in order: `## P1`, `## P2`, `## P3`, `## P?`,
+104	  `## Done`. Additional headings after `## Done` are allowed (e.g., a
+105	  `## Notes` or prune log section).
+106	- Top-level list items are validated:
+107	  - `P1` / `P2` / `P3`: `- [ ] **[Effort] Title** — description`
+108	  - `P?`:               `- [ ] **[?/Effort] Title** — description`
+109	  - `Done`:             `- ✅ [YYYY-MM-DD] [P#/Effort] Title — summary`
+110	  Effort is one of `S`, `M`, `L`, `XL`. Active items may end with
+111	  `→ [research](backlog/<slug>.md)`.
+112	- Anything that is **not** a top-level `- [ ]` / `- ✅` item — prose,
+113	  blockquotes, HTML comments, `---` rules, indented sub-bullets — is
+114	  ignored and does not count toward lane totals. This lets you write
+115	  inline guidance under each section without breaking the validator.
+116	- Compatible with macOS system Bash 3.2 (no associative arrays,
+117	  no `readarray`).
+118	
+119	### `scripts/promote-todo.sh`
+120	
+121	Move an active item from `P1` / `P2` / `P3` / `P?` into `## Done` with
+122	the dated `Done` syntax, then re-validate.
+123	
+124	```sh
+125	scripts/promote-todo.sh \
+126	  --title "<substring of the item's title>" \
+127	  --summary "<one-line shipped summary>"
+128	```
+129	
+130	Behaviour:
+131	
+132	- Substring match against the title field (case-sensitive). Refuses to
+133	  run if zero or multiple active items match — refine the substring.
+134	- Inserts the new `Done` entry immediately after the `## Done` heading,
+135	  using `date -u +%Y-%m-%d` (override with `--date YYYY-MM-DD`).
+136	- Looks up the validator next to itself; if validation fails after the
+137	  edit, the original file is restored.
+138	- Use `--dry-run` to preview the rewritten file without mutating.
+139	
+140	### `scripts/init.sh`
+141	
+142	See the workflow above. Notable flags:
+143	
+144	- `--agent-contract FILE` — override the auto-detected `AGENTS.md` /
+145	  `CLAUDE.md` / `.opencode/AGENTS.md` / `.cursorrules` choice.
+146	- `--readme ""` — skip the README snippet (useful for repos with their
+147	  own conventions).
+148	- `--no-validate` — skip the final `todo-kanban.sh --validate-only` pass
+149	  (for scripted bootstraps where validation is checked separately).
+150	
+151	## Reference docs the skill loads on demand
+152	
+153	- [`references/tag-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/tag-schema.md)
+154	  (also surfaced as a human-readable page: [Tag schema](../reference/tag-schema.md))
+155	- [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
+156	- [`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)
+157	- [`references/deployment-exclusion.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/deployment-exclusion.md)
+158	
+159	## How this repo uses the skill on itself
+160	
+161	The repo's own [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md),
+162	[`backlog/`](../../backlog/) (when populated), [`pitfalls/`](../../pitfalls/)
+163	(when populated), and [`scripts/`](../../scripts/) `todo-kanban.sh` /
+164	`promote-todo.sh` are a live example of the harness applied to a real
+165	project. The [`make kanban`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+166	target wraps the validator/renderer.
+167
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:58Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/quantatitive-factor-researcher.md`
+
+```text
+1	# quantatitive-factor-researcher
+2	
+3	A persona-style skill that turns the agent into a quantitative factor
+4	researcher for Python-based investment-strategy work. Use it when the user
+5	wants help designing, evaluating, or implementing factor-based strategies
+6	end-to-end: data acquisition → feature engineering → signal testing →
+7	risk control → backtest and performance evaluation.
+8	
+9	## When the skill triggers
+10	
+11	- The user asks for help building or analysing alpha / risk factors.
+12	- The user mentions tools like `pandas`, `numpy`, `scikit-learn`,
+13	  `vectorbt`, `PyTorch`, MLflow, or DVC in the context of trading research.
+14	- The user wants performance metrics interpreted (Sharpe Ratio, IR,
+15	  Tracking Error, Drawdown, etc.).
+16	- The user requests time-series-aware cross-validation (Purged
+17	  Group-Time-Series Split, walk-forward).
+18	
+19	Do **not** use this skill for general Python coding, generic data
+20	analysis, or unrelated finance topics (accounting, macro forecasts) —
+21	those don't benefit from the persona overhead.
+22	
+23	## Structure of the skill
+24	
+25	```
+26	skills/local/quantatitive-factor-researcher/
+27	└── SKILL.md   # persona + responsibilities + style/technical conventions
+28	```
+29	
+30	Single-file skill — no `assets/`, `scripts/`, or `references/`. The
+31	content is mostly persona + style guidance, which is the "right size" for
+32	inline content. If future additions grow beyond ~500 lines (e.g.,
+33	reusable backtest scaffolding, evaluation report templates), promote the
+34	extra material into `references/` and `assets/` rather than letting
+35	`SKILL.md` swell.
+36	
+37	## What the skill encodes
+38	
+39	### Core responsibilities
+40	
+41	1. Provide a rigorous, reproducible quant-research pipeline.
+42	2. Write and explain high-quality Python with type hints and English
+43	   comments.
+44	3. Explore and optimise alpha / risk factors with statistical and ML
+45	   methods (genetic algorithms, tree models, deep learning, Bayesian).
+46	4. When useful, supply LaTeX (English variables) and Matplotlib / Plotly
+47	   chart suggestions to explain methodology and results.
+48	5. Interpret backtest metrics and suggest improvements.
+49	
+50	### Language & style rules
+51	
+52	- If the user opens in Chinese, reply in Traditional Chinese with
+53	  English terminology in parentheses; specialist terms always carry the
+54	  English form.
+55	- LaTeX formulas use English variables and comments.
+56	- Python comments are in English; every function has type annotations
+57	  and a docstring.
+58	- Replies are structured (sections, bullets) but not verbose.
+59	- External references (papers, GitHub repos, datasets) include full
+60	  citation format.
+61	
+62	### Technical conventions
+63	
+64	- Vectorised operations and built-ins by default; explain parallel /
+65	  GPU acceleration when relevant.
+66	- Configuration-driven pipelines, with hooks into MLflow / DVC for
+67	  experiment tracking.
+68	- Strict against data leakage: Purged Group-Time-Series Split,
+69	  walk-forward validation, out-of-sample testing.
+70	
+71	## Limitations and known gaps
+72	
+73	- The skill ships no example notebooks or backtest scaffolding yet — it
+74	  is purely a persona. Adding `assets/` with reusable factor-evaluation
+75	  scaffolds is a candidate `[?/L]` item for [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md).
+76	- It does not currently bundle a "preferred data source" decision —
+77	  that interacts with the broader "Financial data sources skill set"
+78	  P? item already in the repo backlog.
+79
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:58Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/dvc-ml-workflow.md`
+
+```text
+1	# dvc-ml-workflow
+2	
+3	DVC ([Data Version Control](https://dvc.org/doc), upstream
+4	[treeverse/dvc](https://github.com/treeverse/dvc)) turns a git repo into a
+5	full ML lab: data and model files are versioned out-of-band, pipelines are
+6	declared in `dvc.yaml`, and experiments are run as **ephemeral git commits**
+7	with metrics and plots attached. No tracking server, no separate database —
+8	everything lives in your existing git history.
+9	
+10	This skill is opinionated about the parts of DVC that matter for production
+11	ML work: pipelines, queued experiments with metrics auto-bound to commits,
+12	and remote storage. It defers to the official docs at
+13	[dvc.org/doc](https://dvc.org/doc) for everything else and links them inline.
+14	
+15	> Iterative was acquired by Treeverse in 2024. `pip install dvc` resolves to
+16	> [github.com/treeverse/dvc](https://github.com/treeverse/dvc) — the link
+17	> redirects from the old `iterative/dvc`.
+18	
+19	## What ships
+20	
+21	- The full SKILL.md
+22	  ([skills/local/dvc-ml-workflow/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/SKILL.md))
+23	  with a three-mode mental model (`add` / pipeline / `exp run`), a decision
+24	  workflow, and a gotchas section calibrated to actual production failures.
+25	- Four references — read on demand, not preloaded into context:
+26	    - [`pipelines-and-stages.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/pipelines-and-stages.md)
+27	      — `dvc.yaml` schema, `foreach` matrix stages, `frozen`, `always_changed`.
+28	    - [`experiments-and-queue.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/experiments-and-queue.md)
+29	      — `dvc exp run --queue`, `dvc queue start --jobs N`, ephemeral-commit
+30	      semantics, `dvc exp apply` / `branch` / `gc`.
+31	    - [`data-and-remotes.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/data-and-remotes.md)
+32	      — S3 / GCS / Azure / SSH / GDrive / MinIO setup, credential handling.
+33	    - [`plots-and-metrics.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/plots-and-metrics.md)
+34	      — `dvc metrics diff`, plot templates, confusion matrices, VS Code extension.
+35	- Three scripts:
+36	    - [`init-dvc-project.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/init-dvc-project.sh)
+37	      — idempotent `dvc init` + `.gitignore` + optional `dvc remote add` +
+38	      drops the templates if missing.
+39	    - [`queue-helper.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/queue-helper.sh)
+40	      — agent-friendly wrapper around `dvc queue` with a `grid` subcommand
+41	      that does cartesian-product enqueueing in one call. JSON stdout.
+42	    - [`lint-dvcyaml.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/lint-dvcyaml.sh)
+43	      — parse-only validator (`dvc dag --dot`), exits non-zero on schema
+44	      errors without running any stage.
+45	- Three templates in `assets/`:
+46	  [`dvc.yaml.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/dvc.yaml.template),
+47	  [`params.yaml.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/params.yaml.template),
+48	  [`.dvcignore.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/.dvcignore.template).
+49	
+50	## Why DVC (in one paragraph)
+51	
+52	If you're already on git and want reproducibility without standing up a
+53	tracking server, DVC is hard to beat. The killer feature is that
+54	`dvc exp run --queue` + `dvc queue start --jobs N` runs a parameter sweep
+55	in parallel and **each completed run is a real commit** in `refs/exps/`
+56	with metrics, params, and outputs bundled — no separate database to
+57	correlate against. Promote one to a branch with `dvc exp apply`, garbage-
+58	collect the rest with `dvc exp gc`. The `dvc.yaml` pipeline format also
+59	gives you change-detection (`dvc repro` only re-runs stages whose deps
+60	changed), which `make` can't do for binary inputs.
+61	
+62	## Quick start
+63	
+64	```bash
+65	# Initialize in current dir (in an existing git repo):
+66	bash skills/local/dvc-ml-workflow/scripts/init-dvc-project.sh \
+67	  --remote s3://my-bucket/dvc-store
+68	
+69	# Edit the dvc.yaml + params.yaml templates, then:
+70	dvc repro                                  # run the pipeline once
+71	dvc exp run -S model.lr=1e-3              # try a different LR
+72	dvc exp run --queue -S model.lr=5e-4      # queue a sweep entry
+73	dvc queue start --jobs 4                  # parallel workers
+74	dvc exp show                              # tabular comparison
+75	```
+76	
+77	## Cross-references
+78	
+79	- Official docs: [dvc.org/doc](https://dvc.org/doc) — always link these,
+80	  don't paraphrase from memory; DVC's CLI surface changes between minor
+81	  versions.
+82	- Upstream repo: [github.com/treeverse/dvc](https://github.com/treeverse/dvc).
+83	- VS Code extension:
+84	  [marketplace.visualstudio.com/items?itemName=Iterative.dvc](https://marketplace.visualstudio.com/items?itemName=Iterative.dvc)
+85	  — adds a live experiments table, plot dashboard with parallel coordinates,
+86	  and `dvc.yaml` schema validation in the editor.
+87
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:58:59Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/marimo-batch-mlflow.md`
+
+```text
+1	# marimo-batch-mlflow
+2	
+3	Opinionated fork of [marimo-team/skills/marimo-batch](https://github.com/marimo-team/skills/tree/main/skills/marimo-batch)
+4	that swaps three things:
+5	
+6	| Concern | upstream `marimo-batch` | this skill |
+7	|---|---|---|
+8	| CLI parsing | `mo.cli_args()` + hand-rolled `rich.Table` for `--help` | `tyro.cli(ModelParams)` — auto `--help`, type coercion, validation |
+9	| Params model | Pydantic `BaseModel` | `dataclass` (primary) or `pydantic.BaseModel` (alternative) |
+10	| Tracking | Weights and Biases | MLflow (`mlflow` + optional [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) for live charts) |
+11	
+12	Pick this skill when the user has (or is happy with) MLflow and prefers
+13	strongly-typed CLIs. Pick upstream when the user is already on W&B.
+14	
+15	## What ships
+16	
+17	- The full SKILL.md
+18	  ([skills/local/marimo-batch-mlflow/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/SKILL.md))
+19	  with a decision matrix vs upstream, a dual-mode pattern recipe, and
+20	  cell-level templates for params / EnvConfig / training loop / live chart.
+21	- A reference notebook
+22	  ([starting-point.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/starting-point.py))
+23	  — full PyTorch training notebook with dataclass params, Tyro CLI, MLflow
+24	  logging, and a live `MlflowChart` cell that's gated off in script mode.
+25	- A Pydantic-variant snippet
+26	  ([params-pydantic.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/params-pydantic.py))
+27	  — only the params cell differs; rest of the notebook is identical.
+28	- A grid-search launcher
+29	  ([grid.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/grid.py))
+30	  — randomized sweeps via Hugging Face Jobs with MLflow secrets injected.
+31	  Dry-run by default; `--launch` actually submits.
+32	
+33	## Dual-mode pattern (the core idiom)
+34	
+35	```python
+36	import marimo as mo
+37	import tyro
+38	
+39	is_script_mode = mo.app_meta().mode == "script"
+40	
+41	if is_script_mode:
+42	    params = tyro.cli(ModelParams)        # CLI flags
+43	else:
+44	    mo.stop(form.value is None, mo.md("*Submit form to start.*"))
+45	    params = ModelParams(**form.value)    # UI form
+46	
+47	# Every cell below uses `params.epochs`, `params.batch_size`, ...
+48	# unaware of which branch produced it.
+49	```
+50	
+51	Same notebook serves as the UI for fast iteration **and** the entry point
+52	for `uv run notebook.py --epochs 50` batch jobs. No code duplication.
+53	
+54	## Why a fork instead of vendoring
+55	
+56	The upstream `marimo-batch` skill is opinionated towards W&B and
+57	`mo.cli_args()`. Vendoring + patching would be clobbered every sync; a
+58	local fork in `skills/local/` keeps the divergence safe and explicit. The
+59	SKILL.md cross-references upstream so users can pick the right variant.
+60	
+61	## Cross-references
+62	
+63	- Upstream [`marimo-batch`](https://github.com/marimo-team/skills/tree/main/skills/marimo-batch)
+64	  — the W&B variant; pick this if the user is already on W&B.
+65	- [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+66	  — general marimo authoring patterns (vendored from marimo-team).
+67	- [`anywidget-generator`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+68	  — for building custom live-chart widgets if `mlflow-widgets` doesn't
+69	  cover the case (vendored from marimo-team).
+70	- [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) —
+71	  the anywidget-based MLflow chart/table/parallel-coordinates components
+72	  used in `starting-point.py`'s live-chart cell.
+73	- [Tyro docs](https://brentyi.github.io/tyro/) — CLI generation reference;
+74	  supports dataclass, Pydantic, attrs.
+75
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:06Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/skill-author.zh-TW.md`
+
+```text
+1	# skill-author
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/mkdocs-site-bootstrap.zh-TW.md`
+
+```text
+1	# mkdocs-site-bootstrap
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:08Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/agent-history-hygiene.zh-TW.md`
+
+```text
+1	# agent-history-hygiene
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:09Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/mlflow-tracking.zh-TW.md`
+
+```text
+1	# mlflow-tracking
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:09Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/pueue-job-queue.zh-TW.md`
+
+```text
+1	# pueue-job-queue
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:10Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/project-knowledge-harness.zh-TW.md`
+
+```text
+1	# project-knowledge-harness
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:11Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/quantatitive-factor-researcher.zh-TW.md`
+
+```text
+1	# quantatitive-factor-researcher
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:11Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/dvc-ml-workflow.zh-TW.md`
+
+```text
+1	# dvc-ml-workflow
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:12Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/skills/marimo-batch-mlflow.zh-TW.md`
+
+```text
+1	# marimo-batch-mlflow
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 09:59:40Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# skill-author
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+**新 agent skill** 的撰寫輔助。出貨：
+
+- 一個 scaffolder
+  ([`new-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/new-skill.sh))
+  建立 `skills/local/<name>/` 並預先填入標準佈局。
+- 一個 linter
+  ([`lint-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/lint-skill.sh))
+  檢查 frontmatter、script 衛生、reference 可達性。
+- 兩份濃縮 agentskills.io 指南的 reference：
+  [authoring-patterns.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/authoring-patterns.md)
+  與 [script-design.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/script-design.md)。
+- 一份 repo-specific 慣例 reference
+  ([this-repo-conventions.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/this-repo-conventions.md))
+  說明佈局、鏡射、bash 3.2 相容性。
+- SKILL.md、reference 文件、bash script (含 `--help` / `--dry-run` /
+  strict-mode 樣板)、Python script (含 PEP 723 inline deps) 的 template。
+
+## 何時用這個 vs `skill-creator`
+
+| 任務 | 用 |
+|---|---|
+| 「我想做一個給 X 用的新 skill」 | **skill-author** |
+| 起手 SKILL.md / reference / script | **skill-author** |
+| Lint 一份草稿 skill | **skill-author** |
+| Skill 在預期時沒觸發 | `skill-creator` (description 優化) |
+| 跑測試案例 / benchmark 一個 skill | `skill-creator` (eval 迴圈) |
+
+兩者都適用時，先 `skill-author`，等結構對了再交棒給 `skill-creator`。
+
+## 快速開始
+
+\```bash
+# 1. Scaffold
+bash skills/local/skill-author/scripts/new-skill.sh my-skill
+
+# 2. 編輯 skills/local/my-skill/SKILL.md，填入 description 與 workflow
+
+# 3. Lint
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/my-skill
+
+# 4. (可選) 交棒給 skill-creator 做量化驗證
+\```
+
+## 為什麼是分開的 skill？
+
+`skill-creator`（Anthropic 出版、打包在 `.agents/skills/` 的那個）是 skill
+創建的 canonical 權威，但它重點放在 **eval/iterate 迴圈**：spawn subagent、
+評分、benchmark、優化 description 觸發率。`skill-author` 涵蓋
+agentskills.io best-practices 與 using-scripts 頁面文件化的**撰寫 pattern**
+—— gotchas 區段、output template、validation loop、calibrated specificity、
+agentic CLI 設計 —— 加上 repo-specific 慣例與可運作的 scaffolder/linter
+script。
+
+兩者互補，互相顯式 cross-reference。
+
+## Canonical SKILL.md
+
+完整觸發描述與工作流程見
+[skills/local/skill-author/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/SKILL.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/skill-author.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:00:15Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# mkdocs-site-bootstrap
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+為 repo 啟動一個 MkDocs Material 文件站，並（可選）部署到 GitHub Pages
+—— 包含這個 docs 站本身使用的同一個技術組合 (Material + `mkdocs-llmstxt` +
+`mkdocs-copy-to-llm` + `pymdownx.snippets`，附 paths-filter 的 GitHub
+Pages workflow)。
+
+這個 skill 是 **consent-gated**。它把偏好設定 (preferences) 記錄在
+`.skills/preferences.yaml`，避免每次 session 都重問；**永遠不會**自動
+遷移使用者既有的 `docs/` 內容；也會在使用者明確同意後才呼叫
+`gh api -X POST .../pages`。
+
+## 快速開始
+
+\```bash
+# 1. Scaffold 站點檔案
+bash skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
+  --site-name "My Project" \
+  --repo-slug owner/repo \
+  --site-url https://owner.github.io/repo/
+
+# 2. 本機驗證
+uv sync --extra docs && uv run mkdocs build --strict
+
+# 3. 啟用 GitHub Pages 並觸發第一次部署 (consent gate)
+bash skills/local/mkdocs-site-bootstrap/scripts/enable-pages.sh \
+  --repo owner/repo
+
+# 4. 之後新增頁面
+bash skills/local/mkdocs-site-bootstrap/scripts/add-docs-page.sh \
+  --section Reference --title "API schema"
+\```
+
+## 附帶的 script
+
+| Script | 用途 |
+|---|---|
+| `init-docs-site.sh` | Scaffold `mkdocs.yml`、`pyproject.toml`、`docs/`、`.github/workflows/docs.yml` |
+| `enable-pages.sh` | 透過 `gh api` 啟用 Pages 並觸發第一次部署 |
+| `add-docs-page.sh` | 建立新的 `docs/` 頁面並插入 `mkdocs.yml` nav |
+| `check-preferences.sh` | 讀 / 寫 / 重置 `.skills/preferences.yaml` |
+| `add-language.sh` | 把非預設語言（例 zh-TW）改裝 (retrofit) 到既有站點 |
+
+所有 script 都支援 `--help` 跟 `--dry-run`。
+
+## 偏好設定 (Preferences)
+
+skill 寫入 `<repo>/.skills/preferences.yaml`：
+
+\```yaml
+mkdocs_site_bootstrap:
+  enabled: true
+  decided_at: "2026-04-23"
+  stack: mkdocs-material
+  auto_deploy: true
+  pages_deployed: true
+  existing_docs_decision: skipped
+  site_url: https://owner.github.io/repo/
+  repo_slug: owner/repo
+  # i18n keys
+  languages: ["en", "zh-TW"]
+  keep_english_terms: true
+  i18n_structure: suffix
+\```
+
+要改變主意：
+
+\```bash
+# 重置 (回到「從未詢問」狀態)
+bash skills/local/mkdocs-site-bootstrap/scripts/check-preferences.sh \
+  --reset mkdocs_site_bootstrap
+
+# 或顯式 opt out 讓 agent 停止詢問
+bash skills/local/mkdocs-site-bootstrap/scripts/check-preferences.sh \
+  --set mkdocs_site_bootstrap.enabled=false
+\```
+
+完整 schema 與跨 skill 偏好慣例見
+[`references/preferences-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/preferences-schema.md)。
+
+## 既有的 `docs/` 內容
+
+這個 skill 會偵測到既有 `docs/` 內容、並在做任何事之前**先問**。
+它**永遠不會**自動遷移、改名、改寫使用者的檔案。三個 consent 選項：
+
+- **skip** —— 不動 docs，只建立 `mkdocs.yml` 配空白 nav (auto-generate)
+- **wrap** —— 同 skip，但用既有檔案依字母順序填入 `nav:`
+- **manual** —— 中止，使用者先重組再重跑
+
+完整決策樹見
+[`references/existing-docs-handling.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/existing-docs-handling.md)。
+
+## 雙語 / 多語 docs
+
+這個 skill 也支援透過
+[`mkdocs-static-i18n`](https://github.com/squidfunk/mkdocs-material/discussions/2346)
+把非英文語言（例如 `zh-TW`）改裝到既有站點 —— 預設保留 `mkdocs-llmstxt`、
+並用 `--drop-strict` 自動 patch CI/Makefile：
+
+\```bash
+bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
+  --lang zh-TW --drop-strict
+\```
+
+完整指引（包含**「中文 (English original)」術語規則**、與 `llmstxt` /
+`navigation.instant` 的不相容性）見
+[`references/i18n-guide.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-guide.md)。
+
+## 為什麼是 skill 而不是一次性 script？
+
+因為 docs 站不是一次性 setup —— 它會演化。這個 skill 的存在是為了：
+
+1. 把最初的 scaffold 做對 (consent-gated、idempotent)。
+2. 之後持續用 `add-docs-page.sh` 幫忙加頁面。
+3. 記住使用者已經做過的決定，未來 session 不要煩人。
+4. 提供一個地方編碼那些 gotcha (連結規則、snippets dir、`pages: write`
+   權限等)，避免每個 project 都要重新發現。
+
+附帶的 `references/docs-stack-recipe.md` 文件化技術組合實際上是什麼，
+這樣想手動套用零件的使用者不必調用 skill 也能拿到配方。
+
+## Canonical SKILL.md
+
+完整觸發描述、工作流程、與 gotcha 見
+[skills/local/mkdocs-site-bootstrap/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/SKILL.md)。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/mkdocs-site-bootstrap.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:00:58Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# agent-history-hygiene
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+把 coding agent 的對話 transcript 與 plan 檔，跟它們產生的功能 diff 一起
+commit，且不讓 `.env` 內容或 API key 漏到 git 歷史。
+
+| 介面 (Surface) | 它回答的問題 |
+|---|---|
+| `find-session.sh` | 「**我**目前 session 的 transcript / plan 是哪一個？」 |
+| `stage-agent-artifacts.sh` | 「下次 commit 應該包含哪些 agent 檔？」 |
+| `bootstrap-project.sh` | 「怎麼把 pre-commit + gitleaks + redactor 裝進新 repo？」 |
+| `scan-staged.sh` | 「我準備 commit 的東西裡有沒有洩漏的 secret？」 |
+| `references/remediation.md` | 「我已經 push 了 secret —— 現在怎麼辦？」 |
+
+這個 skill 的存在是為了阻止三種常見失敗：
+
+1. Agent 因為把 `.specstory/history/*.md` 跟 `.claude/plans/*.md` 看成
+   生成 (generated) 產物，**默默地**從 commit 中漏掉它們。
+2. 對話 transcript 中意外的 `.env` echo，被 commit 並 push 出去。
+3. 洩漏後的 reflexive `git push --force` —— 它根本不會撤銷憑證
+   (credential)，反而常常毀掉隊友的工作。
+
+## skill 觸發時機
+
+- 「Commit my chat」/「save the specstory session」/「stage the plan
+  file」/「把 plan 跟 specstory 一起 commit 進去」。
+- `git status` 中出現未追蹤的 `.specstory/history/*.md` 或
+  `.claude/plans/*.md`。
+- 「Scrub this transcript」/「redact my key」/「gitleaks flagged my
+  chat history」。
+- 「Set up pre-commit for this repo」/「bootstrap secret scanning」。
+- 「I pushed a `.env`」/「a secret went to main」 —— skill 會把使用者
+  導向 rotate-first runbook，而不是去做歷史改寫。
+
+## 結構
+
+\```
+skills/local/agent-history-hygiene/
+├── SKILL.md                                  # ~260 行
+├── scripts/
+│   ├── find-session.sh                       # 定位目前 SpecStory + Claude session
+│   ├── stage-agent-artifacts.sh              # git-add 對的 artifact
+│   ├── bootstrap-project.sh                  # 安裝 pre-commit + gitleaks + redactor
+│   └── scan-staged.sh                        # 帶 agent-friendly exit code 的 gitleaks 包裝
+├── references/
+│   ├── transcript-session-discovery.md       # SpecStory / Claude session 佈局
+│   ├── pre-commit-redaction-stack.md         # 分層防禦設計
+│   └── remediation.md                        # rotate-first 洩漏處理流程
+└── assets/
+    ├── artifact-dirs.txt                     # 可設定的 agent artifact 目錄清單
+    ├── pre-commit-config.yaml.template
+    ├── gitleaks.toml.template
+    └── redact_secrets.py                     # bundled 副本；chezmoi 是 upstream
+\```
+
+## 與 chezmoi 的整合
+
+這個 skill 疊在使用者既有的 chezmoi 基礎設施之上（如有）：
+
+- `~/.config/git/hooks/pre-commit`（全域 `core.hooksPath`）跑這個 skill
+  在 repo 層級裝的 `.pre-commit-config.yaml`。
+- `~/.local/share/chezmoi/scripts/redact_secrets.py` 是 bundled redactor
+  的 upstream truth；`bootstrap-project.sh --from-chezmoi` 用 symlink
+  而非 copy，這樣修正會 propagate。
+- `~/.local/share/chezmoi/.gitleaks.toml` 跟 skill 的
+  `gitleaks.toml.template` 共用 rule ID，這樣 `.gitleaksignore` /
+  allowlist 微調可在 repo 間 portable。
+
+對沒有 chezmoi 的 repo，`bootstrap-project.sh` 產生自包含的 stack。
+
+## 預設工作流程：把功能跟對話一起 commit
+
+\```bash
+# 1. 確保 agent 知道哪一個 session 是「我們的」。
+bash skills/local/agent-history-hygiene/scripts/find-session.sh
+
+# 2. Stage code，再自動 add agent artifact。
+git add path/to/feature.ts
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
+
+# 3. Belt-and-suspenders 的 secret 掃描。
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+
+# 4. Commit。Pre-commit 會把 redact + gitleaks 當成 catch-all 再跑一次。
+git commit -m "feat: ..."
+\```
+
+## 洩漏後的紀律 (Post-leak discipline)
+
+`scan-staged.sh` 的 exit code 依洩漏狀態分支 (0 clean、10 redacted、
+20 leaks、30 沒裝 gitleaks)。當有洩漏溜過去：
+
+1. **在供應商端輪換 (rotate)。** 這是唯一真正撤銷 credential 的動作。
+   連結見 `references/remediation.md` §1。
+2. **評估爆炸半徑 (blast radius)。** 本地未 push？feature branch？main？
+3. **只在便宜時才清洗 (scrub)。** 未 push commit 用 amend 或
+   `reset --soft`；feature branch 用 `git filter-repo` +
+   force-with-lease；**永遠不要**改寫 `main`。
+
+runbook 顯式禁止對共用 branch 做 `git push --force` —— 詳見
+`references/remediation.md` §5。
+
+## Gotchas
+
+- Claude Code 的 project-level `plansDirectory` 有時會被忽略
+  ([issue #19537](https://github.com/anthropics/claude-code/issues/19537))；
+  把它設在 user-level (`~/.claude/settings.json`) 當預設。
+- `gitleaks protect` 從 v8.19.0 起被棄用 —— 用 `gitleaks git --staged`。
+  skill 中所有地方都用現代語法。
+- `pre-commit install` 是 per-clone —— 每個隊友（跟 CI）都必須跑，
+  hook 才會觸發。
+- 全域 `core.hooksPath` 只在 repo 有 `.pre-commit-config.yaml` 時才執行；
+  bootstrap 之前的裸 repo 是不受保護的。
+
+## 另見
+
+- [Source](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/agent-history-hygiene)
+- [`project-knowledge-harness`](project-knowledge-harness.md) ——
+  互補的記憶 harness，把 `.claude/plans/` 視為 ephemeral 塗鴉本。
+  這個 skill 補上閉環，確保那些塗鴉本實際上會落到 git 裡。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/agent-history-hygiene.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:01:49Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# mlflow-tracking
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+通用 [MLflow](https://mlflow.org/docs/latest) skill (upstream
+[mlflow/mlflow](https://github.com/mlflow/mlflow)) —— 涵蓋 experiment
+tracking、model registry、與 LLM tracing，適用於任何 Python project。
+
+這是 **general-purpose** 的 MLflow skill。如果要的是 marimo 專用的雙模式
+(UI + batch CLI) 變體，請改用
+[`marimo-batch-mlflow`](marimo-batch-mlflow.md) —— 那個是建立在 marimo
+notebook 之上的特化版本。
+
+## 三種部署模式 (寫 code 前先選一種)
+
+| 模式 | Tracking URI | 何時選 |
+|---|---|---|
+| File | `file:./mlruns` (預設) | 一次性實驗、不要 UI、不要 model registry |
+| **SQLite + `mlflow ui`** ⭐ | `sqlite:///mlflow.db` | 個人作業、想要 UI 但不想跑 server、需要 model registry |
+| **Docker Compose stack** ⭐ | `http://host:8000` (PostgreSQL + MinIO) | 團隊使用、production、平行 job、大型 artifact |
+| Databricks-managed | `databricks://` | 已經付錢給 Databricks (本 skill 範圍外) |
+
+兩個有星號的模式涵蓋 ~95% 真實使用情境。**File 模式不支援 model
+registry** —— 如果使用者要用 `register_model`，需要 SQLite 或 server。
+
+## 出貨內容 (What ships)
+
+- 完整的 SKILL.md
+  ([skills/local/mlflow-tracking/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/SKILL.md))
+  含部署模式決策表、Manual-vs-Autolog 選擇、以及對應實際 production
+  失敗 calibrate 過的 gotcha 區段（`mlflow ui` 的 `--backend-store-uri`
+  陷阱、autolog 順序、棄用 stage 等）。
+- 六份 reference —— 按需載入：
+    - [`sqlite-local.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/sqlite-local.md)
+      —— SQLite 模式 setup、`--backend-store-uri` 陷阱、何時遷移到
+      PostgreSQL。
+    - [`docker-compose-server.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/docker-compose-server.md)
+      —— production stack 維運、`.env` 客製化、AWS S3 替換、basic
+      auth、備份策略。
+    - [`llm-tracing.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/llm-tracing.md)
+      —— 依供應商 autolog (OpenAI、Anthropic、LangChain、LlamaIndex、
+      DSPy、AutoGen、CrewAI、LiteLLM、Bedrock、Gemini、…)、
+      `@mlflow.trace`、span 類型、`search_traces`、與
+      Weave/LangSmith/Langfuse 的比較。
+    - [`model-registry.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/model-registry.md)
+      —— **alias** (現行 API：Champion / Challenger) vs 棄用的 stage、
+      註冊 pattern、webhook。
+    - [`autologging-by-framework.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/autologging-by-framework.md)
+      —— 每個官方支援的框架及 per-library 陷阱 (sklearn、pytorch、
+      lightning、tensorflow、keras、xgboost、lightgbm、catboost、
+      statsmodels、spark、fastai、paddle、transformers、…)。
+    - [`mlflow-widgets-anywidget.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/mlflow-widgets-anywidget.md)
+      —— 在 marimo / Jupyter 中使用
+      [mlflow-widgets](https://github.com/daviddwlee84/mlflow-widgets)
+      做即時圖表，無需啟動完整 UI。
+- 三個 script：
+    - [`init-mlflow-sqlite.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/init-mlflow-sqlite.sh)
+      —— idempotent 的 SQLite 模式 setup；印出帶正確
+      `--backend-store-uri` 的 `mlflow ui` 指令 (SQLite 第一名陷阱)。
+    - [`start-mlflow-server.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/start-mlflow-server.sh)
+      —— 把 bundled docker-compose stack 複製到目標目錄、產生帶
+      rotate 過隨機 secret 的 `.env`、跑 `docker compose up -d`、
+      等 healthcheck、印出 URL 與 client 端要 export 的 env var。
+    - [`tail-runs.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/scripts/tail-runs.sh)
+      —— PEP 723 inline-deps Python script (透過 `uv run` 跑、
+      無需 env setup)，包裝 `mlflow.search_runs` 並提供 JSON 或 CSV
+      輸出供終端使用。
+- vendored 在 `assets/docker-compose-stack/` 的 production stack：
+    - [`docker-compose.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/docker-compose.yaml)
+      —— PostgreSQL + MinIO + tracking server + bucket bootstrap，
+      含 healthcheck 與 `depends_on` 順序。
+    - [`Dockerfile`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/Dockerfile)
+      —— 鎖定 (pin) 過的 MLflow image + `psycopg2-binary` + `boto3`。
+    - [`.env.example`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/.env.example)
+      —— 所有旋鈕都文件化；預設 port 8000 避開 macOS AirPlay 的 5000。
+    - [`README.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/assets/docker-compose-stack/README.md)
+      —— 快速開始、疑難排解、何時超出這個 stack 的能力。
+
+## 為什麼跟 `marimo-batch-mlflow` 共存
+
+| 關注點 | `mlflow-tracking` (這個) | `marimo-batch-mlflow` |
+|---|---|---|
+| Scope | 任何 Python project、任何 trainer | 專門針對 marimo notebook |
+| 焦點 | Tracking server setup、registry、LLM trace、autolog | 雙模式 notebook pattern (UI + CLI) 使用 MLflow |
+| 含 Docker stack？ | 是，從 production vendor | 否 |
+| 含 LLM tracing？ | 是，完整 reference | 否 |
+
+當使用者要用 MLflow 作為通用 tracking backend 時用這個 skill。
+當他們特別在寫需要同時當互動 UI 跟 batch CLI 跑的 marimo notebook
+時用 `marimo-batch-mlflow`。
+
+## 快速開始
+
+**SQLite (個人)**：
+
+\```bash
+bash skills/local/mlflow-tracking/scripts/init-mlflow-sqlite.sh
+# → 印出精確的 `mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5001`
+\```
+
+**Docker Compose stack (團隊)**：
+
+\```bash
+bash skills/local/mlflow-tracking/scripts/start-mlflow-server.sh \
+  --target-dir infra/mlflow
+# → 複製 stack、在 .env 中 rotate secret、啟動、等 healthcheck、
+#   印出 client 機器要 export 的 env var
+\```
+
+**在你的訓練 code 中** (任何模式都通用)：
+
+\```python
+import mlflow
+
+mlflow.set_tracking_uri("http://localhost:8000")    # 或 "sqlite:///mlflow.db"
+mlflow.set_experiment("my-project")
+mlflow.autolog()                                    # zero-touch logging
+
+with mlflow.start_run():
+    model.fit(X, y)                                 # params、metrics、model 全部 logged
+\```
+
+## Cross-references
+
+- 官方文件：[mlflow.org/docs/latest](https://mlflow.org/docs/latest) ——
+  永遠連這個。MLflow 每 4–6 週出貨；LLM tracing 特別是個移動標靶。
+- Upstream repo：[github.com/mlflow/mlflow](https://github.com/mlflow/mlflow)。
+- [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) ——
+  anywidget-based 的圖表 / 表格，把即時 MLflow 資料嵌進 marimo /
+  Jupyter cell。Demo：
+  [daviddwlee84.github.io/mlflow-widgets](https://daviddwlee84.github.io/mlflow-widgets/)。
+- [`marimo-batch-mlflow`](marimo-batch-mlflow.md) —— 給雙模式 (UI + batch
+  CLI) notebook 用的 marimo 專屬變體。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/mlflow-tracking.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:02:52Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# pueue-job-queue
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+驅動 [Nukesor/pueue](https://github.com/Nukesor/pueue) —— 一個由 daemon
+撐起來的 shell job queue —— 做佇列 (queued)、平行、排程、輕度 DAG 化的
+shell 工作。這個 skill 是個 **CLI 橋接器**，**不是**自製排程器：它包裝
+`pueue add --after`、`pueue status --json`、`pueue log --json`，讓 agent
+可以提交、批次、串接、等待、重試，而不會搞丟正在跑的東西。
+
+| 介面 | 它回答的問題 |
+|---|---|
+| `check-daemon.sh` | 「`pueued` 在跑嗎？這個 OS 上 log 在哪？」 |
+| `submit.sh` | 「提交一個任務並給我可解析的 `{task_id, label, group, after}`。」 |
+| `submit-dag.py` | 「把整條 fan-out / fan-in pipeline 提交、依賴接好 —— 在一個依 DAG 寬度開大小的、全新隔離的 group 中。」 |
+| `wait.py` | 「Block 直到這些任務結束，並摘要成功 / 失敗。」 |
+| `cleanup.sh` | 「回收 disk + status 延遲：清掉舊任務、空的 group、log 檔。」 |
+| `references/cli-cheatsheet.md` | 「我該抓哪個沒被包裝的 `pueue` subcommand？」 |
+| `references/json-schema.md` | 「`pueue status --json` 長什麼樣？QUERY DSL 語法是什麼？」 |
+| `references/dag-patterns.md` | 「fan-out / fan-in / 菱形怎麼表達？」 |
+| `references/daemon-and-config.md` | 「macOS / Linux 怎麼自動啟動 `pueued`？」 |
+
+這個 skill 存在是為了讓 agent 不必煩三件事：
+
+1. **記帳 (Bookkeeping)** —— task id、依賴接線、group 自動建立、
+   `pueue add --print-task-id` 的 id 防禦性解析。
+2. **Schema 漂移** —— `pueue status --json` 用 serde tagged enum
+   (`{"Done": {"result": "Success" | "DependencyFailed" | "Killed" | {"Failed": <int>}}}`)。
+   `wait.py` 分類所有變體，回傳可預測的 exit code (`0` ok、
+   `5` 任何失敗、`6` timeout)。
+3. **Footgun** —— `pueue add -- bash -c 'sleep 60'` **不會**保留內層
+   引號 (pueue 會 re-shell)；`pueue kill --all` 也會暫停每個 group；
+   `pueue restart` (預設) 建立**新的** id；`pueue clean` (預設) 也會
+   清掉失敗。SKILL.md 有一份 10 條的 gotcha 清單涵蓋每一個。
+
+## skill 觸發時機
+
+- 「跑這 30 個指令，最多 4 個同時」→ 設 group 平行度，迴圈
+  `submit.sh --group sweep`。
+- 「啟動一個長訓練 job 然後我可以闔上筆電」→ `submit.sh
+  -- ./train.sh` (pueue 跨 reboot 持久)。
+- 「task B 只在 task A 成功後跑」→ `submit.sh --after $A_ID -- ./b.sh`。
+- 「fan out 4 個訓練，再 evaluate」→ `submit-dag.py dag.yaml`。
+- 「今晚排程跑這個」→ `submit.sh --delay 6h -- ./nightly.sh`。
+- 使用者說 **pueue / pueued / pueue add / pueue queue / pueue group**
+  或問「shell job 的 task queue」。
+
+## 何時不該用
+
+- 一個短的 shell 指令 —— 直接跑就好，pueue 帶 daemon 開銷。
+- 跨主機排程、OR-deps、條件分支、retry-with-backoff、typed task IO
+  —— 升級到 **Airflow / Prefect / Dagster / DVC / Slurm**。
+  `references/dag-patterns.md` 有決策表。
+- 長時間執行的 service —— 那是 `systemd` / `launchd` 的事。
+
+## 結構
+
+\```
+skills/local/pueue-job-queue/
+├── SKILL.md                                  # ~275 行
+├── scripts/
+│   ├── check-daemon.sh                       # bash; daemon 健康 + auto-start
+│   ├── submit.sh                             # bash; submit-one 包裝、JSON out、group 自動建立
+│   ├── wait.py                               # PEP 723; block 直到終止狀態、state-change events、JSON 摘要
+│   ├── submit-dag.py                         # PEP 723 (pyyaml); DAG submitter 含 --isolated-group / --auto-parallel
+│   └── cleanup.sh                            # bash; 清 task + 空 group + 老 log 檔
+├── references/
+│   ├── cli-cheatsheet.md                     # 沒被包裝的指令
+│   ├── json-schema.md                        # 觀察到的 status --json 形狀 (4.0.2) + QUERY DSL + jq 食譜
+│   ├── dag-patterns.md                       # fan-out / fan-in / diamond + 升級表
+│   └── daemon-and-config.md                  # 各 OS 的 pueued setup、config 旋鈕、log 路徑
+├── assets/
+│   ├── dag.example.yaml                      # 5-task fan-out / fan-in fixture
+│   └── pueue.yml.example                     # config with `pause_group_on_failure: true`
+└── tests/
+    ├── conftest.py                           # 隔離的 pueued fixture，無 pueue 時 skip
+    ├── test_submit.py                        # submit.sh 路徑 + 依賴失敗
+    ├── test_dag.py                           # 拓撲 invariant、cycle/unknown/missing-cmd、isolated-group
+    ├── test_wait.py                          # 成功/失敗/timeout exit code
+    ├── test_contracts.sh                     # bash --help/error-code 契約
+    └── fixtures/simple-dag.yaml              # 4-task diamond
+\```
+
+## 永遠帶 label
+
+`pueue status` 會把 **label** 欄位顯示在 command 之前。在繁忙佇列中，
+掃 label 是一眼分辨多個 `train.py` run 的唯一方法。skill 的 gotcha 區段
+的開頭就是：
+
+> 提交時永遠帶 `--label`，且偏好能把這個 task 跟它的兄弟區分開的名字。
+
+慣例：`<verb>-<subject>-<key>` (≤30 字元)。把區別 (seed、dataset slice、
+model variant) 編進去 —— 不是命令本身：
+
+| 好 | 壞 |
+|---|---|
+| `train-baseline-seed1` | `task1` |
+| `eval-prod-2026q1` | `python eval.py --quarter 2026q1` |
+| `nightly-featurize` (DAG) | `step-2-of-5` |
+
+`submit-dag.py --label-prefix <run>-` 會產生 `<run>-<task_name>`，
+這樣 `wait.py --label-prefix <run>-` 可以選整張圖、`pueue clean`
+也可以稍後依此過濾。
+
+## 經驗 schema (Empirical schema)
+
+Pueue 的 JSON 輸出在 wiki 沒有正式文件化。skill 在
+`references/json-schema.md` 出貨在 **pueue 4.0.2** 上觀察到的形狀，
+含一個用來在不同主版本上重新驗證的診斷片段。關鍵形狀：
+
+\```json
+{
+  "tasks": {
+    "<id>": {
+      "id": 17,
+      "label": "train-baseline-seed1",
+      "group": "ml",
+      "dependencies": [12, 14],
+      "status": {
+        "Done": {
+          "enqueued_at": "...", "start": "...", "end": "...",
+          "result": "Success"            // 或 "DependencyFailed" | "Killed" | {"Failed": 1}
+        }
+      }
+    }
+  },
+  "groups": {
+    "default": {"status": "Running", "parallel_tasks": 1}
+  }
+}
+\```
+
+`wait.py` 分類每一種變體；如果未來 pueue release 新增一種（比方
+`Suspended`），測試套件會在 skill 變得啞掉前抓到。
+
+## 驗證 (Verification)
+
+skill 出貨 **22 個 pytest 案例**，會在 tempdir-scoped config 底下啟動
+隔離的 `pueued` —— 你的真實佇列永遠不會被碰到 —— 加上一個 bash
+exit-code 契約測試。`pueue` / `pueued` 不在 `PATH` 時兩者都會自動 skip。
+`lint-skill --strict` 是乾淨的 (0 error、0 warning)。
+
+\```bash
+uv run --extra dev pytest skills/local/pueue-job-queue/tests/ -q
+bash skills/local/pueue-job-queue/tests/test_contracts.sh
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/pueue-job-queue --strict
+\```
+
+pytest fixture 在測試之間用 `pueue reset --force`，因為樸素的
+`pueue kill --all` 也會暫停每個 group —— 一個值得文件化、非顯而易見的
+失敗模式（詳見 SKILL.md gotcha）。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/pueue-job-queue.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:03:48Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# project-knowledge-harness
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+一個輕量、檔案為基礎 (file-based) 的記憶 harness，給任何軟體 project
+三個界線分明的介面：
+
+| 介面 | 時間方向 | 它回答的問題 | 存取模式 |
+|---|---|---|---|
+| `TODO.md` | 未來 | 「我們之後可能會做什麼？」 | 由上往下讀 (priority lane) |
+| `backlog/<slug>.md` | 未來 | 「這個想法背後的分析是什麼？」 | 從 `TODO.md` 索引 |
+| `pitfalls/<slug>.md` | **過去** | **「我看到錯誤 X —— 以前發生過嗎？」** | **Grep 症狀關鍵字** |
+
+這個 skill 存在是為了阻止兩種常見失敗：有價值的調查從對話歷史蒸發，
+以及 `IDEAS.md` / `ROADMAP.md` / `WISHLIST.md` / `LESSONS.md` 那種沒人
+維護的檔案墳場。
+
+## skill 觸發時機
+
+未來方向訊號：「想法該放哪？」、「之後再說」、「nice to have」、
+「工程量太大需要再評估」、「先記下來」。
+
+過去方向訊號：「保存這次除錯紀錄」、「踩過的坑」、`docs/` 裡到處是
+散亂的「Common issues」區段。
+
+任一：「有個地方放 X 嗎？」其中 X 是關於決策或歷史的 metadata，而非
+當前功能。
+
+## skill 自身的結構
+
+\```
+skills/local/project-knowledge-harness/
+├── SKILL.md                      # ~170 行的進入點；activation 時載入
+├── assets/                       # 複製到目標 project
+│   ├── TODO.md.template
+│   ├── backlog-README.md.template
+│   ├── backlog-doc.md.template
+│   ├── pitfalls-README.md.template
+│   ├── pitfall-doc.md.template
+│   ├── agent-guidance.md.template   # 給 AGENTS.md / CLAUDE.md 的片段
+│   └── readme-roadmap.md.template   # 給 README.md 的片段
+├── scripts/                      # 在 setup 時或被 agent 執行
+│   ├── init.sh                   # 上述全部的一次性 setup
+│   ├── todo-kanban.sh            # validator + Markdown / JSON 看板渲染器
+│   └── promote-todo.sh           # 原子性 active → ## Done 搬移 + 重新驗證
+└── references/                   # 從 SKILL.md 連結按需載入
+    ├── tag-schema.md             # priority × effort schema 與精確語法
+    ├── when-to-add-docs.md       # backlog vs pitfall vs invariant 決策規則
+    ├── anti-patterns.md          # 該避免的錯誤
+    └── deployment-exclusion.md   # 各部署機制的 ignore-rule 快查
+\```
+
+`SKILL.md` 刻意短，並指向 `references/*.md`，這樣 agent 只在需要時才
+載入決策細節（[漸進式揭露 (progressive disclosure)](https://agentskills.io/specification#progressive-disclosure)）。
+
+## 在新 repo 套用 skill
+
+預設工作流程是一行指令：
+
+\```sh
+skills/local/project-knowledge-harness/scripts/init.sh \
+  --target /path/to/project \
+  --project-name "My Project" \
+  --deployment chezmoi   # 或 npm | pip | docker | none
+\```
+
+這是 idempotent 的 —— 重複跑會 skip 已經存在的檔案、以及 sentinel
+marker 已存在的片段。傳 `--force` 來覆寫三個 template 檔；片段仍然
+只會 append 一次。
+
+`init.sh` 做的事：
+
+1. 從 `assets/*.template` 渲染 `TODO.md`、`backlog/README.md`、
+   `pitfalls/README.md`，替換 `<PROJECT NAME>`、
+   `<DEPLOYMENT MECHANISM>`、`<IGNORE FILE>`。
+2. 把 agent 指引片段 append 到 `AGENTS.md` / `CLAUDE.md`
+   (自動偵測；用 `--agent-contract` 覆寫)。
+3. 把 "Roadmap & lessons learned" 片段 append 到 `README.md`
+   (用 `--readme ""` 跳過)。
+4. 跑 `todo-kanban.sh --validate-only TODO.md` 確認檔案是 machine-readable。
+5. 印出你應該加到 ignore 檔的部署相關行。
+
+`init.sh` 刻意**不**編輯 `.gitignore` / `.chezmoiignore.tmpl` /
+`.dockerignore` —— 這對自動化工具來說爆炸半徑太大。把印出的快查當
+成你的 TODO。
+
+## Bundled scripts 細節
+
+### `scripts/todo-kanban.sh`
+
+驗證格式並渲染看板樣式的板子。
+
+\```sh
+scripts/todo-kanban.sh                    # 預設：TODO.md，Markdown 看板
+scripts/todo-kanban.sh path/to/TODO.md    # 顯式檔案
+scripts/todo-kanban.sh --validate-only    # 只回 exit code
+scripts/todo-kanban.sh --json             # 機器可讀的 lane 摘要
+\```
+
+驗證規則：
+
+- 第一個非空 heading 必須是 `# TODO`。
+- Section 必須按順序：`## P1`、`## P2`、`## P3`、`## P?`、
+  `## Done`。`## Done` 之後允許額外 heading (例如 `## Notes` 或 prune
+  log section)。
+- 頂層 list 條目會被驗證：
+  - `P1` / `P2` / `P3`：`- [ ] **[Effort] Title** — description`
+  - `P?`：              `- [ ] **[?/Effort] Title** — description`
+  - `Done`：            `- ✅ [YYYY-MM-DD] [P#/Effort] Title — summary`
+  Effort 是 `S`、`M`、`L`、`XL` 之一。Active 條目可以 `→ [research](backlog/<slug>.md)` 結尾。
+- 任何**不是**頂層 `- [ ]` / `- ✅` 條目的東西 —— 散文、blockquote、
+  HTML 註解、`---` 分隔線、縮排 sub-bullet —— 都會被忽略，不會列入 lane
+  總數。這讓你在每個 section 底下寫內聯指引而不破壞 validator。
+- 與 macOS 系統 Bash 3.2 相容 (沒有 associative array、沒有 `readarray`)。
+
+### `scripts/promote-todo.sh`
+
+把 `P1` / `P2` / `P3` / `P?` 的 active 條目搬到 `## Done`，使用日期化
+的 `Done` 語法，並重新驗證。
+
+\```sh
+scripts/promote-todo.sh \
+  --title "<substring of the item's title>" \
+  --summary "<one-line shipped summary>"
+\```
+
+行為：
+
+- 對標題欄位做 substring 匹配 (case-sensitive)。如果 0 個或多個 active
+  條目匹配就拒絕跑 —— 把 substring 寫精準。
+- 把新的 `Done` 條目插入 `## Done` heading 之後，使用
+  `date -u +%Y-%m-%d` (用 `--date YYYY-MM-DD` 覆寫)。
+- 在自身旁邊查找 validator；編輯後驗證失敗就還原原檔。
+- 用 `--dry-run` 預覽改寫後的檔案而不改動。
+
+### `scripts/init.sh`
+
+詳見上面工作流程。值得注意的 flag：
+
+- `--agent-contract FILE` —— 覆寫自動偵測的 `AGENTS.md` /
+  `CLAUDE.md` / `.opencode/AGENTS.md` / `.cursorrules` 選擇。
+- `--readme ""` —— 跳過 README 片段 (對於有自己慣例的 repo 有用)。
+- `--no-validate` —— 跳過最後的 `todo-kanban.sh --validate-only`
+  (給有獨立驗證步驟的 scripted bootstrap 用)。
+
+## skill 按需載入的 reference 文件
+
+- [`references/tag-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/tag-schema.md)
+  (也有人類可讀的版本：[Tag schema](../reference/tag-schema.md))
+- [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
+- [`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)
+- [`references/deployment-exclusion.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/deployment-exclusion.md)
+
+## 這個 repo 怎麼把 skill 用在自己身上
+
+repo 自己的 [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)、
+[`backlog/`](../../backlog/) (有資料時)、[`pitfalls/`](../../pitfalls/)
+(有資料時)、以及 [`scripts/`](../../scripts/) 中的 `todo-kanban.sh` /
+`promote-todo.sh` 是 harness 套用在實際 project 上的活範例。
+[`make kanban`](https://github.com/daviddwlee84/agent-skills/blob/main/Makefile)
+target 包裝 validator/renderer。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/project-knowledge-harness.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:04:11Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# quantatitive-factor-researcher
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+一個 persona 樣式的 skill，把 agent 變成基於 Python 投資策略開發的
+量化因子研究員 (quantitative factor researcher)。當使用者要端對端設計、
+評估、實作 factor-based 策略時用它：data acquisition → feature
+engineering → signal testing → risk control → backtest 與 performance
+evaluation。
+
+## skill 觸發時機
+
+- 使用者請求協助建立或分析 alpha / risk factor。
+- 使用者在交易研究的脈絡中提到 `pandas`、`numpy`、`scikit-learn`、
+  `vectorbt`、`PyTorch`、MLflow、或 DVC 等工具。
+- 使用者要解讀效能指標 (Sharpe Ratio、IR、Tracking Error、Drawdown 等)。
+- 使用者要做 time-series-aware cross-validation (Purged
+  Group-Time-Series Split、walk-forward)。
+
+**不要**用這個 skill 處理一般 Python coding、通用資料分析、或無關的
+金融主題（會計、總體預測） —— 那些不會從 persona 開銷得到好處。
+
+## skill 結構
+
+\```
+skills/local/quantatitive-factor-researcher/
+└── SKILL.md   # persona + 職責 + 風格 / 技術慣例
+\```
+
+單檔 skill —— 沒有 `assets/`、`scripts/`、`references/`。內容主要是
+persona + 風格指引，這對於 inline 內容是「合適大小」。如果未來新增
+超出 ~500 行（例如可重用的 backtest scaffold、evaluation report
+template），把多餘材料推到 `references/` 跟 `assets/`，不要讓
+`SKILL.md` 變肥。
+
+## skill 編碼了什麼
+
+### 核心職責 (Core responsibilities)
+
+1. 提供嚴謹、可重現的量化研究 pipeline。
+2. 撰寫並解釋帶 type hint 與英文註解的高品質 Python。
+3. 用統計與 ML 方法 (genetic algorithm、tree model、deep learning、
+   Bayesian) 探索並優化 alpha / risk factor。
+4. 必要時提供 LaTeX (英文變數) 與 Matplotlib / Plotly 圖表建議來解釋
+   方法論與結果。
+5. 解讀 backtest 指標並建議改進。
+
+### 語言與風格規則
+
+- 如果使用者用中文開頭，以 Traditional Chinese 回覆並在括號內附英文
+  術語；專業術語永遠帶英文形式。
+- LaTeX 公式使用英文變數與註解。
+- Python 註解是英文；每個 function 都有 type annotation 與 docstring。
+- 回覆是結構化的 (section、bullet) 但不冗長。
+- 外部 reference (paper、GitHub repo、dataset) 包含完整引用格式。
+
+### 技術慣例
+
+- 預設使用向量化 (vectorised) 操作與內建函式；必要時解釋平行 / GPU
+  加速。
+- Configuration-driven pipeline，含 hook 進 MLflow / DVC 做實驗
+  追蹤。
+- 嚴格防範 data leakage：Purged Group-Time-Series Split、walk-forward
+  validation、out-of-sample 測試。
+
+## 限制與已知缺口
+
+- 這個 skill 目前**不出貨**範例 notebook 或 backtest scaffold —— 它純
+  是個 persona。加入帶可重用 factor-evaluation scaffold 的 `assets/`
+  是個候選的 `[?/L]` 條目，可放進
+  [`TODO.md`](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)。
+- 它目前不綁「偏好資料來源」的決定 —— 這跟 repo backlog 中已存在的
+  「Financial data sources skill set」P? 條目互動。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/quantatitive-factor-researcher.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:04:51Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# dvc-ml-workflow
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+DVC ([Data Version Control](https://dvc.org/doc)，upstream
+[treeverse/dvc](https://github.com/treeverse/dvc)) 把 git repo 變成完整
+的 ML 實驗室：資料與模型檔案做 out-of-band 版本化、pipeline 在
+`dvc.yaml` 中宣告、experiment 以 **ephemeral git commit** 形式跑出來
+並附帶 metric 跟 plot。沒有 tracking server、沒有獨立 database ——
+所有東西都活在你既有的 git history 裡。
+
+這個 skill 對 DVC 中關係到 production ML 工作的部分有特定意見：
+pipeline、metrics 自動繫結到 commit 的 queued experiment、以及
+remote storage。其他事情則交給官方文件
+[dvc.org/doc](https://dvc.org/doc)，並 inline 連結。
+
+> Iterative 在 2024 被 Treeverse 收購。`pip install dvc` 解析到
+> [github.com/treeverse/dvc](https://github.com/treeverse/dvc) ——
+> 從舊的 `iterative/dvc` redirect 過來。
+
+## 出貨內容 (What ships)
+
+- 完整 SKILL.md
+  ([skills/local/dvc-ml-workflow/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/SKILL.md))
+  含三模式心智模型 (`add` / pipeline / `exp run`)、決策工作流程、
+  以及對應實際 production 失敗 calibrate 過的 gotcha 區段。
+- 四份 reference —— 按需讀取，不預先載入 context：
+    - [`pipelines-and-stages.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/pipelines-and-stages.md)
+      —— `dvc.yaml` schema、`foreach` 矩陣 stage、`frozen`、
+      `always_changed`。
+    - [`experiments-and-queue.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/experiments-and-queue.md)
+      —— `dvc exp run --queue`、`dvc queue start --jobs N`、
+      ephemeral-commit 語義、`dvc exp apply` / `branch` / `gc`。
+    - [`data-and-remotes.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/data-and-remotes.md)
+      —— S3 / GCS / Azure / SSH / GDrive / MinIO setup、credential 處理。
+    - [`plots-and-metrics.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/references/plots-and-metrics.md)
+      —— `dvc metrics diff`、plot template、confusion matrix、
+      VS Code extension。
+- 三個 script：
+    - [`init-dvc-project.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/init-dvc-project.sh)
+      —— idempotent 的 `dvc init` + `.gitignore` + 可選的
+      `dvc remote add` + 不存在時放置 template。
+    - [`queue-helper.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/queue-helper.sh)
+      —— 對 `dvc queue` 的 agent-friendly 包裝，含 `grid` subcommand
+      做笛卡兒積 enqueue 一次完成。JSON stdout。
+    - [`lint-dvcyaml.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/scripts/lint-dvcyaml.sh)
+      —— 只 parse 的 validator (`dvc dag --dot`)，schema error 時
+      非零退出但不跑任何 stage。
+- 三個 `assets/` template：
+  [`dvc.yaml.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/dvc.yaml.template)、
+  [`params.yaml.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/params.yaml.template)、
+  [`.dvcignore.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/dvc-ml-workflow/assets/.dvcignore.template)。
+
+## 為什麼選 DVC（一段話）
+
+如果你已經在 git 上，要在不立 tracking server 的前提下取得可重現性，
+DVC 很難被打敗。殺手級功能是 `dvc exp run --queue` +
+`dvc queue start --jobs N` 平行跑參數掃，**每次完成的 run 都是
+`refs/exps/` 中的真實 commit**，metric、param、output 一起綁好 ——
+不需要獨立 database 對齊。用 `dvc exp apply` 把一個 promote 成 branch、
+其餘用 `dvc exp gc` garbage-collect。`dvc.yaml` pipeline 格式還給你
+變更偵測 (`dvc repro` 只重跑 dep 變了的 stage)，這是 `make` 對二進位
+輸入做不到的。
+
+## 快速開始
+
+\```bash
+# 在現有 git repo 的目前目錄初始化：
+bash skills/local/dvc-ml-workflow/scripts/init-dvc-project.sh \
+  --remote s3://my-bucket/dvc-store
+
+# 編輯 dvc.yaml + params.yaml template，然後：
+dvc repro                                  # 跑一次 pipeline
+dvc exp run -S model.lr=1e-3              # 試另一個 LR
+dvc exp run --queue -S model.lr=5e-4      # queue 一個 sweep 條目
+dvc queue start --jobs 4                  # 平行 worker
+dvc exp show                              # 表格化比對
+\```
+
+## Cross-references
+
+- 官方文件：[dvc.org/doc](https://dvc.org/doc) —— 永遠連這個，不要
+  從記憶 paraphrase；DVC 的 CLI 表面在 minor 版間會變。
+- Upstream repo：[github.com/treeverse/dvc](https://github.com/treeverse/dvc)。
+- VS Code extension：
+  [marketplace.visualstudio.com/items?itemName=Iterative.dvc](https://marketplace.visualstudio.com/items?itemName=Iterative.dvc)
+  —— 在編輯器內加上 live experiment 表格、含 parallel coordinates 的
+  plot dashboard、以及 `dvc.yaml` schema 驗證。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/dvc-ml-workflow.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:17Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# marimo-batch-mlflow
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+[marimo-team/skills/marimo-batch](https://github.com/marimo-team/skills/tree/main/skills/marimo-batch)
+的有意見 (opinionated) fork，置換三件事：
+
+| 關注點 | upstream `marimo-batch` | 這個 skill |
+|---|---|---|
+| CLI 解析 | `mo.cli_args()` + 手寫 `rich.Table` 做 `--help` | `tyro.cli(ModelParams)` —— 自動 `--help`、type coercion、validation |
+| Param 模型 | Pydantic `BaseModel` | `dataclass` (主要) 或 `pydantic.BaseModel` (替代) |
+| Tracking | Weights and Biases | MLflow (`mlflow` + 可選的 [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) 做即時圖表) |
+
+當使用者已經在 (或樂於用) MLflow、且偏好 strongly-typed CLI 時用這個
+skill。當使用者已經在 W&B 上時用 upstream。
+
+## 出貨內容 (What ships)
+
+- 完整 SKILL.md
+  ([skills/local/marimo-batch-mlflow/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/SKILL.md))
+  含跟 upstream 的決策矩陣、雙模式 pattern 配方、以及給 params /
+  EnvConfig / training loop / live chart 的 cell-level template。
+- 一份 reference notebook
+  ([starting-point.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/starting-point.py))
+  —— 完整 PyTorch 訓練 notebook，含 dataclass param、Tyro CLI、
+  MLflow logging、以及在 script 模式下被 gate off 的即時 `MlflowChart`
+  cell。
+- Pydantic 變體片段
+  ([params-pydantic.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/params-pydantic.py))
+  —— 只有 params cell 不同；notebook 其餘部分相同。
+- grid-search launcher
+  ([grid.py](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/marimo-batch-mlflow/references/grid.py))
+  —— 透過 Hugging Face Jobs 做隨機化 sweep，注入 MLflow secret。
+  預設 dry-run；`--launch` 才實際 submit。
+
+## 雙模式 pattern (the core idiom)
+
+\```python
+import marimo as mo
+import tyro
+
+is_script_mode = mo.app_meta().mode == "script"
+
+if is_script_mode:
+    params = tyro.cli(ModelParams)        # CLI flag
+else:
+    mo.stop(form.value is None, mo.md("*Submit form to start.*"))
+    params = ModelParams(**form.value)    # UI form
+
+# 底下每個 cell 用 `params.epochs`、`params.batch_size`、...
+# 不知道是哪個分支產生的。
+\```
+
+同一份 notebook 既是快速迭代用的 UI、**又是** `uv run notebook.py
+--epochs 50` batch job 的進入點。零程式碼複製。
+
+## 為什麼是 fork 而不是 vendor
+
+upstream 的 `marimo-batch` skill 對 W&B 跟 `mo.cli_args()` 有特定意見。
+Vendor + patch 會在每次 sync 被蓋掉；在 `skills/local/` 中做 local fork
+讓分歧 (divergence) 安全且顯式。SKILL.md 也 cross-reference upstream，
+讓使用者選對變體。
+
+## Cross-references
+
+- Upstream [`marimo-batch`](https://github.com/marimo-team/skills/tree/main/skills/marimo-batch)
+  —— W&B 變體；如果使用者已經在 W&B 上就選這個。
+- [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+  —— 通用 marimo 撰寫 pattern (從 marimo-team vendor)。
+- [`anywidget-generator`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+  —— 當 `mlflow-widgets` 涵蓋不到時，用來建客製化 live-chart widget
+  (從 marimo-team vendor)。
+- [`mlflow-widgets`](https://github.com/daviddwlee84/mlflow-widgets) ——
+  `starting-point.py` 即時圖表 cell 中使用的、以 anywidget 為基礎的
+  MLflow 圖表 / 表格 / parallel-coordinate component。
+- [Tyro docs](https://brentyi.github.io/tyro/) —— CLI 生成 reference；
+  支援 dataclass、Pydantic、attrs。
+
+```
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/docs/skills/marimo-batch-mlflow.zh-TW.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:22Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Final build check after all 36 translations
+
+`uv run mkdocs build 2>&1 | tail -3`
+
+```text
+WARNING -  mkdocs_llmstxt: Page URI 'reference/todo-format.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'changelog.md' not found in the generated pages. Skipping.
+INFO    -  Documentation built in 1.48 seconds
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:28Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:28Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #15 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Survey all zh-TW translations + line counts
+
+```bash
+git status --short | head -20
+echo "---"
+echo "diff stat (all 36 zh-TW files):"
+git diff --stat docs | tail -45
+```
+
+```text
+ M .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+ M docs/changelog.zh-TW.md
+ M docs/conventions.zh-TW.md
+ M docs/getting-started.zh-TW.md
+ M docs/index.zh-TW.md
+ M docs/reference/docs-stack-recipe.zh-TW.md
+ M docs/reference/npx-skills-metadata.zh-TW.md
+ M docs/reference/pitfalls.zh-TW.md
+ M docs/reference/scripts.zh-TW.md
+ M docs/reference/tag-schema.zh-TW.md
+ M docs/reference/todo-format.zh-TW.md
+ M docs/skills/agent-history-hygiene.zh-TW.md
+ M docs/skills/anywidget.zh-TW.md
+ M docs/skills/dvc-ml-workflow.zh-TW.md
+ M docs/skills/frontend-design.zh-TW.md
+ M docs/skills/index.zh-TW.md
+ M docs/skills/marimo-batch-mlflow.zh-TW.md
+ M docs/skills/marimo-notebook.zh-TW.md
+ M docs/skills/mkdocs-site-bootstrap.zh-TW.md
+ M docs/skills/mlflow-tracking.zh-TW.md
+---
+diff stat (all 36 zh-TW files):
+ docs/changelog.zh-TW.md                            |  39 ++-
+ docs/conventions.zh-TW.md                          |  60 +++-
+ docs/getting-started.zh-TW.md                      |  62 +++-
+ docs/index.zh-TW.md                                |  51 +++-
+ docs/reference/docs-stack-recipe.zh-TW.md          |  46 ++-
+ docs/reference/npx-skills-metadata.zh-TW.md        | 332 ++++++++++++++++++++-
+ docs/reference/pitfalls.zh-TW.md                   |  65 +++-
+ docs/reference/scripts.zh-TW.md                    | 165 +++++++++-
+ docs/reference/tag-schema.zh-TW.md                 |  49 ++-
+ docs/reference/todo-format.zh-TW.md                |  79 ++++-
+ docs/skills/agent-history-hygiene.zh-TW.md         | 119 +++++++-
+ docs/skills/anywidget.zh-TW.md                     |  70 ++++-
+ docs/skills/dvc-ml-workflow.zh-TW.md               |  86 +++++-
+ docs/skills/frontend-design.zh-TW.md               |  40 ++-
+ docs/skills/index.zh-TW.md                         |  71 ++++-
+ docs/skills/marimo-batch-mlflow.zh-TW.md           |  75 ++++-
+ docs/skills/marimo-notebook.zh-TW.md               |  30 +-
+ docs/skills/mkdocs-site-bootstrap.zh-TW.md         | 125 +++++++-
+ docs/skills/mlflow-tracking.zh-TW.md               | 131 +++++++-
+ docs/skills/nextjs.zh-TW.md                        |  37 ++-
+ docs/skills/project-knowledge-harness.zh-TW.md     | 159 +++++++++-
+ docs/skills/pueue-job-queue.zh-TW.md               | 149 ++++++++-
+ .../skills/quantatitive-factor-researcher.zh-TW.md |  71 ++++-
+ docs/skills/react-best-practices.zh-TW.md          |  36 ++-
+ docs/skills/shadcn.zh-TW.md                        |  40 ++-
+ docs/skills/skill-author.zh-TW.md                  |  61 +++-
+ docs/skills/skill-creator.zh-TW.md                 |  44 ++-
+ docs/skills/streamlit-to-marimo.zh-TW.md           |  33 +-
+ .../supabase-postgres-best-practices.zh-TW.md      |  34 ++-
+ docs/skills/supabase.zh-TW.md                      |  39 ++-
+ docs/skills/vercel-storage.zh-TW.md                |  34 ++-
+ docs/skills/web-design-guidelines.zh-TW.md         |  38 ++-
+ docs/skills/webapp-testing.zh-TW.md                |  35 ++-
+ docs/workflows/adding-vendor-skills.zh-TW.md       | 108 ++++++-
+ docs/workflows/creating-local-skills.zh-TW.md      |  68 ++++-
+ docs/workflows/project-memory.zh-TW.md             | 149 ++++++++-
+ 36 files changed, 2709 insertions(+), 121 deletions(-)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:36Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Full status
+
+`git status --short`
+
+```text
+ M .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+ M docs/changelog.zh-TW.md
+ M docs/conventions.zh-TW.md
+ M docs/getting-started.zh-TW.md
+ M docs/index.zh-TW.md
+ M docs/reference/docs-stack-recipe.zh-TW.md
+ M docs/reference/npx-skills-metadata.zh-TW.md
+ M docs/reference/pitfalls.zh-TW.md
+ M docs/reference/scripts.zh-TW.md
+ M docs/reference/tag-schema.zh-TW.md
+ M docs/reference/todo-format.zh-TW.md
+ M docs/skills/agent-history-hygiene.zh-TW.md
+ M docs/skills/anywidget.zh-TW.md
+ M docs/skills/dvc-ml-workflow.zh-TW.md
+ M docs/skills/frontend-design.zh-TW.md
+ M docs/skills/index.zh-TW.md
+ M docs/skills/marimo-batch-mlflow.zh-TW.md
+ M docs/skills/marimo-notebook.zh-TW.md
+ M docs/skills/mkdocs-site-bootstrap.zh-TW.md
+ M docs/skills/mlflow-tracking.zh-TW.md
+ M docs/skills/nextjs.zh-TW.md
+ M docs/skills/project-knowledge-harness.zh-TW.md
+ M docs/skills/pueue-job-queue.zh-TW.md
+ M docs/skills/quantatitive-factor-researcher.zh-TW.md
+ M docs/skills/react-best-practices.zh-TW.md
+ M docs/skills/shadcn.zh-TW.md
+ M docs/skills/skill-author.zh-TW.md
+ M docs/skills/skill-creator.zh-TW.md
+ M docs/skills/streamlit-to-marimo.zh-TW.md
+ M docs/skills/supabase-postgres-best-practices.zh-TW.md
+ M docs/skills/supabase.zh-TW.md
+ M docs/skills/vercel-storage.zh-TW.md
+ M docs/skills/web-design-guidelines.zh-TW.md
+ M docs/skills/webapp-testing.zh-TW.md
+ M docs/workflows/adding-vendor-skills.zh-TW.md
+ M docs/workflows/creating-local-skills.zh-TW.md
+ M docs/workflows/project-memory.zh-TW.md
+ M uv.lock
+?? .specstory/history/2026-04-28_09-52-41Z-agent-skills-on-main.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:49Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:05:53Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check current SpecStory session
+
+```bash
+bash skills/local/agent-history-hygiene/scripts/find-session.sh --format=specstory --json
+ls -lt .specstory/history/ | head -4
+```
+
+```text
+{"specstory_path":"/Volumes/Data/Program/Personal/agent-skills/.specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md","claude_session_uuid":"","claude_jsonl_path":""}
+eza: Option --time (-t) has no ".specstory/history/" setting (choices: modified, changed, accessed, created)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:00Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List specstory files by mtime via system ls
+
+`/bin/ls -lt .specstory/history/ | head -5`
+
+```text
+total 7784
+-rw-r--r--@ 1 daviddwlee84  staff  673747 Apr 28 18:05 2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+-rw-r--r--@ 1 daviddwlee84  staff   92393 Apr 28 18:01 2026-04-28_09-52-41Z-agent-skills-on-main.md
+-rw-r--r--@ 1 daviddwlee84  staff  358993 Apr 28 17:23 2026-04-28_08-24-41Z-https-github-com-anthropics.md
+-rw-r--r--@ 1 daviddwlee84  staff   36309 Apr 28 16:34 2026-04-28_08-19-42Z-agent-skills-on-main.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:06Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage zh-TW translations + transcript and scan
+
+```bash
+git add 'docs/*.zh-TW.md' 'docs/reference/*.zh-TW.md' 'docs/skills/*.zh-TW.md' 'docs/workflows/*.zh-TW.md' uv.lock
+git add .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+echo "--- staged ---"
+git status --short | head -10
+echo "--- scan ---"
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh; echo "exit=$?"
+```
+</details></tool-use>
