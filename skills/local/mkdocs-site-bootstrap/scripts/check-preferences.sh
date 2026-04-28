@@ -146,6 +146,7 @@ set)
     # ISO-8601 unquoted as arithmetic / invalid expression.
     case "$v" in
       true|false|null) yv="$v" ;;
+      \[*\]|\{*\}) yv="$v" ;;  # YAML flow sequence/mapping pass-through
       ''|*[!0-9]*) yv="\"${v//\"/\\\"}\"" ;;
       *) yv="$v" ;;
     esac

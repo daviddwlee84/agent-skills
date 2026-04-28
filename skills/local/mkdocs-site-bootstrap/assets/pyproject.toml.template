@@ -8,6 +8,9 @@ requires-python = ">=3.11"
 docs = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
+    # Uncomment when you add a non-default language via add-language.sh
+    # (the script un-comments this line automatically on first run):
+    # "mkdocs-static-i18n>=1.2",
     "mkdocs-llmstxt>=0.2",
     "mkdocs-copy-to-llm>=0.1",
     "pymdown-extensions>=10.7",

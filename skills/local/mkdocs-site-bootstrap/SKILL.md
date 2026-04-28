@@ -1,6 +1,6 @@
 ---
 name: mkdocs-site-bootstrap
-description: Bootstrap a MkDocs Material documentation site for a repo and (optionally) deploy it to GitHub Pages — including pinned tooling via uv/PEP 723, a GitHub Actions workflow with paths-filter, llmstxt + copy-to-llm plugins so the site is LLM-friendly, and ongoing helper scripts to add new docs pages with auto-nav. Use whenever the user wants to "set up docs", "publish docs to GitHub Pages", "create a documentation site", "add an mkdocs site", turn their README/markdown notes into a browsable site, or scaffold the same docs stack as this repo into a new project. Records opt-in/opt-out and stack choice in `.skills/preferences.yaml` so the agent doesn't re-ask on every session, and respects existing `docs/` content (detect + ask, never auto-migrate). For evaluating skill output quality use skill-creator; for authoring new skills use skill-author.
+description: Bootstrap a MkDocs Material documentation site for a repo and (optionally) deploy it to GitHub Pages — including pinned tooling via uv/PEP 723, a GitHub Actions workflow with paths-filter, llmstxt + copy-to-llm plugins so the site is LLM-friendly, and ongoing helper scripts to add new docs pages with auto-nav. Also handles bilingual / multi-language docs (English + zh-TW or others) via mkdocs-static-i18n with a "preserve English originals" terminology rule. Use whenever the user wants to "set up docs", "publish docs to GitHub Pages", "create a documentation site", "add an mkdocs site", "add Traditional Chinese", "雙語 docs", "i18n", "multilingual docs", "translate the docs", turn their README/markdown notes into a browsable site, or scaffold the same docs stack as this repo into a new project. Records opt-in/opt-out, stack choice, and language list in `.skills/preferences.yaml` so the agent doesn't re-ask on every session, and respects existing `docs/` content (detect + ask, never auto-migrate). For evaluating skill output quality use skill-creator; for authoring new skills use skill-author.
 ---
 
 # mkdocs-site-bootstrap
@@ -22,6 +22,9 @@ starts fresh.
 - User wants the same docs stack as the `daviddwlee84/agent-skills` repo
   applied to a new project
 - User says they want an LLM-friendly docs site (llms.txt, copy-to-LLM)
+- User asks for "bilingual docs", "雙語 docs", "i18n", "multilingual",
+  "add Traditional Chinese", "add zh-TW", "translate the docs", or to add
+  any non-English language to an existing site → jump to step 7
 
 ## When NOT to trigger
 
@@ -148,6 +151,44 @@ It creates `docs/<section>/<slug>.md` from the page template and inserts a
 nav entry into `mkdocs.yml` under the matching section heading. Idempotent
 — re-running with the same slug is a no-op.
 
+If the project has additional languages configured in
+`.skills/preferences.yaml` (`mkdocs_site_bootstrap.languages`), `add-docs-page.sh`
+also generates `*.<LANG>.md` stubs for every non-default language, with the
+terminology-rule admonition pre-injected. Use `--lang LANG` to add only the
+translation for one specific language without re-creating the default.
+
+### 7. Optional: add a non-English language
+
+The skill supports bilingual / multi-language sites via the
+`mkdocs-static-i18n` plugin (suffix layout: `index.md` + `index.zh-TW.md`).
+This step is opt-in and decoupled from initial bootstrap.
+
+Trigger: user asks for "bilingual docs", "雙語 docs", "add zh-TW", "i18n",
+"add Traditional Chinese", "translate the docs", or similar.
+
+Read `references/i18n-guide.md` first — it covers the **terminology
+preservation rule** ("中文 (English original)" format on first mention; no
+invented translations) which authors must follow on non-English pages.
+
+Then run:
+
+```bash
+bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh --lang zh-TW
+```
+
+This inserts the i18n plugin into `mkdocs.yml`, creates `*.zh-TW.md` stub
+siblings of every existing page (with the terminology admonition
+pre-injected), uncomments `mkdocs-static-i18n` in `pyproject.toml`, and
+records the choice in `.skills/preferences.yaml`. Idempotent — re-running
+with the same `--lang` is a no-op.
+
+After it runs, re-sync deps and rebuild:
+
+```bash
+uv sync --extra docs
+uv run mkdocs build --strict
+```
+
 ## Available scripts
 
 - **`scripts/check-preferences.sh`** — Read, set, or reset
@@ -161,9 +202,16 @@ nav entry into `mkdocs.yml` under the matching section heading. Idempotent
   `gh api`. Requires `gh auth status` to pass first.
   - Flags: `--repo OWNER/REPO`, `--no-trigger`, `--dry-run`.
 - **`scripts/add-docs-page.sh`** — Create a new page and insert it into
-  `mkdocs.yml`'s nav.
-  - Flags: `--section`, `--title`, `--slug`, `--template PATH`, `--dry-run`,
-    `--force`.
+  `mkdocs.yml`'s nav. If multiple languages are configured, also writes
+  `*.<LANG>.md` stubs for every non-default language.
+  - Flags: `--section`, `--title`, `--slug`, `--template PATH`, `--lang LANG`
+    (single-language stub only), `--dry-run`, `--force`.
+- **`scripts/add-language.sh`** — Retrofit a non-default language into an
+  existing site. Inserts `plugins.i18n`, creates `*.<LANG>.md` stubs with
+  the terminology admonition, updates preferences, uncomments the static-i18n
+  dep. Idempotent.
+  - Flags: `--lang LANG` (required), `--name NAME`, `--default-lang LANG`,
+    `--target-dir DIR`, `--no-stubs`, `--dry-run`, `--force`.
 
 ## Reference files
 
@@ -176,6 +224,9 @@ nav entry into `mkdocs.yml` under the matching section heading. Idempotent
 - `references/docs-stack-recipe.md` — Verbatim stack recipe (mkdocs.yml,
   pyproject.toml, workflow, linking rules). Useful when the user asks "what
   exactly is this stack?" or wants to apply pieces manually.
+- `references/i18n-guide.md` — Bilingual / multi-language docs setup using
+  `mkdocs-static-i18n`. Read this **before** running `add-language.sh`. Includes
+  the verbatim "preserve English originals" terminology rule for zh-TW pages.
 
 ## Bundled assets
 
@@ -191,6 +242,12 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 - `assets/docs-skeleton/` — `index.md`, `getting-started.md`, `_snippets/`
   examples, `assets/copy-to-llm/` JS+CSS files copied from this repo.
 - `assets/page.md.template` — Used by `add-docs-page.sh`.
+- `assets/translation-stub.md.template` — Stub used for non-default-language
+  pages by `add-language.sh` and `add-docs-page.sh`. Contains the verbatim
+  terminology-rule admonition.
+- `assets/i18n-plugin.yml.snippet` — Reference YAML block for the
+  `mkdocs-static-i18n` plugin (used by `references/i18n-guide.md`; the script
+  builds the equivalent block via `yq`).
 
 ## Gotchas
 
@@ -215,6 +272,27 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
   should be the user's explicit decision, not the agent's default.
 - **`.skills/preferences.yaml` is per-repo, not global.** Don't write it to
   `~/.skills/` or `~/.config/`. Each repo has its own decisions.
+- **`mkdocs-static-i18n` requires `theme.language` set to the *default*
+  language code.** The plugin warns when it's missing. `add-language.sh`
+  sets it on first run; if you copy pieces by hand, don't forget.
+- **`docs_structure: suffix` only.** `add-language.sh` writes the suffix
+  layout (`index.md` + `index.zh-TW.md` siblings); the `i18n_structure: folder`
+  preference key is reserved but not implemented. Don't paste a `folder`
+  config into `mkdocs.yml` and expect the script to keep it consistent.
+- **`mkdocs-llmstxt` is incompatible with `mkdocs-static-i18n` under
+  `--strict`.** llmstxt's `sections:` source-path lookups break after
+  `reconfigure_material` remaps the page index. `add-language.sh` removes
+  the entire llmstxt plugin entry from `mkdocs.yml` by default; pass
+  `--keep-llmstxt` to preserve it (and drop `--strict` from CI). The dep
+  stays in `pyproject.toml` either way.
+- **`add-language.sh` removes `navigation.instant`** from `theme.features`
+  because the language switcher's contextual link is incompatible with
+  instant navigation. Material's plugin emits the warning itself; the script
+  is just acting on it.
+- **Don't translate technical terms in zh-TW pages without the English
+  original.** The terminology rule (kept English in parens on first mention,
+  no invented translations) is non-negotiable; the stub template injects
+  the rule as an admonition so authors see it before they start.
 
 ## Updating an existing site (not bootstrapping)
 

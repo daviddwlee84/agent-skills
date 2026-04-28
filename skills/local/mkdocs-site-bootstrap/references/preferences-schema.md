@@ -30,6 +30,10 @@ mkdocs_site_bootstrap:
   existing_docs_decision: skipped  # skipped | wrapped | none
   site_url: https://owner.github.io/repo/
   repo_slug: owner/repo
+  # i18n keys — written by add-language.sh, read by add-docs-page.sh.
+  languages: ["en", "zh-TW"]      # ordered list; first is default
+  keep_english_terms: true         # injects terminology admonition into non-default stubs
+  i18n_structure: suffix           # suffix | folder (folder reserved, not yet implemented)
 
 # Future skills add their own top-level keys with the same shape.
 # example_other_skill:
@@ -107,6 +111,31 @@ some hypothetical `docs-publisher` skill both care about whether a docs site
 exists, the answer is to **detect from the filesystem** (does `mkdocs.yml`
 exist?), not to share a preference key. Preferences record *intent*; the
 filesystem records *state*.
+
+## i18n keys (added when `add-language.sh` runs)
+
+| Key | Type | Meaning |
+|---|---|---|
+| `languages` | ordered list of locale codes | First entry is the default language. Empty / missing means monolingual (default). |
+| `keep_english_terms` | bool | Whether to inject the "Terminology rule" admonition into non-default-language stubs. Defaults to `true`; the user can flip this if they don't want the admonition. |
+| `i18n_structure` | `suffix` \| `folder` | How translated files are laid out. **Currently only `suffix` is implemented.** `folder` is reserved for future work; setting it now will not change script behavior. |
+
+`add-docs-page.sh` reads `languages` to decide whether to generate
+`*.<LANG>.md` siblings alongside the default-language page. If the key is
+missing or has only one entry, it stays mono-lingual (existing behavior).
+
+## Array values via `--set`
+
+`check-preferences.sh --set` recognises YAML flow sequences (`[…]`) and
+mappings (`{…}`) and passes them through to `yq` unquoted. Use this for the
+`languages` key:
+
+```bash
+bash scripts/check-preferences.sh \
+  --set 'mkdocs_site_bootstrap.languages=["en", "zh-TW"]'
+```
+
+Bare strings, booleans, and numbers still work as before.
 
 ## Schema versioning
 

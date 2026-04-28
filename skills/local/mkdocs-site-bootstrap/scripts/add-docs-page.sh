@@ -24,6 +24,12 @@ Options:
   --slug SLUG         Filename slug without .md (default: derived from --title).
   --template PATH     Page template (default: skill's assets/page.md.template).
   --target-dir DIR    Repo root (default: walk up from CWD looking for mkdocs.yml).
+  --lang LANG         Create the page only for LANG (e.g. zh-TW). Skips the
+                      default-language file and the nav-insertion step
+                      (mkdocs-static-i18n auto-discovers language siblings).
+                      If omitted, creates the default-language page plus
+                      *.<LANG>.md stubs for every non-default language listed
+                      in .skills/preferences.yaml.
   --dry-run           Print actions without writing.
   --force             Overwrite existing page file.
   --help, -h          Show this help and exit.
@@ -32,6 +38,7 @@ Examples:
   add-docs-page.sh --section Workflows --title "My new workflow"
   add-docs-page.sh --section Reference --title "API schema" --slug api-schema
   add-docs-page.sh --section _root --title "About" --slug about
+  add-docs-page.sh --section _root --title "About" --slug about --lang zh-TW
 
 Exit codes:
   0  success (idempotent: re-running with same slug is a no-op)
@@ -50,6 +57,7 @@ TITLE=""
 SLUG=""
 TEMPLATE=""
 TARGET=""
+LANG_ONLY=""
 DRY_RUN=0
 FORCE=0
 
@@ -60,6 +68,7 @@ while [ $# -gt 0 ]; do
     --slug)        SLUG="${2:-}"; shift 2 ;;
     --template)    TEMPLATE="${2:-}"; shift 2 ;;
     --target-dir)  TARGET="${2:-}"; shift 2 ;;
+    --lang)        LANG_ONLY="${2:-}"; shift 2 ;;
     --dry-run)     DRY_RUN=1; shift ;;
     --force)       FORCE=1; shift ;;
     --help|-h)     usage; exit 0 ;;
@@ -102,7 +111,38 @@ ABS_PATH="$TARGET/docs/$REL_PATH"
 [ -n "$TEMPLATE" ] || TEMPLATE="$ASSETS/page.md.template"
 [ -f "$TEMPLATE" ] || die "template not found: $TEMPLATE" 4
 
-# --- 1. Create page file ---
+STUB_TEMPLATE="$ASSETS/translation-stub.md.template"
+MKDOCS="$TARGET/mkdocs.yml"
+
+# Helper: write a stub for a non-default language at <base>.<LANG>.md.
+write_lang_stub() {
+  local base_path="$1" lang="$2"
+  local stub_path="${base_path%.md}.${lang}.md"
+  if [ -e "$stub_path" ] && [ "$FORCE" = "0" ]; then
+    log "Stub already exists: $stub_path (use --force to overwrite)"
+    return 0
+  fi
+  [ -f "$STUB_TEMPLATE" ] || die "stub template missing: $STUB_TEMPLATE" 4
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] write stub $stub_path"
+    return 0
+  fi
+  mkdir -p "$(dirname "$stub_path")"
+  sed -e "s|{{PAGE_TITLE}}|${TITLE}|g" \
+      -e "s|{{LANG}}|${lang}|g" \
+      "$STUB_TEMPLATE" > "$stub_path"
+  log "Created stub: $stub_path"
+}
+
+# --- --lang shortcut: only create the language stub, skip default + nav ---
+if [ -n "$LANG_ONLY" ]; then
+  write_lang_stub "$ABS_PATH" "$LANG_ONLY"
+  printf '{"page":"%s","lang":"%s","status":"stub_created"}\n' \
+    "${REL_PATH%.md}.${LANG_ONLY}.md" "$LANG_ONLY"
+  exit 0
+fi
+
+# --- 1. Create the default-language page ---
 if [ -e "$ABS_PATH" ] && [ "$FORCE" = "0" ]; then
   log "Page already exists: $ABS_PATH (use --force to overwrite)"
   log "Skipping page creation; will still ensure nav entry."
@@ -121,35 +161,54 @@ else
 fi
 
 # --- 2. Insert into mkdocs.yml nav ---
-MKDOCS="$TARGET/mkdocs.yml"
 
 # Idempotency check: does the nav already mention this path?
 if grep -qF "$REL_PATH" "$MKDOCS"; then
-  log "Nav already references $REL_PATH — no-op."
-  printf '{"page":"%s","section":"%s","status":"already_exists"}\n' "$REL_PATH" "$SECTION"
-  exit 0
-fi
-
-if [ "$SECTION" = "_root" ]; then
-  EXPR=".nav += [{\"$TITLE\": \"$REL_PATH\"}]"
+  log "Nav already references $REL_PATH — checking language stubs only."
+  NAV_STATUS="already_exists"
 else
-  # Find the index of the section in nav (top-level dict whose only key is $SECTION).
-  IDX=$(SEC="$SECTION" yq 'env(SEC) as $s | [.nav[] | keys | .[0]] | to_entries | map(select(.value == $s)) | .[0].key' \
-    "$MKDOCS" 2>/dev/null || echo "null")
-  if [ "$IDX" = "null" ] || [ -z "$IDX" ]; then
-    EXISTING_SECTIONS=$(yq '[.nav[] | keys | .[0]] | join(",")' "$MKDOCS" 2>/dev/null || echo "?")
-    die "section '$SECTION' not found at top of nav: in $MKDOCS (existing: $EXISTING_SECTIONS)" 4
+  if [ "$SECTION" = "_root" ]; then
+    EXPR=".nav += [{\"$TITLE\": \"$REL_PATH\"}]"
+  else
+    # Find the index of the section in nav (top-level dict whose only key is $SECTION).
+    IDX=$(SEC="$SECTION" yq 'env(SEC) as $s | [.nav[] | keys | .[0]] | to_entries | map(select(.value == $s)) | .[0].key' \
+      "$MKDOCS" 2>/dev/null || echo "null")
+    if [ "$IDX" = "null" ] || [ -z "$IDX" ]; then
+      EXISTING_SECTIONS=$(yq '[.nav[] | keys | .[0]] | join(",")' "$MKDOCS" 2>/dev/null || echo "?")
+      die "section '$SECTION' not found at top of nav: in $MKDOCS (existing: $EXISTING_SECTIONS)" 4
+    fi
+    EXPR=".nav[$IDX].\"$SECTION\" += [{\"$TITLE\": \"$REL_PATH\"}]"
   fi
-  EXPR=".nav[$IDX].\"$SECTION\" += [{\"$TITLE\": \"$REL_PATH\"}]"
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] yq -i '$EXPR' $MKDOCS"
+  else
+    TMP="${MKDOCS}.tmp.$$"
+    yq "$EXPR" "$MKDOCS" > "$TMP" || { rm -f "$TMP"; die "yq failed: $EXPR" 4; }
+    mv "$TMP" "$MKDOCS"
+    log "Updated nav in: $MKDOCS"
+  fi
+  NAV_STATUS="created"
 fi
 
-if [ "$DRY_RUN" = "1" ]; then
-  log "[dry-run] yq -i '$EXPR' $MKDOCS"
-else
-  TMP="${MKDOCS}.tmp.$$"
-  yq "$EXPR" "$MKDOCS" > "$TMP" || { rm -f "$TMP"; die "yq failed: $EXPR" 4; }
-  mv "$TMP" "$MKDOCS"
-  log "Updated nav in: $MKDOCS"
+# --- 3. Create *.<LANG>.md stubs for every non-default language ---
+# Read the languages list directly from preferences.yaml (check-preferences.sh
+# --get returns nested YAML for list values, which is awkward to parse in shell).
+PREFS_FILE="$TARGET/.skills/preferences.yaml"
+STUBS_CREATED=0
+LANGUAGES_LIST=""
+if [ -f "$PREFS_FILE" ]; then
+  LANGUAGES_LIST=$(yq -r '.mkdocs_site_bootstrap.languages[]?' "$PREFS_FILE" 2>/dev/null | tr '\n' ' ' || true)
 fi
 
-printf '{"page":"%s","section":"%s","status":"created"}\n' "$REL_PATH" "$SECTION"
+if [ -n "$LANGUAGES_LIST" ]; then
+  DEFAULT_LANG=""
+  for loc in $LANGUAGES_LIST; do
+    [ -z "$loc" ] && continue
+    if [ -z "$DEFAULT_LANG" ]; then DEFAULT_LANG="$loc"; continue; fi
+    write_lang_stub "$ABS_PATH" "$loc"
+    STUBS_CREATED=$((STUBS_CREATED + 1))
+  done
+fi
+
+printf '{"page":"%s","section":"%s","status":"%s","lang_stubs":%d}\n' \
+  "$REL_PATH" "$SECTION" "$NAV_STATUS" "$STUBS_CREATED"
