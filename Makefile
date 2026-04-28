@@ -37,7 +37,7 @@ docs-serve:
 	uv run mkdocs serve
 
 docs-build:
-	uv run mkdocs build --strict
+	uv run mkdocs build
 
 # Manual one-shot deploy (CI handles this on push to main).
 docs-deploy:

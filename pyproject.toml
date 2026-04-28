@@ -14,6 +14,7 @@ docs = [
   "mkdocs-material>=9.5",
   "mkdocs-llmstxt>=0.1",
   "mkdocs-copy-to-llm>=0.1",
+  "mkdocs-static-i18n>=1.2",
   # pymdownx is bundled with mkdocs-material, but pin explicitly so the
   # snippets / superfences / tabbed extensions never silently disappear.
   "pymdown-extensions>=10.0",

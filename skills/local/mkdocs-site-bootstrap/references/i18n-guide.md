@@ -92,10 +92,13 @@ For users who want to apply pieces by hand or audit what the script touched:
 5. **Removes `navigation.instant` / `navigation.instant.progress`** from
    `theme.features` (the language switcher's contextual link can't be
    rewritten by instant navigation).
-6. **Removes the `mkdocs-llmstxt` plugin entry** from `mkdocs.yml` by default
-   (`--keep-llmstxt` to preserve). The plugin is structurally incompatible
-   with `reconfigure_material` under `--strict` — see "Interaction with
-   `llmstxt` and `copy-to-llm`" below.
+6. **Keeps `mkdocs-llmstxt` by default** (the `/llms.txt` feature is the
+   reason most users adopt this stack). Use `--remove-llmstxt` to drop it
+   instead. With `--drop-strict`, also patches `.github/workflows/docs.yml`
+   and `Makefile` to remove `--strict` from `mkdocs build` invocations,
+   which is necessary for builds to pass while llmstxt is kept (the plugin
+   is structurally incompatible with `reconfigure_material` under
+   `--strict` — see "Interaction with `llmstxt` and `copy-to-llm`" below).
 7. **Walks `docs/`** for `*.md` files (excluding `_snippets/` and `assets/`),
    and for each non-locale-suffixed source page, creates a sibling
    `*.<LANG>.md` from `assets/translation-stub.md.template`.
@@ -154,13 +157,22 @@ authorial choice. Add them by hand once you have section titles to translate.
   warnings — which abort `--strict` builds. `sections:` is a required field
   on the llmstxt plugin, so you can't just empty it out.
 
-  **`add-language.sh` removes the entire `mkdocs-llmstxt` plugin entry from
-  `mkdocs.yml` by default.** The dep stays in `pyproject.toml` so re-adding
-  later is one yaml-edit. To preserve llmstxt and accept the build warnings
-  (e.g. you've dropped `--strict` from CI), pass `--keep-llmstxt`:
+  **`add-language.sh` keeps `mkdocs-llmstxt` by default** because most users
+  opted into this skill specifically to get `/llms.txt`. To make CI happy,
+  pair the run with `--drop-strict`, which patches
+  `.github/workflows/docs.yml` and `Makefile` to remove `--strict` from any
+  `mkdocs build --strict` invocation:
 
   ```bash
-  bash scripts/add-language.sh --lang zh-TW --keep-llmstxt
+  bash scripts/add-language.sh --lang zh-TW --drop-strict
+  ```
+
+  If you'd rather lose `/llms.txt` than lose `--strict`, flip the trade-off
+  with `--remove-llmstxt` (the dep stays in `pyproject.toml` either way, so
+  re-adding later is one yaml edit):
+
+  ```bash
+  bash scripts/add-language.sh --lang zh-TW --remove-llmstxt
   ```
 
 - **`mkdocs-copy-to-llm` button text is English-only.** The "Copy to LLM" /

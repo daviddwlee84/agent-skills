@@ -170,23 +170,31 @@ Read `references/i18n-guide.md` first — it covers the **terminology
 preservation rule** ("中文 (English original)" format on first mention; no
 invented translations) which authors must follow on non-English pages.
 
-Then run:
+Then run (with `--drop-strict` if your CI uses `mkdocs build --strict` —
+keeping `llmstxt` will fail strict-mode builds with "Page URI not found"
+warnings, so the script offers to patch `.github/workflows/docs.yml` and
+`Makefile` for you):
 
 ```bash
-bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh --lang zh-TW
+bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
+  --lang zh-TW --drop-strict
 ```
 
 This inserts the i18n plugin into `mkdocs.yml`, creates `*.zh-TW.md` stub
 siblings of every existing page (with the terminology admonition
-pre-injected), uncomments `mkdocs-static-i18n` in `pyproject.toml`, and
-records the choice in `.skills/preferences.yaml`. Idempotent — re-running
-with the same `--lang` is a no-op.
+pre-injected), uncomments `mkdocs-static-i18n` in `pyproject.toml`, drops
+`--strict` from CI/Makefile, and records the choice in
+`.skills/preferences.yaml`. Idempotent — re-running with the same `--lang`
+is a no-op.
+
+If you'd rather lose `/llms.txt` than `--strict`, use `--remove-llmstxt`
+instead (and skip `--drop-strict`).
 
 After it runs, re-sync deps and rebuild:
 
 ```bash
 uv sync --extra docs
-uv run mkdocs build --strict
+uv run mkdocs build      # --strict only if you went the --remove-llmstxt route
 ```
 
 ## Available scripts
@@ -209,9 +217,11 @@ uv run mkdocs build --strict
 - **`scripts/add-language.sh`** — Retrofit a non-default language into an
   existing site. Inserts `plugins.i18n`, creates `*.<LANG>.md` stubs with
   the terminology admonition, updates preferences, uncomments the static-i18n
-  dep. Idempotent.
+  dep. Keeps `mkdocs-llmstxt` by default; auto-patches CI to drop `--strict`
+  with `--drop-strict`. Idempotent.
   - Flags: `--lang LANG` (required), `--name NAME`, `--default-lang LANG`,
-    `--target-dir DIR`, `--no-stubs`, `--dry-run`, `--force`.
+    `--target-dir DIR`, `--no-stubs`, `--remove-llmstxt`, `--drop-strict`,
+    `--dry-run`, `--force`.
 
 ## Reference files
 
@@ -281,10 +291,12 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
   config into `mkdocs.yml` and expect the script to keep it consistent.
 - **`mkdocs-llmstxt` is incompatible with `mkdocs-static-i18n` under
   `--strict`.** llmstxt's `sections:` source-path lookups break after
-  `reconfigure_material` remaps the page index. `add-language.sh` removes
-  the entire llmstxt plugin entry from `mkdocs.yml` by default; pass
-  `--keep-llmstxt` to preserve it (and drop `--strict` from CI). The dep
-  stays in `pyproject.toml` either way.
+  `reconfigure_material` remaps the page index. `add-language.sh` **keeps
+  llmstxt by default** (most users want `/llms.txt` more than they want
+  `--strict`'s safety net) and offers `--drop-strict` to auto-patch
+  `.github/workflows/docs.yml` and `Makefile` so the build doesn't fail
+  on the resulting warnings. Use `--remove-llmstxt` to flip the trade-off
+  and keep `--strict`. The dep stays in `pyproject.toml` either way.
 - **`add-language.sh` removes `navigation.instant`** from `theme.features`
   because the language switcher's contextual link is incompatible with
   instant navigation. Material's plugin emits the warning itself; the script

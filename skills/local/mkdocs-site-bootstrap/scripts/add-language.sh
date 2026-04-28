@@ -36,14 +36,18 @@ Options:
                        Used to seed theme.language and i18n.languages[0].
   --target-dir DIR     Repo root (default: walk up from CWD looking for mkdocs.yml).
   --no-stubs           Skip creating *.<LANG>.md sibling stubs.
-  --keep-llmstxt       Don't remove the mkdocs-llmstxt plugin (default: remove).
-                       mkdocs-llmstxt is incompatible with mkdocs-static-i18n's
-                       reconfigure_material — the plugin can't resolve source
-                       URIs after the page index gets remapped, so 'mkdocs build
-                       --strict' aborts with "Page URI not found" warnings. By
-                       default we remove the llmstxt plugin entry from mkdocs.yml;
-                       use --keep-llmstxt if you want to preserve it and
-                       drop --strict from your CI yourself.
+  --remove-llmstxt     Remove the mkdocs-llmstxt plugin entry from mkdocs.yml.
+                       Default behaviour KEEPS llmstxt because /llms.txt is the
+                       LLM-friendly feature most users wanted in the first place.
+                       Trade-off: llmstxt's source-path lookups break under
+                       mkdocs-static-i18n's reconfigure_material, so 'mkdocs
+                       build --strict' aborts with "Page URI not found" warnings.
+                       Pair --remove-llmstxt with keeping --strict; OR keep
+                       llmstxt (default) and pass --drop-strict to patch your
+                       CI/Makefile so the build doesn't fail on warnings.
+  --drop-strict        Patch .github/workflows/docs.yml and Makefile to remove
+                       '--strict' from any 'mkdocs build --strict' invocation.
+                       Use when keeping llmstxt with i18n. Idempotent.
   --dry-run            Print actions without writing.
   --force              Overwrite existing *.<LANG>.md stubs (default: skip).
   --help, -h           Show this help and exit.
@@ -71,23 +75,25 @@ LOCALE_NAME=""
 DEFAULT_LANG="en"
 TARGET=""
 NO_STUBS=0
-KEEP_LLMSTXT=0
+REMOVE_LLMSTXT=0
+DROP_STRICT=0
 DRY_RUN=0
 FORCE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --lang)          LOCALE="${2:-}"; shift 2 ;;
-    --name)          LOCALE_NAME="${2:-}"; shift 2 ;;
-    --default-lang)  DEFAULT_LANG="${2:-}"; shift 2 ;;
-    --target-dir)    TARGET="${2:-}"; shift 2 ;;
-    --no-stubs)      NO_STUBS=1; shift ;;
-    --keep-llmstxt)  KEEP_LLMSTXT=1; shift ;;
-    --dry-run)       DRY_RUN=1; shift ;;
-    --force)         FORCE=1; shift ;;
-    --help|-h)       usage; exit 0 ;;
-    -*)              die "unknown flag: $1 (try --help)" 1 ;;
-    *)               die "unexpected positional argument: $1" 1 ;;
+    --lang)            LOCALE="${2:-}"; shift 2 ;;
+    --name)            LOCALE_NAME="${2:-}"; shift 2 ;;
+    --default-lang)    DEFAULT_LANG="${2:-}"; shift 2 ;;
+    --target-dir)      TARGET="${2:-}"; shift 2 ;;
+    --no-stubs)        NO_STUBS=1; shift ;;
+    --remove-llmstxt)  REMOVE_LLMSTXT=1; shift ;;
+    --drop-strict)     DROP_STRICT=1; shift ;;
+    --dry-run)         DRY_RUN=1; shift ;;
+    --force)           FORCE=1; shift ;;
+    --help|-h)         usage; exit 0 ;;
+    -*)                die "unknown flag: $1 (try --help)" 1 ;;
+    *)                 die "unexpected positional argument: $1" 1 ;;
   esac
 done
 
@@ -206,23 +212,42 @@ if [ "$HAS_INSTANT" = "true" ]; then
   yq_inplace '.theme.features |= ((. // []) - ["navigation.instant", "navigation.instant.progress"])'
 fi
 
-# --- Step 2c: remove llmstxt plugin entry (incompatible with i18n + --strict) ---
+# --- Step 2c: handle mkdocs-llmstxt incompatibility ---
 # mkdocs-llmstxt resolves source URIs against the page index, which
 # mkdocs-static-i18n's reconfigure_material remaps. Result: every entry in
 # llmstxt.sections triggers a "Page URI not found" warning, which aborts
 # `mkdocs build --strict`. Auto-discovery isn't an option (sections: is
-# required by the llmstxt schema). The pragmatic fix is to remove the plugin
-# entry entirely; users who want to keep it must drop --strict from CI.
+# required by the llmstxt schema).
+# Default: KEEP llmstxt — most users opted into this skill BECAUSE of the
+# /llms.txt feature. Pair with --drop-strict to neutralise the warnings in
+# CI. --remove-llmstxt is the opt-out for users who'd rather keep --strict.
 HAS_LLMSTXT=$(yq '[.plugins[]? | select(has("llmstxt"))] | length > 0' "$MKDOCS" 2>/dev/null || echo "false")
 if [ "$HAS_LLMSTXT" = "true" ]; then
-  if [ "$KEEP_LLMSTXT" = "1" ]; then
-    log "WARNING: keeping mkdocs-llmstxt as requested. Drop --strict from your CI"
-    log "         or expect 'Page URI not found' warnings on every build."
-  else
-    log "Removing mkdocs-llmstxt plugin entry from mkdocs.yml"
-    log "  (incompatible with i18n + --strict; --keep-llmstxt to preserve)."
+  if [ "$REMOVE_LLMSTXT" = "1" ]; then
+    log "Removing mkdocs-llmstxt plugin entry (--remove-llmstxt)..."
     yq_inplace 'del(.plugins[] | select(has("llmstxt")))'
+  else
+    log "Keeping mkdocs-llmstxt (default). 'mkdocs build --strict' will fail"
+    log "  with 'Page URI not found' warnings — pair with --drop-strict, or"
+    log "  drop --strict from your CI manually."
   fi
+fi
+
+# --- Step 2d: optionally drop --strict from CI files ---
+if [ "$DROP_STRICT" = "1" ]; then
+  for ci_file in "$TARGET/.github/workflows/docs.yml" "$TARGET/Makefile"; do
+    [ -f "$ci_file" ] || continue
+    if ! grep -q 'mkdocs build --strict' "$ci_file" 2>/dev/null; then
+      continue
+    fi
+    if [ "$DRY_RUN" = "1" ]; then
+      log "[dry-run] drop --strict in $ci_file"
+    else
+      sed -i.bak -E 's|mkdocs build --strict|mkdocs build|g' "$ci_file"
+      rm -f "${ci_file}.bak"
+      log "Dropped --strict from $ci_file"
+    fi
+  done
 fi
 
 # --- Step 3: collect all configured locales for stub-skipping ---

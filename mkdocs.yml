@@ -4,7 +4,6 @@ site_url: https://daviddwlee84.github.io/agent-skills/
 repo_url: https://github.com/daviddwlee84/agent-skills
 repo_name: daviddwlee84/agent-skills
 edit_uri: edit/main/docs/
-
 theme:
   name: material
   palette:
@@ -21,8 +20,6 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    - navigation.instant
-    - navigation.instant.progress
     - navigation.sections
     - navigation.expand
     - navigation.top
@@ -33,18 +30,25 @@ theme:
     - content.code.copy
     - content.code.annotate
     - toc.follow
-
+  language: en
 plugins:
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+        - locale: zh-TW
+          name: 繁體中文 (zh-TW)
   - search
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: >
-        Personal collection of agent skills — local custom-authored skills under
-        skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via
-        the vendor.yaml manifest. Includes project-knowledge-harness (a
-        TODO/backlog/pitfalls memory harness with bundled init/kanban/promote
-        scripts) and quantatitive-factor-researcher (a Python quant-research
-        persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
+        Personal collection of agent skills — local custom-authored skills under skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via the vendor.yaml manifest. Includes project-knowledge-harness (a TODO/backlog/pitfalls memory harness with bundled init/kanban/promote scripts) and quantatitive-factor-researcher (a Python quant-research persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
+
       sections:
         Guides:
           - index.md
@@ -62,7 +66,6 @@ plugins:
       repo_url: "https://daviddwlee84.github.io/agent-skills"
       button_hover_color: "var(--md-primary-fg-color)"
       toast_bg_color: "var(--md-primary-fg-color)"
-
 markdown_extensions:
   - admonition
   - attr_list
@@ -85,7 +88,6 @@ markdown_extensions:
       check_paths: true
   - pymdownx.tabbed:
       alternate_style: true
-
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
@@ -129,17 +131,14 @@ nav:
       - Downstream docs stack recipe: reference/docs-stack-recipe.md
       - npx skills metadata model: reference/npx-skills-metadata.md
   - Changelog: changelog.md
-
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/daviddwlee84/agent-skills
-
 # `_snippets/` are meant to be included via pymdownx.snippets, never
 # rendered as their own page. `not_in_nav` suppresses the INFO warning.
 not_in_nav: |
   /_snippets/
-
 # Validation: keep strict mode useful but don't fail on links to files
 # that exist in the *built* site/ but not in docs/ source (e.g.
 # llms.txt and llms-full.txt produced by mkdocs-llmstxt at build time,
