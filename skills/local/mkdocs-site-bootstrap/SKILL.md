@@ -237,6 +237,11 @@ uv run mkdocs build      # --strict only if you went the --remove-llmstxt route
 - `references/i18n-guide.md` — Bilingual / multi-language docs setup using
   `mkdocs-static-i18n`. Read this **before** running `add-language.sh`. Includes
   the verbatim "preserve English originals" terminology rule for zh-TW pages.
+- `references/mkdocs-2-and-zensical.md` — Why the stack pins `mkdocs<2` and
+  `mkdocs-material<10`. Captures the MkDocs 2.0 plugin-removal situation,
+  Material team's Zensical replacement, and the criteria for lifting the
+  caps. Read whenever a user asks about upgrading MkDocs or why the docs
+  build is on 1.x.
 
 ## Bundled assets
 

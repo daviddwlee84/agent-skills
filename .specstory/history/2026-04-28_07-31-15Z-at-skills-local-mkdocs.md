@@ -16222,7 +16222,7 @@ total 7784
 
 _**Agent (claude-opus-4-7 2026-04-28 10:06:06Z)**_
 
-_**Agent (claude-opus-4-7 2026-04-28 10:06:08Z)**_
+_**Agent (claude-opus-4-7 2026-04-28 10:06:11Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -16236,4 +16236,104 @@ git status --short | head -10
 echo "--- scan ---"
 bash skills/local/agent-history-hygiene/scripts/scan-staged.sh; echo "exit=$?"
 ```
+
+```text
+--- staged ---
+M  .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+M  docs/changelog.zh-TW.md
+M  docs/conventions.zh-TW.md
+M  docs/getting-started.zh-TW.md
+M  docs/index.zh-TW.md
+M  docs/reference/docs-stack-recipe.zh-TW.md
+M  docs/reference/npx-skills-metadata.zh-TW.md
+M  docs/reference/pitfalls.zh-TW.md
+M  docs/reference/scripts.zh-TW.md
+M  docs/reference/tag-schema.zh-TW.md
+--- scan ---
+exit=0
+```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit all zh-TW translations
+
+```bash
+git commit -m "$(cat <<'EOF'
+docs: zh-TW translations for all 36 pages
+
+Replaces the auto-generated stub bodies with actual zh-TW translations
+across the full docs tree — top-level (index, getting-started,
+conventions, changelog), workflows (3), reference (6), skills (24,
+covering the 9 custom-authored local skills, 13 vendored skills, and
+the skills/index overview).
+
+Every translation preserves the verbatim "中文 (English original)"
+terminology admonition at the top, drops the "Translation pending"
+warning, and follows the rule consistently in body prose: technical
+terms get the English original on first mention (e.g. 「依賴注入
+(dependency injection)」), code/API/CLI/package/file names stay English,
+and where no canonical Chinese term exists the English form is kept
+(e.g. embedding, tokenizer, manifest, frontmatter, slug, idempotent,
+fan-out / fan-in).
+
+Heading translations are conservative — page titles either stay English
+("Agent Skills", "Changelog") or get a bilingual " — 中文" suffix
+("Getting Started — 快速開始") so the URL slugs and search behaviour
+are unchanged for English-language readers using the language switcher.
+
+Build verified clean: `uv run mkdocs build` produces site/zh-TW/ with
+all 36 pages translated; the un-related llmstxt warnings (Page URI not
+found for a couple of pages under reconfigure_material's path remap)
+remain non-fatal under non-strict mode, as expected from the prior
+add-language.sh + --drop-strict run.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+echo "---"
+git log --oneline -3
+```
+
+```text
+[main ef05625] docs: zh-TW translations for all 36 pages
+ 38 files changed, 11019 insertions(+), 123 deletions(-)
+---
+ef05625 docs: zh-TW translations for all 36 pages
+785a559 docs: fix broken relative links + cap mkdocs<2 / mkdocs-material<10
+cbb269d mkdocs-site-bootstrap: keep llmstxt by default + dogfood zh-TW on this repo
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:38Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:06:54Z)**_
+
+全部 36 頁完成，commit 為 `ef05625`。
+
+## 翻譯統計
+
+| 區段 | 頁數 | 風格 |
+|---|---|---|
+| Top-level (index, getting-started, conventions, changelog) | 4 | 完整翻譯 + 雙語標題 |
+| Workflows (adding-vendor-skills, creating-local-skills, project-memory) | 3 | 完整翻譯 |
+| Reference (docs-stack-recipe, pitfalls, tag-schema, todo-format, scripts, npx-skills-metadata) | 6 | 完整翻譯（最大 npx-skills-metadata 338 行） |
+| Skills overview + custom-authored (skill-author, mkdocs-site-bootstrap, agent-history-hygiene, mlflow-tracking, pueue-job-queue, project-knowledge-harness, quantatitive-factor-researcher, dvc-ml-workflow, marimo-batch-mlflow) | 10 | 完整翻譯 |
+| Vendored skills (anywidget, frontend-design, marimo-notebook, nextjs, react-best-practices, shadcn, skill-creator, streamlit-to-marimo, supabase, supabase-postgres-best-practices, vercel-storage, web-design-guidelines, webapp-testing) | 13 | 完整翻譯（每頁 ~30-75 行） |
+
+## 翻譯規則貫徹情況
+
+- ✅ 每頁保留 verbatim「中文 (English original)」terminology admonition
+- ✅ 移除「Translation pending」warning
+- ✅ 技術名詞首次出現一律帶英文原文（依賴注入 (dependency injection)、佈局 (layout)、塗鴉本 (scratchpad)、看板 (kanban) 等）
+- ✅ 不自創翻譯：`embedding`、`tokenizer`、`manifest`、`frontmatter`、`slug`、`idempotent`、`fan-out` / `fan-in`、`reconfigure_material`、`pathPatterns`、`pueue` / `pueued`、`Tyro`、`MLflow`、`anywidget` 等全部保留英文
+- ✅ 代碼、API 名、CLI flag、套件名、檔名一律不翻
+- ✅ 標題策略：要嘛留純英文（"Agent Skills"、"Changelog"）、要嘛 `English — 中文` 雙語（"Getting Started — 快速開始"），保留 URL slug 與搜尋行為
+
+## Build 驗證
+
+`uv run mkdocs build` 通過、`site/zh-TW/` 36 頁全部產出。`mkdocs-llmstxt` 仍有少量 "Page URI not found" warning（Reference 部分頁面在 `reconfigure_material` 路徑 remap 後找不到），但已 `--drop-strict` 過所以非致命，CI 不會 fail。
+
+Branch 現在 7 commits ahead of `origin/main`（沒 push）。zh-TW 完整可用，未來新加頁面 `add-docs-page.sh` 會自動同時產生英文與 zh-TW stub，由人類翻譯填內容。
