@@ -383,3 +383,22 @@ done
 
 printf '{"lang":"%s","stubs_created":%d,"stubs_existing":%d,"languages":[%s]}\n' \
   "$LOCALE" "$STUBS_CREATED" "$STUBS_EXISTING" "$LANGUAGES_JSON"
+
+# --- Post-run tips (stderr, agent-readable) ---
+# These nudge the next step without taking action. The script's job is the
+# structural retrofit; translation and nav-label decisions are deliberate
+# authoring work that needs human judgment.
+if [ "$STUBS_CREATED" -gt 0 ] || [ "$STUBS_EXISTING" -gt 0 ]; then
+  log ""
+  log "Next steps:"
+  log "  1. Stubs are placeholders. Each $LOCALE page contains the terminology"
+  log "     admonition + a 'Translation pending' warning, and is otherwise empty."
+  log "     Ask the user whether to translate them page-by-page now"
+  log "     (recommended batch size: 4-6 pages, run 'mkdocs build' between batches)."
+  log "     Translation is a separate authoring task — proceed only on explicit yes."
+  log ""
+  log "  2. Section headings in mkdocs.yml's nav stay in the default language."
+  log "     To translate them (e.g. 'Reference' -> '參考資料'), add a"
+  log "     nav_translations: block under the $LOCALE entry in mkdocs.yml."
+  log "     See references/i18n-guide.md §nav_translations."
+fi

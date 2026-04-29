@@ -6576,12 +6576,6 @@ The transcript appears modified again right after — that's the live-writer beh
 
 _**User (2026-04-28 09:24:02Z)**_
 
-<command-message>mkdocs-site-bootstrap</command-message>
-<command-name>/mkdocs-site-bootstrap</command-name>
-<command-args>那現在用我們做的skill來吧docs添加zh-TW的版本吧</command-args>
-
-_**User (2026-04-28 09:24:02Z)**_
-
 Base directory for this skill: /Volumes/Data/Program/Personal/agent-skills/.claude/skills/mkdocs-site-bootstrap
 
 # mkdocs-site-bootstrap
@@ -6884,6 +6878,12 @@ have customizations the templates don't know about.
 
 
 ARGUMENTS: 那現在用我們做的skill來吧docs添加zh-TW的版本吧
+
+_**User (2026-04-28 09:24:02Z)**_
+
+<command-message>mkdocs-site-bootstrap</command-message>
+<command-name>/mkdocs-site-bootstrap</command-name>
+<command-args>那現在用我們做的skill來吧docs添加zh-TW的版本吧</command-args>
 
 ---
 
@@ -16337,3 +16337,571 @@ _**Agent (claude-opus-4-7 2026-04-28 10:06:54Z)**_
 `uv run mkdocs build` 通過、`site/zh-TW/` 36 頁全部產出。`mkdocs-llmstxt` 仍有少量 "Page URI not found" warning（Reference 部分頁面在 `reconfigure_material` 路徑 remap 後找不到），但已 `--drop-strict` 過所以非致命，CI 不會 fail。
 
 Branch 現在 7 commits ahead of `origin/main`（沒 push）。zh-TW 完整可用，未來新加頁面 `add-docs-page.sh` 會自動同時產生英文與 zh-TW stub，由人類翻譯填內容。
+
+---
+
+_**User (2026-04-28 10:43:27Z)**_
+
+```
+⏺ All set. Summary of changes:
+
+  Modified (5)
+  - mkdocs.yml — added plugins.i18n (suffix layout, en default + zh-TW), set theme.language: en, removed navigation.instant* (incompatible with the language switcher)
+  - pyproject.toml + uv.lock — added mkdocs-static-i18n>=1.2
+  - .github/workflows/docs.yml — dropped --strict (required to keep mkdocs-llmstxt working alongside i18n; documented trade-off)
+  - .skills/preferences.yaml — recorded languages: [en, zh-TW], keep_english_terms: true, i18n_structure: suffix
+
+  Created (82) — one *.zh-TW.md stub per existing English page, each pre-populated with the terminology-rule admonition (中文 (English original) format on first mention; never invent translations) + a "translation pending" warning. Build
+   verified (uv run mkdocs build produced site/zh-TW/).
+
+  Next steps for you
+  - The Material header now has a language switcher (right side). Today it falls back to English on every zh-TW page until you replace each stub body.
+  - Section names in the nav (e.g. Tools, Repo Internals, Tutorials) stay English because add-language.sh doesn't auto-translate them. When you're ready, add a nav_translations: block under the zh-TW locale entry in mkdocs.yml — see
+  references/i18n-guide.md for the syntax.
+  - New pages added going forward: add-docs-page.sh will auto-create the matching zh-TW stub now that languages are configured.
+  - The --strict drop in CI means warnings (broken anchors, missing pages) won't fail the build anymore. The existing INFO-level link tolerance was already loose; if you want stricter checking, fix the llmstxt+i18n issue upstream or
+  switch to --remove-llmstxt.
+
+  Want me to also wire up nav_translations for the top-level section names (Playbooks, Tools, Repo Internals, etc.) as a separate pass?
+
+```
+
+我在另一個repo測試了一下我們的skill 看起來它新建了很多template placeholder但卻沒有真的去翻譯(是偷懶、還是指令不夠明確、還是這是by design？)
+另外它說的 nav_translations 有道理嗎？ (會影響到我們什麼嗎？還是加上更好)
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-28 10:44:00Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-28 10:44:25Z)**_
+
+兩個都是好觀察。簡答：
+
+## Q1: 沒翻譯是 by design + SKILL.md 不夠 push
+
+實際上是兩件事疊加：
+
+1. **`add-language.sh` 本身故意只做 scaffold**，不做翻譯 — 這是對的：
+   - 自動翻譯違反「不自創翻譯」這條硬規則（LLM 會生出 `embedding` → 「嵌入」 / 「向量」 / 「内嵌」這種無公認譯名的東西）
+   - 翻譯需要 voice、tone、技術準確度的人類判斷
+   - 把「結構 retrofit」與「內容翻譯」拆開是對的關注點分離
+
+2. **但 SKILL.md 沒告訴 agent 第二步是什麼。** Step 7 結束在「stubs created → done」，沒有
+   > 「stub 產生後，**詢問使用者**是否要繼續逐頁翻譯。如果是，分批處理（一次 4-6 頁），每批之間跑 `mkdocs build` 驗證。每頁保留 terminology admonition、移除 Translation pending warning。**不自創翻譯**。」
+
+   這是真正的修正點。我們的對話之所以兩階段順利，是因為你顯式說了「**好 開始逐頁翻譯吧!**」 — 另一個 repo 的 agent 沒拿到這個 prompt 就停手是合理的（任務模糊時不要過度解讀）。
+
+   修一個 step 7 的提示應該就解決：在 `add-language.sh` 印的 success JSON 之後，agent 主動問：「Stubs are placeholders only. Want me to translate them page-by-page now? (recommend batches of 4-6 with `mkdocs build` between)」。可以順便加進 SKILL.md 跟 `references/i18n-guide.md`。
+
+## Q2: `nav_translations` 有道理 — 但**不該自動填**
+
+它是 mkdocs-static-i18n 真實的 feature，能讓 zh-TW 頁面的 nav heading 也跟著翻（`Reference` → `參考資料`、`Workflows` → `工作流程`）。沒它的話 zh-TW 頁面內容是中文、左側 nav 卻是英文 —— 確實突兀。
+
+**該不該寫進 skill 自動化？我認為不該**，理由跟為什麼不自動翻譯內文一樣：
+- 「Reference」翻成 `參考` / `參考資料` / `參考文件` 沒有正確答案
+- skill 自動填等於違反 terminology rule 的精神（用單一強制翻譯掩蓋歧義）
+- 不同 project 的 section name 完全不一樣，沒辦法 ship 通用對照表
+
+**比較好的做法（建議我們做的）：**
+1. `add-language.sh` 跑完後在輸出末尾印一行「**Tip:** Section headings in the nav stay English by default. To translate them, add `nav_translations:` under the new locale entry in `mkdocs.yml` — see `references/i18n-guide.md` §nav_translations for the exact YAML.」（純提示，不動 mkdocs.yml）
+2. `references/i18n-guide.md` 我已經有 `nav_translations` 那一節 — 可以加一條警語：「**不要對 section 名稱套用『中文 (English original)』格式** — nav 標籤要短，括號內附原文會擠不下。直接用最常見的中文翻譯即可，因為 nav 是導覽元素而非內文。」
+
+這就把 nav_translations 從「沒人知道存在」升級成「skill 主動提示但不替你決定」。
+
+## 要動嗎？
+
+最小 patch（~10 分鐘）：
+
+1. `add-language.sh` 末尾加 2 行 stderr tip（翻譯下一步 + nav_translations 提示）
+2. SKILL.md step 7 加一段 「After stubs are created, ask the user if they want page-by-page translation. Translation is a separate authoring task — proceed only on explicit yes.」
+3. `references/i18n-guide.md` 加 nav_translations 的「不要逐字套 terminology rule」警語
+
+要我去動嗎？還是先記成 TODO（`./scripts/add-todo.sh --priority P3 --effort S --title "..." --description "..."`）回頭再處理？
+
+---
+
+_**User (2026-04-29 01:16:02Z)**_
+
+好啊 把patch加上吧
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:14Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:16Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/mkdocs-site-bootstrap/scripts/add-language.sh`
+
+```text
+230	    log "Keeping mkdocs-llmstxt (default). 'mkdocs build --strict' will fail"
+231	    log "  with 'Page URI not found' warnings — pair with --drop-strict, or"
+232	    log "  drop --strict from your CI manually."
+233	  fi
+234	fi
+235	
+236	# --- Step 2d: optionally drop --strict from CI files ---
+237	if [ "$DROP_STRICT" = "1" ]; then
+238	  for ci_file in "$TARGET/.github/workflows/docs.yml" "$TARGET/Makefile"; do
+239	    [ -f "$ci_file" ] || continue
+240	    if ! grep -q 'mkdocs build --strict' "$ci_file" 2>/dev/null; then
+241	      continue
+242	    fi
+243	    if [ "$DRY_RUN" = "1" ]; then
+244	      log "[dry-run] drop --strict in $ci_file"
+245	    else
+246	      sed -i.bak -E 's|mkdocs build --strict|mkdocs build|g' "$ci_file"
+247	      rm -f "${ci_file}.bak"
+248	      log "Dropped --strict from $ci_file"
+249	    fi
+250	  done
+251	fi
+252	
+253	# --- Step 3: collect all configured locales for stub-skipping ---
+254	# Compute deterministically so dry-run shows the post-state, not the pre-state.
+255	if [ "$HAS_LOCALE" = "true" ]; then
+256	  ALL_LOCALES=$(yq '.plugins[]? | select(has("i18n")) | .i18n.languages[].locale' "$MKDOCS" 2>/dev/null | tr '\n' ' ')
+257	elif [ "$HAS_I18N" = "true" ]; then
+258	  OLD_LOCALES=$(yq '.plugins[]? | select(has("i18n")) | .i18n.languages[].locale' "$MKDOCS" 2>/dev/null | tr '\n' ' ')
+259	  ALL_LOCALES="${OLD_LOCALES}${LOCALE}"
+260	else
+261	  ALL_LOCALES="$DEFAULT_LANG $LOCALE"
+262	fi
+263	log "All configured locales: $ALL_LOCALES"
+264	
+265	# --- Step 4: create *.LANG.md sibling stubs ---
+266	STUBS_CREATED=0
+267	STUBS_EXISTING=0
+268	STUBS_SKIPPED=0
+269	STUB_TEMPLATE="$ASSETS/translation-stub.md.template"
+270	
+271	if [ "$NO_STUBS" = "1" ]; then
+272	  log "Skipping stub creation (--no-stubs)."
+273	elif [ ! -d "$DOCS_DIR" ]; then
+274	  log "No docs/ dir — skipping stub creation."
+275	elif [ ! -f "$STUB_TEMPLATE" ]; then
+276	  die "stub template missing: $STUB_TEMPLATE" 4
+277	else
+278	  TMP_LIST="$(mktemp)"
+279	  find "$DOCS_DIR" -type f -name '*.md' \
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:16Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/mkdocs-site-bootstrap/references/i18n-guide.md`
+
+```text
+100	   is structurally incompatible with `reconfigure_material` under
+101	   `--strict` — see "Interaction with `llmstxt` and `copy-to-llm`" below).
+102	7. **Walks `docs/`** for `*.md` files (excluding `_snippets/` and `assets/`),
+103	   and for each non-locale-suffixed source page, creates a sibling
+104	   `*.<LANG>.md` from `assets/translation-stub.md.template`.
+105	8. **Updates `.skills/preferences.yaml`** with three keys:
+106	   `mkdocs_site_bootstrap.languages` (ordered list, default first),
+107	   `keep_english_terms: true`, `i18n_structure: suffix`.
+108	9. **Un-comments `mkdocs-static-i18n>=1.2`** in `pyproject.toml`. If the
+109	   line isn't there at all, prints a hint asking you to add it manually.
+110	
+111	The script is idempotent: re-running with the same `--lang` is a no-op.
+112	
+113	## `theme.language` vs plugin `languages`
+114	
+115	These are two different things:
+116	
+117	- [`theme.language`](https://squidfunk.github.io/mkdocs-material/setup/changing-the-language/)
+118	  is **Material's UI strings** (search placeholder, "Edit this page", footer
+119	  navigation hints). One value site-wide. Material ships translations for
+120	  ~70 locales out of the box.
+121	- `plugins.i18n.languages` is **content translation**. A list. Each entry
+122	  declares a locale that has translated `*.<lang>.md` files.
+123	
+124	You almost always want `theme.language` set to your default content language
+125	so the UI matches when readers land on a default-language page.
+126	
+127	## `nav_translations`
+128	
+129	To translate section titles in the nav (e.g. `Workflows` → `工作流程`), use
+130	`mkdocs-static-i18n`'s per-language `nav_translations`:
+131	
+132	```yaml
+133	plugins:
+134	  - i18n:
+135	      docs_structure: suffix
+136	      languages:
+137	        - locale: en
+138	          name: English
+139	          default: true
+140	        - locale: zh-TW
+141	          name: 繁體中文 (zh-TW)
+142	          nav_translations:
+143	            Workflows: 工作流程
+144	            Reference: 參考資料
+145	```
+146	
+147	`add-language.sh` does **not** populate `nav_translations` for you —
+148	section names are project-specific and translating them is a deliberate
+149	authorial choice. Add them by hand once you have section titles to translate.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:23Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:25Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+After success JSON, print stderr tips: (a) stubs are placeholders only, ask agent/user about page-by-page translation; (b) nav_translations exists for section headings, see i18n-guide.md.
+
+```text
+Task #16 created successfully: Add translation next-step + nav_translations tips to add-language.sh
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:28Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+After describing add-language.sh, add explicit instruction that the agent should ask the user whether to translate the stub bodies now (page-by-page, batch with build between). Translation is its own authoring task, only on explicit yes.
+
+```text
+Task #17 created successfully: Update SKILL.md step 7 to push agent toward translation as next step
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:30Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskCreate"><details>
+<summary>Tool use: **TaskCreate**</summary>
+In the existing nav_translations section, append a warning: do NOT apply the 「中文 (English original)」 format to nav labels — they're navigation chrome, not body prose, and bilingual labels won't fit. Pick the most common Chinese term and stick with it.
+
+```text
+Task #18 created successfully: Add nav_translations terminology-rule warning to i18n-guide.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:31Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #16 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:35Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/mkdocs-site-bootstrap/scripts/add-language.sh`
+
+```text
+340	  bash "$PREFS" \
+341	    --set "mkdocs_site_bootstrap.languages=$ALL_LOCALES_LITERAL" \
+342	    --set "mkdocs_site_bootstrap.keep_english_terms=true" \
+343	    --set "mkdocs_site_bootstrap.i18n_structure=suffix" \
+344	    >/dev/null
+345	fi
+346	
+347	# --- Step 6: uncomment mkdocs-static-i18n in pyproject.toml ---
+348	PYPROJECT="$TARGET/pyproject.toml"
+349	if [ -f "$PYPROJECT" ]; then
+350	  if grep -qE '^[[:space:]]*"mkdocs-static-i18n' "$PYPROJECT"; then
+351	    log "pyproject.toml already lists mkdocs-static-i18n — leaving alone."
+352	  elif grep -qE '^[[:space:]]*#[[:space:]]*"mkdocs-static-i18n' "$PYPROJECT"; then
+353	    if [ "$DRY_RUN" = "1" ]; then
+354	      log "[dry-run] uncomment mkdocs-static-i18n in $PYPROJECT"
+355	    else
+356	      sed -i.bak -E 's|^([[:space:]]*)#[[:space:]]*("mkdocs-static-i18n[^"]*",)|\1\2|' "$PYPROJECT"
+357	      rm -f "${PYPROJECT}.bak"
+358	      log "Uncommented mkdocs-static-i18n in $PYPROJECT"
+359	    fi
+360	  else
+361	    log "Note: mkdocs-static-i18n not found in $PYPROJECT. Add manually:"
+362	    log '        "mkdocs-static-i18n>=1.2",'
+363	  fi
+364	else
+365	  log "Note: no pyproject.toml in $TARGET. Install mkdocs-static-i18n yourself."
+366	fi
+367	
+368	if [ "$DRY_RUN" = "1" ]; then
+369	  log "Dry run complete."
+370	  exit 0
+371	fi
+372	
+373	# --- Structured success output ---
+374	LANGUAGES_JSON=""
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:42Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/mkdocs-site-bootstrap/scripts/add-language.sh`
+
+```text
+373	# --- Structured success output ---
+374	LANGUAGES_JSON=""
+375	for loc in $ALL_LOCALES; do
+376	  [ -z "$loc" ] && continue
+377	  if [ -z "$LANGUAGES_JSON" ]; then
+378	    LANGUAGES_JSON="\"$loc\""
+379	  else
+380	    LANGUAGES_JSON="$LANGUAGES_JSON,\"$loc\""
+381	  fi
+382	done
+383	
+384	printf '{"lang":"%s","stubs_created":%d,"stubs_existing":%d,"languages":[%s]}\n' \
+385	  "$LOCALE" "$STUBS_CREATED" "$STUBS_EXISTING" "$LANGUAGES_JSON"
+386
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:54Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/skills/local/mkdocs-site-bootstrap/scripts/add-language.sh has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:54Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #16 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:16:54Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #17 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:08Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/skills/local/mkdocs-site-bootstrap/SKILL.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:09Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #17 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:09Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #18 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:23Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/skills/local/mkdocs-site-bootstrap/references/i18n-guide.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:23Z)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="TaskUpdate"><details>
+<summary>Tool use: **TaskUpdate**</summary>
+
+```text
+Updated task #18 status
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify the new tips render correctly
+
+```bash
+bash -n skills/local/mkdocs-site-bootstrap/scripts/add-language.sh && echo "syntax OK"
+echo "--- preview new tips by running --help-style probe ---"
+SMOKE=/tmp/i18n-tip-smoke-$$
+mkdir -p "$SMOKE"
+cd "$SMOKE" && git init -q
+bash /Volumes/Data/Program/Personal/agent-skills/skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
+  --site-name X --site-url https://x.io/ --repo-slug a/b 2>&1 | tail -1
+echo "--- run add-language.sh and capture stderr tail ---"
+cd "$SMOKE" && bash /Volumes/Data/Program/Personal/agent-skills/skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
+  --lang zh-TW 2>&1 | tail -15
+rm -rf "$SMOKE"
+```
+
+```text
+syntax OK
+--- preview new tips by running --help-style probe ---
+zoxide: detected a possible configuration issue.
+Please ensure that zoxide is initialized right at the end of your shell configuration file (usually ~/.zshrc).
+
+If the issue persists, consider filing an issue at:
+https://github.com/ajeetdsouza/zoxide/issues
+
+Disable this message by setting _ZO_DOCTOR=0.
+
+{"target":"/tmp/i18n-tip-smoke-90698","site_name":"X","site_url":"https://x.io/","next_steps":["uv sync --extra docs","uv run mkdocs build --strict","git add and commit the new files","Run enable-pages.sh to deploy to GitHub Pages"]}
+--- run add-language.sh and capture stderr tail ---
+Updated /tmp/i18n-tip-smoke-90698/.skills/preferences.yaml
+Uncommented mkdocs-static-i18n in /tmp/i18n-tip-smoke-90698/pyproject.toml
+{"lang":"zh-TW","stubs_created":2,"stubs_existing":0,"languages":["en","zh-TW"]}
+
+Next steps:
+  1. Stubs are placeholders. Each zh-TW page contains the terminology
+     admonition + a 'Translation pending' warning, and is otherwise empty.
+     Ask the user whether to translate them page-by-page now
+     (recommended batch size: 4-6 pages, run 'mkdocs build' between batches).
+     Translation is a separate authoring task — proceed only on explicit yes.
+
+  2. Section headings in mkdocs.yml's nav stay in the default language.
+     To translate them (e.g. 'Reference' -> '參考資料'), add a
+     nav_translations: block under the zh-TW entry in mkdocs.yml.
+     See references/i18n-guide.md §nav_translations.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:36Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:36Z)**_
+
+Patch verified. Committing.
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:42Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage skill patch + transcript, scan
+
+```bash
+git add \
+  skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
+  skills/local/mkdocs-site-bootstrap/SKILL.md \
+  skills/local/mkdocs-site-bootstrap/references/i18n-guide.md
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh --session-only 2>&1 | tail -5
+echo "--- scan ---"
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh; echo "exit=$?"
+echo "--- staged ---"
+git status --short
+```
+
+```text
+staged: /Volumes/Data/Program/Personal/agent-skills/.specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+staged: .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+2 artifact(s) would be staged.
+--- scan ---
+exit=0
+--- staged ---
+M  .specstory/history/2026-04-28_07-31-15Z-at-skills-local-mkdocs.md
+M  skills/local/mkdocs-site-bootstrap/SKILL.md
+M  skills/local/mkdocs-site-bootstrap/references/i18n-guide.md
+M  skills/local/mkdocs-site-bootstrap/scripts/add-language.sh
+?? .specstory/history/2026-04-28_10-27-10Z-security-risk-assessments-gen.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:46Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 01:17:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the patch
+
+```bash
+git restore --staged .claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md 2>/dev/null
+git commit -m "$(cat <<'EOF'
+mkdocs-site-bootstrap: nudge translation + nav_translations as next steps
+
+Two friction points surfaced when the skill ran in another repo: the
+agent stopped at stub creation (no signal that translation was a separate
+follow-up step), and nobody wired up nav_translations because the skill
+never mentions it without prompting.
+
+add-language.sh now prints two stderr tips after the success JSON: (1)
+stubs are placeholders, ask the user whether to translate page-by-page
+in batches of 4-6 with build verification between; (2) nav headings stay
+in the default language until you add nav_translations under the new
+locale entry. Tips fire whenever stubs are created OR already exist, so
+re-runs surface them too.
+
+SKILL.md step 7 grows a "translation is a separate step" subsection
+explaining why auto-translation would violate the no-invented-translations
+terminology rule, and instructing the agent to ask explicitly before
+translating. Same subsection points to nav_translations as an independent
+offer.
+
+references/i18n-guide.md §nav_translations gains a warning admonition:
+the 「中文 (English original)」 body-prose rule deliberately does NOT
+extend to nav labels — bilingual labels are too long for a sidebar and
+duplicate info already in the URL slug. Pick the most common Chinese
+term and stay consistent; fall back to English when no canonical
+translation exists (e.g. domain terms like 'Skills').
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+echo "---"
+git log --oneline -3
+```
+
+```text
+[main e7ab16d] mkdocs-site-bootstrap: nudge translation + nav_translations as next steps
+ 4 files changed, 556 insertions(+), 6 deletions(-)
+---
+e7ab16d mkdocs-site-bootstrap: nudge translation + nav_translations as next steps
+3dfe35d mkdocs-site-bootstrap: document mkdocs<2 cap rationale (MkDocs 2.0 + Zensical)
+ef05625 docs: zh-TW translations for all 36 pages
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 01:18:10Z)**_
+
+Committed as `e7ab16d`.
+
+## 改了什麼
+
+| 檔案 | 改動 |
+|---|---|
+| `scripts/add-language.sh` | 在 success JSON 之後加 stderr "Next steps" 區塊：(1) stubs 是 placeholder，agent 要顯式問使用者是否要逐頁翻譯（4-6 頁/批，批間 build）；(2) `nav_translations` 提示。重跑也會印（不只第一次）。 |
+| `SKILL.md` step 7 | 新增「translation is a separate step」子節：解釋為什麼不該自動翻譯（違反 no-invented-translations 規則），並寫了 agent 該怎麼問使用者的範例 script。同時把 `nav_translations` 列為獨立的 follow-up offer。 |
+| `references/i18n-guide.md` `§nav_translations` | 加了 `!!! warning` admonition + 對照表：明確說「中文 (English original)」格式**不**延伸到 nav 標籤；nav 是 chrome 而非 prose，雙語標籤會太長且資訊重複（URL slug 已經保留英文了）。提供 fall-back-to-English 的判斷準則（domain term 如 `Skills` 保留英文）。 |
+
+下次 agent 在另一個 repo 跑 `add-language.sh` 應該會：
+1. 看到 stderr 的兩條 tip
+2. （理想情況下）讀進 SKILL.md step 7 的 explicit「ask before translating」段落
+3. 主動問使用者要不要進入翻譯階段、要不要 wire `nav_translations`
+
+Branch 現在 9 commits ahead of `origin/main`。

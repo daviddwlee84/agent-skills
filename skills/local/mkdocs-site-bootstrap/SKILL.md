@@ -197,6 +197,31 @@ uv sync --extra docs
 uv run mkdocs build      # --strict only if you went the --remove-llmstxt route
 ```
 
+#### After the script finishes — translation is a separate step
+
+`add-language.sh` only produces **structural placeholders**: each
+`*.<LANG>.md` stub contains the terminology admonition plus a "Translation
+pending" warning. The script never auto-translates body prose, because LLM
+translation routinely violates the "no invented translations" terminology
+rule (e.g. coining 「嵌入」/「向量」/「内嵌」 for `embedding` when none is
+canonical).
+
+Once stubs exist, **explicitly ask the user whether to translate them now**
+— do not assume. A reasonable script:
+
+> "Stubs created. Want me to translate the bodies page-by-page? I'll do
+> 4-6 pages per batch, run `mkdocs build` between batches to verify, and
+> follow the terminology rule (English original on first mention, never
+> invent translations)."
+
+Only proceed on explicit yes. If the user defers, leave the stubs in place
+— they're already valid pages and the build passes.
+
+When translating, also offer to populate `nav_translations` in `mkdocs.yml`
+for top-level section headings (see `references/i18n-guide.md`
+§nav_translations). This is independent from page-body translation and the
+user may want one without the other.
+
 ## Available scripts
 
 - **`scripts/check-preferences.sh`** — Read, set, or reset

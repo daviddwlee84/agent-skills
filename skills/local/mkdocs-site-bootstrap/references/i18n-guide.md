@@ -148,6 +148,32 @@ plugins:
 section names are project-specific and translating them is a deliberate
 authorial choice. Add them by hand once you have section titles to translate.
 
+!!! warning "Don't apply 「中文 (English original)」 to nav labels"
+    The terminology rule that governs body prose **does not extend to
+    `nav_translations` values.** Nav entries are navigation chrome — short
+    labels in a sidebar — and bilingual labels like
+    `Reference: 參考資料 (Reference)` are too long, wrap awkwardly, and
+    duplicate information the URL slug already preserves.
+
+    For nav labels: pick the most common Chinese term for each section
+    and stick with it. Stay consistent across the whole nav. The URL
+    slug still uses the English source name (`/zh-TW/reference/...`),
+    so search engines and direct-link sharing are unaffected.
+
+    Examples:
+
+    | English heading | Good zh-TW label | Bad zh-TW label |
+    |---|---|---|
+    | `Reference` | `參考資料` | `參考資料 (Reference)` |
+    | `Workflows` | `工作流程` | `工作流程 (Workflows)` |
+    | `Skills` | `Skills` (keep — domain term, no canonical translation) | `技能 (Skills)` |
+    | `Getting started` | `快速開始` | `快速開始 (Getting started)` |
+
+    The "keep English" exception (third row) is reserved for terms where
+    no canonical Chinese translation exists. When in doubt, keep English
+    — it matches the body-prose rule's spirit (don't invent) without
+    duplicating into the label.
+
 ## Interaction with `llmstxt` and `copy-to-llm`
 
 - **`mkdocs-llmstxt` is incompatible with `mkdocs-static-i18n` under
