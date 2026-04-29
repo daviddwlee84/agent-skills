@@ -131,6 +131,7 @@ nav:
       - Downstream docs stack recipe: reference/docs-stack-recipe.md
       - npx skills metadata model: reference/npx-skills-metadata.md
       - MkDocs 2.0 + Zensical: reference/mkdocs-2-and-zensical.md
+      - Skill risk evaluations: reference/skills-risk-evaluations.md
   - Changelog: changelog.md
 extra:
   social:

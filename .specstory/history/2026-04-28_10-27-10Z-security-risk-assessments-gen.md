@@ -673,3 +673,819 @@ Sources:
 - [Shields.io](https://shields.io/)
 - [Shields.io Static Badge](https://shields.io/badges)
 - [Shields.io Docs (endpoint badge)](https://shields.io/docs/)
+
+---
+
+_**User (2026-04-29 06:52:35Z)**_
+
+那好像先不加badge吧 然後把這些 skill風險評估 & badge相關notes加到docs裡 然後commmit
+
+---
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:44Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect docs directory and mkdocs config
+
+`ls /Volumes/Data/Program/Personal/agent-skills/docs/ 2>/dev/null && echo "---" && cat /Volumes/Data/Program/Personal/agent-skills/mkdocs.yml 2>/dev/null | head -80`
+
+```text
+ **_snippets
+ **assets
+ **reference
+ **skills
+ **workflows
+ changelog.md
+ changelog.zh-TW.md
+ conventions.md
+ conventions.zh-TW.md
+ getting-started.md
+ getting-started.zh-TW.md
+ index.md
+ index.zh-TW.md
+---
+site_name: Agent Skills
+site_description: Personal collection of agent skills — both custom-authored and cherry-picked from upstream repos.
+site_url: https://daviddwlee84.github.io/agent-skills/
+repo_url: https://github.com/daviddwlee84/agent-skills
+repo_name: daviddwlee84/agent-skills
+edit_uri: edit/main/docs/
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  language: en
+plugins:
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+        - locale: zh-TW
+          name: 繁體中文 (zh-TW)
+  - search
+  - llmstxt:
+      full_output: llms-full.txt
+      markdown_description: >
+        Personal collection of agent skills — local custom-authored skills under skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via the vendor.yaml manifest. Includes project-knowledge-harness (a TODO/backlog/pitfalls memory harness with bundled init/kanban/promote scripts) and quantatitive-factor-researcher (a Python quant-research persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
+
+      sections:
+        Guides:
+          - index.md
+          - getting-started.md
+          - conventions.md
+        Workflows:
+          - workflows/*.md
+        Skills:
+          - skills/*.md
+        Reference:
+          - reference/*.md
+        Changelog:
+          - changelog.md
+  - copy-to-llm:
+      repo_url: "https://daviddwlee84.github.io/agent-skills"
+      button_hover_color: "var(--md-primary-fg-color)"
+      toast_bg_color: "var(--md-primary-fg-color)"
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:48Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List reference docs
+
+`ls /Volumes/Data/Program/Personal/agent-skills/docs/reference/`
+
+```text
+ docs-stack-recipe.md
+ docs-stack-recipe.zh-TW.md
+ mkdocs-2-and-zensical.md
+ mkdocs-2-and-zensical.zh-TW.md
+ npx-skills-metadata.md
+ npx-skills-metadata.zh-TW.md
+ pitfalls.md
+ pitfalls.zh-TW.md
+ scripts.md
+ scripts.zh-TW.md
+ tag-schema.md
+ tag-schema.zh-TW.md
+ todo-format.md
+ todo-format.zh-TW.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:52Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find nav reference for reference section
+
+`grep -n "Reference\|reference" /Volumes/Data/Program/Personal/agent-skills/mkdocs.yml | head -20`
+
+```text
+61:        Reference:
+62:          - reference/*.md
+126:  - Reference:
+127:      - TODO format: reference/todo-format.md
+128:      - Tag schema: reference/tag-schema.md
+129:      - Pitfalls format: reference/pitfalls.md
+130:      - Bundled scripts: reference/scripts.md
+131:      - Downstream docs stack recipe: reference/docs-stack-recipe.md
+132:      - npx skills metadata model: reference/npx-skills-metadata.md
+133:      - MkDocs 2.0 + Zensical: reference/mkdocs-2-and-zensical.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:54Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./mkdocs.yml`
+
+```text
+115	          - skill-creator: skills/skill-creator.md
+116	          - Fullstack Next.js:
+117	              - nextjs: skills/nextjs.md
+118	              - shadcn: skills/shadcn.md
+119	              - supabase: skills/supabase.md
+120	              - supabase-postgres-best-practices: skills/supabase-postgres-best-practices.md
+121	              - react-best-practices: skills/react-best-practices.md
+122	              - vercel-storage: skills/vercel-storage.md
+123	              - web-design-guidelines: skills/web-design-guidelines.md
+124	              - frontend-design: skills/frontend-design.md
+125	              - webapp-testing: skills/webapp-testing.md
+126	  - Reference:
+127	      - TODO format: reference/todo-format.md
+128	      - Tag schema: reference/tag-schema.md
+129	      - Pitfalls format: reference/pitfalls.md
+130	      - Bundled scripts: reference/scripts.md
+131	      - Downstream docs stack recipe: reference/docs-stack-recipe.md
+132	      - npx skills metadata model: reference/npx-skills-metadata.md
+133	      - MkDocs 2.0 + Zensical: reference/mkdocs-2-and-zensical.md
+134	  - Changelog: changelog.md
+135	extra:
+136	  social:
+137	    - icon: fontawesome/brands/github
+138	      link: https://github.com/daviddwlee84/agent-skills
+139	# `_snippets/` are meant to be included via pymdownx.snippets, never
+140	# rendered as their own page. `not_in_nav` suppresses the INFO warning.
+141	not_in_nav: |
+142	  /_snippets/
+143	# Validation: keep strict mode useful but don't fail on links to files
+144	# that exist in the *built* site/ but not in docs/ source (e.g.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:57Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:52:58Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/mkdocs-2-and-zensical.md`
+
+```text
+1	# MkDocs 2.0, Zensical, and the `mkdocs<2` cap
+2	
+3	> This page is now maintained as part of the `mkdocs-site-bootstrap` skill.
+4	>
+5	> The full rationale and re-evaluation criteria live in the skill's
+6	> reference file:
+7	> [`skills/local/mkdocs-site-bootstrap/references/mkdocs-2-and-zensical.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/mkdocs-2-and-zensical.md)
+8	
+9	## Why this exists
+10	
+11	This repo's [`pyproject.toml`](https://github.com/daviddwlee84/agent-skills/blob/main/pyproject.toml)
+12	caps `mkdocs<2` and `mkdocs-material<10`. So does the `pyproject.toml.template`
+13	that `mkdocs-site-bootstrap` writes into downstream projects. That cap is
+14	deliberate, not bit-rot.
+15	
+16	In one paragraph: MkDocs 2.0 removes the entire plugin system, so every
+17	plugin in this docs stack (`mkdocs-llmstxt`, `mkdocs-static-i18n`,
+18	`mkdocs-copy-to-llm`) stops working under 2.x. The Material for MkDocs
+19	team has refused to follow MkDocs 2.0 and is shipping a separate
+20	replacement called Zensical, positioned as a drop-in for **1.x**, not 2.0.
+21	Until Zensical reaches stable release with i18n + LLM-friendly output, the
+22	realistic answer is "stay on MkDocs 1.x." The canonical reference linked
+23	above documents the exact re-evaluation criteria.
+24	
+25	## See also
+26	
+27	- [Downstream docs stack recipe](docs-stack-recipe.md) — full stack
+28	  description (what the cap is protecting).
+29	- [Skill page: mkdocs-site-bootstrap](../skills/mkdocs-site-bootstrap.md) —
+30	  the skill that owns the templates and references.
+31
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:53:02Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/mkdocs-2-and-zensical.zh-TW.md`
+
+```text
+1	# MkDocs 2.0, Zensical, and the `mkdocs<2` cap — MkDocs 2.0、Zensical 與 `mkdocs<2` 上限
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	!!! warning "Translation pending"
+9	    這個頁面尚未翻譯。請使用語言切換器（右上角 / language switcher）查看 English 原文。
+10	
+11	<!-- Translators: replace this body with the zh-TW translation. Keep the terminology admonition above. -->
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:53:06Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:53:07Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./docs/reference/npx-skills-metadata.zh-TW.md`
+
+```text
+1	# How `npx skills` reads catalog metadata — `npx skills` 怎麼讀 catalog metadata
+2	
+3	!!! note "Terminology rule (zh-TW pages)"
+4	    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+5	    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+6	    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+7	
+8	這頁記錄 `npx skills@latest add ...` 分組安裝 UI 背後的已驗證機制。
+9	以下內容全部由實際閱讀 npm package 原始碼（`vercel-labs/skills`，
+10	[`src/plugin-manifest.ts`](https://github.com/vercel-labs/skills/blob/main/src/plugin-manifest.ts)
+11	和 [`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts)）
+12	以及官方
+13	[Claude Code plugin-marketplaces 文件](https://code.claude.com/docs/en/plugin-marketplaces)
+14	確認。
+15	
+16	## 給這個 repo 的 TL;DR
+17	
+18	- 你跑 `npx skills@latest add daviddwlee84/agent-skills/skills` 時看到的
+19	  分組 picker UI 是由 `skills/.claude-plugin/marketplace.json` 驅動的 ——
+20	  **在** `skills/` 目錄**裡面**，不是 repo 根目錄。
+21	- 每個分組標頭 (group header) 是 `kebabToTitle(plugins[].name)`。
+22	  沒被列在任何 plugin 底下的 skill 會 fall through 到 **Other** 分組。
+23	- 用手編輯 manifest；跑 `make marketplace`（= `bash
+24	  scripts/validate-marketplace.sh`）抓出壞掉的路徑、重複條目、
+25	  或會被靜默歸到 "Other" 的 on-disk skill。
+26	- 我們**不**出貨 `.claude-plugin/plugin.json` —— 那只是給單一 plugin
+27	  repo 用的。
+28	
+29	## CLI 怎麼解析 manifest 路徑
+30	
+31	使用者給 `npx skills add` 的引數會被解析成 `repo` + 可選的 `subpath`。
+32	以這個 repo 為例：
+33	
+34	```
+35	npx skills@latest add daviddwlee84/agent-skills/skills
+36	                       └────────── repo ──────────┘ └sub┘
+37	```
+38	
+39	CLI 內部
+40	([`src/skills.ts`](https://github.com/vercel-labs/skills/blob/main/src/skills.ts))：
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:53:14Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:53:58Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Skill risk evaluations on skills.sh
+
+[skills.sh](https://skills.sh/daviddwlee84/agent-skills) runs three independent
+audits against every skill in this repo and surfaces the verdicts on the catalog
+page:
+
+| Auditor | What it checks |
+| ------- | -------------- |
+| **Gen** (Agent Trust Hub) | High-level "is this skill safe to install?" verdict produced by Gen's own model. |
+| **Socket** | Static scan of skill files for credential-shape strings, suspicious install scripts, network calls, obfuscation, etc. |
+| **Snyk** | A combination of standard CVE/SCA on declared dependencies plus a set of AI-skill-specific rules (W0xx) targeting prompt-injection / agent-facing risks. |
+
+This page records the **current findings** and the reasoning for each, so a
+reader (or future me) does not have to re-derive whether a flag is a real
+problem or expected noise.
+
+## Current findings
+
+As of the most recent audit run shown on
+[skills.sh/daviddwlee84/agent-skills](https://skills.sh/daviddwlee84/agent-skills):
+
+| Skill | Gen | Socket | Snyk |
+| ----- | --- | ------ | ---- |
+| `mkdocs-site-bootstrap`     | Safe | 0 alerts | **Med Risk** |
+| `project-knowledge-harness` | Safe | 0 alerts | Low Risk |
+| `agent-history-hygiene`     | Safe | **1 alert** | Low Risk |
+
+Both flagged items are **expected** and stem from the skills' core
+functionality, not from a real vulnerability. The reasoning follows.
+
+## `agent-history-hygiene` — Socket 1 alert (expected)
+
+- **File flagged:** `tests/fixtures/real_anthropic.md`
+- **Pattern:** Anthropic API key shape (`sk-ant-api03-aaaa…AA`)
+- **Severity:** medium / confidence high
+
+The skill's whole job is to detect and redact secrets in agent transcripts and
+plan files. Verifying that `gitleaks` rules + the `redact_secrets.py` substitution
+logic actually fire requires a corpus of intentionally-realistic secret-shape
+strings. `tests/fixtures/` therefore deliberately contains:
+
+- `real_anthropic.md` — `sk-ant-api03-` followed by 93 filler chars and `AA`,
+  which is the exact shape the strict Anthropic rule expects
+- `real_openai.md` — `sk-proj-` + 100 chars matching the OpenAI project-key rule
+- `private_key.md` — fake `-----BEGIN RSA PRIVATE KEY-----` block
+
+Socket's secret-pattern scanner can't distinguish "all-`a`s placeholder filler
+that exists to be matched" from "leaked credential," so it fires on the
+fixture. Removing the corpus would silently break the test suite, which
+defeats the purpose of having the skill in the first place. The alert stays.
+
+If the alert is annoying on a downstream dashboard, mark it as a false
+positive in skills.sh / Socket with the rationale "intentional secret-shape
+test corpus for a secret-redaction skill."
+
+## `mkdocs-site-bootstrap` — Snyk Med Risk (expected)
+
+This one is **not** a transitive-dependency CVE — pinning, bumping, or
+removing a package will not change the score.
+
+- **Rule:** `W011` — Third-party content exposure / indirect prompt injection
+- **Risk score:** 0.90
+- **Snyk's rationale (verbatim):**
+  > The agent will read untrusted, user-generated third-party docs that could
+  > contain instructions and thus enable indirect prompt injection.
+
+The skill ships templates that install `mkdocs-llmstxt` and `mkdocs-copy-to-llm`
+by default, which produce:
+
+- `/llms.txt` and `/llms-full.txt` — full-content dumps intended for LLM ingestion
+- Per-page "copy as markdown for LLM" buttons
+
+Any LLM-driven agent that consumes those endpoints is reading whatever ended
+up in `docs/`. If `docs/` accepts external contributions (e.g. open-source
+PRs), an attacker can plant prompt-injection payloads in a doc page and have
+them flow into a downstream agent's context. Snyk's W0xx ruleset flags that
+agent-facing surface.
+
+### Why we accept the score
+
+The whole point of dogfooding `mkdocs-llmstxt` + copy-to-llm is to make these
+docs LLM-friendly; degrading that defeats the skill. A real fix is **trust
+modeling**, not a dependency change:
+
+- Treat `docs/` as an LLM input boundary (CODEOWNERS on `docs/**`, require
+  review for external PRs).
+- Document the threat in the skill so downstream users opt in knowingly.
+
+A future opt-out flag on `init-docs-site.sh` (e.g. `--no-llmstxt`) for repos
+that don't want the LLM-facing surface is tracked in `TODO.md` rather than
+landed pre-emptively.
+
+### See also
+
+- [`reference/mkdocs-2-and-zensical.md`](mkdocs-2-and-zensical.md) — why we
+  pin `mkdocs<2` (different rationale, same skill).
+- [`reference/docs-stack-recipe.md`](docs-stack-recipe.md) — what the
+  bootstrap actually installs.
+
+## Why we don't ship README badges yet
+
+skills.sh **does not currently expose first-party badge endpoints**. We
+probed the obvious paths and all returned 404:
+
+\```
+https://skills.sh/<owner>/<repo>/badge.svg          → 404
+https://skills.sh/badge/<owner>/<repo>.svg          → 404
+https://skills.sh/api/badge/<owner>/<repo>          → 404
+\```
+
+That leaves three options if we ever want a row of audit badges in
+`README.md`, in increasing order of effort:
+
+1. **Static `shields.io` badges + manual hyperlinks.** Hand-write each
+   badge's value (`Safe`, `1 alert`, `Med (W011)`) and link the image to the
+   skills.sh detail page. Zero infrastructure, but drifts the moment an
+   audit re-runs.
+2. **`shields.io` `endpoint` schema + a self-hosted JSON file.** A scheduled
+   GitHub Action scrapes skills.sh, writes `badges/{gen,socket,snyk}.json`
+   to `gh-pages`, and shields.io's
+   [endpoint badge](https://shields.io/badges/endpoint-badge) renders against
+   that JSON. Auto-updating, ~half a day to set up.
+3. **Vendor-native badges from Snyk / Socket directly.** Snyk and Socket
+   each publish their own badges, but they target whole-repo or npm-package
+   scopes rather than per-skill verdicts, so they don't represent the same
+   thing skills.sh shows.
+
+We've parked all three. Re-evaluate when skills.sh ships a first-party
+badge endpoint, or when the audit signal becomes load-bearing for trust
+decisions (e.g. external contributors using verdicts to decide whether to
+install).
+
+## When to revisit this page
+
+- A new skill lands and gets its first non-trivial audit verdict.
+- An existing finding flips (e.g. Socket alert disappears after a Socket
+  rule update, or a new W0xx fires).
+- skills.sh changes the auditor lineup, or starts publishing badge URLs.
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/docs/reference/skills-risk-evaluations.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:54:56Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# Skill risk evaluations on skills.sh — skills.sh 上的 skill 風險評估
+
+!!! note "Terminology rule (zh-TW pages)"
+    技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
+    (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文
+    （如 `embedding`、`tokenizer`）。代碼、API 名、CLI flag、套件名、檔名一律不翻。
+
+[skills.sh](https://skills.sh/daviddwlee84/agent-skills) 對這個 repo 裡每個
+skill 跑三組獨立的 audit，把結果展示在 catalog 頁面：
+
+| Auditor | 檢查什麼 |
+| ------- | -------- |
+| **Gen** (Agent Trust Hub) | Gen 自家模型給出的高層次「這個 skill 裝下去安全嗎？」評論。 |
+| **Socket** | 對 skill 檔案做靜態掃描，找 credential 形狀字串、可疑 install script、網路呼叫、混淆碼等。 |
+| **Snyk** | 標準 CVE / SCA 對宣告的 dependency 跑，再加一組 AI-skill 專用規則 (W0xx)，針對 prompt injection / agent-facing 風險。 |
+
+這頁記錄**目前的 finding** 與每一條的判讀理由，讓讀者（或未來的我）不用每次都重新推一遍
+這個 flag 是真風險還是預期內的雜訊。
+
+## 目前的 finding
+
+以 [skills.sh/daviddwlee84/agent-skills](https://skills.sh/daviddwlee84/agent-skills)
+最近一次 audit 為準：
+
+| Skill | Gen | Socket | Snyk |
+| ----- | --- | ------ | ---- |
+| `mkdocs-site-bootstrap`     | Safe | 0 alerts | **Med Risk** |
+| `project-knowledge-harness` | Safe | 0 alerts | Low Risk |
+| `agent-history-hygiene`     | Safe | **1 alert** | Low Risk |
+
+兩條被標的項目都是**預期內**，根因是 skill 的核心功能本身，不是真漏洞。下面是判讀。
+
+## `agent-history-hygiene` — Socket 1 alert（預期內）
+
+- **觸發檔案：** `tests/fixtures/real_anthropic.md`
+- **Pattern：** Anthropic API key 形狀 (`sk-ant-api03-aaaa…AA`)
+- **Severity：** medium / confidence high
+
+這個 skill 的核心職責就是偵測並 redact agent transcript 與 plan 檔裡的秘密。
+要驗 `gitleaks` 規則 + `redact_secrets.py` 的替換邏輯真的會 fire，就需要一份**故意做得很像
+真的**的秘密形狀字串作為 corpus。`tests/fixtures/` 因此刻意放了：
+
+- `real_anthropic.md` — `sk-ant-api03-` 後面跟 93 個 filler 字元再加 `AA`，
+  剛好是嚴格 Anthropic 規則要求的形狀
+- `real_openai.md` — `sk-proj-` + 100 字元，命中 OpenAI project-key 規則
+- `private_key.md` — 假的 `-----BEGIN RSA PRIVATE KEY-----` block
+
+Socket 的 secret-pattern scanner 沒辦法分辨「全 `a` 的 placeholder filler，本來就是要被
+match 的」與「外洩的真 credential」，所以會在這個 fixture 上 fire。把 corpus 拿掉會默默
+弄壞測試套件，等於把整個 skill 的存在意義抹掉。所以**保留** alert。
+
+如果在 downstream dashboard 上太礙眼，可以在 skills.sh / Socket 把它標 false positive，
+理由寫「intentional secret-shape test corpus for a secret-redaction skill」。
+
+## `mkdocs-site-bootstrap` — Snyk Med Risk（預期內）
+
+這條**不是** transitive dependency 的 CVE — pin、bump、或拔掉某個 package 都不會改變
+分數。
+
+- **Rule：** `W011` — Third-party content exposure / indirect prompt injection
+- **Risk score：** 0.90
+- **Snyk 原文理由：**
+  > The agent will read untrusted, user-generated third-party docs that could
+  > contain instructions and thus enable indirect prompt injection.
+
+這個 skill 的 template 預設裝 `mkdocs-llmstxt` 與 `mkdocs-copy-to-llm`，會產出：
+
+- `/llms.txt` 與 `/llms-full.txt` — 給 LLM 吃的全內容 dump
+- 每頁的 "copy as markdown for LLM" 按鈕
+
+任何吃這些端點的 LLM agent 等於在讀 `docs/` 裡有什麼。如果 `docs/` 收外部貢獻（例如
+open-source PR），攻擊者可以在某個 doc 頁面埋 prompt injection payload，然後讓那段內容
+流進下游 agent 的 context。Snyk 的 W0xx ruleset 標的就是這個 agent-facing 表面。
+
+### 為什麼接受這個分數
+
+整個 dogfood `mkdocs-llmstxt` + copy-to-llm 的目的就是讓 docs 對 LLM 友善；削弱這層就等於
+把 skill 的價值砍掉。真正的修法是**威脅建模 (threat modeling)**，不是改 dependency：
+
+- 把 `docs/` 當作 LLM 輸入邊界（在 `docs/**` 上設 CODEOWNERS、外部 PR 一律走 review）。
+- 在 skill 文件裡寫清楚這個威脅，讓下游使用者**知情**地 opt in。
+
+未來給 `init-docs-site.sh` 加一個 opt-out flag（例如 `--no-llmstxt`，給不需要 LLM-facing
+表面的 repo 用）已經記在 `TODO.md`，不會搶在前面 land。
+
+### 延伸閱讀
+
+- [`reference/mkdocs-2-and-zensical.md`](mkdocs-2-and-zensical.md) — 為什麼 pin
+  `mkdocs<2`（不同理由，同個 skill）。
+- [`reference/docs-stack-recipe.md`](docs-stack-recipe.md) — bootstrap 實際裝了什麼。
+
+## 為什麼還沒上 README badge
+
+skills.sh **目前沒有 first-party badge endpoint**。我們探過幾條常見路徑，全部 404：
+
+\```
+https://skills.sh/<owner>/<repo>/badge.svg          → 404
+https://skills.sh/badge/<owner>/<repo>.svg          → 404
+https://skills.sh/api/badge/<owner>/<repo>          → 404
+\```
+
+如果之後想在 `README.md` 上一排 audit badge，有三條路，由輕到重：
+
+1. **`shields.io` 靜態 badge + 手刻連結。** 每條 badge 的內容（`Safe`、
+   `1 alert`、`Med (W011)`）手寫，圖片連到 skills.sh 詳情頁。零基礎建設，但 audit
+   一重跑就會 drift。
+2. **`shields.io` `endpoint` schema + 自架 JSON。** 排程 GitHub Action 抓 skills.sh，
+   把 `badges/{gen,socket,snyk}.json` 寫到 `gh-pages`，shields.io 的
+   [endpoint badge](https://shields.io/badges/endpoint-badge) 對著那份 JSON 渲染。
+   會自動更新，建置成本約半天。
+3. **直接用 Snyk / Socket 官方 badge。** Snyk 與 Socket 都各自出 badge，但他們的
+   scope 是 whole-repo 或 npm-package，不對應 skills.sh 的 per-skill 觀點，意義不一樣。
+
+三條都先擱著。等到 (a) skills.sh 出 first-party badge endpoint，或 (b) audit 訊號變成
+trust 決策的關鍵（例如外部貢獻者會看 verdict 決定要不要裝），再回頭評估。
+
+## 什麼時候該回來更新這頁
+
+- 新 skill landed，第一次拿到非平凡的 audit verdict。
+- 既有 finding 翻盤（例如 Socket 規則更新後 alert 消失，或新的 W0xx fire）。
+- skills.sh 換 auditor 陣容，或開始發 badge URL。
+
+```
+
+```text
+File created successfully at: /Volumes/Data/Program/Personal/agent-skills/docs/reference/skills-risk-evaluations.zh-TW.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:54:58Z)**_
+
+Now wire it into the nav.
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:00Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Volumes/Data/Program/Personal/agent-skills/mkdocs.yml has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:03Z)**_
+
+Now validate the build before committing.
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build docs in strict mode to catch broken links/nav
+
+`uv run mkdocs build --strict 2>&1 | tail -40`
+
+```text
+WARNING -  mkdocs_llmstxt: Page URI 'index.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'getting-started.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'conventions.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'workflows/adding-vendor-skills.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'workflows/creating-local-skills.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'workflows/project-memory.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/index.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/agent-history-hygiene.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/anywidget.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/dvc-ml-workflow.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/frontend-design.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/marimo-batch-mlflow.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/marimo-notebook.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/mkdocs-site-bootstrap.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/mlflow-tracking.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/nextjs.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/project-knowledge-harness.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/pueue-job-queue.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/quantatitive-factor-researcher.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/react-best-practices.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/shadcn.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/skill-author.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/skill-creator.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/streamlit-to-marimo.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/supabase-postgres-best-practices.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/supabase.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/vercel-storage.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/web-design-guidelines.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'skills/webapp-testing.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/docs-stack-recipe.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/mkdocs-2-and-zensical.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/npx-skills-metadata.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/pitfalls.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/scripts.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/skills-risk-evaluations.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/tag-schema.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/todo-format.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'changelog.md' not found in the generated pages. Skipping.
+
+Aborted with 38 warnings in strict mode!
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:16Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build without strict to confirm new page renders
+
+`uv run mkdocs build 2>&1 | tail -5 && echo "---" && ls site/reference/skills-risk-evaluations/ 2>/dev/null`
+
+```text
+WARNING -  mkdocs_llmstxt: Page URI 'reference/skills-risk-evaluations.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/tag-schema.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'reference/todo-format.md' not found in the generated pages. Skipping.
+WARNING -  mkdocs_llmstxt: Page URI 'changelog.md' not found in the generated pages. Skipping.
+INFO    -  Documentation built in 1.57 seconds
+---
+ index.html
+ index.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:23Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:24Z)**_
+
+Build succeeds (the llmstxt warnings are pre-existing for every page due to i18n + llmstxt plugin interaction, not introduced by this change). Now committing.
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect pending changes
+
+`git status && echo "---DIFF---" && git diff --stat`
+
+```text
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-04-28_10-27-10Z-security-risk-assessments-gen.md
+	modified:   mkdocs.yml
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/reference/skills-risk-evaluations.md
+	docs/reference/skills-risk-evaluations.zh-TW.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+---DIFF---
+ ...4-28_10-27-10Z-security-risk-assessments-gen.md | 702 +++++++++++++++++++++
+ mkdocs.yml                                         |   1 +
+ 2 files changed, 703 insertions(+)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:33Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:33Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect recent commit message style
+
+`git log --oneline -10`
+
+```text
+6c3ec42 mkdocs-site-bootstrap: nudge translation + nav_translations as next steps
+3dfe35d mkdocs-site-bootstrap: document mkdocs<2 cap rationale (MkDocs 2.0 + Zensical)
+ef05625 docs: zh-TW translations for all 36 pages
+785a559 docs: fix broken relative links + cap mkdocs<2 / mkdocs-material<10
+cbb269d mkdocs-site-bootstrap: keep llmstxt by default + dogfood zh-TW on this repo
+36f4050 docs: hide/deprecate mechanism + per-row picker rendering for npx skills
+4e6b541 marketplace.json: 6 plugin groupings for npx skills picker UI
+7ebe0ba skills-lock: backfill skillPath for find-skills + skill-creator
+20f3ae7 mkdocs-site-bootstrap: bilingual docs (zh-TW) via static-i18n
+043c2ca agent-history-hygiene: document active-writer redact loop trap
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:41Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage and commit the new docs page + nav update
+
+```bash
+git add docs/reference/skills-risk-evaluations.md docs/reference/skills-risk-evaluations.zh-TW.md mkdocs.yml .specstory/history/2026-04-28_10-27-10Z-security-risk-assessments-gen.md && git commit -m "$(cat <<'EOF'
+docs: explain current skills.sh audit findings + badge stance
+
+agent-history-hygiene's Socket alert (sk-ant-shape in tests/fixtures/) and
+mkdocs-site-bootstrap's Snyk Med Risk (W011 indirect prompt injection from
+llmstxt + copy-to-llm) are both expected and tied to each skill's core
+function. Records the rationale, why we accept the scores, and why README
+badges aren't worth it yet (skills.sh has no first-party badge endpoint).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)" && git status
+```
+
+```text
+[main 848b8a3] docs: explain current skills.sh audit findings + badge stance
+ 4 files changed, 1023 insertions(+)
+ create mode 100644 docs/reference/skills-risk-evaluations.md
+ create mode 100644 docs/reference/skills-risk-evaluations.zh-TW.md
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .specstory/history/2026-04-28_10-27-10Z-security-risk-assessments-gen.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:46Z)**_
+
+_**Agent (claude-opus-4-7 2026-04-29 06:55:50Z)**_
+
+Done. Committed as `848b8a3` on main:
+
+- `docs/reference/skills-risk-evaluations.md` + `.zh-TW.md` — captures both findings (Socket fixture-key, Snyk W011 prompt-injection), why we accept them, and the badge-options ladder
+- `mkdocs.yml` — added to the Reference nav
+- staged the in-progress SpecStory transcript alongside
+
+`mkdocs build` renders the new page in both languages; the only build warnings are pre-existing llmstxt+i18n noise that affects every page, not introduced here.
+
+(The `.specstory/history/` file got re-written by the active SpecStory writer right after the commit — that's the documented active-writer trap, not something to chase mid-session; it'll stage cleanly once this session ends.)
