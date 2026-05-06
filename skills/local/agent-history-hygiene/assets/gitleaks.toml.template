@@ -107,3 +107,33 @@ useDefault = true
   description = "WakaTime API key (waka_ + RFC-4122 UUID)"
   regex       = '''\bwaka_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b'''
   tags        = ["key", "wakatime", "auto"]
+
+# ---------------------------------------------------------------------------
+# Webhook URLs commonly emitted into LLM/agent transcripts during demos and
+# test scaffolding. gitleaks default rules cover slack-webhook-url,
+# microsoft-teams-webhook, and telegram-bot-api-token; these fill the gaps.
+# ---------------------------------------------------------------------------
+
+[[rules]]
+  id          = "discord-webhook-url"
+  description = "Discord webhook URL (discord.com / discordapp.com / ptb / canary)"
+  regex       = '''https?://(?:(?:ptb|canary)\.)?discord(?:app)?\.com/api/webhooks/\d{17,20}/[A-Za-z0-9_-]{60,80}'''
+  tags        = ["webhook", "discord", "auto"]
+
+[[rules]]
+  id          = "zapier-webhook-url"
+  description = "Zapier catch hook URL (hooks.zapier.com/hooks/catch/...)"
+  regex       = '''https?://hooks\.zapier\.com/hooks/catch/\d{6,12}/[A-Za-z0-9]{5,}/?'''
+  tags        = ["webhook", "zapier", "auto"]
+
+[[rules]]
+  id          = "make-webhook-url"
+  description = "Make.com / Integromat webhook URL"
+  regex       = '''https?://hook\.(?:[a-z]{2}\d+\.make\.com|integromat\.com)/[A-Za-z0-9]{20,}'''
+  tags        = ["webhook", "make", "integromat", "auto"]
+
+[[rules]]
+  id          = "stripe-webhook-secret"
+  description = "Stripe webhook signing secret (whsec_...)"
+  regex       = '''\bwhsec_[A-Za-z0-9]{32,}\b'''
+  tags        = ["webhook", "stripe", "auto"]

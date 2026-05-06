@@ -163,6 +163,56 @@ class TestExampleShapesFixture:
         assert "anthropic-api-key-strict" not in rule_ids
 
 
+class TestWebhookFixture:
+    """Custom webhook rules for Discord / Zapier / Make.com / Stripe.
+
+    The fixture also implicitly checks that gitleaks default rules for
+    Slack/Teams/Telegram still work (no rule-name collision with our
+    custom additions).
+    """
+
+    EXPECTED_RULE_IDS = {
+        "discord-webhook-url",
+        "zapier-webhook-url",
+        "make-webhook-url",
+        "stripe-webhook-secret",
+    }
+
+    def test_all_webhook_rules_fire_outside_artifact_dirs(
+        self, tmp_git_repo, fixtures_dir: Path
+    ):
+        _stage_fixture_at(
+            tmp_git_repo, fixtures_dir / "webhook_urls.md", "src/leaks.md"
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        rule_ids = {f["RuleID"] for f in findings}
+        missing = self.EXPECTED_RULE_IDS - rule_ids
+        assert not missing, (
+            f"Expected webhook rules did not fire: {sorted(missing)}. "
+            f"Got: {sorted(rule_ids)}"
+        )
+
+    def test_webhooks_NOT_allowlisted_in_artifact_dirs(
+        self, tmp_git_repo, fixtures_dir: Path
+    ):
+        """Real-shape webhook tokens must still fire even inside
+        .claude/plans/ etc. — the path-scoped allowlist only covers
+        explicit example/REDACTED markers, not realistic tokens.
+        """
+        _stage_fixture_at(
+            tmp_git_repo,
+            fixtures_dir / "webhook_urls.md",
+            ".claude/plans/leaky-plan.md",
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        rule_ids = {f["RuleID"] for f in findings}
+        missing = self.EXPECTED_RULE_IDS - rule_ids
+        assert not missing, (
+            f"Webhook leak in .claude/plans/ was incorrectly allowlisted: "
+            f"{sorted(missing)}. Check condition=AND on path-scoped allowlist."
+        )
+
+
 class TestConfigValidity:
     """The bundled gitleaks.toml.template must load without errors."""
 
