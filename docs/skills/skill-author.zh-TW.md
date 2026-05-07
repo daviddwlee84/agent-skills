@@ -12,7 +12,8 @@
   建立 `skills/local/<name>/` 並預先填入標準佈局。
 - 一個 linter
   ([`lint-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/lint-skill.sh))
-  檢查 frontmatter、script 衛生、reference 可達性。
+  檢查 frontmatter、script 衛生、reference 可達性，並 enforce 這個 repo 對
+  `name` / `description` 採用的 portable agent-skill compatibility budget。
 - 兩份濃縮 agentskills.io 指南的 reference：
   [authoring-patterns.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/authoring-patterns.md)
   與 [script-design.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/script-design.md)。
@@ -21,6 +22,19 @@
   說明佈局、鏡射、bash 3.2 相容性。
 - SKILL.md、reference 文件、bash script (含 `--help` / `--dry-run` /
   strict-mode 樣板)、Python script (含 PEP 723 inline deps) 的 template。
+
+## 跨 agent 相容性
+
+這個 repo 的 local skills 會盡量保持可攜，能被 Codex、Claude Code、Cursor、
+OpenCode 與 `npx skills` installs 正常使用。簡版規則：
+
+- `name`：hyphen-case，<=64 chars。
+- `description`：必填，<=1024 chars；首選 120-500 chars。
+- Description 前 60 chars 要能在 picker UI 中提供有用資訊。
+- Product-specific frontmatter 只有 deliberate 時才加。
+
+完整 tool preferences、限制、來源連結，以及本 repo 的 tier policy 見
+[Agent skill compatibility](../reference/agent-skill-compatibility.md)。
 
 ## 何時用這個 vs `skill-creator`
 

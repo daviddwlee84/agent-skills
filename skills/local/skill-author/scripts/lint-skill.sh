@@ -3,7 +3,8 @@
 #
 # Checks:
 #   1. Frontmatter & length     — name + description present, description has
-#                                  "use when" trigger phrasing, SKILL.md < 500 lines.
+#                                  "use when" trigger phrasing, portable
+#                                  name/description lengths, SKILL.md < 500 lines.
 #   2. Script hygiene           — every scripts/*.sh has shebang, +x, --help handler.
 #   3. Reference reachability   — every references/*.md is mentioned in SKILL.md.
 #
@@ -70,6 +71,7 @@ ERROR_MSGS=()
 WARNING_MSGS=()
 
 emit_ok()   { [ "$QUIET" = "1" ] || printf '  ok    %s\n' "$*"; }
+emit_note() { [ "$QUIET" = "1" ] || printf '  note  %s\n' "$*"; }
 emit_warn() {
   printf '  WARN  %s\n' "$*"
   WARNINGS=$((WARNINGS + 1))
@@ -79,6 +81,58 @@ emit_err()  {
   printf '  FAIL  %s\n' "$*"
   ERRORS=$((ERRORS + 1))
   ERROR_MSGS+=("$*")
+}
+
+extract_frontmatter_value() {
+  # Minimal YAML scalar extractor for top-level SKILL.md frontmatter.
+  # Handles single-line values plus folded/literal blocks (`>-`, `|`).
+  awk -v key="$1" '
+    function trim(s) {
+      gsub(/^[ \t]+|[ \t]+$/, "", s)
+      return s
+    }
+    function unquote(s) {
+      s = trim(s)
+      if ((s ~ /^".*"$/) || (s ~ /^'\''.*'\''$/)) {
+        return substr(s, 2, length(s) - 2)
+      }
+      return s
+    }
+    function flush() {
+      if (found) {
+        gsub(/[ \t]+/, " ", value)
+        print trim(value)
+        exit
+      }
+    }
+    NR == 1 && $0 == "---" { in_fm = 1; next }
+    in_fm && $0 == "---" { flush(); exit }
+    !in_fm { next }
+    found {
+      if ($0 ~ /^[A-Za-z0-9_-]+:[ \t]*/) {
+        flush()
+      }
+      if ($0 ~ /^[ \t]+/) {
+        line = $0
+        sub(/^[ \t]+/, "", line)
+        if (value != "") value = value " "
+        value = value line
+        next
+      }
+      flush()
+    }
+    $0 ~ "^" key ":[ \t]*" {
+      found = 1
+      value = $0
+      sub("^" key ":[ \t]*", "", value)
+      if (value ~ /^[>|][+-]?$/) {
+        value = ""
+        next
+      }
+      print unquote(value)
+      exit
+    }
+  ' "$SKILL_MD"
 }
 
 # ----------------------------------------------------------------------
@@ -99,9 +153,20 @@ else
 
   FM=$(sed -n "${FM_START},${FM_END}p" "$SKILL_MD")
 
-  if printf '%s\n' "$FM" | grep -qE '^name:[[:space:]]*[^[:space:]]'; then
-    NAME=$(printf '%s\n' "$FM" | sed -nE 's/^name:[[:space:]]*(.+)$/\1/p' | head -n1)
+  NAME=$(extract_frontmatter_value name)
+  if [ -n "$NAME" ]; then
     emit_ok "name field present: $NAME"
+    NAME_LEN=${#NAME}
+    if [ "$NAME_LEN" -gt 64 ]; then
+      emit_err "name is too long (${NAME_LEN} chars); portable maximum is 64"
+    else
+      emit_ok "name length is ${NAME_LEN} chars (<=64)"
+    fi
+    if printf '%s\n' "$NAME" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+      emit_ok "name is portable hyphen-case"
+    else
+      emit_err "name must be lowercase hyphen-case: letters, digits, single hyphens; no leading/trailing hyphen"
+    fi
     # Compare against directory basename.
     BASENAME=$(basename "$SKILL_DIR")
     if [ "$NAME" != "$BASENAME" ]; then
@@ -115,8 +180,8 @@ else
     emit_err "frontmatter missing 'name:' field"
   fi
 
-  if printf '%s\n' "$FM" | grep -qE '^description:[[:space:]]*[^[:space:]]'; then
-    DESC=$(printf '%s\n' "$FM" | sed -nE 's/^description:[[:space:]]*(.+)$/\1/p' | head -n1)
+  DESC=$(extract_frontmatter_value description)
+  if [ -n "$DESC" ]; then
     DESC_LEN=${#DESC}
     emit_ok "description field present (${DESC_LEN} chars)"
     case "$DESC" in
@@ -131,6 +196,16 @@ else
     # Length sanity.
     if [ "$DESC_LEN" -lt 80 ]; then
       emit_warn "description is short (${DESC_LEN} chars); consider naming more concrete trigger contexts"
+    elif [ "$DESC_LEN" -lt 120 ]; then
+      emit_note "description is ${DESC_LEN} chars; 120-500 chars is the preferred trigger budget"
+    elif [ "$DESC_LEN" -le 500 ]; then
+      emit_ok "description is in the preferred 120-500 char budget"
+    elif [ "$DESC_LEN" -le 900 ]; then
+      emit_note "description is ${DESC_LEN} chars: valid but context-heavy (yellow tier)"
+    elif [ "$DESC_LEN" -le 1024 ]; then
+      emit_note "description is ${DESC_LEN} chars: valid but close to the 1024-char hard limit (orange tier)"
+    else
+      emit_err "description is too long (${DESC_LEN} chars); Codex/Cursor/spec-aligned maximum is 1024"
     fi
   else
     emit_err "frontmatter missing 'description:' field"

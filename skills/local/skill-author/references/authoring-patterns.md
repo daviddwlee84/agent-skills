@@ -6,14 +6,15 @@ before writing or editing a SKILL.md body.
 ## Table of contents
 
 1. [Spending context wisely](#spending-context-wisely)
-2. [Calibrating control](#calibrating-control)
-3. [Gotchas sections](#gotchas-sections)
-4. [Output templates](#output-templates)
-5. [Checklists for multi-step workflows](#checklists-for-multi-step-workflows)
-6. [Validation loops](#validation-loops)
-7. [Plan-validate-execute](#plan-validate-execute)
-8. [Bundling reusable scripts](#bundling-reusable-scripts)
-9. [Quick checklist before commit](#quick-checklist-before-commit)
+2. [Cross-agent frontmatter compatibility](#cross-agent-frontmatter-compatibility)
+3. [Calibrating control](#calibrating-control)
+4. [Gotchas sections](#gotchas-sections)
+5. [Output templates](#output-templates)
+6. [Checklists for multi-step workflows](#checklists-for-multi-step-workflows)
+7. [Validation loops](#validation-loops)
+8. [Plan-validate-execute](#plan-validate-execute)
+9. [Bundling reusable scripts](#bundling-reusable-scripts)
+10. [Quick checklist before commit](#quick-checklist-before-commit)
 
 ---
 
@@ -43,7 +44,7 @@ Three loading levels:
 
 | Level | Loaded | Budget |
 |---|---|---|
-| Frontmatter (`name`, `description`) | always | ~100 words |
+| Frontmatter (`name`, `description`) | always | 120-500 chars preferred, 1024 max |
 | `SKILL.md` body | when skill triggers | <500 lines, <5000 tokens |
 | `references/*.md`, `assets/*`, `scripts/*` | on demand | unlimited |
 
@@ -51,6 +52,46 @@ If `SKILL.md` is creeping past 500 lines, move sections to `references/<topic>.m
 and reference them with **load conditions** ("Read X if Y happens"), not just
 "see X for details". Conditions let the agent load on demand; bare pointers tend
 to either get ignored or get pre-loaded out of caution.
+
+---
+
+## Cross-agent frontmatter compatibility
+
+Use this as the portable baseline for coding agents that consume Agent Skills:
+
+- `name`: required, lowercase letters/digits/hyphens only, no leading/trailing
+  hyphen, no `--`, <=64 characters.
+- `description`: required, non-empty string, <=1024 characters. Include both
+  what the skill does and concrete trigger contexts. Keep the first 60
+  characters meaningful because `npx skills` truncates picker hints there.
+- Keep `name` and `description` as the only required frontmatter fields for
+  portability. Agent-specific fields are allowed when needed, but isolate them
+  intentionally: Cursor uses `disable-model-invocation`, Codex can read
+  `agents/openai.yaml`, and some vendored skills carry upstream-only metadata.
+
+Description budget tiers:
+
+| Tier | Length | Meaning |
+|---|---:|---|
+| Green | 120-500 chars | Preferred for local skills: enough trigger surface without context bloat |
+| Yellow | 501-900 chars | Valid, but context-heavy; move details to `SKILL.md` body |
+| Orange | 901-1024 chars | Valid, but close to hard loader limits |
+| Red | >1024 chars | Invalid for Codex/Cursor/spec-aligned validators |
+
+Agent notes:
+
+- **Codex** skips invalid `SKILL.md` files; OpenAI's validator enforces the
+  64-char name and 1024-char description limits.
+- **Cursor** managed `create-skill` guidance matches the same 64/1024 limits
+  and supports `disable-model-invocation` for explicit-only skills.
+- **Claude Code** uses descriptions for discovery and tolerates additional
+  frontmatter in practice, but long descriptions still consume always-on
+  context and are poor picker hints.
+- **OpenCode** follows the Agent Skills convention and uses descriptions for
+  invocation; stay within the portable baseline unless a target agent's docs
+  say otherwise.
+- **Claude.ai upload** may impose stricter UI limits. Treat that as a separate
+  packaging target, not the default coding-agent baseline for this repo.
 
 ---
 
@@ -283,7 +324,10 @@ Before considering a SKILL.md "done":
 
 - [ ] Description includes specific trigger contexts ("use when X, Y, Z"),
       not just a one-line summary
-- [ ] Description is "pushy" — encourages triggering rather than gating it
+- [ ] Description is "pushy" but within budget: 120-500 chars preferred,
+      <=1024 chars required
+- [ ] First 60 description chars are useful in picker UIs
+- [ ] Name is hyphen-case and <=64 chars
 - [ ] SKILL.md is under 500 lines (move overflow into `references/`)
 - [ ] Every `references/*.md` is mentioned with a load condition, not just
       listed at the bottom

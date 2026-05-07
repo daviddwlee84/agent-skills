@@ -19,6 +19,11 @@ npx skills@latest init [skill-name]
 這會建立 `skills/local/<skill-name>/SKILL.md`，包含必要的 YAML
 frontmatter（`name`、`description`）。
 
+寫 description 前，先看這個 repo 的
+[Agent skill compatibility](../reference/agent-skill-compatibility.md)
+policy。Local skills 應採用 portable coding-agent limits：hyphen-case name
+控制在 64 chars 內、description 控制在 1024 chars 內，首選 120-500 chars。
+
 ## 必要結構
 
 完整佈局規則見 [Conventions](../conventions.md)。簡言之：

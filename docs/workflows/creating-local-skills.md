@@ -13,6 +13,11 @@ npx skills@latest init [skill-name]
 This creates `skills/local/<skill-name>/SKILL.md` with the required YAML
 frontmatter (`name`, `description`).
 
+Before writing the description, check the repo's
+[Agent skill compatibility](../reference/agent-skill-compatibility.md) policy.
+Local skills should target portable coding-agent limits: hyphen-case names
+under 64 chars, descriptions under 1024 chars, and 120-500 chars preferred.
+
 ## Required structure
 
 See [Conventions](../conventions.md) for the full layout rules. In short:

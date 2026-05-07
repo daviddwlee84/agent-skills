@@ -56,7 +56,10 @@ Read `references/authoring-patterns.md` before writing the body. The patterns
 that matter most:
 
 - **Description must be "pushy"** and include concrete trigger contexts. Naive
-  descriptions cause undertriggering — the #1 failure mode of new skills.
+  descriptions cause undertriggering — the #1 failure mode of new skills. Keep
+  this within the cross-agent budget: 120-500 chars is the preferred range,
+  501-900 is valid but context-heavy, 901-1024 is valid but close to hard
+  loader limits, and >1024 is invalid for Codex/Cursor/spec-aligned skills.
 - **Gotchas section** — environment-specific facts that defy reasonable
   assumptions. The single highest-value section in most skills.
 - **Output templates** — agents pattern-match against concrete structures more
@@ -98,8 +101,9 @@ bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
 
 It checks three things:
 
-1. **Frontmatter & length** — `name` and `description` exist; description has a
-   "use when" trigger phrase; SKILL.md is under 500 lines.
+1. **Frontmatter & length** — `name` and `description` exist; name is
+   hyphen-case and <=64 chars; description has a "use when" trigger phrase,
+   respects the 1024-char hard limit, and SKILL.md is under 500 lines.
 2. **Script hygiene** — every `scripts/*.sh` has a shebang, is executable, and
    responds to `--help` (presence of the flag handler, not necessarily a working
    script).
@@ -161,10 +165,10 @@ Templates that `new-skill.sh` copies and that you can reference manually:
 - **`bash 3.2` compatibility** is required for any script that might run on
   stock macOS. No `mapfile`, no `${var,,}` lowercasing, no `[[ -v var ]]`.
   See `references/script-design.md` for the safe subset.
-- **`description` field length matters less than its trigger surface area.**
-  A 200-word description that names 8 concrete contexts will outperform a
-  50-word one that's beautifully concise but vague. Err on the side of more
-  trigger phrases.
+- **`description` is always-on context and has agent-specific hard limits.**
+  Put concrete trigger phrases in frontmatter, but keep local skills in the
+  120-500 char preferred range when possible. Treat >1024 chars as invalid:
+  Codex and Cursor/spec-aligned validators can skip the skill entirely.
 - **Don't write a skill that wraps something the agent already does well.**
   If a stock Claude session handles the task in one turn without help, a skill
   adds context-window cost for no gain. Test the no-skill baseline before

@@ -5,7 +5,9 @@ Authoring helper for **new agent skills**. Ships:
 - A scaffolder ([`new-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/new-skill.sh))
   that creates `skills/local/<name>/` with the standard layout pre-seeded.
 - A linter ([`lint-skill.sh`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/scripts/lint-skill.sh))
-  that checks frontmatter, script hygiene, and reference reachability.
+  that checks frontmatter, script hygiene, and reference reachability. It
+  enforces the repo's portable agent-skill compatibility budget for `name` and
+  `description`.
 - Two reference docs that condense the agentskills.io guides:
   [authoring-patterns.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/authoring-patterns.md)
   and [script-design.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/skill-author/references/script-design.md).
@@ -15,6 +17,20 @@ Authoring helper for **new agent skills**. Ships:
 - Templates for SKILL.md, reference docs, bash scripts (with
   `--help` / `--dry-run` / strict-mode boilerplate), and Python scripts (with
   PEP 723 inline deps).
+
+## Cross-agent compatibility
+
+This repo keeps local skills portable across Codex, Claude Code, Cursor,
+OpenCode, and `npx skills` installs. The short version:
+
+- `name`: hyphen-case, <=64 chars.
+- `description`: required, <=1024 chars; 120-500 chars preferred.
+- First 60 description chars should be useful in picker UIs.
+- Product-specific frontmatter is allowed only when deliberate.
+
+See [Agent skill compatibility](../reference/agent-skill-compatibility.md) for
+the full matrix of tool preferences, limits, source links, and this repo's
+tier policy.
 
 ## When to use this vs `skill-creator`
 

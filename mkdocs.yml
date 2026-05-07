@@ -130,6 +130,7 @@ nav:
       - Bundled scripts: reference/scripts.md
       - Downstream docs stack recipe: reference/docs-stack-recipe.md
       - npx skills metadata model: reference/npx-skills-metadata.md
+      - Agent skill compatibility: reference/agent-skill-compatibility.md
       - MkDocs 2.0 + Zensical: reference/mkdocs-2-and-zensical.md
       - Skill risk evaluations: reference/skills-risk-evaluations.md
       - Karpathy's LLM Wiki pattern: reference/llm-wiki-pattern.md
