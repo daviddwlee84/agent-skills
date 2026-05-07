@@ -37,6 +37,19 @@ vendor 過來（屬於 [`fullstack-nextjs`](index.md#fullstack-nextjs-series) se
 - [`web-design-guidelines`](web-design-guidelines.md) —— 視覺定調後做 a11y/perf 稽核
 - [`webapp-testing`](webapp-testing.md) —— Playwright 迴圈視覺驗證結果
 
+## 也以 Claude Code plugin 形式發布 (Also published as a Claude Code plugin)
+
+這個 skill 同時以
+[`frontend-design`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design)
+plugin 形式被重新發布在
+[`claude-plugins-official`](https://github.com/anthropics/claude-plugins-official)
+marketplace —— 這就是為什麼 Claude Code 啟動 tip 有時候會推薦
+`/plugin install frontend-design@claude-plugins-official`。**不要在已 vendor 的
+版本之上再安裝一份** —— 兩邊主體完全一樣，差別只在 frontmatter 的
+`description` 行，而我們 vendor 的 `anthropics/skills` 上游版本觸發詞
+(trigger phrasing) 更豐富（除了 components/pages/applications 之外，還涵蓋
+artifacts、posters、landing pages、dashboards、HTML/CSS layouts）。
+
 ## Canonical SKILL.md
 
 完整指示見

@@ -31,6 +31,20 @@ audit role.
 - [`web-design-guidelines`](web-design-guidelines.md) — a11y/perf audit after the look is in
 - [`webapp-testing`](webapp-testing.md) — Playwright loop to verify the result visually
 
+## Also published as a Claude Code plugin
+
+The same skill is republished as the
+[`frontend-design`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design)
+plugin on the
+[`claude-plugins-official`](https://github.com/anthropics/claude-plugins-official)
+marketplace, which is why Claude Code's startup tip sometimes recommends
+`/plugin install frontend-design@claude-plugins-official`. **Do not install it
+on top of the vendored copy** — both pull from the same source; the only
+difference is the frontmatter `description` line, and the `anthropics/skills`
+upstream we vendor from has richer trigger phrasing (mentions artifacts,
+posters, landing pages, dashboards, and HTML/CSS layouts in addition to
+components/pages/applications).
+
 ## Canonical SKILL.md
 
 See
