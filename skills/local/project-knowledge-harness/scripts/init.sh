@@ -114,6 +114,14 @@ case "$deployment" in
     ;;
 esac
 
+# Trailing exclusion clause appended to template sentences ending in
+# `<DEPLOY EXCLUDE NOTE>`. Empty for `none` so the sentence just stops.
+if [ "$deployment" = "none" ]; then
+  deploy_exclude_clause=""
+else
+  deploy_exclude_clause=" Excluded from ${deployment_label} (see ${ignore_label})."
+fi
+
 # Sentinel markers so re-runs don't double-append snippets.
 agent_marker="<!-- project-knowledge-harness:agent-guidance -->"
 readme_marker="<!-- project-knowledge-harness:readme-roadmap -->"
@@ -124,10 +132,7 @@ render_template() {
   sed \
     -e "s|<PROJECT NAME>|${project_name}|g" \
     -e "s|<LINK TO PROJECT AGENT CONTRACT, e.g. AGENTS.md or CLAUDE.md>|AGENTS.md|g" \
-    -e "s|<DEPLOYMENT MECHANISM>|${deployment_label}|g" \
-    -e "s|<DEPLOYMENT/PACKAGING MECHANISM, e.g. chezmoi via .chezmoiignore.tmpl>|${deployment_label} via ${ignore_label}|g" \
-    -e "s|<DEPLOYMENT/PACKAGING MECHANISM, e.g. chezmoi via .chezmoiignore.tmpl, Python via MANIFEST.in, npm via .npmignore>|${deployment_label} via ${ignore_label}|g" \
-    -e "s|<IGNORE FILE>|${ignore_label}|g" \
+    -e "s|<DEPLOY EXCLUDE NOTE>|${deploy_exclude_clause}|g" \
     "$src"
 }
 
@@ -159,10 +164,13 @@ append_snippet() {
   if [ ! -e "$dest" ]; then
     : > "$dest"
   fi
+  # Keep the closing marker inside the HTML comment so "(end)" doesn't
+  # render as visible text in Markdown.
+  local end_marker="${marker% -->} (end) -->"
   {
     printf '\n%s\n' "$marker"
     render_template "$src"
-    printf '%s (end)\n' "$marker"
+    printf '%s\n' "$end_marker"
   } >> "$dest"
   echo "append: $rel"
 }

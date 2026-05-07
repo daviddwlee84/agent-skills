@@ -61,8 +61,8 @@ When implementing a `TODO.md` item, in the same commit:
    and keep it as a historical record (don't delete — future-you may
    revisit adjacent decisions).
 
-`backlog/` is excluded from <DEPLOYMENT MECHANISM> (see <IGNORE FILE>); it
-is repo metadata for maintainers, not user-facing config to deploy.
+`backlog/` is repo metadata for maintainers, not user-facing config to
+deploy.<DEPLOY EXCLUDE NOTE>
 
 ### Past pitfalls → `pitfalls/`
 
@@ -88,5 +88,5 @@ enough that "remember to do X" isn't safe. When graduating, leave the
 `pitfalls/<slug>.md` as historical record and link to it from the new
 invariant.
 
-`pitfalls/` is excluded from <DEPLOYMENT MECHANISM> (see <IGNORE FILE>) and
-**not** auto-redacted; review for secrets before committing.
+`pitfalls/` is **not** auto-redacted; review for secrets before
+committing.<DEPLOY EXCLUDE NOTE>

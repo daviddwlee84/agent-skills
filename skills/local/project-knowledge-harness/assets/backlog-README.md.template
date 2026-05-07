@@ -14,9 +14,8 @@ is **resume-friendliness**: when you (or an agent) come back to an item three
 months later, the doc here lets you pick up in 5 minutes instead of re-running
 30 minutes of investigation.
 
-This folder is excluded from <DEPLOYMENT/PACKAGING MECHANISM, e.g. chezmoi via
-.chezmoiignore.tmpl> — it is repo metadata for maintainers, not user-facing
-config to deploy.
+This folder is repo metadata for maintainers, not user-facing config to
+deploy.<DEPLOY EXCLUDE NOTE>
 
 ## When to add a doc here
 

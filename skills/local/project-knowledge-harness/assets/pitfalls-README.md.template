@@ -5,9 +5,8 @@ problem recurs (on a new machine, after an upgrade, with a new tool combo),
 grepping the symptom here lands you on the root cause and workaround in
 seconds, instead of re-debugging from scratch.
 
-This folder is excluded from <DEPLOYMENT/PACKAGING MECHANISM, e.g. chezmoi via
-.chezmoiignore.tmpl, Python via MANIFEST.in, npm via .npmignore> — it is repo
-metadata for maintainers, not user-facing config to deploy.
+This folder is repo metadata for maintainers, not user-facing config to
+deploy.<DEPLOY EXCLUDE NOTE>
 
 ## Pitfalls vs the rest
 
