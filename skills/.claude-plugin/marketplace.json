@@ -34,6 +34,17 @@
       ]
     },
     {
+      "name": "engineering-quality",
+      "description": "Design verifiable CLI/tool/service surfaces and verify config/dotfile/IaC changes via app-native loaders and harmless runtime smoke",
+      "category": "Quality",
+      "tags": ["cli", "config", "validation", "dry-run", "smoke-test"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/verifiable-surfaces"
+      ]
+    },
+    {
       "name": "ml-workflow",
       "description": "ML experiment tracking, DVC pipelines, batch notebooks, and quant research",
       "category": "ML",

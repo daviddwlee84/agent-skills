@@ -24,6 +24,7 @@
 | [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls 結構，附帶 validator/init/promote 工具組 | [docs](project-knowledge-harness.md) |
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | 給 Python 策略開發用的量化因子研究 persona | [docs](quantatitive-factor-researcher.md) |
 | [`skill-author`](skill-author.md) | 依 agentskills.io best practices 撰寫新 skill；附 `new-skill.sh` 與 `lint-skill.sh` | [docs](skill-author.md) |
+| [`verifiable-surfaces`](verifiable-surfaces.md) | 設計可驗證的 CLI/tool/service surface (`--help`/`--dry-run`/`--print-config`/isolated smoke)，並用 app-native loader 驗證 config 變更 | [docs](verifiable-surfaces.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | 啟動 MkDocs Material 站 + GitHub Pages 部署；以 `.skills/preferences.yaml` consent-gate | [docs](mkdocs-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo 雙模式 (UI + batch CLI) notebook，搭配 Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipeline + queued experiment，metrics 自動繫結到 ephemeral commit；附 init/queue/lint helper | [docs](dvc-ml-workflow.md) |
