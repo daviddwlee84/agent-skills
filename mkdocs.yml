@@ -135,6 +135,7 @@ nav:
       - MkDocs 2.0 + Zensical: reference/mkdocs-2-and-zensical.md
       - Skill risk evaluations: reference/skills-risk-evaluations.md
       - Karpathy's LLM Wiki pattern: reference/llm-wiki-pattern.md
+      - SDD frameworks & harnesses: reference/sdd-and-harnesses.md
   - Changelog: changelog.md
 extra:
   social:
