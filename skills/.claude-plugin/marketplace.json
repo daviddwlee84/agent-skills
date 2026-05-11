@@ -110,6 +110,20 @@
       ]
     },
     {
+      "name": "product-planning",
+      "description": "Garry Tan's gstack OpenClaw-native methodology skills: product interrogation, CEO-level scope challenge, root-cause investigation, and weekly retros",
+      "category": "Workflow",
+      "tags": ["gstack", "office-hours", "ceo-review", "investigate", "retro"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/product-planning/gstack-openclaw-office-hours",
+        "./vendor/product-planning/gstack-openclaw-ceo-review",
+        "./vendor/product-planning/gstack-openclaw-investigate",
+        "./vendor/product-planning/gstack-openclaw-retro"
+      ]
+    },
+    {
       "name": "infra-and-docs",
       "description": "Documentation site bootstrap and pueue job queue orchestration",
       "category": "Infra",
