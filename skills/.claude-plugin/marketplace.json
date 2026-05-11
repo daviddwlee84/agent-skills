@@ -124,6 +124,17 @@
       ]
     },
     {
+      "name": "deep-research",
+      "description": "Citation-tracked multi-source research with evidence persistence, claim ledger, and structured report generation — pure prompt-flow, no external API required",
+      "category": "Research",
+      "tags": ["deep-research", "citations", "evidence", "report", "synthesis"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/deep-research/deep-research"
+      ]
+    },
+    {
       "name": "infra-and-docs",
       "description": "Documentation site bootstrap and pueue job queue orchestration",
       "category": "Infra",

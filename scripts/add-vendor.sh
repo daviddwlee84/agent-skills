@@ -81,19 +81,23 @@ parse_source() {
   # Remove trailing slash
   input="${input%/}"
 
-  # Need at least owner/repo/one-path-component
+  # Need at least owner/repo; path may be "." for repo-root SKILL.md
   local slash_count
   slash_count=$(echo "$input" | tr -cd '/' | wc -c | tr -d ' ')
-  if [[ "$slash_count" -lt 2 ]]; then
-    echo -e "${RED}Error: Expected format: owner/repo/path/to/skill${NC}" >&2
+  if [[ "$slash_count" -lt 1 ]]; then
+    echo -e "${RED}Error: Expected format: owner/repo[/path/to/skill]${NC}" >&2
     echo "  Got: $input" >&2
     exit 1
   fi
 
-  # Extract owner and repo (first two components)
+  # Extract owner and repo (first two components); rest is path (may be empty)
   PARSED_OWNER="$(echo "$input" | cut -d'/' -f1)"
   PARSED_REPO="$(echo "$input" | cut -d'/' -f2)"
-  PARSED_PATH="$(echo "$input" | cut -d'/' -f3-)"
+  if [[ "$slash_count" -lt 2 ]]; then
+    PARSED_PATH="."
+  else
+    PARSED_PATH="$(echo "$input" | cut -d'/' -f3-)"
+  fi
 }
 
 main() {
@@ -126,7 +130,14 @@ main() {
 
   parse_source "$positional"
 
-  local name="${opt_name:-$(basename "$PARSED_PATH")}"
+  # Default skill name: basename of path, or repo name when path is "."
+  local default_name
+  if [[ "$PARSED_PATH" == "." ]]; then
+    default_name="$PARSED_REPO"
+  else
+    default_name="$(basename "$PARSED_PATH")"
+  fi
+  local name="${opt_name:-$default_name}"
   local owner="$PARSED_OWNER"
   local repo="$PARSED_REPO"
   local path="$PARSED_PATH"
@@ -134,7 +145,9 @@ main() {
 
   # Verify the upstream path exists
   echo -n "Verifying upstream $owner/$repo/$path@$branch... "
-  if ! gh api "repos/$owner/$repo/contents/$path?ref=$branch" &>/dev/null 2>&1; then
+  local verify_path="$path"
+  [[ "$verify_path" == "." ]] && verify_path=""
+  if ! gh api "repos/$owner/$repo/contents/$verify_path?ref=$branch" &>/dev/null 2>&1; then
     echo -e "${RED}not found${NC}"
     echo -e "${RED}Error: Path '$path' not found in $owner/$repo (branch: $branch)${NC}" >&2
     exit 1

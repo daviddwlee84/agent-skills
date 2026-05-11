@@ -257,3 +257,13 @@ skills:
       date: "2026-05-11T08:40:20Z"
       commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
     series: product-planning
+  - name: deep-research
+    upstream:
+      owner: 199-biotechnologies
+      repo: claude-deep-research-skill
+      path: .
+      branch: main
+    last_sync:
+      date: "2026-05-11T10:09:07Z"
+      commit: "f2f2c0fa4e7617ca84c86b63f4bb40f77a746933"
+    series: deep-research

@@ -62,14 +62,19 @@ skill_field() {
   yq ".skills[$idx].$field" "$VENDOR_YAML"
 }
 
-# Get latest commit SHA for a path in a repo
+# Get latest commit SHA for a path in a repo (path="." means repo root)
 get_latest_commit() {
   local owner="$1" repo="$2" branch="$3" path="$4"
-  gh api "repos/$owner/$repo/commits?sha=$branch&path=$path&per_page=1" \
-    --jq '.[0].sha' 2>/dev/null || echo ""
+  if [[ "$path" == "." ]]; then
+    gh api "repos/$owner/$repo/commits?sha=$branch&per_page=1" \
+      --jq '.[0].sha' 2>/dev/null || echo ""
+  else
+    gh api "repos/$owner/$repo/commits?sha=$branch&path=$path&per_page=1" \
+      --jq '.[0].sha' 2>/dev/null || echo ""
+  fi
 }
 
-# Download a directory tree from GitHub
+# Download a directory tree from GitHub. src_path="." means whole repo root.
 download_tree() {
   local owner="$1" repo="$2" branch="$3" src_path="$4" dest_dir="$5"
 
@@ -77,8 +82,13 @@ download_tree() {
 
   # Get directory contents recursively using git trees API
   local tree_sha
-  tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
-    --jq '.tree[] | select(.path | startswith("'"$src_path"'/")) | .path + "\t" + .type + "\t" + (.url // "")')
+  if [[ "$src_path" == "." ]]; then
+    tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
+      --jq '.tree[] | .path + "\t" + .type + "\t" + (.url // "")')
+  else
+    tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
+      --jq '.tree[] | select(.path | startswith("'"$src_path"'/")) | .path + "\t" + .type + "\t" + (.url // "")')
+  fi
 
   if [[ -z "$tree_sha" ]]; then
     echo -e "${RED}Error: No files found at $owner/$repo/$src_path${NC}" >&2
@@ -87,7 +97,12 @@ download_tree() {
 
   # Process each file
   while IFS=$'\t' read -r file_path file_type file_url; do
-    local rel_path="${file_path#"$src_path"/}"
+    local rel_path
+    if [[ "$src_path" == "." ]]; then
+      rel_path="$file_path"
+    else
+      rel_path="${file_path#"$src_path"/}"
+    fi
     local dest_path="$dest_dir/$rel_path"
 
     if [[ "$file_type" == "tree" ]]; then
