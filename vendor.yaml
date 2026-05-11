@@ -127,3 +127,133 @@ skills:
       date: "2026-04-24T05:19:05Z"
       commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
     series: fullstack-nextjs
+  - name: grill-with-docs
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/grill-with-docs
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:38:12Z"
+      commit: "b843cb5ea74b1fe5e58a0fc23cddef9e66076fb8"
+    series: engineering-fundamentals
+  - name: tdd
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/tdd
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:38:26Z"
+      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+    series: engineering-fundamentals
+  - name: diagnose
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/diagnose
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:38:35Z"
+      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+    series: engineering-fundamentals
+  - name: zoom-out
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/zoom-out
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:38:44Z"
+      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+    series: engineering-fundamentals
+  - name: to-prd
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/to-prd
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:38:52Z"
+      commit: "70141119e9fe47430b62b93bcf166a73e6580048"
+    series: engineering-fundamentals
+  - name: to-issues
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/to-issues
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:39:01Z"
+      commit: "ff3ee1dda50d636b4e25b1ba269d25d6d5784164"
+    series: engineering-fundamentals
+  - name: improve-codebase-architecture
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/improve-codebase-architecture
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:39:12Z"
+      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+    series: engineering-fundamentals
+  - name: triage
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/triage
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:39:24Z"
+      commit: "179a14e721034706ffce7abae75b877c922b4ae8"
+    series: engineering-fundamentals
+  - name: prototype
+    upstream:
+      owner: mattpocock
+      repo: skills
+      path: skills/engineering/prototype
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:39:34Z"
+      commit: "ff3ee1dda50d636b4e25b1ba269d25d6d5784164"
+    series: engineering-fundamentals
+  - name: gstack-openclaw-office-hours
+    upstream:
+      owner: garrytan
+      repo: gstack
+      path: openclaw/skills/gstack-openclaw-office-hours
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:39:53Z"
+      commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
+    series: product-planning
+  - name: gstack-openclaw-ceo-review
+    upstream:
+      owner: garrytan
+      repo: gstack
+      path: openclaw/skills/gstack-openclaw-ceo-review
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:40:03Z"
+      commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
+    series: product-planning
+  - name: gstack-openclaw-investigate
+    upstream:
+      owner: garrytan
+      repo: gstack
+      path: openclaw/skills/gstack-openclaw-investigate
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:40:11Z"
+      commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
+    series: product-planning
+  - name: gstack-openclaw-retro
+    upstream:
+      owner: garrytan
+      repo: gstack
+      path: openclaw/skills/gstack-openclaw-retro
+      branch: main
+    last_sync:
+      date: "2026-05-11T08:40:20Z"
+      commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
+    series: product-planning

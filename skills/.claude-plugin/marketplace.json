@@ -91,6 +91,25 @@
       ]
     },
     {
+      "name": "engineering-fundamentals",
+      "description": "Matt Pocock's small, composable skills for real engineering: grilling, TDD, diagnosis, architecture care, and PRD/issue breakdown",
+      "category": "Engineering",
+      "tags": ["tdd", "ddd", "grilling", "prd", "diagnose", "architecture"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/engineering-fundamentals/grill-with-docs",
+        "./vendor/engineering-fundamentals/tdd",
+        "./vendor/engineering-fundamentals/diagnose",
+        "./vendor/engineering-fundamentals/zoom-out",
+        "./vendor/engineering-fundamentals/to-prd",
+        "./vendor/engineering-fundamentals/to-issues",
+        "./vendor/engineering-fundamentals/improve-codebase-architecture",
+        "./vendor/engineering-fundamentals/triage",
+        "./vendor/engineering-fundamentals/prototype"
+      ]
+    },
+    {
       "name": "infra-and-docs",
       "description": "Documentation site bootstrap and pueue job queue orchestration",
       "category": "Infra",
