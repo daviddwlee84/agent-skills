@@ -125,6 +125,32 @@
       ]
     },
     {
+      "name": "github-workflow",
+      "description": "Warp Oz skills for GitHub workflow automation: CI diagnosis & fix, PR creation, bug report triage, and duplicate issue detection",
+      "category": "Engineering",
+      "tags": ["github", "ci", "pull-request", "triage", "issues"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/ci-fix",
+        "./vendor/create-pull-request",
+        "./vendor/github-bug-report-triage",
+        "./vendor/github-issue-dedupe"
+      ]
+    },
+    {
+      "name": "web-quality",
+      "description": "Warp Oz skills for web quality auditing: WCAG accessibility compliance and Lighthouse/DevTools performance analysis",
+      "category": "Quality",
+      "tags": ["accessibility", "a11y", "wcag", "performance", "lighthouse", "devtools"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/web-accessibility-audit",
+        "./vendor/web-performance-audit"
+      ]
+    },
+    {
       "name": "deep-research",
       "description": "Citation-tracked multi-source research with evidence persistence, claim ledger, and structured report generation — pure prompt-flow, no external API required",
       "category": "Research",
