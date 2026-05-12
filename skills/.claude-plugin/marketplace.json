@@ -18,7 +18,8 @@
       "strict": false,
       "skills": [
         "./local/skill-author",
-        "./vendor/skill-creator"
+        "./vendor/skill-creator",
+        "./vendor/mcp-builder"
       ]
     },
     {

@@ -267,3 +267,12 @@ skills:
       date: "2026-05-11T10:09:07Z"
       commit: "f2f2c0fa4e7617ca84c86b63f4bb40f77a746933"
     series: deep-research
+  - name: mcp-builder
+    upstream:
+      owner: anthropics
+      repo: skills
+      path: skills/mcp-builder
+      branch: main
+    last_sync:
+      date: "2026-05-12T01:07:54Z"
+      commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
