@@ -146,6 +146,8 @@ agent 會讀的**慣例**。可以拿來看「SDD」剝掉工具後長什麼樣�
 
 ## SDD 選項一覽
 
+### 形態、主導權、artifact
+
 | 專案 | ⭐ | 形態 | Loop 由誰主導 | 持久 artifact | 最適合誰 |
 |---|---:|---|---|---|---|
 | `github/spec-kit` | 96k | CLI + slash command | 全流程，社群最廣 | `.specify/` | 預設選項；要 plugin 生態 + 30+ agent 支援 |
@@ -155,9 +157,28 @@ agent 會讀的**慣例**。可以拿來看「SDD」剝掉工具後長什麼樣�
 | `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop 步驟細粒度 skill | ADRs、specs | 大 repo / 嚴格流程 / 要 ADR + security gate |
 | `Chen-Dixi/nano-bruce` `specs/` | — | Markdown 慣例 | 無——agent 讀慣例 | `mission.md` / `roadmap.md` / 日期目錄 | 完全不要工具、只要 layout |
 
-**重要警告：** 後三列都是「loop-shaped」skill bundle。同時 global
-裝兩個會讓 agent 在每個步驟重新爭論流程。**只挑一個**主 methodology
-bundle。
+### 各家實際的 loop
+
+目標一樣，介面差很多：
+
+| 專案 | 步驟 1 | 步驟 2 | 步驟 3 | 步驟 4 | 步驟 5 | 步驟 6+ |
+|---|---|---|---|---|---|---|
+| **spec-kit** | `/speckit.constitution` | `/speckit.specify` | `/speckit.plan` | `/speckit.tasks` | `/speckit.implement` | `/speckit.clarify`、`/speckit.analyze`、`/speckit.checklist`（可選 gate） |
+| **GSD v1** | `/gsd-new-project` | `/gsd-discuss-phase` | `/gsd-plan-phase` | `/gsd-execute-phase` | `/gsd-verify-work` | `/gsd-ship` |
+| **GSD v2** | `/gsd new-project` | (auto: research + plan + verify) | `/gsd auto`（DB 驅動的 slice loop） | (auto: per-task fresh session + verify) | (auto: complete-slice + reassess) | (auto: validate-milestone + complete-milestone + ship) |
+| **superpowers** | `brainstorming`（HARD-GATE：design 沒 approve 不准寫 code） | `writing-plans` | `executing-plans` + `test-driven-development` | `subagent-driven-development` + `dispatching-parallel-agents` | `requesting-code-review` + `receiving-code-review` + `verification-before-completion` | `finishing-a-development-branch` + `using-git-worktrees` |
+| **addyosmani** | `idea-refine` + `spec-driven-development` | `planning-and-task-breakdown` | `incremental-implementation` + `test-driven-development` | `code-review-and-quality` + `debugging-and-error-recovery` | `security-and-hardening` + `performance-optimization` | `documentation-and-adrs` + `shipping-and-launch` + `deprecation-and-migration` |
+| **gstack** | `/office-hours` | `/plan-ceo-review` + `/plan-eng-review` + `/plan-design-review` | `/autoplan`（自動跑 CEO → eng → design） | `/review` + `/qa` + `/cso` | `/codex`（跨模型 second opinion） | `/ship` + `/land-and-deploy` + `/canary` + `/retro` |
+| **nano-bruce** | （手寫 `mission.md`） | （手寫 `roadmap.md`） | （建 `YYYY-MM-DD-feature/` 目錄） | （在裡面寫 spec） | （agent 讀慣例、執行） | （手動 review + commit） |
+
+> 五個「真正的」loop 都會收斂到同一個形狀——**think → plan → code →
+> verify → ship**——但粒度、誰執行 gate、什麼 artifact 留下來差很多。
+> spec-kit 跟 GSD 用 slash command；superpowers 跟 addyosmani 用會自動
+> 載入 + hard-gate prompt 的 skill；gstack 在每步加上專業 review 角色。
+
+**重要警告：** 那些 ship loop-shaped skill 的 bundle（superpowers、
+addyosmani、gstack）同時 global 裝兩個會打架——agent 在每步重新爭論
+流程。**只挑一個**主 methodology bundle。
 
 ## 跟本 repo 的關係
 

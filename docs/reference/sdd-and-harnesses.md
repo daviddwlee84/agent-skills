@@ -158,6 +158,8 @@ Differentiators:
 
 ## SDD options at a glance
 
+### Form, ownership, artifacts
+
 | Project | ⭐ | Form | Loop ownership | Stateful artifacts | Best fit |
 |---|---:|---|---|---|---|
 | `github/spec-kit` | 96k | CLI + slash commands | Full loop, broad ecosystem | `.specify/` | Default; want plugin community + 30+ agent support |
@@ -167,10 +169,30 @@ Differentiators:
 | `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop steps as skills, fine-grained | ADRs, specs | Larger repos / strict process / ADR + security gates |
 | `Chen-Dixi/nano-bruce` `specs/` | — | Markdown convention | None — agent reads convention | `mission.md` / `roadmap.md` / dated dirs | Want zero tooling, just a layout |
 
-**Key warning:** the bundles in the bottom three rows all install
-"loop-shaped" skills. Loading two of them globally tends to make the
-agent re-litigate process at every step. Pick *one* primary methodology
-bundle.
+### The actual loop each one ships
+
+Same goal, very different surface:
+
+| Project | Step 1 | Step 2 | Step 3 | Step 4 | Step 5 | Step 6+ |
+|---|---|---|---|---|---|---|
+| **spec-kit** | `/speckit.constitution` | `/speckit.specify` | `/speckit.plan` | `/speckit.tasks` | `/speckit.implement` | `/speckit.clarify`, `/speckit.analyze`, `/speckit.checklist` (optional gates) |
+| **GSD v1** | `/gsd-new-project` | `/gsd-discuss-phase` | `/gsd-plan-phase` | `/gsd-execute-phase` | `/gsd-verify-work` | `/gsd-ship` |
+| **GSD v2** | `/gsd new-project` | (auto: research + plan + verify) | `/gsd auto` (DB-driven slice loop) | (auto: per-task fresh session + verify) | (auto: complete-slice + reassess) | (auto: validate-milestone + complete-milestone + ship) |
+| **superpowers** | `brainstorming` (HARD-GATE: no code until design approved) | `writing-plans` | `executing-plans` + `test-driven-development` | `subagent-driven-development` + `dispatching-parallel-agents` | `requesting-code-review` + `receiving-code-review` + `verification-before-completion` | `finishing-a-development-branch` + `using-git-worktrees` |
+| **addyosmani** | `idea-refine` + `spec-driven-development` | `planning-and-task-breakdown` | `incremental-implementation` + `test-driven-development` | `code-review-and-quality` + `debugging-and-error-recovery` | `security-and-hardening` + `performance-optimization` | `documentation-and-adrs` + `shipping-and-launch` + `deprecation-and-migration` |
+| **gstack** | `/office-hours` | `/plan-ceo-review` + `/plan-eng-review` + `/plan-design-review` | `/autoplan` (auto-runs CEO → eng → design) | `/review` + `/qa` + `/cso` | `/codex` (cross-model second opinion) | `/ship` + `/land-and-deploy` + `/canary` + `/retro` |
+| **nano-bruce** | (write `mission.md` by hand) | (write `roadmap.md` by hand) | (create `YYYY-MM-DD-feature/` dir) | (write spec inside) | (agent reads convention, executes) | (manual review + commit) |
+
+> All five "real" loops collapse to the same shape — **think → plan →
+> code → verify → ship** — but the granularity, who enforces the gates,
+> and what artifacts persist differ enormously. spec-kit and GSD use
+> slash commands; superpowers and addyosmani use auto-loaded skills
+> with hard-gate prompts; gstack adds review specialists at every step.
+
+**Key warning:** the bundles that ship loop-shaped skills (superpowers,
+addyosmani, gstack) tend to fight each other if you load two of them
+globally — the agent re-litigates process at every step. Pick *one*
+primary methodology bundle.
 
 ## How this repo relates
 
