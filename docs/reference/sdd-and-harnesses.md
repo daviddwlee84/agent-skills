@@ -165,34 +165,162 @@ Differentiators:
 | `github/spec-kit` | 96k | CLI + slash commands | Full loop, broad ecosystem | `.specify/` | Default; want plugin community + 30+ agent support |
 | `gsd-build/get-shit-done` | 61k | Slash commands | Full loop, less ceremony | `PROJECT.md` / `STATE.md` / `CONTEXT.md` | Solo builder, fewer ceremonies |
 | `gsd-build/gsd-2` | 7k | Standalone CLI (harness) | Full loop + session control | SQLite `.gsd/` | Want context/session/cost control + crash recovery |
-| `obra/superpowers` | 186k | SKILL.md bundle | Loop steps as skills with hard gates | Per-skill artifacts | Want methodology in *any* agent without a CLI |
-| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop steps as skills, fine-grained | ADRs, specs | Larger repos / strict process / ADR + security gates |
+| `obra/superpowers` | 186k | SKILL.md bundle | Capabilities, not a fixed loop | Per-skill artifacts | Want methodology in *any* agent without a CLI |
+| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Capabilities, not a fixed loop | ADRs, specs | Larger repos / strict process / ADR + security gates |
 | `Chen-Dixi/nano-bruce` `specs/` | — | Markdown convention | None — agent reads convention | `mission.md` / `roadmap.md` / dated dirs | Want zero tooling, just a layout |
 
-### The actual loop each one ships
+### Sequential workflows (have a designed order)
 
-Same goal, very different surface:
+These four projects ship a defined command sequence. The diagrams show
+the order their READMEs prescribe.
 
-| Project | Step 1 | Step 2 | Step 3 | Step 4 | Step 5 | Step 6+ |
-|---|---|---|---|---|---|---|
-| **spec-kit** | `/speckit.constitution` | `/speckit.specify` | `/speckit.plan` | `/speckit.tasks` | `/speckit.implement` | `/speckit.clarify`, `/speckit.analyze`, `/speckit.checklist` (optional gates) |
-| **GSD v1** | `/gsd-new-project` | `/gsd-discuss-phase` | `/gsd-plan-phase` | `/gsd-execute-phase` | `/gsd-verify-work` | `/gsd-ship` |
-| **GSD v2** | `/gsd new-project` | (auto: research + plan + verify) | `/gsd auto` (DB-driven slice loop) | (auto: per-task fresh session + verify) | (auto: complete-slice + reassess) | (auto: validate-milestone + complete-milestone + ship) |
-| **superpowers** | `brainstorming` (HARD-GATE: no code until design approved) | `writing-plans` | `executing-plans` + `test-driven-development` | `subagent-driven-development` + `dispatching-parallel-agents` | `requesting-code-review` + `receiving-code-review` + `verification-before-completion` | `finishing-a-development-branch` + `using-git-worktrees` |
-| **addyosmani** | `idea-refine` + `spec-driven-development` | `planning-and-task-breakdown` | `incremental-implementation` + `test-driven-development` | `code-review-and-quality` + `debugging-and-error-recovery` | `security-and-hardening` + `performance-optimization` | `documentation-and-adrs` + `shipping-and-launch` + `deprecation-and-migration` |
-| **gstack** | `/office-hours` | `/plan-ceo-review` + `/plan-eng-review` + `/plan-design-review` | `/autoplan` (auto-runs CEO → eng → design) | `/review` + `/qa` + `/cso` | `/codex` (cross-model second opinion) | `/ship` + `/land-and-deploy` + `/canary` + `/retro` |
-| **nano-bruce** | (write `mission.md` by hand) | (write `roadmap.md` by hand) | (create `YYYY-MM-DD-feature/` dir) | (write spec inside) | (agent reads convention, executes) | (manual review + commit) |
+#### `github/spec-kit` — 5-step main loop + 3 optional gates
 
-> All five "real" loops collapse to the same shape — **think → plan →
-> code → verify → ship** — but the granularity, who enforces the gates,
-> and what artifacts persist differ enormously. spec-kit and GSD use
-> slash commands; superpowers and addyosmani use auto-loaded skills
-> with hard-gate prompts; gstack adds review specialists at every step.
+```mermaid
+flowchart LR
+    C[/speckit.constitution/] --> S[/speckit.specify/]
+    S --> P[/speckit.plan/]
+    P --> T[/speckit.tasks/]
+    T --> I[/speckit.implement/]
+    S -.gate.-> CL[/speckit.clarify/]
+    P -.gate.-> A[/speckit.analyze/]
+    T -.gate.-> CK[/speckit.checklist/]
+```
 
-**Key warning:** the bundles that ship loop-shaped skills (superpowers,
-addyosmani, gstack) tend to fight each other if you load two of them
-globally — the agent re-litigates process at every step. Pick *one*
-primary methodology bundle.
+The clarify / analyze / checklist commands are **orthogonal quality
+gates**, not "step 6". Run them when the spec or plan needs scrutiny.
+
+#### `gsd-build/get-shit-done` (v1) — 6-step linear loop, repeats per phase
+
+```mermaid
+flowchart LR
+    N[/gsd-new-project/] --> D[/gsd-discuss-phase/]
+    D --> P[/gsd-plan-phase/]
+    P --> E[/gsd-execute-phase/]
+    E --> V[/gsd-verify-work/]
+    V --> S[/gsd-ship/]
+    S -. next phase .-> D
+```
+
+#### `gsd-build/gsd-2` — state machine driven by `/gsd auto`
+
+```mermaid
+stateDiagram-v2
+    [*] --> NewProject : /gsd new-project
+    NewProject --> AutoLoop : /gsd auto
+    state AutoLoop {
+        [*] --> Plan
+        Plan --> Execute : per task (fresh session)
+        Execute --> Verify : lint + test
+        Verify --> Complete : pass
+        Verify --> Execute : fail (auto-fix)
+        Complete --> Reassess
+        Reassess --> Plan : next slice
+        Reassess --> ValidateMilestone : milestone done
+    }
+    AutoLoop --> Ship : squash-merge
+    Ship --> [*]
+```
+
+Mostly automatic — the human triggers `/gsd auto`, the harness drives
+everything from a SQLite state machine and only stops on errors or
+budget ceilings.
+
+#### `gstack` — 7-phase sprint with specialist roles
+
+```mermaid
+flowchart LR
+    OH[/office-hours/] --> PR[plan-ceo-review<br/>plan-eng-review<br/>plan-design-review]
+    PR --> AP[/autoplan/]
+    AP --> Build[implementation]
+    Build --> R[/review/ + /qa/ + /cso/]
+    R --> CX[/codex<br/>cross-model<br/>second opinion/]
+    CX --> SH[/ship/ + /land-and-deploy/ + /canary/]
+    SH --> RT[/retro/]
+```
+
+Think → Plan → Build → Review → Test → Ship → Reflect, with a different
+specialist skill per role.
+
+### Capability bundles (no fixed order)
+
+These two install **a bag of skills** that fire on demand. There's an
+entry hard-gate, but the rest are categories you compose freely.
+
+#### `obra/superpowers` — entry gate + 14 capabilities
+
+```mermaid
+flowchart TB
+    Start([any task]) --> BS[brainstorming<br/><b>HARD-GATE</b>:<br/>no code until<br/>design approved]
+    BS --> Pool
+
+    subgraph Pool["14 capabilities — fire on demand"]
+        direction LR
+        Plan[writing-plans<br/>executing-plans]
+        Code[test-driven-development<br/>subagent-driven-development<br/>dispatching-parallel-agents<br/>systematic-debugging]
+        Review[requesting-code-review<br/>receiving-code-review<br/>verification-before-completion]
+        Ship[using-git-worktrees<br/>finishing-a-development-branch]
+        Meta[using-superpowers<br/>writing-skills]
+    end
+```
+
+The only enforced order is: `brainstorming` first. Everything else is
+called when the agent decides it applies.
+
+#### `addyosmani/agent-skills` — 22 SDLC capabilities
+
+```mermaid
+flowchart TB
+    Start([any task]) --> Refine[idea-refine<br/>spec-driven-development<br/><i>typical entry points</i>]
+    Refine --> Pool
+
+    subgraph Pool["22 capabilities — fire on demand"]
+        direction LR
+        Plan[planning-and-task-breakdown<br/>context-engineering<br/>doubt-driven-development]
+        Build[incremental-implementation<br/>test-driven-development<br/>code-simplification<br/>source-driven-development]
+        Quality[code-review-and-quality<br/>debugging-and-error-recovery<br/>security-and-hardening<br/>performance-optimization]
+        Domain[api-and-interface-design<br/>frontend-ui-engineering<br/>browser-testing-with-devtools]
+        Ship[git-workflow-and-versioning<br/>ci-cd-and-automation<br/>shipping-and-launch<br/>deprecation-and-migration]
+        Docs[documentation-and-adrs<br/>using-agent-skills]
+    end
+```
+
+No enforced order at all. The 22 skills are SDLC capabilities the agent
+loads when their description matches the task. Closest to a "library"
+model.
+
+### Convention only (no commands, no skills)
+
+#### `Chen-Dixi/nano-bruce` `specs/` layout
+
+```mermaid
+flowchart LR
+    M[mission.md] --> RM[roadmap.md]
+    RM --> Spec[YYYY-MM-DD-feature/<br/>spec.md]
+    Spec --> Agent([agent reads<br/>convention])
+    Agent --> Impl[implement]
+    Impl --> Commit[manual commit]
+```
+
+Pure markdown convention; no slash commands, no skills, no harness.
+
+### Picking one — and only one
+
+**Key warning:** loading two methodology bundles globally makes the
+agent re-litigate process at every step.
+
+- The four sequential workflows (spec-kit, GSD v1, GSD v2, gstack) are
+  **mutually exclusive at the project level** — each one expects to own
+  the slash-command surface and the artifact directory.
+- The two capability bundles (superpowers, addyosmani) **can technically
+  coexist** with a sequential workflow, but in practice their entry
+  hard-gates fire on every task and start fighting over who plans first.
+
+Pick *one* primary methodology. Use individual skills from this repo
+(grilling, TDD, diagnose, retro, deep-research, etc.) as targeted
+augmentation, not as a competing methodology.
+
+## How this repo relates
 
 ## How this repo relates
 

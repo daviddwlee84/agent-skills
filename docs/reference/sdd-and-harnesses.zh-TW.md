@@ -153,32 +153,154 @@ agent 會讀的**慣例**。可以拿來看「SDD」剝掉工具後長什麼樣�
 | `github/spec-kit` | 96k | CLI + slash command | 全流程，社群最廣 | `.specify/` | 預設選項；要 plugin 生態 + 30+ agent 支援 |
 | `gsd-build/get-shit-done` | 61k | Slash command | 全流程、少儀式 | `PROJECT.md` / `STATE.md` / `CONTEXT.md` | Solo builder、不要太多儀式 |
 | `gsd-build/gsd-2` | 7k | 獨立 CLI (harness) | 全流程 + session 控制 | SQLite `.gsd/` | 要 context/session/cost 控制 + crash recovery |
-| `obra/superpowers` | 186k | SKILL.md bundle | Loop 步驟成 skill + hard gate | 每個 skill 自己的 artifact | 想在**任何** agent 拿 methodology、不依賴 CLI |
-| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop 步驟細粒度 skill | ADRs、specs | 大 repo / 嚴格流程 / 要 ADR + security gate |
+| `obra/superpowers` | 186k | SKILL.md bundle | Capabilities，**沒有固定順序** | 每個 skill 自己的 artifact | 想在**任何** agent 拿 methodology、不依賴 CLI |
+| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Capabilities，**沒有固定順序** | ADRs、specs | 大 repo / 嚴格流程 / 要 ADR + security gate |
 | `Chen-Dixi/nano-bruce` `specs/` | — | Markdown 慣例 | 無——agent 讀慣例 | `mission.md` / `roadmap.md` / 日期目錄 | 完全不要工具、只要 layout |
 
-### 各家實際的 loop
+### Sequential workflows（有設計好的順序）
 
-目標一樣，介面差很多：
+這四個 ship 明確的 command 序列，圖中順序是 README 規定的順序。
 
-| 專案 | 步驟 1 | 步驟 2 | 步驟 3 | 步驟 4 | 步驟 5 | 步驟 6+ |
-|---|---|---|---|---|---|---|
-| **spec-kit** | `/speckit.constitution` | `/speckit.specify` | `/speckit.plan` | `/speckit.tasks` | `/speckit.implement` | `/speckit.clarify`、`/speckit.analyze`、`/speckit.checklist`（可選 gate） |
-| **GSD v1** | `/gsd-new-project` | `/gsd-discuss-phase` | `/gsd-plan-phase` | `/gsd-execute-phase` | `/gsd-verify-work` | `/gsd-ship` |
-| **GSD v2** | `/gsd new-project` | (auto: research + plan + verify) | `/gsd auto`（DB 驅動的 slice loop） | (auto: per-task fresh session + verify) | (auto: complete-slice + reassess) | (auto: validate-milestone + complete-milestone + ship) |
-| **superpowers** | `brainstorming`（HARD-GATE：design 沒 approve 不准寫 code） | `writing-plans` | `executing-plans` + `test-driven-development` | `subagent-driven-development` + `dispatching-parallel-agents` | `requesting-code-review` + `receiving-code-review` + `verification-before-completion` | `finishing-a-development-branch` + `using-git-worktrees` |
-| **addyosmani** | `idea-refine` + `spec-driven-development` | `planning-and-task-breakdown` | `incremental-implementation` + `test-driven-development` | `code-review-and-quality` + `debugging-and-error-recovery` | `security-and-hardening` + `performance-optimization` | `documentation-and-adrs` + `shipping-and-launch` + `deprecation-and-migration` |
-| **gstack** | `/office-hours` | `/plan-ceo-review` + `/plan-eng-review` + `/plan-design-review` | `/autoplan`（自動跑 CEO → eng → design） | `/review` + `/qa` + `/cso` | `/codex`（跨模型 second opinion） | `/ship` + `/land-and-deploy` + `/canary` + `/retro` |
-| **nano-bruce** | （手寫 `mission.md`） | （手寫 `roadmap.md`） | （建 `YYYY-MM-DD-feature/` 目錄） | （在裡面寫 spec） | （agent 讀慣例、執行） | （手動 review + commit） |
+#### `github/spec-kit`——5 步主 loop + 3 個可選 gate
 
-> 五個「真正的」loop 都會收斂到同一個形狀——**think → plan → code →
-> verify → ship**——但粒度、誰執行 gate、什麼 artifact 留下來差很多。
-> spec-kit 跟 GSD 用 slash command；superpowers 跟 addyosmani 用會自動
-> 載入 + hard-gate prompt 的 skill；gstack 在每步加上專業 review 角色。
+```mermaid
+flowchart LR
+    C[/speckit.constitution/] --> S[/speckit.specify/]
+    S --> P[/speckit.plan/]
+    P --> T[/speckit.tasks/]
+    T --> I[/speckit.implement/]
+    S -.gate.-> CL[/speckit.clarify/]
+    P -.gate.-> A[/speckit.analyze/]
+    T -.gate.-> CK[/speckit.checklist/]
+```
 
-**重要警告：** 那些 ship loop-shaped skill 的 bundle（superpowers、
-addyosmani、gstack）同時 global 裝兩個會打架——agent 在每步重新爭論
-流程。**只挑一個**主 methodology bundle。
+clarify / analyze / checklist 是**正交的品質 gate**，不是「步驟 6」。
+spec 或 plan 需要 scrutiny 時才跑。
+
+#### `gsd-build/get-shit-done` (v1)——6 步直線 loop，每個 phase 重複
+
+```mermaid
+flowchart LR
+    N[/gsd-new-project/] --> D[/gsd-discuss-phase/]
+    D --> P[/gsd-plan-phase/]
+    P --> E[/gsd-execute-phase/]
+    E --> V[/gsd-verify-work/]
+    V --> S[/gsd-ship/]
+    S -. 下個 phase .-> D
+```
+
+#### `gsd-build/gsd-2`——`/gsd auto` 驅動的 state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> NewProject : /gsd new-project
+    NewProject --> AutoLoop : /gsd auto
+    state AutoLoop {
+        [*] --> Plan
+        Plan --> Execute : per task (fresh session)
+        Execute --> Verify : lint + test
+        Verify --> Complete : pass
+        Verify --> Execute : fail (auto-fix)
+        Complete --> Reassess
+        Reassess --> Plan : 下個 slice
+        Reassess --> ValidateMilestone : milestone 結束
+    }
+    AutoLoop --> Ship : squash-merge
+    Ship --> [*]
+```
+
+幾乎全自動——人類觸發 `/gsd auto`，harness 從 SQLite state machine 驅動
+全程，只在錯誤或 budget ceiling 才停。
+
+#### `gstack`——7 階段 sprint，每階段一個專業角色
+
+```mermaid
+flowchart LR
+    OH[/office-hours/] --> PR[plan-ceo-review<br/>plan-eng-review<br/>plan-design-review]
+    PR --> AP[/autoplan/]
+    AP --> Build[實作]
+    Build --> R[/review/ + /qa/ + /cso/]
+    R --> CX[/codex<br/>跨模型<br/>second opinion/]
+    CX --> SH[/ship/ + /land-and-deploy/ + /canary/]
+    SH --> RT[/retro/]
+```
+
+Think → Plan → Build → Review → Test → Ship → Reflect，每個角色一個專業 skill。
+
+### Capability bundles（沒有固定順序）
+
+這兩個裝的是**一袋 skill**，按需觸發。有入口 hard-gate，但其他都是
+可以自由組合的 capability。
+
+#### `obra/superpowers`——入口 gate + 14 個 capability
+
+```mermaid
+flowchart TB
+    Start([任何任務]) --> BS[brainstorming<br/><b>HARD-GATE</b>：<br/>design 沒 approve<br/>不准寫 code]
+    BS --> Pool
+
+    subgraph Pool["14 個 capability —— 按需觸發"]
+        direction LR
+        Plan[writing-plans<br/>executing-plans]
+        Code[test-driven-development<br/>subagent-driven-development<br/>dispatching-parallel-agents<br/>systematic-debugging]
+        Review[requesting-code-review<br/>receiving-code-review<br/>verification-before-completion]
+        Ship[using-git-worktrees<br/>finishing-a-development-branch]
+        Meta[using-superpowers<br/>writing-skills]
+    end
+```
+
+唯一強制順序：先 `brainstorming`。其他都是 agent 判斷適用時才呼叫。
+
+#### `addyosmani/agent-skills`——22 個 SDLC capability
+
+```mermaid
+flowchart TB
+    Start([任何任務]) --> Refine[idea-refine<br/>spec-driven-development<br/><i>典型入口</i>]
+    Refine --> Pool
+
+    subgraph Pool["22 個 capability —— 按需觸發"]
+        direction LR
+        Plan[planning-and-task-breakdown<br/>context-engineering<br/>doubt-driven-development]
+        Build[incremental-implementation<br/>test-driven-development<br/>code-simplification<br/>source-driven-development]
+        Quality[code-review-and-quality<br/>debugging-and-error-recovery<br/>security-and-hardening<br/>performance-optimization]
+        Domain[api-and-interface-design<br/>frontend-ui-engineering<br/>browser-testing-with-devtools]
+        Ship[git-workflow-and-versioning<br/>ci-cd-and-automation<br/>shipping-and-launch<br/>deprecation-and-migration]
+        Docs[documentation-and-adrs<br/>using-agent-skills]
+    end
+```
+
+完全沒強制順序。22 個 skill 是 SDLC capability，agent 看 description
+跟任務匹配時才載入。最接近「library」模型。
+
+### Convention only（沒有 command、沒有 skill）
+
+#### `Chen-Dixi/nano-bruce` `specs/` layout
+
+```mermaid
+flowchart LR
+    M[mission.md] --> RM[roadmap.md]
+    RM --> Spec[YYYY-MM-DD-feature/<br/>spec.md]
+    Spec --> Agent([agent 讀<br/>慣例])
+    Agent --> Impl[實作]
+    Impl --> Commit[手動 commit]
+```
+
+純 markdown 慣例；沒 slash command、沒 skill、沒 harness。
+
+### 只挑一個
+
+**重要警告：** 同時 global 裝兩個 methodology bundle 會讓 agent 在
+每步重新爭論流程。
+
+- 四個 sequential workflow（spec-kit、GSD v1、GSD v2、gstack）在
+  **專案層級互斥**——每個都預期自己擁有 slash-command 介面跟 artifact
+  目錄
+- 兩個 capability bundle（superpowers、addyosmani）**技術上可以**跟
+  sequential workflow 共存，但實務上它們的入口 hard-gate 每個 task 都
+  fire，會跟 sequential workflow 搶誰先 plan
+
+挑*一個*主 methodology。本 repo 的個別 skill（grilling、TDD、diagnose、
+retro、deep-research 等）拿來做**針對性補強**，不要當競爭的 methodology。
 
 ## 跟本 repo 的關係
 
