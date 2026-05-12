@@ -112,6 +112,66 @@ date-stamped feature spec directories. No CLI, no slash commands, no
 harness — just a *convention* the agent reads. Useful as a reference for
 what "SDD" looks like stripped of tooling.
 
+### `obra/superpowers` (186k ⭐) — methodology as a SKILL bundle
+
+A 14-skill bundle that turns the SDD loop into discrete agent skills
+rather than slash commands. Skills include `brainstorming`,
+`writing-plans`, `executing-plans`, `test-driven-development`,
+`subagent-driven-development`, `systematic-debugging`,
+`requesting-code-review`, `receiving-code-review`,
+`verification-before-completion`, `using-git-worktrees`,
+`finishing-a-development-branch`, `dispatching-parallel-agents`,
+`using-superpowers`, `writing-skills`.
+
+Differentiators:
+
+- **Pure SKILL.md** — works in any agent that loads `SKILL.md` (Claude
+  Code, Codex, OpenCode, Cursor, Gemini CLI), no CLI required
+- **HARD-GATE pattern** — each skill has a refuse-to-proceed rule (e.g.
+  brainstorming refuses to write code until a design is approved)
+- **Ships agent files for multiple platforms** — `.claude-plugin/`,
+  `.codex-plugin/`, `.cursor-plugin/`, `.opencode/`, `.gemini-extension`
+- **Methodology as plugin** — `/plugin install superpowers` enables the
+  whole flow at once
+
+### `addyosmani/agent-skills` (39k ⭐) — Google-style SDLC scaffold
+
+22 SKILL.md files covering the full SDLC: `spec-driven-development`,
+`planning-and-task-breakdown`, `incremental-implementation`,
+`test-driven-development`, `code-review-and-quality`,
+`debugging-and-error-recovery`, `documentation-and-adrs`,
+`api-and-interface-design`, `frontend-ui-engineering`,
+`browser-testing-with-devtools`, `ci-cd-and-automation`,
+`deprecation-and-migration`, `git-workflow-and-versioning`,
+`performance-optimization`, `security-and-hardening`,
+`shipping-and-launch`, `context-engineering`,
+`doubt-driven-development`, `idea-refine`, `code-simplification`,
+`source-driven-development`, `using-agent-skills`.
+
+Differentiators:
+
+- **Heavier SDLC ceremony** — explicit ADR, security gate, deprecation
+  guidance; suited to larger repos with engineering process requirements
+- **Skill-per-phase** — finer granularity than spec-kit's slash commands
+- **Standalone skills** — each can be invoked independently, no
+  enforced overall flow
+
+## SDD options at a glance
+
+| Project | ⭐ | Form | Loop ownership | Stateful artifacts | Best fit |
+|---|---:|---|---|---|---|
+| `github/spec-kit` | 96k | CLI + slash commands | Full loop, broad ecosystem | `.specify/` | Default; want plugin community + 30+ agent support |
+| `gsd-build/get-shit-done` | 61k | Slash commands | Full loop, less ceremony | `PROJECT.md` / `STATE.md` / `CONTEXT.md` | Solo builder, fewer ceremonies |
+| `gsd-build/gsd-2` | 7k | Standalone CLI (harness) | Full loop + session control | SQLite `.gsd/` | Want context/session/cost control + crash recovery |
+| `obra/superpowers` | 186k | SKILL.md bundle | Loop steps as skills with hard gates | Per-skill artifacts | Want methodology in *any* agent without a CLI |
+| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop steps as skills, fine-grained | ADRs, specs | Larger repos / strict process / ADR + security gates |
+| `Chen-Dixi/nano-bruce` `specs/` | — | Markdown convention | None — agent reads convention | `mission.md` / `roadmap.md` / dated dirs | Want zero tooling, just a layout |
+
+**Key warning:** the bundles in the bottom three rows all install
+"loop-shaped" skills. Loading two of them globally tends to make the
+agent re-litigate process at every step. Pick *one* primary methodology
+bundle.
+
 ## How this repo relates
 
 The cherry-picked vendor skills cover **selected pieces** of the SDD loop

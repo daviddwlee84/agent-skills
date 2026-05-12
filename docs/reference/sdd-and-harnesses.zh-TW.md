@@ -103,6 +103,62 @@ specs/
 只有三份 repo 級文件（mission / roadmap / tech-stack）+ 日期戳的 feature
 spec 子目錄。沒有 CLI、沒有 slash command、沒有 harness——純粹是一套
 agent 會讀的**慣例**。可以拿來看「SDD」剝掉工具後長什麼樣。
+### `obra/superpowers` (186k ⭐) — methodology 包成 SKILL bundle
+
+14 個 skill 把 SDD loop 拆成個別的 agent skill，而不是 slash command。
+包含 `brainstorming`、`writing-plans`、`executing-plans`、
+`test-driven-development`、`subagent-driven-development`、
+`systematic-debugging`、`requesting-code-review`、
+`receiving-code-review`、`verification-before-completion`、
+`using-git-worktrees`、`finishing-a-development-branch`、
+`dispatching-parallel-agents`、`using-superpowers`、`writing-skills`。
+
+差異：
+
+- **純 SKILL.md**——任何能載入 `SKILL.md` 的 agent 都能用（Claude Code、
+  Codex、OpenCode、Cursor、Gemini CLI），不需要 CLI
+- **HARD-GATE pattern**——每個 skill 都有「拒絕繼續」的硬規則（例如
+  brainstorming 在你 approve design 前拒絕寫 code）
+- **多平台 agent file**——`.claude-plugin/`、`.codex-plugin/`、
+  `.cursor-plugin/`、`.opencode/`、`.gemini-extension`
+- **methodology as plugin**——`/plugin install superpowers` 一次啟動全套
+
+### `addyosmani/agent-skills` (39k ⭐) — Google 風格 SDLC 鷹架
+
+22 個 SKILL.md 蓋整個 SDLC：`spec-driven-development`、
+`planning-and-task-breakdown`、`incremental-implementation`、
+`test-driven-development`、`code-review-and-quality`、
+`debugging-and-error-recovery`、`documentation-and-adrs`、
+`api-and-interface-design`、`frontend-ui-engineering`、
+`browser-testing-with-devtools`、`ci-cd-and-automation`、
+`deprecation-and-migration`、`git-workflow-and-versioning`、
+`performance-optimization`、`security-and-hardening`、
+`shipping-and-launch`、`context-engineering`、
+`doubt-driven-development`、`idea-refine`、`code-simplification`、
+`source-driven-development`、`using-agent-skills`。
+
+差異：
+
+- **更重的 SDLC 儀式**——明確的 ADR、安全 gate、deprecation 指南；適合
+  比較大、有工程流程要求的 repo
+- **每階段一個 skill**——比 spec-kit 的 slash command 更細
+- **獨立 skill**——每個都能單獨呼叫，不強迫整套流程
+
+## SDD 選項一覽
+
+| 專案 | ⭐ | 形態 | Loop 由誰主導 | 持久 artifact | 最適合誰 |
+|---|---:|---|---|---|---|
+| `github/spec-kit` | 96k | CLI + slash command | 全流程，社群最廣 | `.specify/` | 預設選項；要 plugin 生態 + 30+ agent 支援 |
+| `gsd-build/get-shit-done` | 61k | Slash command | 全流程、少儀式 | `PROJECT.md` / `STATE.md` / `CONTEXT.md` | Solo builder、不要太多儀式 |
+| `gsd-build/gsd-2` | 7k | 獨立 CLI (harness) | 全流程 + session 控制 | SQLite `.gsd/` | 要 context/session/cost 控制 + crash recovery |
+| `obra/superpowers` | 186k | SKILL.md bundle | Loop 步驟成 skill + hard gate | 每個 skill 自己的 artifact | 想在**任何** agent 拿 methodology、不依賴 CLI |
+| `addyosmani/agent-skills` | 39k | SKILL.md bundle | Loop 步驟細粒度 skill | ADRs、specs | 大 repo / 嚴格流程 / 要 ADR + security gate |
+| `Chen-Dixi/nano-bruce` `specs/` | — | Markdown 慣例 | 無——agent 讀慣例 | `mission.md` / `roadmap.md` / 日期目錄 | 完全不要工具、只要 layout |
+
+**重要警告：** 後三列都是「loop-shaped」skill bundle。同時 global
+裝兩個會讓 agent 在每個步驟重新爭論流程。**只挑一個**主 methodology
+bundle。
+
 ## 跟本 repo 的關係
 
 cherry-pick 進來的 vendor skill 涵蓋 SDD loop 的**選定步驟**，但不綁

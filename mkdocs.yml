@@ -137,6 +137,7 @@ nav:
       - Karpathy's LLM Wiki pattern: reference/llm-wiki-pattern.md
       - SDD frameworks & harnesses: reference/sdd-and-harnesses.md
       - Deep Research landscape: reference/deep-research-landscape.md
+      - Browser automation skills: reference/browser-automation-skills.md
   - Changelog: changelog.md
 extra:
   social:
