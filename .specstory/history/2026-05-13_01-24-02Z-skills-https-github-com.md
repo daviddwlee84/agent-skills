@@ -13055,3 +13055,322 @@ Show secret-pattern matches in context
 /Volumes/Data/Program/Personal/agent-skills/.specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md:2623:42	  cleaner for agents without Bash but pays the MCP overhead. Token cost
 ```
 </details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:15:53Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:15:54Z)**_
+
+Files look clean — all matches are benign references (e.g., `sk-ant-...` literal in docs, env var names). Staging and committing now.
+
+_**Agent (claude-opus-4-7 2026-05-13 02:15:58Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage catalog feature + plan + transcript files
+
+```bash
+git add CLAUDE.md Collections.md README.md docs/index.md docs/index.zh-TW.md mkdocs.yml \
+  docs/_snippets/external-install.md docs/_snippets/domain-hub-template.md \
+  docs/catalog/ \
+  docs/workflows/adding-catalog-entries.md docs/workflows/adding-catalog-entries.zh-TW.md \
+  .claude/plans/skills-eager-feather.md .claude/plans/skills-eager-feather-agent-aa8c2908a68f820c6.md \
+  .specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md && git status -s
+```
+
+```text
+A  .claude/plans/skills-eager-feather-agent-aa8c2908a68f820c6.md
+A  .claude/plans/skills-eager-feather.md
+A  .specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md
+M  CLAUDE.md
+M  Collections.md
+M  README.md
+A  docs/_snippets/domain-hub-template.md
+A  docs/_snippets/external-install.md
+A  docs/catalog/domains/agent-harness.md
+A  docs/catalog/domains/agent-harness.zh-TW.md
+A  docs/catalog/domains/ai-ml-research.md
+A  docs/catalog/domains/ai-ml-research.zh-TW.md
+A  docs/catalog/domains/finance.md
+A  docs/catalog/domains/finance.zh-TW.md
+A  docs/catalog/domains/index.md
+A  docs/catalog/domains/index.zh-TW.md
+A  docs/catalog/domains/knowledge-work.md
+A  docs/catalog/domains/knowledge-work.zh-TW.md
+A  docs/catalog/domains/quant-research.md
+A  docs/catalog/domains/quant-research.zh-TW.md
+A  docs/catalog/domains/web-fullstack.md
+A  docs/catalog/domains/web-fullstack.zh-TW.md
+A  docs/catalog/index.md
+A  docs/catalog/index.zh-TW.md
+A  docs/catalog/mcp/financialdatasets-ai.md
+A  docs/catalog/mcp/financialdatasets-ai.zh-TW.md
+A  docs/catalog/mcp/index.md
+A  docs/catalog/mcp/index.zh-TW.md
+A  docs/catalog/skill-collections.md
+A  docs/catalog/skill-collections.zh-TW.md
+M  docs/index.md
+M  docs/index.zh-TW.md
+A  docs/workflows/adding-catalog-entries.md
+A  docs/workflows/adding-catalog-entries.zh-TW.md
+M  mkdocs.yml
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:03Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:10Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit Catalog feature
+
+```bash
+git commit -m "$(cat <<'EOF'
+docs(catalog): add Catalog (domains + external skills + MCP wiki)
+
+New top-level docs/catalog/ aggregates per-domain hubs (Finance, Quant
+Research, AI/ML Research, Web & Fullstack, Knowledge Work, Agent
+Harness), an expanded skill-collections index migrated from
+Collections.md + README Resources, and an MCP wiki seeded with the
+Financial Datasets entry. Every external entry carries a
+vendored/deferred/skipped/evaluated/wishlist status so the catalog
+doubles as a vendoring decision log, coupled to vendor.yaml + TODO.md
+via the existing add-vendor.sh / add-todo.sh / promote-todo.sh scripts.
+
+Bilingual (en + zh-TW) for every published page. Hub template lives at
+docs/_snippets/domain-hub-template.md (excluded from llmstxt + nav).
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+```text
+[main f6c99b4] docs(catalog): add Catalog (domains + external skills + MCP wiki)
+ 35 files changed, 15901 insertions(+), 31 deletions(-)
+ create mode 100644 .claude/plans/skills-eager-feather-agent-aa8c2908a68f820c6.md
+ create mode 100644 .claude/plans/skills-eager-feather.md
+ create mode 100644 .specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md
+ create mode 100644 docs/_snippets/domain-hub-template.md
+ create mode 100644 docs/_snippets/external-install.md
+ create mode 100644 docs/catalog/domains/agent-harness.md
+ create mode 100644 docs/catalog/domains/agent-harness.zh-TW.md
+ create mode 100644 docs/catalog/domains/ai-ml-research.md
+ create mode 100644 docs/catalog/domains/ai-ml-research.zh-TW.md
+ create mode 100644 docs/catalog/domains/finance.md
+ create mode 100644 docs/catalog/domains/finance.zh-TW.md
+ create mode 100644 docs/catalog/domains/index.md
+ create mode 100644 docs/catalog/domains/index.zh-TW.md
+ create mode 100644 docs/catalog/domains/knowledge-work.md
+ create mode 100644 docs/catalog/domains/knowledge-work.zh-TW.md
+ create mode 100644 docs/catalog/domains/quant-research.md
+ create mode 100644 docs/catalog/domains/quant-research.zh-TW.md
+ create mode 100644 docs/catalog/domains/web-fullstack.md
+ create mode 100644 docs/catalog/domains/web-fullstack.zh-TW.md
+ create mode 100644 docs/catalog/index.md
+ create mode 100644 docs/catalog/index.zh-TW.md
+ create mode 100644 docs/catalog/mcp/financialdatasets-ai.md
+ create mode 100644 docs/catalog/mcp/financialdatasets-ai.zh-TW.md
+ create mode 100644 docs/catalog/mcp/index.md
+ create mode 100644 docs/catalog/mcp/index.zh-TW.md
+ create mode 100644 docs/catalog/skill-collections.md
+ create mode 100644 docs/catalog/skill-collections.zh-TW.md
+ create mode 100644 docs/workflows/adding-catalog-entries.md
+ create mode 100644 docs/workflows/adding-catalog-entries.zh-TW.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:30Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:31Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect add-todo.sh interface
+
+`./scripts/add-todo.sh --help 2>&1 | head -40`
+
+```text
+Usage: add-todo.sh [OPTIONS] --priority {P1|P2|P3|P?} --effort {S|M|L|XL|?} \
+                             --title TEXT --description TEXT
+
+Insert a canonically-formatted entry into TODO.md under the matching ## P*
+lane. The validator (todo-kanban.sh) is re-run after the edit; if validation
+fails, the original TODO.md is restored.
+
+Required:
+  --priority {P1|P2|P3|P?}    Lane to insert into.
+  --effort {S|M|L|XL|?}       Effort tag. `?` is only valid with `P?`.
+  --title TEXT                Item title. Must not contain `*`.
+  --description TEXT          Item description (free-form after the em-dash).
+
+Options:
+  --backlog                   Also scaffold backlog/<slug>.md from the
+                              project-knowledge-harness backlog template
+                              and append ` → [research](backlog/<slug>.md)`
+                              to the new TODO line.
+  --slug SLUG                 Override the auto-derived backlog slug.
+  --file PATH                 TODO file (default: TODO.md).
+  --backlog-dir DIR           Where to write the backlog doc (default: backlog).
+  --template PATH             Path to backlog-doc.md.template
+                              (default: looked up next to this script then
+                              under skills/local/project-knowledge-harness/assets/).
+  --validator PATH            Path to todo-kanban.sh
+                              (default: sibling script).
+  --dry-run                   Print the rewritten TODO.md to stdout and the
+                              would-be backlog doc, do not modify files.
+  -h, --help                  Show this help and exit.
+
+Exit codes:
+  0  TODO entry written and validation passed.
+  1  Bad input / file not found / validation failure / template missing.
+  2  Usage error.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:41Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add catalog frontmatter validator TODO
+
+```bash
+./scripts/add-todo.sh --priority P3 --effort S \
+  --title "Catalog frontmatter validator script" \
+  --description "Add scripts/validate-catalog-frontmatter.sh to lint required YAML keys (name, slug, upstream_url, transport, auth, hosting, domain, status, license, last_verified) on every docs/catalog/mcp/*.md and verify the domain: field references an existing docs/catalog/domains/*.md hub. Wire into a Make target. Build when 5+ MCP entries justify the maintenance."
+```
+
+```text
+Added to ## P3: - [ ] **[S] Catalog frontmatter validator script** — Add scripts/validate-catalog-frontmatter.sh to lint required YAML keys (name, slug, upstream_url, transport, auth, hosting, domain, status, license, last_verified) on every docs/catalog/mcp/*.md and verify the domain: field references an existing docs/catalog/domains/*.md hub. Wire into a Make target. Build when 5+ MCP entries justify the maintenance.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:51Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add MCP index regenerator TODO
+
+```bash
+./scripts/add-todo.sh --priority P3 --effort S \
+  --title "MCP wiki index auto-regenerator" \
+  --description "Read frontmatter from each docs/catalog/mcp/*.md and regenerate the entries table inside docs/catalog/mcp/index.md between marker comments (similar to how todo-kanban renders). Saves manual table edits as the wiki grows. Build when 5+ MCP entries make hand-editing painful."
+```
+
+```text
+Added to ## P3: - [ ] **[S] MCP wiki index auto-regenerator** — Read frontmatter from each docs/catalog/mcp/*.md and regenerate the entries table inside docs/catalog/mcp/index.md between marker comments (similar to how todo-kanban renders). Saves manual table edits as the wiki grows. Build when 5+ MCP entries make hand-editing painful.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:16:54Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add cross-link audit TODO
+
+```bash
+./scripts/add-todo.sh --priority P3 --effort M \
+  --title "Catalog cross-link audit script" \
+  --description "Add scripts/audit-catalog-links.sh: every entry with status: vendored should resolve to a real vendor.yaml line; every status: deferred should resolve to a TODO.md item; every domain hub linked from a catalog entry should exist. Catches drift between catalog and the sources of truth. Run after make sync."
+```
+
+```text
+Added to ## P3: - [ ] **[M] Catalog cross-link audit script** — Add scripts/audit-catalog-links.sh: every entry with status: vendored should resolve to a real vendor.yaml line; every status: deferred should resolve to a TODO.md item; every domain hub linked from a catalog entry should exist. Catches drift between catalog and the sources of truth. Run after make sync.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:01Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add AI/ML research series TODO
+
+```bash
+./scripts/add-todo.sh --priority "P?" --effort M \
+  --title "AI/ML research skills series in vendor.yaml" \
+  --description "Once 3+ candidates from Orchestra-Research/AI-research-SKILLs (98 skills, 23 categories) are vetted via the new AI/ML Research catalog hub, create a P? ai-ml-research series in vendor.yaml mirroring fullstack-nextjs. Cherry-pick rather than wholesale; some skills overlap with existing local skills (mlflow-tracking, dvc-ml-workflow)."
+```
+
+```text
+Added to ## P?: - [ ] **[?/M] AI/ML research skills series in vendor.yaml** — Once 3+ candidates from Orchestra-Research/AI-research-SKILLs (98 skills, 23 categories) are vetted via the new AI/ML Research catalog hub, create a P? ai-ml-research series in vendor.yaml mirroring fullstack-nextjs. Cherry-pick rather than wholesale; some skills overlap with existing local skills (mlflow-tracking, dvc-ml-workflow).
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:05Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add financial-services vendoring decision TODO
+
+```bash
+./scripts/add-todo.sh --priority "P?" --effort M \
+  --title "Decide on vendoring anthropics/financial-services subsets" \
+  --description "Currently wishlist in the Finance hub. Decide whether to vendor any specific plugins (financial-analysis is the highest-value entry: DCF, LBO, comps, 3-statement + 11 MCP connectors) or stay with manual install. Most plugins assume Cowork / Managed Agents deployment, not solo Claude Code — verify per-plugin compatibility before vendoring."
+```
+
+```text
+Added to ## P?: - [ ] **[?/M] Decide on vendoring anthropics/financial-services subsets** — Currently wishlist in the Finance hub. Decide whether to vendor any specific plugins (financial-analysis is the highest-value entry: DCF, LBO, comps, 3-statement + 11 MCP connectors) or stay with manual install. Most plugins assume Cowork / Managed Agents deployment, not solo Claude Code — verify per-plugin compatibility before vendoring.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:17Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate TODO.md and show changes
+
+`./scripts/todo-kanban.sh --validate-only && git diff --stat HEAD && git status -s`
+
+```text
+OK: TODO.md passes project-knowledge-harness format
+ ...2026-05-13_01-24-02Z-skills-https-github-com.md | 259 +++++++++++++++++++++
+ TODO.md                                            |   5 +
+ 2 files changed, 264 insertions(+)
+ M .specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md
+ M TODO.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:23Z)**_
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:27Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit TODO follow-ups
+
+```bash
+git add TODO.md .specstory/history/2026-05-13_01-24-02Z-skills-https-github-com.md && git commit -m "$(cat <<'EOF'
+docs(todo): queue 5 catalog follow-ups (validator, regenerator, audit, series, vendoring decision)
+
+Three P3 script items (frontmatter validator, MCP index regenerator,
+cross-link audit) and two P? evaluations (AI/ML series cherry-pick from
+Orchestra-Research, financial-services vendoring decision) — all
+deferred until catalog usage justifies the maintenance cost.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)" && git log --oneline -3
+```
+
+```text
+[main 847e031] docs(todo): queue 5 catalog follow-ups (validator, regenerator, audit, series, vendoring decision)
+ 2 files changed, 284 insertions(+)
+847e031 docs(todo): queue 5 catalog follow-ups (validator, regenerator, audit, series, vendoring decision)
+f6c99b4 docs(catalog): add Catalog (domains + external skills + MCP wiki)
+4fda39a vendor: add 6 Warp Oz skills + reference doc (en + zh-TW)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-7 2026-05-13 02:17:35Z)**_
+
+Both commits landed cleanly:
+
+- **`f6c99b4` docs(catalog)** — 35 files: catalog tree (domains + MCP wiki + skill-collections), workflow doc, snippets, mkdocs.yml + Collections.md + README.md + docs/index.md + CLAUDE.md edits, both languages, plus the plan and SpecStory transcript.
+- **`847e031` docs(todo)** — 5 follow-ups added under the right lanes; `make kanban` validates clean.
+
+Nothing pushed to remote — branch is now 2 commits ahead of `origin/main`. Push when you're ready, or let me know if you want one of the P3 follow-ups (frontmatter validator, MCP index regenerator, cross-link audit) tackled now while the structure is fresh.
