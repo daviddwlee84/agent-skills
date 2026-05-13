@@ -36,7 +36,7 @@ npx skills@latest add daviddwlee84/agent-skills/skills
     - [`streamlit-to-marimo`](skills/vendor/streamlit-to-marimo/) — from [marimo-team/skills](https://github.com/marimo-team/skills); convert Streamlit apps to marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/streamlit-to-marimo/))
     - [`anywidget`](skills/vendor/anywidget/) (frontmatter name: `anywidget-generator`) — from [marimo-team/skills](https://github.com/marimo-team/skills); generate anywidget components for marimo notebooks. ([docs](https://daviddwlee84.github.io/agent-skills/skills/anywidget/))
     - [`skill-creator`](skills/vendor/skill-creator/) — from [anthropics/skills](https://github.com/anthropics/skills); evaluate, benchmark, and optimize skill trigger descriptions. Complements local [`skill-author`](skills/local/skill-author/). ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-creator/))
-  - Series **`fullstack-nextjs`** — Next.js (App Router) + Supabase (Postgres) + shadcn/ui + Tailwind CSS + design/testing skills, all from official orgs. See the [series overview](https://daviddwlee84.github.io/agent-skills/skills/#fullstack-next-js-series).
+  - Series **`fullstack-nextjs`** — Next.js (App Router) + Supabase (Postgres) + shadcn/ui + Tailwind CSS + design/testing skills, all from official orgs. See the [series overview](https://daviddwlee84.github.io/agent-skills/skills/#fullstack-nextjs-series).
     - [`nextjs`](skills/vendor/fullstack-nextjs/nextjs/) — Next.js App Router expert from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
     - [`shadcn`](skills/vendor/fullstack-nextjs/shadcn/) — shadcn/ui CLI + components from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
     - [`react-best-practices`](skills/vendor/fullstack-nextjs/react-best-practices/) — TSX reviewer (70+ rules) from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)
@@ -150,33 +150,15 @@ See [Creating local skills](https://daviddwlee84.github.io/agent-skills/workflow
 
 ## Resources
 
-### Skills managers
+The full curated index of upstream skill collections, MCP servers, and
+domain-specific hubs lives in the docs site:
 
-- [vercel-labs/skills](https://github.com/vercel-labs/skills) — `npx skills` itself
-  - [The Agent Skills Directory](https://skills.sh/)
-- [Skill.Fish](https://www.skill.fish/) — alternative skill manager
-  - [knoxgraeme/skillfish](https://github.com/knoxgraeme/skillfish)
+📚 **[Catalog](https://daviddwlee84.github.io/agent-skills/catalog/)** —
+external skill collections, per-domain hubs (Finance, Quant Research, AI/ML
+Research, Web & Fullstack, Knowledge Work, Agent Harness), and an MCP wiki.
 
-### Curated skill collections
+Highlights:
 
-- [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills/tree/main)
-- [mattpocock/skills](https://github.com/mattpocock/skills)
-- [anthropics/skills](https://github.com/anthropics/skills)
-- [anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins/tree/main)
-- [marimo-team/skills](https://github.com/marimo-team/skills)
-- [streamlit/agent-skills](https://github.com/streamlit/agent-skills)
-- [RKiding/Awesome-finance-skills](https://github.com/RKiding/Awesome-finance-skills)
-- [Orchestra-Research/AI-Research-SKILLs](https://github.com/Orchestra-Research/AI-research-SKILLs)
-
-### Articles
-
-- [Building Agent Skills with skill-creator](https://medium.com/google-cloud/building-agent-skills-with-skill-creator-855f18e785cf)
-- [Introducing: React Best Practices (Vercel)](https://vercel.com/blog/introducing-react-best-practices) — paired with [`react-best-practices`](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices)
-- [Six skills for financial service professionals (Claude)](https://claude.com/resources/tutorials/claude-for-financial-services-skills)
-
-### Skill candidates
-
-- [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-agents)
-- [The Twelve-Factor App](https://12factor.net/)
-- [FrancyJGLisboa/agent-skill-creator](https://github.com/FrancyJGLisboa/agent-skill-creator)
-- [find-skills (vercel-labs/skills)](https://skills.sh/vercel-labs/skills/find-skills)
+- [Skill collections index](https://daviddwlee84.github.io/agent-skills/catalog/skill-collections/) — every upstream we track, with `vendored / deferred / skipped / evaluated / wishlist` status per entry.
+- [Finance hub](https://daviddwlee84.github.io/agent-skills/catalog/domains/finance/) — covers `anthropics/financial-services`, `RKiding/Awesome-finance-skills`, the [Financial Datasets MCP](https://daviddwlee84.github.io/agent-skills/catalog/mcp/financialdatasets-ai/), and more.
+- [Adding catalog entries workflow](https://daviddwlee84.github.io/agent-skills/workflows/adding-catalog-entries/) — how to record an external skill / MCP / domain decision.

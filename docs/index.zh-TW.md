@@ -41,6 +41,7 @@ validator / promoter / inbox 工具組。
 | 自己寫一個 local skill | [Creating local skills](workflows/creating-local-skills.md) |
 | 在你的 project 裡記錄 TODO 或 pitfall | [Project memory workflow](workflows/project-memory.md) |
 | 瀏覽現有的 skill | [Skills 總覽](skills/index.md) |
+| 瀏覽外部 skill、MCP、領域 (domain) hub | [Catalog](catalog/index.md) |
 | 為自己的 project 建立 docs 站 (site) | [Downstream docs stack recipe](reference/docs-stack-recipe.md) |
 
 ## 給 AI assistant 的入口

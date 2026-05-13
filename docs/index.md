@@ -36,6 +36,7 @@ validator/promoter/inbox toolkit.
 | Author a new local skill | [Creating local skills](workflows/creating-local-skills.md) |
 | Capture a TODO or pitfall in a project | [Project memory workflow](workflows/project-memory.md) |
 | Browse what skills exist | [Skills overview](skills/index.md) |
+| Browse external skills, MCPs, domain hubs | [Catalog](catalog/index.md) |
 | Build a docs site for your own project | [Downstream docs stack recipe](reference/docs-stack-recipe.md) |
 
 ## For AI assistants

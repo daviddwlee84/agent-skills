@@ -58,6 +58,10 @@ plugins:
           - workflows/*.md
         Skills:
           - skills/*.md
+        Catalog:
+          - catalog/*.md
+          - catalog/domains/*.md
+          - catalog/mcp/*.md
         Reference:
           - reference/*.md
         Changelog:
@@ -99,6 +103,7 @@ nav:
   - Workflows:
       - Adding vendor skills: workflows/adding-vendor-skills.md
       - Creating local skills: workflows/creating-local-skills.md
+      - Adding catalog entries: workflows/adding-catalog-entries.md
       - Project memory: workflows/project-memory.md
   - Skills:
       - Overview: skills/index.md
@@ -128,6 +133,20 @@ nav:
               - web-design-guidelines: skills/web-design-guidelines.md
               - frontend-design: skills/frontend-design.md
               - webapp-testing: skills/webapp-testing.md
+  - Catalog:
+      - Overview: catalog/index.md
+      - Domains:
+          - Overview: catalog/domains/index.md
+          - Finance: catalog/domains/finance.md
+          - Quant Research: catalog/domains/quant-research.md
+          - AI/ML Research: catalog/domains/ai-ml-research.md
+          - Web & Fullstack: catalog/domains/web-fullstack.md
+          - Knowledge Work: catalog/domains/knowledge-work.md
+          - Agent Harness: catalog/domains/agent-harness.md
+      - External skills: catalog/skill-collections.md
+      - MCP wiki:
+          - Overview: catalog/mcp/index.md
+          - Financial Datasets: catalog/mcp/financialdatasets-ai.md
   - Reference:
       - TODO format: reference/todo-format.md
       - Tag schema: reference/tag-schema.md
@@ -150,6 +169,8 @@ extra:
       link: https://github.com/daviddwlee84/agent-skills
 # `_snippets/` are meant to be included via pymdownx.snippets, never
 # rendered as their own page. `not_in_nav` suppresses the INFO warning.
+# `_snippets/domain-hub-template.md` lives there so it's not picked up
+# by the `catalog/domains/*.md` llmstxt glob.
 not_in_nav: |
   /_snippets/
 # Validation: keep strict mode useful but don't fail on links to files

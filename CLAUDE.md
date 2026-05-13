@@ -140,6 +140,46 @@ item, also mark it as shipped (don't delete — keep it as historical record).
 Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
 when it contains items from a previous calendar year or grows past 20 entries.
 
+### External skill / MCP / domain catalog -> `docs/catalog/`
+
+`docs/catalog/` is the vendoring decision log + external-awareness
+registry, separate from `Skills` (what we ship) and `Reference` (our
+own conventions). It has three subareas:
+
+- `docs/catalog/domains/` — per-domain hub pages (one per professional
+  domain: Finance, Quant Research, AI/ML Research, Web & Fullstack,
+  Knowledge Work, Agent Harness). Each hub aggregates local + vendored
+  + external skills + MCPs relevant to that domain. New hubs copy
+  [`docs/_snippets/domain-hub-template.md`](docs/_snippets/domain-hub-template.md).
+- `docs/catalog/skill-collections.md` — single curated index of all
+  upstream skill collections (Anthropic, Vercel, Supabase, marimo,
+  Warp Oz, Orchestra-Research, etc.) with status per entry. Replaces
+  the historical `Collections.md` (kept as a stub).
+- `docs/catalog/mcp/` — MCP wiki, modeled after Karpathy's
+  [LLM Wiki pattern](docs/reference/llm-wiki-pattern.md). One markdown
+  file per MCP with required YAML frontmatter
+  (`name / slug / upstream_url / transport / auth / hosting / domain /
+  status / license / last_verified`).
+
+Every external entry carries a status enum (single source of truth in
+`docs/_snippets/external-install.md`):
+
+| Status | Meaning |
+|---|---|
+| `vendored` | In `vendor.yaml` — link to the entry. |
+| `deferred` | Open `TODO P?` item — link to it. |
+| `skipped` | Looked at, chose not to vendor — inline reason required. |
+| `evaluated` | Read but no decision — 1-line note. |
+| `wishlist` | Surfaced but not yet evaluated — default for fresh discoveries. |
+
+Status changes trigger existing scripts:
+`wishlist → deferred` runs `add-todo.sh`; `deferred → vendored` runs
+`add-vendor.sh` + optionally `promote-todo.sh`. Full recipe in
+[`docs/workflows/adding-catalog-entries.md`](docs/workflows/adding-catalog-entries.md).
+
+Every published catalog page is bilingual (`*.md` + `*.zh-TW.md`).
+Snippets and `_template.md` are EN-only by convention.
+
 ### Past pitfalls -> `pitfalls/`
 
 When a debugging session uncovers a non-obvious trap that could realistically be
