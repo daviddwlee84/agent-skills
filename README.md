@@ -132,21 +132,36 @@ If you want to apply the same docs stack to your own project, see [Downstream do
 
 ## Adding a new local skill
 
-Use the bundled scaffolder (recommended — seeds the agentskills.io best-practice template):
+Use the bundled scaffolder (recommended — seeds the agentskills.io best-practice
+template **and** fans out discovery symlinks for non-universal agents):
 
 ```bash
+# Auto-detects scope: LOCAL (this repo) / PROJECT (another git repo) / GLOBAL (~/).
 bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+
+# Override scope explicitly when intent isn't obvious:
+bash skills/local/skill-author/scripts/new-skill.sh --project <skill-name>
+bash skills/local/skill-author/scripts/new-skill.sh --global  <skill-name>
+
 bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
 ```
 
-Or with the upstream init:
+The scaffolder mirrors `npx skills add`'s placement contract — canonical
+content goes under `.agents/skills/<name>/` (read directly by Cursor /
+Codex / OpenCode / Warp / Gemini-CLI / Copilot), with relative symlinks
+fanned out to `.claude/skills/` and any other already-present
+non-universal agent dir. In this repo (LOCAL mode) the canonical lives
+in `skills/local/<name>/` and the symlinks point back at it. See
+[Creating local skills](https://daviddwlee84.github.io/agent-skills/workflows/creating-local-skills/)
+for the full scope table.
+
+Or, just the SKILL.md skeleton via the upstream init (no symlinks, no
+`references/` / `scripts/` / `assets/`):
 
 ```bash
 cd skills/local
 npx skills@latest init [skill-name]
 ```
-
-See [Creating local skills](https://daviddwlee84.github.io/agent-skills/workflows/creating-local-skills/) for the layout rules and authoring guidance.
 
 ## Resources
 

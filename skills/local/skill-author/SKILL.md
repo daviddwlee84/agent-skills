@@ -39,16 +39,35 @@ description, the workflow body, and the future eval set.
 
 ### 2. Scaffold
 
-Use `scripts/new-skill.sh` to produce the directory layout:
+Use `scripts/new-skill.sh` to produce the directory layout. The script
+auto-detects **scope** (where to put the skill) and fans out discovery
+symlinks for non-universal agents so the skill is loadable immediately.
 
 ```bash
 bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
-# creates: skills/local/<skill-name>/{SKILL.md,references/,scripts/,assets/}
-# seeds:   SKILL.md from assets/SKILL.md.template
 ```
+
+Three scopes (auto-detected; override with `--local` / `--project` / `--global`):
+
+| Scope | Canonical dir | Symlinks created |
+|---|---|---|
+| **LOCAL** (this publishing repo: vendor.yaml / skills/local/ found walking up) | `<repo>/skills/local/<name>/` (or `skills/vendor/<name>/` with `--vendor`) | `.agents/skills/<name>` + `.claude/skills/<name>` -> `../../skills/{local,vendor}/<name>` |
+| **PROJECT** (inside another git repo) | `<repo>/.agents/skills/<name>/` (universal agents — Cursor / Codex / OpenCode / Warp — pick this up directly) | `.claude/skills/<name>` -> `../../.agents/skills/<name>` (+ any already-present non-universal agent dir at the repo root) |
+| **GLOBAL** (no git repo found) | `~/.agents/skills/<name>/` | `~/.claude/skills/<name>` -> `../../.agents/skills/<name>` (+ any detected non-universal agent dir under `$HOME`) |
 
 The template's frontmatter has placeholders that lint will reject — this is on
 purpose so the agent can't forget to fill them in.
+
+> **Important**: When the user's intent is ambiguous (they're inside a git repo
+> but haven't said whether the skill should live with the project or be
+> available everywhere), **ask** "system-wide (`--global`) or just this
+> project (`--project`)?" before running the script. The script is
+> non-interactive — once you've picked a scope, files land and symlinks fan
+> out without further prompting.
+
+After running, the script emits a single JSON object on stdout with
+`{skill, mode, canonical, symlinks[], next_steps[]}` so you can chain
+follow-up actions deterministically.
 
 ### 3. Author the SKILL.md
 
@@ -122,11 +141,18 @@ skill runs test cases and benchmarks."
 
 ## Available scripts
 
-- **`scripts/new-skill.sh <name>`** — Scaffold `skills/local/<name>/` with
-  SKILL.md, references/, scripts/, assets/ from templates.
-  - Flags: `--vendor` (use `skills/vendor/<name>/` instead — rare, normally
-    vendored skills come via `vendor.yaml`); `--dry-run`; `--force` (overwrite
-    existing).
+- **`scripts/new-skill.sh <name>`** — Scaffold the canonical skill dir
+  (SKILL.md, references/, scripts/, assets/) and add discovery symlinks for
+  non-universal agents. Auto-detects scope (LOCAL / PROJECT / GLOBAL); see
+  table in step 2.
+  - Scope flags (mutually exclusive): `--local` (force this repo's
+    `skills/local/`), `--project` (force `<repo>/.agents/skills/`),
+    `--global` (force `~/.agents/skills/`).
+  - Other flags: `--vendor` (LOCAL only — `skills/vendor/<name>/` instead of
+    `skills/local/`; rare, vendored skills normally come via `vendor.yaml`);
+    `--root DIR` (override walk-up); `--no-symlinks` (skip the fan-out);
+    `--dry-run`; `--force` (overwrite existing canonical dir + replace
+    symlinks).
 - **`scripts/lint-skill.sh <skill-dir>`** — Run frontmatter, script hygiene,
   and reference reachability checks. Exit non-zero on any error.
   - Flags: `--strict` (treat warnings as errors); `--quiet` (only print failures).
@@ -173,6 +199,18 @@ Templates that `new-skill.sh` copies and that you can reference manually:
   If a stock Claude session handles the task in one turn without help, a skill
   adds context-window cost for no gain. Test the no-skill baseline before
   investing in authoring.
+- **Scope auto-detect can surprise you.** `new-skill.sh` walks up looking for
+  a publishing-repo anchor (`vendor.yaml` / `skills/local/` /
+  `skills/.claude-plugin/`) *first*, then a `.git`. If you ran it from inside
+  a clone of this repo while meaning to add a skill to your *other* project,
+  it'll silently land in `skills/local/`. Pass `--project` or `--global`
+  explicitly when intent isn't obvious, and prefer asking the user
+  system-wide-vs-project-wide before running.
+- **Discovery symlinks must be `../../`-relative**, not repo-root-relative —
+  POSIX resolves symlink targets relative to the link's own directory. The
+  script enforces this and verifies each link with `test -e <link>/SKILL.md`;
+  if you ever hand-create one, see
+  [`pitfalls/symlink-target-relative-to-symlink-not-cwd.md`](../../../pitfalls/symlink-target-relative-to-symlink-not-cwd.md).
 
 ## When the user is updating an existing skill (not creating new)
 

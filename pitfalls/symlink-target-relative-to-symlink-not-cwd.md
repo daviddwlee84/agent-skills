@@ -86,3 +86,14 @@ the non-existent `.agents/skills/skills/local/skill-author/`. Fixed in
 was probably auto-created by an earlier action — this is exactly the
 kind of "looks fine in `ls`" footgun that the validate-after-create
 discipline above prevents.
+
+## Now enforced by `new-skill.sh`
+
+[`skills/local/skill-author/scripts/new-skill.sh`](../skills/local/skill-author/scripts/new-skill.sh)
+always emits symlinks with a fixed `../../` prefix (canonical and link
+parent are both two levels under the same base dir in every scope —
+LOCAL, PROJECT, and GLOBAL) and immediately runs
+`test -e <link>/SKILL.md` after each `ln -s`. A dangling link aborts
+the script with exit 4, so this footgun cannot ship from the
+scaffolder. If you hand-edit symlinks, follow the same
+`../../<target-suffix>/<name>` shape and verify with `test -e`.

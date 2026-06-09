@@ -5,13 +5,41 @@ A local skill is a custom-authored skill maintained in this repo under
 
 ## Scaffold a new skill
 
+Use the bundled scaffolder (recommended — seeds the full agentskills.io
+best-practice layout and fans out the discovery symlinks for non-universal
+agents):
+
+```bash
+bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+```
+
+The script picks one of three **placement scopes** by walking up from your
+CWD; override with `--local` / `--project` / `--global` when intent isn't
+obvious:
+
+| Scope | Trigger | Canonical dir | Symlinks created |
+|---|---|---|---|
+| **LOCAL** | `vendor.yaml` / `skills/local/` / `skills/.claude-plugin/` found | `<repo>/skills/local/<name>/` (or `skills/vendor/` with `--vendor`) | `.agents/skills/<name>` + `.claude/skills/<name>` -> `../../skills/{local,vendor}/<name>` |
+| **PROJECT** | `.git` found | `<repo>/.agents/skills/<name>/` (universal agents — Cursor/Codex/OpenCode/Warp — pick this up directly) | `.claude/skills/<name>` -> `../../.agents/skills/<name>` (+ any non-universal agent dir already present at the repo root) |
+| **GLOBAL** | neither anchor, or `--global` | `~/.agents/skills/<name>/` | `~/.claude/skills/<name>` -> `../../.agents/skills/<name>` (+ any non-universal agent dir already present under `$HOME`) |
+
+This mirrors the placement contract of `npx skills add` (canonical content
+in `.agents/skills/` + relative symlinks into each non-universal agent's
+home), so a skill scaffolded here will be picked up by Claude Code,
+Cursor, Codex, OpenCode, Warp, etc. without any extra wiring. See
+[`docs/reference/npx-skills-metadata.md`](../reference/npx-skills-metadata.md)
+for the upstream mechanism.
+
+Alternative (just the SKILL.md skeleton, no symlinks, no `references/` /
+`scripts/` / `assets/`):
+
 ```bash
 cd skills/local
 npx skills@latest init [skill-name]
 ```
 
-This creates `skills/local/<skill-name>/SKILL.md` with the required YAML
-frontmatter (`name`, `description`).
+This creates only `skills/local/<skill-name>/SKILL.md` with the required
+YAML frontmatter (`name`, `description`).
 
 Before writing the description, check the repo's
 [Agent skill compatibility](../reference/agent-skill-compatibility.md) policy.

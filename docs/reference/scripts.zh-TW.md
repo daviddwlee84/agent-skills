@@ -166,3 +166,75 @@ skills/local/project-knowledge-harness/scripts/init.sh \
 對任何目標 repo 一次設置 `TODO.md` + `backlog/` + `pitfalls/` +
 agent 指引片段 + README 片段。Idempotent。完整 flag 列表見
 [`project-knowledge-harness`](../skills/project-knowledge-harness.md)。
+
+## Skill authoring
+
+跟著 [`skill-author`](../skills/skill-author.md) 一起出貨；canonical
+位於
+[`skills/local/skill-author/scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/skill-author/scripts)。
+**沒有**鏡射到頂層 `scripts/`，因為這是 skill author 用的工具，不是 repo
+範圍的 make target。
+
+### `new-skill.sh`
+
+```bash
+bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+bash skills/local/skill-author/scripts/new-skill.sh --project my-skill
+bash skills/local/skill-author/scripts/new-skill.sh --global my-skill
+bash skills/local/skill-author/scripts/new-skill.sh --local --vendor cherry-picked
+bash skills/local/skill-author/scripts/new-skill.sh --dry-run my-skill
+```
+
+從 template scaffold 出 canonical 的 skill 目錄（`SKILL.md` +
+`references/` + `scripts/` + `assets/`），並為 non-universal agents 加上
+**相對 (relative)** 的 discovery symlinks。Script 從 CWD 往上走自動挑
+placement scope；顯式 flag 可覆寫。
+
+Placement scopes（完整表格見
+[creating local skills](../workflows/creating-local-skills.md)）：
+
+- **LOCAL** —— 往上找到 publishing-repo anchor（`vendor.yaml` /
+  `skills/local/` / `skills/.claude-plugin/`）。Canonical 放在
+  `<repo>/skills/local/<name>/`（搭 `--vendor` 則放 `skills/vendor/`）；
+  symlinks 給 `.agents/skills/` 跟 `.claude/skills/`。
+- **PROJECT** —— 往上找到 `.git`。Canonical 放在
+  `<repo>/.agents/skills/<name>/`；symlink 給 `.claude/skills/<name>`
+  （加上 repo root 已存在的其他 non-universal agent dir）。
+- **GLOBAL** —— 找不到 anchor 或顯式 `--global`。Canonical 放在
+  `~/.agents/skills/<name>/`；symlinks 給 `~/.claude/skills/<name>` 跟
+  `$HOME` 下已存在的其他 non-universal agent dir。
+
+Symlink fan-out 遵循 `npx skills add` 的紀律：「claude-code 永遠加；其他
+agent 只在它的 config root 已存在於 base dir 時才加」——絕不為使用者
+其實沒在用的 agent 建立新的 `.windsurf/` 之類目錄。每個 symlink
+建立後會用 `test -e <link>/SKILL.md` 驗證；dangling link 直接 exit 4。
+
+Flags：
+
+- `--local` / `--project` / `--global` —— 強制 scope（互斥）。
+- `--vendor` —— 只在 LOCAL 有效；改用 `skills/vendor/<name>/`。
+- `--root DIR` —— 覆寫 walk-up 起點。
+- `--no-symlinks` —— 跳過 agent dir fan-out。
+- `--dry-run` —— 印出所有動作但不寫檔。
+- `--force` —— 覆寫 canonical dir 並取代已存在的 symlinks。
+
+Output：stdout 單一 JSON 物件
+（`{skill, mode, canonical, symlinks[], next_steps[]}`）；prose 走
+stderr。
+
+Exit codes：`0` ok；`1` 參數錯誤；`2` canonical dir 已存在（用
+`--force`）；`3` scope 前提沒過（例如 `--project` 卻不在 git repo
+裡）；`4` 寫完 symlink 驗證失敗（就是
+[symlink-target-relative 那個坑](../reference/pitfalls.md)）。
+
+### `lint-skill.sh`
+
+```bash
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<name>
+bash skills/local/skill-author/scripts/lint-skill.sh --strict skills/local/<name>
+bash skills/local/skill-author/scripts/lint-skill.sh --json   skills/local/<name>
+```
+
+檢查一個 skill 目錄的 frontmatter + 長度、script hygiene
+（shebang / +x / `--help` handler）、reference 可達性。完整 checklist
+見 [`skill-author`](../skills/skill-author.md)。

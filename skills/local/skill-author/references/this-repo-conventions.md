@@ -22,8 +22,47 @@ skills/
 - **New skills authored here go in `skills/local/`.** Always.
 - **Don't manually edit anything in `skills/vendor/`** — it gets overwritten by
   the next `make sync`. Upstream changes go through `vendor.yaml` + `make sync`.
-- The legacy `.agents/skills/` directory exists for compatibility with skill
-  consumers that look there. Don't add new skills under it.
+- **`.agents/skills/` and `.claude/skills/` at the repo root are active
+  discovery-symlink farms**, not legacy. Each entry under them is a relative
+  symlink (`../../skills/local/<name>` or `../../skills/vendor/<name>`) so
+  that Cursor / Codex / Warp / OpenCode (`.agents/skills/`) and Claude Code
+  (`.claude/skills/`) can dogfood the skills authored in this repo. The
+  `new-skill.sh` scaffolder creates these symlinks automatically in **LOCAL
+  mode**; never add new *canonical* skill content directly under them here.
+
+## `new-skill.sh` placement scopes
+
+`scripts/new-skill.sh` supports three placement scopes that mirror the
+behavior of `npx skills add` (`vercel-labs/skills`). Auto-detection
+precedence (when no flag given):
+
+1. **LOCAL** — publishing-repo anchor (`vendor.yaml`, `skills/local/`, or
+   `skills/.claude-plugin/marketplace.json`) found walking up. This is the
+   default *inside this very repo*. Canonical content lives in
+   `<repo>/skills/local/<name>/` (or `skills/vendor/<name>/` with
+   `--vendor`); the script adds the `.agents/skills/` + `.claude/skills/`
+   discovery symlinks for you.
+2. **PROJECT** — a git root found walking up. Canonical content goes to
+   `<repo>/.agents/skills/<name>/` (universal agents like Cursor / Codex /
+   OpenCode / Warp / Gemini-CLI / Copilot read this directly); a relative
+   symlink `<repo>/.claude/skills/<name> -> ../../.agents/skills/<name>` is
+   added for Claude Code, plus links for any other non-universal agent dir
+   (e.g. `.windsurf/`, `.continue/`) that already exists at the repo root.
+3. **GLOBAL** — neither anchor found, or `--global` forced. Same shape as
+   PROJECT but rooted at `$HOME`: canonical at `~/.agents/skills/<name>/`,
+   plus `~/.claude/skills/<name>` and any other already-present
+   `~/.<agent>/skills/` link.
+
+The fan-out rule is "claude-code always, others only if their config root
+already exists at the base dir" — this mirrors `npx skills add`'s
+"don't create `.windsurf/` unless the project already uses Windsurf"
+behavior. The script never creates a new top-level agent home dir.
+
+Symlinks are always *relative* with a fixed `../../` prefix because both
+the link's parent (`.../skills/`) and the canonical dir
+(`.../.agents/skills/` or `.../skills/local/`) are exactly two levels under
+the base dir. See [`pitfalls/symlink-target-relative-to-symlink-not-cwd.md`](../../../../pitfalls/symlink-target-relative-to-symlink-not-cwd.md)
+for the historical bug this convention prevents.
 
 ## Skill discovery
 

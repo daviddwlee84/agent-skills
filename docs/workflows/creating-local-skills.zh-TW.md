@@ -11,12 +11,37 @@ Local skill 是這個 repo 內、放在
 
 ## 起手新 skill
 
+建議用內建的 scaffolder（會把 agentskills.io best-practice 的完整佈局
+seed 好，並自動為 non-universal agents 建立 discovery symlinks）：
+
+```bash
+bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+```
+
+Script 會從 CWD 往上走，自動挑一個**安置範圍 (placement scope)**；
+意圖不明確時用 `--local` / `--project` / `--global` 顯式覆寫：
+
+| Scope | 觸發條件 | Canonical dir | 建立的 Symlinks |
+|---|---|---|---|
+| **LOCAL** | 往上找到 `vendor.yaml` / `skills/local/` / `skills/.claude-plugin/` | `<repo>/skills/local/<name>/`（搭 `--vendor` 則放 `skills/vendor/`） | `.agents/skills/<name>` + `.claude/skills/<name>` -> `../../skills/{local,vendor}/<name>` |
+| **PROJECT** | 往上找到 `.git` | `<repo>/.agents/skills/<name>/`（universal agents——Cursor/Codex/OpenCode/Warp——會直接讀） | `.claude/skills/<name>` -> `../../.agents/skills/<name>`（再加上 repo root 已存在的其他 non-universal agent dir） |
+| **GLOBAL** | 找不到任何 anchor 或 `--global` | `~/.agents/skills/<name>/` | `~/.claude/skills/<name>` -> `../../.agents/skills/<name>`（再加上 `$HOME` 下已存在的其他 non-universal agent dir） |
+
+這跟 `npx skills add` 的 placement contract 一致（canonical 內容放在
+`.agents/skills/`，再用相對 symlinks 連到各 non-universal agent 的家），
+所以在這裡 scaffold 出來的 skill，Claude Code、Cursor、Codex、OpenCode、
+Warp 等都能自動 pick up，不用再手動接線。完整機制見
+[`docs/reference/npx-skills-metadata.md`](../reference/npx-skills-metadata.md)。
+
+備選方案（僅 SKILL.md skeleton，無 symlinks、無 `references/` /
+`scripts/` / `assets/`）：
+
 ```bash
 cd skills/local
 npx skills@latest init [skill-name]
 ```
 
-這會建立 `skills/local/<skill-name>/SKILL.md`，包含必要的 YAML
+這只會建立 `skills/local/<skill-name>/SKILL.md`，包含必要的 YAML
 frontmatter（`name`、`description`）。
 
 寫 description 前，先看這個 repo 的

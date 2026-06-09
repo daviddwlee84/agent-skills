@@ -166,3 +166,76 @@ One-shot setup of `TODO.md` + `backlog/` + `pitfalls/` + agent guidance
 snippet + README snippet for any target repo. Idempotent. See
 [`project-knowledge-harness`](../skills/project-knowledge-harness.md) for
 the full flag list.
+
+## Skill authoring
+
+These ship with [`skill-author`](../skills/skill-author.md); the canonical
+copies live at
+[`skills/local/skill-author/scripts/`](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/skill-author/scripts).
+Not mirrored to top-level `scripts/` because they're agent-author tooling,
+not repo-wide make targets.
+
+### `new-skill.sh`
+
+```bash
+bash skills/local/skill-author/scripts/new-skill.sh <skill-name>
+bash skills/local/skill-author/scripts/new-skill.sh --project my-skill
+bash skills/local/skill-author/scripts/new-skill.sh --global my-skill
+bash skills/local/skill-author/scripts/new-skill.sh --local --vendor cherry-picked
+bash skills/local/skill-author/scripts/new-skill.sh --dry-run my-skill
+```
+
+Scaffolds the canonical skill directory (`SKILL.md` + `references/` +
+`scripts/` + `assets/` from templates) and adds *relative* discovery
+symlinks for non-universal agents. Auto-detects placement scope by walking
+up from CWD; explicit flags override.
+
+Placement scopes (see
+[creating local skills](../workflows/creating-local-skills.md) for the
+full table):
+
+- **LOCAL** — publishing-repo anchor (`vendor.yaml` / `skills/local/` /
+  `skills/.claude-plugin/`) found. Canonical at `<repo>/skills/local/<name>/`
+  (or `skills/vendor/` with `--vendor`); symlinks for `.agents/skills/` and
+  `.claude/skills/`.
+- **PROJECT** — `.git` found. Canonical at `<repo>/.agents/skills/<name>/`;
+  symlink for `.claude/skills/<name>` (+ any already-present non-universal
+  agent dir at the repo root).
+- **GLOBAL** — neither anchor, or `--global`. Canonical at
+  `~/.agents/skills/<name>/`; symlinks for `~/.claude/skills/<name>` and
+  any other already-present non-universal agent dir under `$HOME`.
+
+The symlink fan-out matches `npx skills add`'s discipline: "claude-code
+always, others only if their config root dir already exists at the base
+dir" — never creates `.windsurf/` or similar for agents the user doesn't
+actually use. Each created symlink is post-write verified with
+`test -e <link>/SKILL.md`; a dangling link aborts with exit 4.
+
+Flags:
+
+- `--local` / `--project` / `--global` — force scope (mutually exclusive).
+- `--vendor` — LOCAL only; use `skills/vendor/<name>/`.
+- `--root DIR` — override walk-up start dir.
+- `--no-symlinks` — skip the agent-dir fan-out.
+- `--dry-run` — print every action without writing.
+- `--force` — overwrite the canonical dir and replace any existing symlinks.
+
+Output: single JSON object on stdout
+(`{skill, mode, canonical, symlinks[], next_steps[]}`); prose on stderr.
+
+Exit codes: `0` ok; `1` invalid args; `2` canonical dir already exists
+(use `--force`); `3` scope precondition failed (e.g. `--project` outside
+a git repo); `4` post-write symlink verification failed (the
+[symlink-target-relative footgun](../reference/pitfalls.md)).
+
+### `lint-skill.sh`
+
+```bash
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<name>
+bash skills/local/skill-author/scripts/lint-skill.sh --strict skills/local/<name>
+bash skills/local/skill-author/scripts/lint-skill.sh --json   skills/local/<name>
+```
+
+Lints a skill directory for frontmatter + length, script hygiene
+(shebang / +x / `--help` handler), and reference reachability. See
+[`skill-author`](../skills/skill-author.md) for the full checklist.
