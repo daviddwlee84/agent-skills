@@ -1,0 +1,42 @@
+"""Auth routes: register + token login. Thin — translation only."""
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+from app.api.deps import SettingsDep, UserServiceDep
+from app.core.security import create_access_token
+from app.schemas.auth import Token, UserCreate, UserRead
+from app.services.user_service import EmailAlreadyExists
+
+router = APIRouter()
+
+
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def register(payload: UserCreate, service: UserServiceDep) -> UserRead:
+    try:
+        user = service.register(payload.email, payload.password)
+    except EmailAlreadyExists as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        ) from exc
+    return user
+
+
+@router.post("/login", response_model=Token)
+def login(
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    service: UserServiceDep,
+    settings: SettingsDep,
+) -> Token:
+    # Generic message for both unknown email and wrong password (no account-existence leak).
+    user = service.authenticate(form.username, form.password)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+        )
+    return Token(access_token=create_access_token(str(user.id), settings))

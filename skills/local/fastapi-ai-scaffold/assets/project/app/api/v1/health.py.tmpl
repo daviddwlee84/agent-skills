@@ -1,0 +1,38 @@
+"""Liveness and readiness — different questions, different probes.
+
+/health: is the process up? Trivially cheap, no dependencies. Conflating this
+with dependency checks causes restart storms when a dependency blips.
+/ready: can it serve traffic now? Checks the DB and that the model is warm.
+"""
+from __future__ import annotations
+
+from fastapi import APIRouter, Request, Response, status
+from sqlalchemy import text
+
+from app.db.session import Session
+
+router = APIRouter()
+
+
+@router.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
+@router.get("/ready")
+def ready(request: Request, response: Response) -> dict:
+    checks = {"model": False, "database": False}
+
+    checks["model"] = getattr(request.app.state, "model", None) is not None
+
+    try:
+        with Session(request.app.state.db_engine) as session:
+            session.execute(text("SELECT 1"))
+        checks["database"] = True
+    except Exception:
+        checks["database"] = False
+
+    ok = all(checks.values())
+    if not ok:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return {"status": "ready" if ok else "not ready", "checks": checks}

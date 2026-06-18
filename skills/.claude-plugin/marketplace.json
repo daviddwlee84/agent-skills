@@ -92,6 +92,19 @@
       ]
     },
     {
+      "name": "fastapi-ai",
+      "description": "Production FastAPI for AI/ML serving: a pattern + gotcha guide, a clean-architecture project scaffolder, and an interview question bank",
+      "category": "Web",
+      "tags": ["fastapi", "ai", "llm", "rag", "python", "backend"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/fastapi-ai-patterns",
+        "./local/fastapi-ai-scaffold",
+        "./local/fastapi-ai-interview-prep"
+      ]
+    },
+    {
       "name": "engineering-fundamentals",
       "description": "Matt Pocock's small, composable skills for real engineering: grilling, TDD, diagnosis, architecture care, and PRD/issue breakdown",
       "category": "Engineering",

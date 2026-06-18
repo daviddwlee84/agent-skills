@@ -1,0 +1,69 @@
+"""Test fixtures.
+
+We bypass the real lifespan and inject test doubles onto app.state, then use
+dependency_overrides to redirect the DB session and settings — the same declared
+seams production wiring uses. Overrides are cleared in teardown so state never
+leaks between tests.
+"""
+from __future__ import annotations
+
+import httpx
+import pytest
+from fastapi.testclient import TestClient
+from sqlmodel import Session
+
+from app.config import Settings, get_settings
+from app.db.session import create_db_engine, get_session, init_db
+from app.main import app
+from app.ml.model import load_model
+
+
+@pytest.fixture(name="engine")
+def engine_fixture():
+    engine = create_db_engine("sqlite://")  # in-memory, StaticPool
+    init_db(engine)
+    return engine
+
+
+@pytest.fixture(name="settings")
+def settings_fixture() -> Settings:
+    return Settings(
+        jwt_secret="test-secret-0123456789-0123456789-0123456789",  # >=32 bytes
+        database_url="sqlite://",
+        environment="test",
+        model_version="test-model",
+    )
+
+
+@pytest.fixture(name="client")
+def client_fixture(engine, settings):
+    def override_get_session():
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    # Bare TestClient (no context manager) deliberately skips lifespan; we inject
+    # the state lifespan would normally build, so tests stay hermetic.
+    app.state.db_engine = engine
+    app.state.model = load_model("test")
+    app.state.model_version = settings.model_version
+    app.state.http = httpx.AsyncClient(base_url="http://test")
+
+    client = TestClient(app)
+    yield client
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(name="auth_headers")
+def auth_headers_fixture(client) -> dict[str, str]:
+    email, password = "user@example.com", "supersecret123"
+    client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": email, "password": password},
+    )
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

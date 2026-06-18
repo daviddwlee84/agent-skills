@@ -1,0 +1,75 @@
+"""Shared dependencies, wired in one place (the composition root).
+
+Annotated aliases keep handler signatures terse and make dependency_overrides in
+tests a one-line swap at the declared interface.
+"""
+from __future__ import annotations
+
+from typing import Annotated
+
+import httpx
+import jwt
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlmodel import Session
+
+from app.config import Settings, get_settings
+from app.core.security import decode_access_token
+from app.db.session import get_session
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+from app.services.inference_service import InferenceService
+from app.services.user_service import UserService
+
+SessionDep = Annotated[Session, Depends(get_session)]
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+def get_http(request: Request) -> httpx.AsyncClient:
+    return request.app.state.http
+
+
+HttpDep = Annotated[httpx.AsyncClient, Depends(get_http)]
+
+
+def get_user_service(session: SessionDep) -> UserService:
+    return UserService(UserRepository(session))
+
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+
+
+def get_inference_service(request: Request) -> InferenceService:
+    return InferenceService(request.app.state.model, request.app.state.model_version)
+
+
+InferenceServiceDep = Annotated[InferenceService, Depends(get_inference_service)]
+
+
+def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    settings: SettingsDep,
+    session: SessionDep,
+) -> User:
+    creds_exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = decode_access_token(token, settings)
+        subject = payload.get("sub")
+        if subject is None:
+            raise creds_exc
+    except jwt.PyJWTError as exc:
+        raise creds_exc from exc
+
+    user = UserRepository(session).get_by_id(int(subject))
+    if user is None or not user.is_active:
+        raise creds_exc
+    return user
+
+
+CurrentUser = Annotated[User, Depends(get_current_user)]

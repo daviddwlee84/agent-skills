@@ -1,0 +1,50 @@
+# PROJECT_SLUG_PLACEHOLDER
+
+A production-grade FastAPI AI/ML service, scaffolded from the
+`fastapi-ai-scaffold` skill. It bakes in the patterns from `fastapi-ai-patterns`:
+clean architecture (router / service / repository), a lifespan-loaded model and
+shared `httpx` client, a `/health` (liveness) + `/ready` (readiness) split, JWT
+auth, SQLModel + Alembic, an LLM gateway with SSE streaming, input/output
+guardrails with a Pydantic validation loop, and tests via `dependency_overrides`.
+
+## Quick start
+
+```bash
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
+cp .env.example .env            # then fill in real secrets
+uvicorn app.main:app --reload   # http://127.0.0.1:8000/docs
+pytest -q
+```
+
+## Layout
+
+```
+app/
+  main.py            FastAPI app + router wiring
+  config.py          pydantic-settings Settings (env-driven)
+  lifespan.py        startup/shutdown: model + httpx client + db engine
+  logging_config.py  structured JSON logging
+  api/
+    deps.py          shared dependencies (db session, current user, clients)
+    v1/              versioned routes: health, auth, inference
+  core/security.py   password hashing + JWT (pinned algorithm)
+  db/session.py      engine + session factory
+  models/            SQLModel tables
+  schemas/           request/response Pydantic models
+  services/          business logic (no HTTP concerns)
+  repositories/      data access behind an interface
+  ml/                model handle + guardrails + validation loop
+tests/               TestClient + dependency_overrides + SQLite in-memory
+migrations/          Alembic environment
+```
+
+## Production notes
+
+- Models load once in `lifespan` (never per request). With N workers you hold N
+  copies — size workers by memory.
+- `/health` is trivially cheap (liveness). `/ready` checks the DB and that the
+  model is warm (readiness). Wire them to your orchestrator accordingly.
+- Run under Gunicorn with Uvicorn workers in production: see `gunicorn_conf.py`.
+- Treat LLM output as untrusted: see `app/ml/guardrails.py` for the
+  generate -> validate -> retry loop.

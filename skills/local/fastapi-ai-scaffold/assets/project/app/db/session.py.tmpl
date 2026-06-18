@@ -1,0 +1,43 @@
+"""Database engine + per-request session.
+
+The engine is created once at startup (in lifespan) and stored on app.state;
+`get_session` yields one Session per request and always closes it. This is the
+session-per-request / unit-of-work pattern: do related reads/writes in one
+session and commit once.
+"""
+from __future__ import annotations
+
+from collections.abc import Iterator
+
+from fastapi import Request
+from sqlalchemy import Engine
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
+
+
+def create_db_engine(database_url: str) -> Engine:
+    connect_args: dict = {}
+    engine_kwargs: dict = {"pool_pre_ping": True}
+
+    if database_url.startswith("sqlite"):
+        # SQLite needs this to be used across threads (FastAPI threadpool).
+        connect_args["check_same_thread"] = False
+        # In-memory SQLite must share one connection or each session sees an
+        # empty database — used by the test suite.
+        if ":memory:" in database_url or database_url == "sqlite://":
+            engine_kwargs["poolclass"] = StaticPool
+
+    return create_engine(database_url, connect_args=connect_args, **engine_kwargs)
+
+
+def init_db(engine: Engine) -> None:
+    """Create tables for local/dev. In production, use Alembic migrations."""
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session(request: Request) -> Iterator[Session]:
+    # `request: Request` must be annotated, or FastAPI treats `request` as a
+    # required query parameter and every request 422s.
+    engine: Engine = request.app.state.db_engine
+    with Session(engine) as session:
+        yield session

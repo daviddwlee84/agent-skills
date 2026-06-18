@@ -1,0 +1,54 @@
+"""Inference routes: synchronous prediction + an LLM gateway with SSE streaming."""
+from __future__ import annotations
+
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
+
+from app.api.deps import CurrentUser, InferenceServiceDep, SettingsDep
+from app.ml.guardrails import GuardrailError, check_input
+from app.ml.model import stream_llm_tokens
+from app.schemas.inference import ChatIn, PredictIn, PredictOut
+
+router = APIRouter()
+
+
+@router.post("/predict", response_model=PredictOut)
+async def predict(
+    payload: PredictIn,
+    service: InferenceServiceDep,
+    settings: SettingsDep,
+    user: CurrentUser,
+) -> PredictOut:
+    try:
+        check_input(payload.text, max_chars=settings.max_input_chars)
+    except GuardrailError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    return await service.predict(payload.text)
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    payload: ChatIn,
+    settings: SettingsDep,
+    user: CurrentUser,
+) -> StreamingResponse:
+    try:
+        check_input(payload.message, max_chars=settings.max_input_chars)
+    except GuardrailError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+    max_tokens = min(payload.max_tokens, settings.max_output_tokens)
+
+    async def event_stream():
+        usage = {"out": 0}
+        try:
+            async for token in stream_llm_tokens(payload.message, max_tokens):
+                usage["out"] += 1
+                yield f"data: {token}\n\n"
+            yield "data: [DONE]\n\n"
+        finally:
+            # Runs even when the client disconnects mid-stream: record usage,
+            # cancel upstream, etc. Never skip metering on disconnect.
+            pass
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

@@ -1,0 +1,48 @@
+def test_predict_requires_auth(client):
+    resp = client.post("/api/v1/predict", json={"text": "hello"})
+    assert resp.status_code == 401
+
+
+def test_predict_happy_path_stamps_model_version(client, auth_headers):
+    resp = client.post("/api/v1/predict", json={"text": "hello"}, headers=auth_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    # Response is shaped by PredictOut — exact key set guards against field leaks.
+    assert set(body) == {"label", "confidence", "model_version"}
+    assert body["model_version"] == "test-model"
+    assert 0.0 <= body["confidence"] <= 1.0
+
+
+def test_predict_rejects_empty_text(client, auth_headers):
+    resp = client.post("/api/v1/predict", json={"text": ""}, headers=auth_headers)
+    assert resp.status_code == 422
+
+
+def test_login_is_generic_on_bad_password(client):
+    client.post(
+        "/api/v1/auth/register",
+        json={"email": "a@example.com", "password": "supersecret123"},
+    )
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "a@example.com", "password": "wrong-password"},
+    )
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Incorrect email or password"
+
+
+def test_duplicate_registration_conflicts(client):
+    payload = {"email": "dup@example.com", "password": "supersecret123"}
+    assert client.post("/api/v1/auth/register", json=payload).status_code == 201
+    assert client.post("/api/v1/auth/register", json=payload).status_code == 409
+
+
+def test_chat_stream_returns_sse(client, auth_headers):
+    resp = client.post(
+        "/api/v1/chat/stream",
+        json={"message": "one two three"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+    assert "data: [DONE]" in resp.text

@@ -1,0 +1,54 @@
+"""Guardrails for a stochastic system: validate inputs and outputs.
+
+Input side: length/charset caps, prompt-injection screening hook.
+Output side: the generate -> validate -> retry loop that turns an LLM into a
+typed component. See the fastapi-ai-patterns ai-ml-serving reference.
+"""
+from __future__ import annotations
+
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
+
+from pydantic import BaseModel, ValidationError
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class GuardrailError(Exception):
+    """Raised when input fails a guardrail check."""
+
+
+def check_input(text: str, *, max_chars: int) -> None:
+    if not text or not text.strip():
+        raise GuardrailError("empty input")
+    if len(text) > max_chars:
+        raise GuardrailError(f"input exceeds {max_chars} characters")
+    # Hook: add prompt-injection pattern/classifier screening for high-stakes routes.
+
+
+async def validate_with_retry(
+    model_cls: type[T],
+    generate: Callable[[str], Awaitable[str]],
+    prompt: str,
+    *,
+    max_attempts: int = 2,
+) -> T:
+    """Generate JSON, parse into `model_cls`, and on failure retry once with the
+    validation error appended to the prompt. Raises ValidationError if every
+    attempt fails so the caller can map it to a defined fallback (never pass
+    malformed data downstream).
+    """
+    last_error: ValidationError | None = None
+    current = prompt
+    for _ in range(max_attempts):
+        raw = await generate(current)
+        try:
+            return model_cls.model_validate_json(raw)
+        except ValidationError as exc:
+            last_error = exc
+            current = (
+                f"{prompt}\n\nYour previous output failed validation:\n{exc}\n"
+                "Return corrected JSON only."
+            )
+    assert last_error is not None
+    raise last_error

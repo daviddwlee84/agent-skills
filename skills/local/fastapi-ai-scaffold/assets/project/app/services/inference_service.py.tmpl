@@ -1,0 +1,26 @@
+"""Inference business logic.
+
+Runs the CPU-bound model call off the event loop via anyio.to_thread, and always
+stamps the response with the model version.
+"""
+from __future__ import annotations
+
+from anyio import to_thread
+
+from app.ml.model import Model
+from app.schemas.inference import PredictOut
+
+
+class InferenceService:
+    def __init__(self, model: Model, model_version: str) -> None:
+        self.model = model
+        self.model_version = model_version
+
+    async def predict(self, text: str) -> PredictOut:
+        # Offload CPU-bound inference so the event loop keeps serving other requests.
+        label, confidence = await to_thread.run_sync(self.model.predict, text)
+        return PredictOut(
+            label=label,
+            confidence=confidence,
+            model_version=self.model_version,
+        )

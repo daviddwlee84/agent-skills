@@ -1,0 +1,31 @@
+# Multi-stage build: install deps in a builder, ship a slim runtime image.
+FROM python:3.12-slim AS builder
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+WORKDIR /app
+
+COPY pyproject.toml ./
+COPY app ./app
+RUN pip install --prefix=/install .
+
+FROM python:3.12-slim AS runtime
+
+# Run as a non-root user; flush logs immediately.
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+RUN useradd --create-home --uid 10001 appuser
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+COPY app ./app
+COPY gunicorn_conf.py ./
+
+USER appuser
+EXPOSE 8000
+
+# Liveness probe target; orchestrator readiness should hit /api/v1/ready.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health').status==200 else 1)"
+
+CMD ["gunicorn", "app.main:app", "-c", "gunicorn_conf.py"]

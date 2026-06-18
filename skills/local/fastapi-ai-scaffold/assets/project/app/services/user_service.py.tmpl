@@ -1,0 +1,31 @@
+"""User business logic. No HTTP concerns here — raises domain errors that the
+router maps to status codes, so this layer is unit-testable without a client.
+"""
+from __future__ import annotations
+
+from app.core.security import hash_password, verify_password
+from app.models.user import User
+from app.repositories.user_repository import UserRepository
+
+
+class EmailAlreadyExists(Exception):
+    pass
+
+
+class UserService:
+    def __init__(self, repo: UserRepository) -> None:
+        self.repo = repo
+
+    def register(self, email: str, password: str) -> User:
+        if self.repo.get_by_email(email) is not None:
+            raise EmailAlreadyExists(email)
+        user = User(email=email, hashed_password=hash_password(password))
+        return self.repo.create(user)
+
+    def authenticate(self, email: str, password: str) -> User | None:
+        user = self.repo.get_by_email(email)
+        if user is None or not user.is_active:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        return user

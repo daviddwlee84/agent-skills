@@ -4214,3 +4214,367 @@ _**Agent (claude-opus-4-7)**_
 <summary>Tool use: **read_file_v2**</summary>
 
 </details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /Volumes/Data/Program/Personal/agent-skills && grep -nE '\.specstory|\.cursor|\.vscode' .gitignore 2>&1</summary>
+
+```bash
+cd /Volumes/Data/Program/Personal/agent-skills && grep -nE '\.specstory|\.cursor|\.vscode' .gitignore 2>&1
+```
+
+```
+189:# .vscode/
+198:#  Cursor is an AI-powered code editor. &#96;.cursorignore&#96; specifies files/directories to
+200:#  refer to https://docs.cursor.com/context/ignore-files
+201:.cursorignore
+202:.cursorindexingignore
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+<think><details><summary>Thought Process</summary>
+ Looking at the gitignore patterns, I see that `.specstory/` is tracked in the repo following agent-history-hygiene conventions, while `.vscode/` is commented out and intentionally excluded, and `.cursor/` subdirectories like plans and projects aren't typically committed even though the parent directory itself isn't explicitly ignored.</details></think>
+
+_**Agent (claude-opus-4-7)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /Volumes/Data/Program/Personal/agent-skills && echo '== are .specstory/history files tracked? ==' && git ls-files .specstory/history/ 2>&1 | head -5 && echo && echo '== are .cursor/plans files tracked? ==' && git ls-files .cursor/ 2>&1 | head -5 && echo && echo '== .claude/plans tracked? ==' && git ls-files .claude/plans/ 2>&1 | head -5 && echo && echo '== untracked .cursor contents ==' && ls -la .cursor/ 2>&1 | head -10</summary>
+
+```bash
+cd /Volumes/Data/Program/Personal/agent-skills && echo '== are .specstory/history files tracked? ==' && git ls-files .specstory/history/ 2>&1 | head -5 && echo && echo '== are .cursor/plans files tracked? ==' && git ls-files .cursor/ 2>&1 | head -5 && echo && echo '== .claude/plans tracked? ==' && git ls-files .claude/plans/ 2>&1 | head -5 && echo && echo '== untracked .cursor contents ==' && ls -la .cursor/ 2>&1 | head -10
+```
+
+```
+== are .specstory/history files tracked? ==
+.specstory/history/2026-03-19_03-06-35Z-agent-skills-collection-https.md
+.specstory/history/2026-03-19_03-30-16Z-implement-the-following-plan.md
+.specstory/history/2026-03-19_05-39-58Z-is-there-skills-that.md
+.specstory/history/2026-04-23_06-48-09Z-1-backlog-todo-2.md
+.specstory/history/2026-04-24_04-56-38Z-next-js-vercel-supabase.md
+
+== are .cursor/plans files tracked? ==
+
+== .claude/plans tracked? ==
+.claude/plans/https-github-com-anthropics-skills-imag-composed-flurry.md
+.claude/plans/plan-synthetic-bentley.md
+.claude/plans/pueue-agent-skill-https-github-com-nuke-wobbly-mochi.md
+.claude/plans/skill-agent-history-specstory-skill-proud-sedgewick.md
+.claude/plans/skills-eager-feather-agent-aa8c2908a68f820c6.md
+
+== untracked .cursor contents ==
+drwxr-xr-x@ - daviddwlee84  9 Jun 17:37 plans
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+<think><details><summary>Thought Process</summary>
+ I'm noticing the repo follows a specific convention: `.specstory/history/` and `.claude/plans/` files are tracked and committed, but `.cursor/plans/` files remain untracked since that directory has historically been ignored. I'll stick with that pattern.
+
+The commit will include the code and documentation changes, the new SpecStory transcript from this session, and updates to the project index and statistics files. Before committing, I should quickly scan the transcript to make sure no sensitive information like API keys or environment variables accidentally made it into the conversation history.</details></think>
+
+_**Agent (claude-opus-4-7)**_
+
+Repo convention is clear: commit `.specstory/history/*.md` + `.specstory/.project.json` + `.specstory/statistics.json` alongside feature changes (per the dogfooded agent-history-hygiene skill), but leave `.cursor/` and `.vscode/` untracked. Let me do a quick secret-scan on the transcript before staging.
+
+_**Agent (claude-opus-4-7)**_
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "caseInsensitive": false,
+  "outputMode": "content",
+  "path": "/Volumes/Data/Program/Personal/agent-skills/.specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md",
+  "pattern": "(?i)(api[_-]?key|secret|password|token|BEGIN [A-Z ]+PRIVATE KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})"
+}
+```
+Additional data:
+
+```json
+{
+  "isPruned": true,
+  "outputMode": "content",
+  "path": "/Volumes/Data/Program/Personal/agent-skills/.specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md",
+  "pattern": "(?i)(api[_-]?key|secret|password|token|BEGIN [A-Z ]+PRIVATE KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})",
+  "topFiles": [],
+  "totalFiles": 0,
+  "totalMatches": 0
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search"><details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+Clean. Now stage and commit.
+
+_**Agent (claude-opus-4-7)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /Volumes/Data/Program/Personal/agent-skills && git add \
+  README.md \
+  docs/reference/scripts.md \
+  docs/reference/scripts.zh-TW.md \
+  docs/workflows/creating-local-skills.md \
+  docs/workflows/creating-local-skills.zh-TW.md \
+  pitfalls/symlink-target-relative-to-symlink-not-cwd.md \
+  skills/local/skill-author/SKILL.md \
+  skills/local/skill-author/references/this-repo-conventions.md \
+  skills/local/skill-author/scripts/new-skill.sh \
+  .specstory/.project.json \
+  .specstory/statistics.json \
+  .specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md \
+  && git status --short</summary>
+
+```bash
+cd /Volumes/Data/Program/Personal/agent-skills && git add \
+  README.md \
+  docs/reference/scripts.md \
+  docs/reference/scripts.zh-TW.md \
+  docs/workflows/creating-local-skills.md \
+  docs/workflows/creating-local-skills.zh-TW.md \
+  pitfalls/symlink-target-relative-to-symlink-not-cwd.md \
+  skills/local/skill-author/SKILL.md \
+  skills/local/skill-author/references/this-repo-conventions.md \
+  skills/local/skill-author/scripts/new-skill.sh \
+  .specstory/.project.json \
+  .specstory/statistics.json \
+  .specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md \
+  && git status --short
+```
+
+```
+M  .specstory/.project.json
+A  .specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md
+M  .specstory/statistics.json
+M  README.md
+M  docs/reference/scripts.md
+M  docs/reference/scripts.zh-TW.md
+M  docs/workflows/creating-local-skills.md
+M  docs/workflows/creating-local-skills.zh-TW.md
+M  pitfalls/symlink-target-relative-to-symlink-not-cwd.md
+M  skills/local/skill-author/SKILL.md
+M  skills/local/skill-author/references/this-repo-conventions.md
+M  skills/local/skill-author/scripts/new-skill.sh
+?? .cursor/
+?? .vscode/
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2">
+<details><summary>Tool use: **run_terminal_command_v2** • Run command: cd /Volumes/Data/Program/Personal/agent-skills && git commit --trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" -m "$(cat <<'EOF'
+feat(skill-author): mirror npx skills placement in new-skill.sh
+
+Rewrite scripts/new-skill.sh so it scaffolds into the npx-skills-compatible
+layout (canonical .agents/skills/<name>/ + relative agent symlinks) with
+auto-detected scope and override flags, all in self-contained bash. Previously
+the script only ever wrote to <repo>/skills/local/<name>/ and hard-errored
+outside this publishing repo, leaving freshly scaffolded skills undiscoverable
+by Claude/Cursor until symlinked by hand.
+
+Three placement scopes:
+
+  LOCAL   (vendor.yaml / skills/local/ / skills/.claude-plugin found):
+          canonical at <repo>/skills/local/<name>/ (or skills/vendor/ with
+          --vendor), plus .agents/skills/ + .claude/skills/ discovery links.
+  PROJECT (.git found): canonical at <repo>/.agents/skills/<name>/ (read
+          directly by Cursor/Codex/OpenCode/Warp/Gemini-CLI/Copilot), plus
+          .claude/skills/<name> -> ../../.agents/skills/<name> and any
+          already-present non-universal agent dir at the repo root.
+  GLOBAL  (no anchor): canonical at ~/.agents/skills/<name>/, same fan-out
+          rooted at $HOME.
+
+Symlinks always use a fixed ../../ relative prefix (the depths are identical
+in every scope) and are post-write verified with test -e <link>/SKILL.md to
+prevent the symlink-target-relative footgun from ever shipping again. The
+fan-out rule matches upstream's "claude-code always, others only if their
+config root already exists" discipline so the script never creates
+.windsurf/-like dirs for agents the user doesn't use.
+
+New flags: --local / --project / --global (mutually exclusive),
+--no-symlinks. Retains --vendor, --root, --dry-run, --force, --help.
+Output is now a single JSON object on stdout
+({skill, mode, canonical, symlinks[], next_steps[]}) with prose on stderr.
+
+Docs updated to match: skill-author SKILL.md (workflow + Gotchas + the
+"ask system-wide vs project-wide" rule), references/this-repo-conventions.md
+(drops the stale "legacy .agents/skills/" framing), README.md, creating
+local skills workflow (en + zh-TW), scripts reference (en + zh-TW), and an
+appended "now enforced by new-skill.sh" note on the symlink-relativity
+pitfall.
+
+EOF
+)" && git log -1 --stat</summary>
+
+```bash
+cd /Volumes/Data/Program/Personal/agent-skills && git commit --trailer "Co-authored-by: Cursor <cursoragent@cursor.com>" -m "$(cat <<'EOF'
+feat(skill-author): mirror npx skills placement in new-skill.sh
+
+Rewrite scripts/new-skill.sh so it scaffolds into the npx-skills-compatible
+layout (canonical .agents/skills/<name>/ + relative agent symlinks) with
+auto-detected scope and override flags, all in self-contained bash. Previously
+the script only ever wrote to <repo>/skills/local/<name>/ and hard-errored
+outside this publishing repo, leaving freshly scaffolded skills undiscoverable
+by Claude/Cursor until symlinked by hand.
+
+Three placement scopes:
+
+  LOCAL   (vendor.yaml / skills/local/ / skills/.claude-plugin found):
+          canonical at <repo>/skills/local/<name>/ (or skills/vendor/ with
+          --vendor), plus .agents/skills/ + .claude/skills/ discovery links.
+  PROJECT (.git found): canonical at <repo>/.agents/skills/<name>/ (read
+          directly by Cursor/Codex/OpenCode/Warp/Gemini-CLI/Copilot), plus
+          .claude/skills/<name> -> ../../.agents/skills/<name> and any
+          already-present non-universal agent dir at the repo root.
+  GLOBAL  (no anchor): canonical at ~/.agents/skills/<name>/, same fan-out
+          rooted at $HOME.
+
+Symlinks always use a fixed ../../ relative prefix (the depths are identical
+in every scope) and are post-write verified with test -e <link>/SKILL.md to
+prevent the symlink-target-relative footgun from ever shipping again. The
+fan-out rule matches upstream's "claude-code always, others only if their
+config root already exists" discipline so the script never creates
+.windsurf/-like dirs for agents the user doesn't use.
+
+New flags: --local / --project / --global (mutually exclusive),
+--no-symlinks. Retains --vendor, --root, --dry-run, --force, --help.
+Output is now a single JSON object on stdout
+({skill, mode, canonical, symlinks[], next_steps[]}) with prose on stderr.
+
+Docs updated to match: skill-author SKILL.md (workflow + Gotchas + the
+"ask system-wide vs project-wide" rule), references/this-repo-conventions.md
+(drops the stale "legacy .agents/skills/" framing), README.md, creating
+local skills workflow (en + zh-TW), scripts reference (en + zh-TW), and an
+appended "now enforced by new-skill.sh" note on the symlink-relativity
+pitfall.
+
+EOF
+)" && git log -1 --stat
+```
+
+```
+[main 2aabeea] feat(skill-author): mirror npx skills placement in new-skill.sh
+ 12 files changed, 4965 insertions(+), 71 deletions(-)
+ create mode 100644 .specstory/history/2026-03-19_05-23-17Z-new-skill-default-path-improvement.md
+commit 2aabeeaecfbf4cfd081a17ac97ceca890d93bf04
+Author: Da-Wei Lee &lt;daviddwlee84@gmail.com&gt;
+Date:   Tue Jun 9 18:00:45 2026 +0800
+
+    feat(skill-author): mirror npx skills placement in new-skill.sh
+    
+    Rewrite scripts/new-skill.sh so it scaffolds into the npx-skills-compatible
+    layout (canonical .agents/skills/&lt;name&gt;/ + relative agent symlinks) with
+    auto-detected scope and override flags, all in self-contained bash. Previously
+    the script only ever wrote to &lt;repo&gt;/skills/local/&lt;name&gt;/ and hard-errored
+    outside this publishing repo, leaving freshly scaffolded skills undiscoverable
+    by Claude/Cursor until symlinked by hand.
+    
+    Three placement scopes:
+    
+      LOCAL   (vendor.yaml / skills/local/ / skills/.claude-plugin found):
+              canonical at &lt;repo&gt;/skills/local/&lt;name&gt;/ (or skills/vendor/ with
+              --vendor), plus .agents/skills/ + .claude/skills/ discovery links.
+      PROJECT (.git found): canonical at &lt;repo&gt;/.agents/skills/&lt;name&gt;/ (read
+              directly by Cursor/Codex/OpenCode/Warp/Gemini-CLI/Copilot), plus
+              .claude/skills/&lt;name&gt; -&gt; ../../.agents/skills/&lt;name&gt; and any
+              already-present non-universal agent dir at the repo root.
+      GLOBAL  (no anchor): canonical at ~/.agents/skills/&lt;name&gt;/, same fan-out
+              rooted at $HOME.
+    
+    Symlinks always use a fixed ../../ relative prefix (the depths are identical
+    in every scope) and are post-write verified with test -e &lt;link&gt;/SKILL.md to
+    prevent the symlink-target-relative footgun from ever shipping again. The
+    fan-out rule matches upstream's "claude-code always, others only if their
+    config root already exists" discipline so the script never creates
+    .windsurf/-like dirs for agents the user doesn't use.
+    
+    New flags: --local / --project / --global (mutually exclusive),
+    --no-symlinks. Retains --vendor, --root, --dry-run, --force, --help.
+    Output is now a single JSON object on stdout
+    ({skill, mode, canonical, symlinks[], next_steps[]}) with prose on stderr.
+    
+    Docs updated to match: skill-author SKILL.md (workflow + Gotchas + the
+    "ask system-wide vs project-wide" rule), references/this-repo-conventions.md
+    (drops the stale "legacy .agents/skills/" framing), README.md, creating
+    local skills workflow (en + zh-TW), scripts reference (en + zh-TW), and an
+    appended "now enforced by new-skill.sh" note on the symlink-relativity
+    pitfall.
+    
+    Co-authored-by: Cursor &lt;cursoragent@cursor.com&gt;
+
+ .specstory/.project.json                           |    4 +-
+ ...05-23-17Z-new-skill-default-path-improvement.md | 4216 ++++++++++++++++++++
+ .specstory/statistics.json                         |   49 +-
+ README.md                                          |   23 +-
+ docs/reference/scripts.md                          |   73 +
+ docs/reference/scripts.zh-TW.md                    |   72 +
+ docs/workflows/creating-local-skills.md            |   32 +-
+ docs/workflows/creating-local-skills.zh-TW.md      |   27 +-
+ .../symlink-target-relative-to-symlink-not-cwd.md  |   11 +
+ skills/local/skill-author/SKILL.md                 |   54 +-
+ .../references/this-repo-conventions.md            |   43 +-
+ skills/local/skill-author/scripts/new-skill.sh     |  432 +-
+ 12 files changed, 4965 insertions(+), 71 deletions(-)
+
+```
+</details>
+</tool-use>
+
+<tool-use data-tool-type="shell" data-tool-name="run_terminal_command_v2"><details>
+<summary>Tool use: **run_terminal_command_v2**</summary>
+
+</details></tool-use>
+
+_**Agent (claude-opus-4-7)**_
+
+Commit landed cleanly as `2aabeea` on `main`. Twelve files, +4965/-71 — most of the line bump is the new SpecStory transcript (4216 lines).
+
+Summary of what shipped:
+
+- **Code**: `skills/local/skill-author/scripts/new-skill.sh` rewritten (+432/-71) — three placement scopes (LOCAL / PROJECT / GLOBAL), auto-detect with `--local`/`--project`/`--global` override, npx-skills-compatible canonical+symlink layout, fixed `../../` relative prefix with post-write `test -e` verification, JSON output, exit code `4` for dangling-symlink protection.
+- **Skill docs**: `skill-author/SKILL.md`, `references/this-repo-conventions.md`.
+- **Repo docs**: `README.md`, `docs/workflows/creating-local-skills.md` (+ zh-TW), `docs/reference/scripts.md` (+ zh-TW).
+- **Pitfall**: appended "now enforced by `new-skill.sh`" to `pitfalls/symlink-target-relative-to-symlink-not-cwd.md`.
+- **Agent hygiene**: SpecStory transcript for this session committed alongside the diff per the dogfooded `agent-history-hygiene` convention; `.cursor/` and `.vscode/` left untracked (matches repo's existing pattern).
+
+Branch is `main`, ahead of `origin/main` by one commit — not pushed since you didn't ask for it.

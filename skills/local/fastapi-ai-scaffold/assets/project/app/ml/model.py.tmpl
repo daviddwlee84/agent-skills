@@ -1,0 +1,43 @@
+"""Model handle + a stub LLM streamer.
+
+Replace `load_model` and `Model.predict` with your real artifact (PyTorch,
+transformers, ONNX, ...). The key invariant: load once at startup, keep the
+handle in memory, and run CPU/GPU-bound `predict` off the event loop (the caller
+in the inference service uses anyio.to_thread).
+"""
+from __future__ import annotations
+
+import hashlib
+from collections.abc import AsyncIterator
+
+
+class Model:
+    """A deterministic stub classifier so the scaffold runs with no weights."""
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    def predict(self, text: str) -> tuple[str, float]:
+        # CPU-bound work belongs here; the service offloads it to a thread.
+        digest = hashlib.sha256(text.encode("utf-8")).digest()
+        score = digest[0] / 255.0
+        label = "positive" if score >= 0.5 else "negative"
+        return label, round(score, 4)
+
+
+def load_model(path: str) -> Model:
+    """Load weights once. Seconds-to-minutes for real artifacts — never per request."""
+    return Model(path)
+
+
+async def stream_llm_tokens(prompt: str, max_tokens: int) -> AsyncIterator[str]:
+    """Stub token stream. Swap for a real provider/vLLM call that yields chunks.
+
+    A real implementation awaits the provider's streaming API. Keep it async so
+    the event loop serves other requests between tokens.
+    """
+    words = (prompt.strip() or "hello world").split()
+    for i, word in enumerate(words):
+        if i >= max_tokens:
+            break
+        yield word + " "

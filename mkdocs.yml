@@ -118,6 +118,9 @@ nav:
           - mlflow-tracking: skills/mlflow-tracking.md
           - agent-history-hygiene: skills/agent-history-hygiene.md
           - pueue-job-queue: skills/pueue-job-queue.md
+          - fastapi-ai-patterns: skills/fastapi-ai-patterns.md
+          - fastapi-ai-scaffold: skills/fastapi-ai-scaffold.md
+          - fastapi-ai-interview-prep: skills/fastapi-ai-interview-prep.md
       - Vendored:
           - marimo-notebook: skills/marimo-notebook.md
           - streamlit-to-marimo: skills/streamlit-to-marimo.md

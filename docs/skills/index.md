@@ -27,6 +27,9 @@ Custom-authored, curated to this repo's conventions (see
 | [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |
 | [`agent-history-hygiene`](agent-history-hygiene.md) | Commit SpecStory transcripts + plan files with feature diffs; bootstrap pre-commit + gitleaks + redactor; rotate-first leak runbook | [docs](agent-history-hygiene.md) |
 | [`pueue-job-queue`](pueue-job-queue.md) | Drive Nukesor/pueue for queued/parallel/scheduled shell jobs; submit-one + DAG submitter + JSON-summary waiter; observed pueue 4.0.2 schema | [docs](pueue-job-queue.md) |
+| [`fastapi-ai-patterns`](fastapi-ai-patterns.md) | Production FastAPI patterns + gotchas for AI/ML/LLM serving; `def`/`async` decision table + 8 references over all 10 chapters | [docs](fastapi-ai-patterns.md) |
+| [`fastapi-ai-scaffold`](fastapi-ai-scaffold.md) | Generate a production-shaped FastAPI AI service (clean architecture, lifespan model, JWT, SSE, probes, tests, Docker); `new-fastapi-ai-service.sh` + 44-file skeleton | [docs](fastapi-ai-scaffold.md) |
+| [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 self-written FastAPI/AI interview Q&A across 10 topics + a `quiz.py` mock-interview CLI | [docs](fastapi-ai-interview-prep.md) |
 
 ## Vendored skills
 

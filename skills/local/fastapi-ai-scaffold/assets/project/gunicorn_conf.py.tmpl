@@ -1,0 +1,28 @@
+"""Gunicorn config: Uvicorn workers for production.
+
+Run with: gunicorn app.main:app -c gunicorn_conf.py
+
+Worker count guidance (see the fastapi-ai-patterns deployment reference):
+  - CPU-bound in-process inference: workers ~= core count.
+  - I/O-bound (LLM/DB calls): a few async workers per node sustain high
+    concurrency; scale pods on latency/queue depth, not CPU.
+Remember each worker holds its own copy of any in-memory model.
+"""
+import multiprocessing
+import os
+
+bind = os.getenv("BIND", "0.0.0.0:8000")
+workers = int(os.getenv("WEB_CONCURRENCY", str(multiprocessing.cpu_count())))
+worker_class = "uvicorn.workers.UvicornWorker"
+
+# Recycle workers periodically to bound slow leaks.
+max_requests = int(os.getenv("MAX_REQUESTS", "10000"))
+max_requests_jitter = int(os.getenv("MAX_REQUESTS_JITTER", "1000"))
+
+# Must exceed your slowest in-flight request (e.g. long LLM streams).
+timeout = int(os.getenv("TIMEOUT", "120"))
+graceful_timeout = int(os.getenv("GRACEFUL_TIMEOUT", "30"))
+keepalive = int(os.getenv("KEEPALIVE", "5"))
+
+accesslog = "-"
+errorlog = "-"
