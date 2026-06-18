@@ -82,6 +82,33 @@ marketplace names. Path format is `./local/<name>` or
 
 Each skill is a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body with instructions, conventions, and examples. Vendored skills may include `references/` subdirectories.
 
+## Local Skill Discovery Symlinks (`.agents/skills/`, `.claude/skills/`)
+
+The `.agents/skills/<name>` and `.claude/skills/<name>` entries are
+**discovery symlinks** that make a skill active in *this* repo's own agent
+context (Cursor and Claude Code load whatever resolves under those dirs).
+They are unrelated to distribution — downstream users get skills via
+`npx skills add ...` + `marketplace.json` regardless of these links.
+
+`scripts/new-skill.sh --local` (run by the `skill-author` skill) creates
+both links automatically. **Only keep them for skills that are genuinely
+useful while working _on this repo_** — e.g. `skill-author`,
+`mkdocs-site-bootstrap`. Skills authored here purely for downstream use
+(e.g. `fastapi-ai-*`, `dvc-ml-workflow`, `mlflow-tracking`) should **not**
+be symlinked: they would load into every in-repo agent session and just
+bloat/pollute context without ever being exercised here. The canonical copy
+under `skills/local/<name>/` is all that's needed for distribution.
+
+To author a downstream-only skill without the links, either:
+
+```bash
+# Skip the symlinks at creation time
+bash skills/local/skill-author/scripts/new-skill.sh --local --no-symlinks <name>
+
+# …or remove them afterward
+rm .agents/skills/<name> .claude/skills/<name>
+```
+
 ## Project Memory Workflow
 
 ### Long-term backlog -> `TODO.md` + `backlog/`
