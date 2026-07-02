@@ -181,13 +181,8 @@ if [ "$HAS_I18N" = "false" ]; then
 elif [ "$HAS_LOCALE" = "false" ]; then
   log "Appending $LOCALE to existing plugins.i18n.languages..."
   yq_inplace "
-    .plugins |= map(
-      if has(\"i18n\") then
-        .i18n.languages += [{\"locale\": \"$LOCALE\", \"name\": \"$LOCALE_NAME\"}]
-      else
-        .
-      end
-    )
+    (.plugins[] | select(has(\"i18n\")) | .i18n.languages)
+      += [{\"locale\": \"$LOCALE\", \"name\": \"$LOCALE_NAME\"}]
   "
 else
   log "Locale $LOCALE already in plugins.i18n.languages — no plugin change."
@@ -200,6 +195,34 @@ if [ -z "$THEME_LANG" ]; then
   yq_inplace ".theme.language = \"$DEFAULT_LANG\""
 elif [ "$THEME_LANG" != "$DEFAULT_LANG" ]; then
   log "Note: theme.language is already '$THEME_LANG' (not '$DEFAULT_LANG'). Leaving as-is."
+fi
+
+# --- Step 2a: give the social plugin a CJK-capable card font ---
+# The `social` plugin's default card font (Roboto) is Latin-only, so CJK page
+# titles render as tofu boxes (□□□) on the generated OG cards. If we're adding
+# a CJK language AND the social plugin is present, set a Noto Sans <script>
+# font_family — these cover Latin + CJK + arrows + fullwidth punctuation.
+# Only sets it when unset, so a user's explicit choice is never overwritten.
+case "$LOCALE" in
+  zh-TW|zh-Hant*) SOCIAL_FONT="Noto Sans TC" ;;
+  zh-CN|zh-Hans*|zh) SOCIAL_FONT="Noto Sans SC" ;;
+  ja*) SOCIAL_FONT="Noto Sans JP" ;;
+  ko*) SOCIAL_FONT="Noto Sans KR" ;;
+  *) SOCIAL_FONT="" ;;
+esac
+if [ -n "$SOCIAL_FONT" ]; then
+  HAS_SOCIAL=$(yq '[.plugins[]? | select(has("social"))] | length > 0' "$MKDOCS" 2>/dev/null || echo "false")
+  CUR_FONT=$(yq -r '(.plugins[]? | select(has("social")) | .social.cards_layout_options.font_family) // ""' "$MKDOCS" 2>/dev/null || echo "")
+  if [ "$HAS_SOCIAL" = "true" ] && [ -z "$CUR_FONT" ]; then
+    log "Setting social card font_family: $SOCIAL_FONT (CJK-capable; avoids tofu titles)..."
+    yq_inplace "
+      (.plugins[] | select(has(\"social\")) | .social.cards_layout_options.font_family)
+        = \"$SOCIAL_FONT\"
+    "
+  elif [ "$HAS_SOCIAL" = "true" ] && [ -n "$CUR_FONT" ]; then
+    log "Note: social card font_family already '$CUR_FONT' — leaving as-is."
+    log "  If $LOCALE titles show as boxes, switch it to '$SOCIAL_FONT'."
+  fi
 fi
 
 # --- Step 2b: drop theme features incompatible with mkdocs-static-i18n ---

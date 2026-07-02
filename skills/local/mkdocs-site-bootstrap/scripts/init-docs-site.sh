@@ -148,8 +148,11 @@ if [ -e "$TARGET/pyproject.toml" ]; then
   log "Note: $TARGET/pyproject.toml already exists; not modifying it."
   log "      Add this to your [project.optional-dependencies]:"
   log "        docs = [\"mkdocs>=1.6\", \"mkdocs-material>=9.5\","
+  log "                \"mkdocs-material[imaging]>=9.5\",  # social/OG cards"
   log "                \"mkdocs-llmstxt>=0.2\", \"mkdocs-copy-to-llm>=0.1\","
   log "                \"pymdown-extensions>=10.7\"]"
+  log "      The social plugin also needs system Cairo/Pango — see the"
+  log "      'social cards' step in docs-workflow.yml.template."
 else
   copy_template "$ASSETS/pyproject.toml.template" "$TARGET/pyproject.toml"
   substitute "$TARGET/pyproject.toml"

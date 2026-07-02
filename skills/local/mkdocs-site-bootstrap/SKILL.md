@@ -291,6 +291,29 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 
 ## Gotchas
 
+- **The `social` plugin (OG cards) needs system Cairo/Pango + the
+  `[imaging]` extra.** `mkdocs-material[imaging]` pulls cairosvg/pillow, but
+  those bind to system `libcairo`/`libpango` — without them the build aborts
+  with a libcairo load error. The `docs-workflow.yml.template` apt-installs
+  them (`libcairo2-dev libpango1.0-dev libfreetype6-dev …`) and caches
+  `.cache/plugin/social`. Locally: `brew install cairo pango` (macOS) or the
+  same apt packages (Linux). Add `.cache/` to `.gitignore` — the plugin
+  writes ~1 card PNG per page (tens of MB) plus a downloaded font there.
+- **CJK/arrow page titles render as tofu boxes (□□□) on social cards unless
+  the card font covers them.** The plugin's default font (Roboto) and plain
+  "Noto Sans" are Latin-only, so Chinese/Japanese/Korean titles — and even a
+  `→` in an English title — come out as boxes. `add-language.sh` auto-sets a
+  CJK-capable `social.cards_layout_options.font_family` (Noto Sans TC/SC/JP/KR)
+  when you add a CJK language, but only if the social plugin is present and no
+  font is already set. If you enable social cards on an already-CJK site by
+  hand, set the font yourself. Verify by opening a rendered
+  `site/assets/images/social/**/<page>.png`, not just by trusting the build.
+- **`yq` in these scripts is mikefarah yq (v4), which has NO `if/then/else/end`
+  syntax** — that's jq. Use `(.plugins[] | select(has("x")) | .x.y) = z` or
+  `+= […]`, never `.plugins |= map(if has("x") then … else . end)` (it dies
+  with a `lexer: invalid input text "if …"` error). This bit the i18n
+  second-language append path historically; keep new expressions in the
+  `select()` form.
 - **MkDocs strict mode rejects relative `.md` links pointing outside
   `docs/`.** Inside `docs/` → relative is fine. Outside `docs/` for
   `.md` files (e.g., linking to repo `TODO.md`) → use absolute GitHub URL.
