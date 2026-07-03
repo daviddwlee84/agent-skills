@@ -334,6 +334,28 @@ def emit_json(obj: Any) -> None:
     print(json.dumps(obj, ensure_ascii=False, indent=2))
 
 
+# Credential-bearing keys that GET /configs (or nested config) may expose.
+_SECRET_KEYS = {
+    "secret", "authentication", "users", "password", "uuid", "psk",
+    "token", "private-key", "privatekey", "auth", "ca-str", "key",
+}
+
+
+def _redact_secrets(obj: Any) -> Any:
+    """Recursively mask credential values so `config` never echoes them."""
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if isinstance(k, str) and k.lower() in _SECRET_KEYS and v not in (None, "", [], {}, 0, False):
+                out[k] = "<redacted>"
+            else:
+                out[k] = _redact_secrets(v)
+        return out
+    if isinstance(obj, list):
+        return [_redact_secrets(x) for x in obj]
+    return obj
+
+
 def _ports(configs: dict[str, Any]) -> dict[str, int]:
     out = {}
     for key in ("mixed-port", "port", "socks-port", "redir-port", "tproxy-port"):
@@ -415,6 +437,8 @@ def cmd_config_get(args: argparse.Namespace) -> int:
     status, data = request_json(host, secret, "GET", "configs", timeout=3)
     if status >= 300:
         raise OpRejected(f"GET /configs failed with HTTP {status}: {data}")
+    if isinstance(data, (dict, list)) and not args.show_secrets:
+        data = _redact_secrets(data)
     emit_json(data)
     return 0
 
@@ -836,7 +860,8 @@ def build_parser() -> argparse.ArgumentParser:
     st = sub.add_parser("status", help="Controller, version, mode, tun, ports, groups.")
     _add_json(st)
     st.set_defaults(func=cmd_status)
-    cf = sub.add_parser("config", help="GET /configs (raw JSON).")
+    cf = sub.add_parser("config", help="GET /configs (credential fields redacted).")
+    cf.add_argument("--show-secrets", action="store_true", help="Do NOT redact secret/authentication/credential fields.")
     cf.set_defaults(func=cmd_config_get)
 
     g = sub.add_parser("groups", help="List selectable proxy groups.")
