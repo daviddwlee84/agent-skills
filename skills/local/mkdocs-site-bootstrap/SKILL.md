@@ -109,6 +109,10 @@ bash skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
 Use `--dry-run` first to preview. The script always preserves any existing
 files unless `--force` is passed.
 
+Add `--social` to enable OG/Twitter preview cards (see Gotchas → "Social cards
+are opt-in"). Leave it off unless the user wants rich link unfurls and can take
+the Cairo/Pango system dependency; a plain scaffold builds dependency-free.
+
 After scaffolding, run a local strict build to catch obvious issues:
 
 ```bash
@@ -230,7 +234,10 @@ user may want one without the other.
     `--list`, `--dry-run`, `--json`.
 - **`scripts/init-docs-site.sh`** — Scaffold the site files.
   - Flags: `--site-name`, `--repo-slug`, `--site-url`, `--existing skip|wrap`,
-    `--no-workflow`, `--dry-run`, `--force`.
+    `--no-workflow`, `--no-skeleton`, `--social`, `--dry-run`, `--force`.
+  - `--social` opts into OG/Twitter cards: expands the `__SOCIAL_*__` markers in
+    the templates with the blocks in `assets/social/`, and adds `/.cache/` to
+    `.gitignore`. Off by default (keeps the scaffold Cairo/Pango-free).
 - **`scripts/enable-pages.sh`** — Enable Pages and trigger first deploy via
   `gh api`. Requires `gh auth status` to pass first.
   - Flags: `--repo OWNER/REPO`, `--no-trigger`, `--dry-run`.
@@ -274,11 +281,18 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 
 - `assets/mkdocs.yml.template` — Material theme + llmstxt + copy-to-llm
   plugins + pymdownx.snippets, parameterized with `{{SITE_NAME}}`,
-  `{{REPO_SLUG}}`, `{{SITE_URL}}`.
+  `{{REPO_SLUG}}`, `{{SITE_URL}}`. Carries `__SOCIAL_*__` marker lines that
+  `init-docs-site.sh` expands (with `--social`) or deletes.
 - `assets/pyproject.toml.template` — Minimal `[project]` block + the docs
-  optional-deps group.
+  optional-deps group. Has a `__SOCIAL_IMAGING__` marker.
 - `assets/docs-workflow.yml.template` — `.github/workflows/docs.yml` with
-  paths filter, uv setup, strict build, Pages deploy.
+  paths filter, uv setup, strict build, Pages deploy. Has a `__SOCIAL_CI__`
+  marker for the Cairo/Pango + card-cache steps.
+- `assets/social/` — snippets injected at the `__SOCIAL_*__` markers when
+  `init-docs-site.sh --social` is passed: `mkdocs-plugin.yml` (the `social`
+  plugin block), `pyproject-dep.txt` (`mkdocs-material[imaging]`), and
+  `ci-steps.yml` (the Cairo/Pango install + `.cache/plugin/social` cache).
+  Pre-indented for their insertion points — keep the indentation.
 - `assets/docs-skeleton/` — `index.md`, `getting-started.md`, `_snippets/`
   examples, `assets/copy-to-llm/` JS+CSS files copied from this repo.
 - `assets/page.md.template` — Used by `add-docs-page.sh`.
@@ -291,22 +305,33 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 
 ## Gotchas
 
-- **The `social` plugin (OG cards) needs system Cairo/Pango + the
-  `[imaging]` extra.** `mkdocs-material[imaging]` pulls cairosvg/pillow, but
-  those bind to system `libcairo`/`libpango` — without them the build aborts
-  with a libcairo load error. The `docs-workflow.yml.template` apt-installs
-  them (`libcairo2-dev libpango1.0-dev libfreetype6-dev …`) and caches
+- **Social cards (OG previews) are opt-in — off by default.** Pass `--social`
+  to `init-docs-site.sh` to enable them; a plain scaffold has no social plugin,
+  no `[imaging]` dep, and no Cairo/Pango CI step, so it builds with zero system
+  dependencies (a bare `mkdocs build` renders in well under a second). Enable
+  it when the user wants rich link unfurls and accepts the cost below. To turn
+  it on for an already-scaffolded site, add the `social` plugin block to
+  `mkdocs.yml`, `mkdocs-material[imaging]` to the docs deps, the Cairo/Pango +
+  cache steps to `docs.yml`, and `/.cache/` to `.gitignore` (copy from
+  `assets/social/*` — the same snippets `--social` injects).
+- **The `social` plugin needs system Cairo/Pango + the `[imaging]` extra.**
+  `mkdocs-material[imaging]` pulls cairosvg/pillow, but those bind to system
+  `libcairo`/`libpango` — without them the build aborts with a libcairo load
+  error. With `--social`, `docs-workflow.yml.template` apt-installs them
+  (`libcairo2-dev libpango1.0-dev libfreetype6-dev …`) and caches
   `.cache/plugin/social`. Locally: `brew install cairo pango` (macOS) or the
-  same apt packages (Linux). Add `.cache/` to `.gitignore` — the plugin
-  writes ~1 card PNG per page (tens of MB) plus a downloaded font there.
+  same apt packages (Linux). `--social` also adds `/.cache/` to `.gitignore` —
+  the plugin writes ~1 card PNG per page (tens of MB) plus a downloaded font
+  there. Cold build renders one card per page (network-fetches the font from
+  Google Fonts); warm cache is seconds.
 - **CJK/arrow page titles render as tofu boxes (□□□) on social cards unless
   the card font covers them.** The plugin's default font (Roboto) and plain
   "Noto Sans" are Latin-only, so Chinese/Japanese/Korean titles — and even a
   `→` in an English title — come out as boxes. `add-language.sh` auto-sets a
   CJK-capable `social.cards_layout_options.font_family` (Noto Sans TC/SC/JP/KR)
   when you add a CJK language, but only if the social plugin is present and no
-  font is already set. If you enable social cards on an already-CJK site by
-  hand, set the font yourself. Verify by opening a rendered
+  font is already set (so scaffold with `--social` *before* adding zh-TW, or
+  set the font yourself afterward). Verify by opening a rendered
   `site/assets/images/social/**/<page>.png`, not just by trusting the build.
 - **`yq` in these scripts is mikefarah yq (v4), which has NO `if/then/else/end`
   syntax** — that's jq. Use `(.plugins[] | select(has("x")) | .x.y) = z` or

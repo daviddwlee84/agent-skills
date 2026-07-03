@@ -16,7 +16,7 @@ It's the same stack this repo uses for its own docs, plus the optional
 docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
-  "mkdocs-material[imaging]>=9.5",  # cairosvg+pillow for social/OG cards
+  # "mkdocs-material[imaging]>=9.5",  # only with --social (cairosvg+pillow)
   "mkdocstrings[python]>=0.24",   # only if you have a Python API
   "mkdocs-llmstxt>=0.1",
   "mkdocs-copy-to-llm>=0.1",
@@ -89,10 +89,13 @@ theme:
 
 plugins:
   - search
-  - social:              # OG/Twitter preview cards; needs system cairo/pango
-      cards_layout_options:
-        background_color: "#3f51b5"
-        # font_family: Noto Sans TC   # set a CJK font if titles are CJK
+  # Optional (opt-in via `init-docs-site.sh --social`): OG/Twitter preview
+  # cards. Needs system cairo/pango + mkdocs-material[imaging]. Omit for a
+  # dependency-free build.
+  # - social:
+  #     cards_layout_options:
+  #       background_color: "#3f51b5"
+  #       # font_family: Noto Sans TC   # set a CJK font if titles are CJK
   - mkdocstrings:        # remove this block if no Python API
       handlers:
         python:
@@ -166,8 +169,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      # System libs for the `social` plugin (OG cards): cairo + pango render
-      # the card; without them the build aborts on a libcairo load error.
+      # Only with --social (OG cards): cairo + pango render the card, and the
+      # cache avoids re-rendering unchanged pages. Omit both steps otherwise.
       - name: Install Cairo/Pango for social cards
         run: |
           sudo apt-get update

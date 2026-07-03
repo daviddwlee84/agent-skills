@@ -28,6 +28,10 @@ Options:
                            wrap: add files to nav alphabetically.
   --no-workflow            Don't create .github/workflows/docs.yml.
   --no-skeleton            Don't create the docs/ skeleton (use existing docs/ as-is).
+  --social                 Enable the Material social plugin (OG/Twitter preview
+                           cards). Off by default: it needs system Cairo/Pango
+                           (and mkdocs-material[imaging]), so a plain scaffold
+                           stays dependency-free. See SKILL.md § Social cards.
   --dry-run                Print actions without writing.
   --force                  Overwrite existing files (mkdocs.yml, pyproject.toml).
   --help, -h               Show this help and exit.
@@ -61,6 +65,7 @@ TARGET=""
 EXISTING="skip"
 NO_WORKFLOW=0
 NO_SKELETON=0
+SOCIAL=0
 DRY_RUN=0
 FORCE=0
 
@@ -75,6 +80,7 @@ while [ $# -gt 0 ]; do
     --existing)         EXISTING="${2:-}"; shift 2 ;;
     --no-workflow)      NO_WORKFLOW=1; shift ;;
     --no-skeleton)      NO_SKELETON=1; shift ;;
+    --social)           SOCIAL=1; shift ;;
     --dry-run)          DRY_RUN=1; shift ;;
     --force)            FORCE=1; shift ;;
     --help|-h)          usage; exit 0 ;;
@@ -106,6 +112,7 @@ fi
 log "Target: $TARGET"
 log "Site:   $SITE_NAME @ $SITE_URL"
 log "Repo:   $REPO_SLUG"
+log "Social: $([ "$SOCIAL" = "1" ] && echo "on (OG cards; needs Cairo/Pango)" || echo "off (pass --social to enable)")"
 
 # --- helper: substitute {{VAR}} placeholders ---
 substitute() {
@@ -139,28 +146,68 @@ copy_template() {
   cp "$src" "$dst"
 }
 
+# --- helper: expand a __SOCIAL_*__ marker line ---
+# With --social, replace the marker line with the snippet file's contents
+# (snippets are pre-indented for their target). Without --social, delete the
+# marker line. Keeps every other line — and its comments — untouched.
+expand_marker() {
+  local file="$1" marker="$2" snippet="$3"
+  [ -f "$file" ] || return 0
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] expand $marker in $file ($([ "$SOCIAL" = "1" ] && echo "insert $snippet" || echo "delete marker"))"
+    return 0
+  fi
+  if [ "$SOCIAL" = "1" ]; then
+    [ -f "$snippet" ] || die "social snippet missing: $snippet" 4
+    awk -v marker="$marker" -v repl="$snippet" '
+      index($0, marker) { while ((getline line < repl) > 0) print line; close(repl); next }
+      { print }
+    ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  else
+    awk -v marker="$marker" '!index($0, marker)' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  fi
+}
+
 # --- 1. mkdocs.yml ---
 copy_template "$ASSETS/mkdocs.yml.template" "$TARGET/mkdocs.yml"
 substitute "$TARGET/mkdocs.yml"
+expand_marker "$TARGET/mkdocs.yml" "__SOCIAL_PLUGIN__" "$ASSETS/social/mkdocs-plugin.yml"
 
 # --- 2. pyproject.toml ---
 if [ -e "$TARGET/pyproject.toml" ]; then
   log "Note: $TARGET/pyproject.toml already exists; not modifying it."
   log "      Add this to your [project.optional-dependencies]:"
   log "        docs = [\"mkdocs>=1.6\", \"mkdocs-material>=9.5\","
-  log "                \"mkdocs-material[imaging]>=9.5\",  # social/OG cards"
+  if [ "$SOCIAL" = "1" ]; then
+    log "                \"mkdocs-material[imaging]>=9.5\",  # social/OG cards"
+  fi
   log "                \"mkdocs-llmstxt>=0.2\", \"mkdocs-copy-to-llm>=0.1\","
   log "                \"pymdown-extensions>=10.7\"]"
-  log "      The social plugin also needs system Cairo/Pango — see the"
-  log "      'social cards' step in docs-workflow.yml.template."
+  if [ "$SOCIAL" = "1" ]; then
+    log "      The social plugin also needs system Cairo/Pango — see the"
+    log "      'social cards' step in docs-workflow.yml.template."
+  fi
 else
   copy_template "$ASSETS/pyproject.toml.template" "$TARGET/pyproject.toml"
   substitute "$TARGET/pyproject.toml"
+  expand_marker "$TARGET/pyproject.toml" "__SOCIAL_IMAGING__" "$ASSETS/social/pyproject-dep.txt"
 fi
 
 # --- 3. .github/workflows/docs.yml ---
 if [ "$NO_WORKFLOW" = "0" ]; then
   copy_template "$ASSETS/docs-workflow.yml.template" "$TARGET/.github/workflows/docs.yml"
+  expand_marker "$TARGET/.github/workflows/docs.yml" "__SOCIAL_CI__" "$ASSETS/social/ci-steps.yml"
+fi
+
+# --- 3b. .gitignore: social plugin writes a large card+font cache ---
+if [ "$SOCIAL" = "1" ]; then
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] would ensure /.cache/ is in $TARGET/.gitignore"
+  elif ! grep -qxF '/.cache/' "$TARGET/.gitignore" 2>/dev/null; then
+    printf '\n# mkdocs social plugin card+font cache (regenerated every build)\n/.cache/\n' \
+      >> "$TARGET/.gitignore"
+    log "Added /.cache/ to .gitignore (social plugin card cache)."
+  fi
 fi
 
 # --- 4. docs/ skeleton ---
@@ -198,7 +245,8 @@ if [ "$DRY_RUN" = "1" ]; then
 fi
 
 # Structured success output.
-printf '{"target":"%s","site_name":"%s","site_url":"%s","next_steps":[' "$TARGET" "$SITE_NAME" "$SITE_URL"
+printf '{"target":"%s","site_name":"%s","site_url":"%s","social":%s,"next_steps":[' \
+  "$TARGET" "$SITE_NAME" "$SITE_URL" "$([ "$SOCIAL" = "1" ] && echo true || echo false)"
 printf '"uv sync --extra docs",'
 printf '"uv run mkdocs build --strict",'
 printf '"git add and commit the new files",'

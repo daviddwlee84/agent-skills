@@ -12,10 +12,7 @@ docs = [
     # criteria for lifting these caps.
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.5,<10",
-    # [imaging] pulls cairosvg + pillow for the `social` plugin (OG/Twitter
-    # cards). Also needs system cairo/pango/libffi — installed via apt in the
-    # docs.yml "social cards" step (and brew/apt locally).
-    "mkdocs-material[imaging]>=9.5,<10",
+    # __SOCIAL_IMAGING__  (init-docs-site.sh --social adds mkdocs-material[imaging] here)
     # Uncomment when you add a non-default language via add-language.sh
     # (the script un-comments this line automatically on first run):
     # "mkdocs-static-i18n>=1.2",
