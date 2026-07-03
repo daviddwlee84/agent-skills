@@ -176,14 +176,15 @@
     },
     {
       "name": "infra-and-docs",
-      "description": "Documentation site bootstrap and pueue job queue orchestration",
+      "description": "Documentation site bootstrap, pueue job queue orchestration, and Clash/mihomo proxy control",
       "category": "Infra",
-      "tags": ["mkdocs", "pueue", "job-queue", "docs"],
+      "tags": ["mkdocs", "pueue", "job-queue", "docs", "clash", "mihomo", "proxy"],
       "source": "./",
       "strict": false,
       "skills": [
         "./local/mkdocs-site-bootstrap",
-        "./local/pueue-job-queue"
+        "./local/pueue-job-queue",
+        "./local/clash-proxy-api"
       ]
     }
   ]

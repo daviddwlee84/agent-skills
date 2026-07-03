@@ -118,6 +118,7 @@ nav:
           - mlflow-tracking: skills/mlflow-tracking.md
           - agent-history-hygiene: skills/agent-history-hygiene.md
           - pueue-job-queue: skills/pueue-job-queue.md
+          - clash-proxy-api: skills/clash-proxy-api.md
           - fastapi-ai-patterns: skills/fastapi-ai-patterns.md
           - fastapi-ai-scaffold: skills/fastapi-ai-scaffold.md
           - fastapi-ai-interview-prep: skills/fastapi-ai-interview-prep.md
