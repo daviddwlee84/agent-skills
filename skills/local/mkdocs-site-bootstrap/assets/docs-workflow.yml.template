@@ -63,8 +63,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
-        with:
-          # GitHub Pages deployments can sit in "deployment_queued" for a long
-          # time when the backend is busy; the default 10m timeout then aborts
-          # an otherwise-healthy deploy. 20m gives queue backlogs room.
-          timeout: 1200000
+        # NOTE: the GitHub Pages backend intermittently returns "Deployment
+        # failed, try again later." or queues for a while. No input mitigates
+        # it — `timeout` is capped at 10m (larger values are clamped + warn)
+        # and `error_count` only covers polling errors, not that final status.
+        # The only fix is to re-run the failed job: gh run rerun <id> --failed
