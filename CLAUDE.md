@@ -53,13 +53,34 @@ make docs-build     # produces ./site/
 ## Vendor System
 
 - `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; entries without `series` stay flat at `skills/vendor/<name>/`
-- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations
+- `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations, and skips any entry carrying a `frozen:` block (see below)
 - `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates; pass `--series <name>` to group into a series subdir
 
 Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA.
 
 Active series in this repo:
 - `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
+
+### When an upstream skill is renamed or removed
+
+Upstream repos reorganize; `make sync` fails hard if a tracked
+`upstream.path` no longer exists (the download step finds no files).
+Handle the two cases explicitly in `vendor.yaml`:
+
+- **Renamed upstream** — update `name` + `upstream.path` to the new
+  values, `git mv` the vendored dir, fix that skill's `skills[]` path in
+  `marketplace.json`, and add a `renamed_from: <old-name>` field so the
+  history stays greppable. Renaming changes the *downstream* install id:
+  the `npx skills` CLI has no lockfile, so users who installed the old
+  name won't auto-map on `npx skills update`.
+- **Removed upstream** — freeze it with a `frozen:` block (`reason:` +
+  `since:`). `sync-vendor.sh` then skips the entry in both `make sync`
+  and `make sync-check` while keeping the last-synced copy and its
+  `marketplace.json` entry. Don't delete a vendored copy just because
+  upstream did — unless you also mean to stop shipping it.
+
+Live examples in `vendor.yaml`: `diagnosing-bugs` (`renamed_from: diagnose`)
+and `zoom-out` (`frozen:`), both from the 2026-07-05 mattpocock/skills reorg.
 
 ## Marketplace Catalog
 
