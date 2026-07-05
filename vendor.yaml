@@ -8,8 +8,8 @@ skills:
       path: skills/marimo-notebook
       branch: main
     last_sync:
-      date: "2026-03-19T03:33:47Z"
-      commit: "343b0e05764bd528807608ea76995c80076dacef"
+      date: "2026-07-05T03:38:50Z"
+      commit: "06770e79d83d934ef44efd5540332ebcae20a900"
   - name: streamlit-to-marimo
     upstream:
       owner: marimo-team
@@ -26,8 +26,8 @@ skills:
       path: skills/skill-creator
       branch: main
     last_sync:
-      date: "2026-03-19T06:22:59Z"
-      commit: "b0cbd3df1533b396d281a6886d5132f623393a9c"
+      date: "2026-07-05T03:39:20Z"
+      commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
   - name: anywidget
     upstream:
       owner: marimo-team
@@ -84,8 +84,8 @@ skills:
       path: skills/supabase
       branch: main
     last_sync:
-      date: "2026-04-24T05:17:28Z"
-      commit: "7c2e3894fddfde8eb6c77d2a8921904543b9be7a"
+      date: "2026-07-05T03:39:39Z"
+      commit: "1356046015476711a769601079262b5635929427"
     series: fullstack-nextjs
   - name: supabase-postgres-best-practices
     upstream:
@@ -94,8 +94,8 @@ skills:
       path: skills/supabase-postgres-best-practices
       branch: main
     last_sync:
-      date: "2026-04-24T05:18:25Z"
-      commit: "7a646f8812ec8d21cc8735d5b3fe67c9b5e665db"
+      date: "2026-07-05T03:40:31Z"
+      commit: "1356046015476711a769601079262b5635929427"
     series: fullstack-nextjs
   - name: web-design-guidelines
     upstream:
@@ -114,8 +114,8 @@ skills:
       path: skills/frontend-design
       branch: main
     last_sync:
-      date: "2026-04-24T05:18:46Z"
-      commit: "00756142ab04c82a447693cf373c4e0c554d1005"
+      date: "2026-07-05T03:40:39Z"
+      commit: "2235be7c60b551f5de82ade908fd3816455afcda"
     series: fullstack-nextjs
   - name: webapp-testing
     upstream:
@@ -134,8 +134,8 @@ skills:
       path: skills/engineering/grill-with-docs
       branch: main
     last_sync:
-      date: "2026-05-11T08:38:12Z"
-      commit: "b843cb5ea74b1fe5e58a0fc23cddef9e66076fb8"
+      date: "2026-07-05T03:40:44Z"
+      commit: "658d53e6ded8cc0eaa26a96e0580bee9381ca0e3"
     series: engineering-fundamentals
   - name: tdd
     upstream:
@@ -144,19 +144,22 @@ skills:
       path: skills/engineering/tdd
       branch: main
     last_sync:
-      date: "2026-05-11T08:38:26Z"
-      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+      date: "2026-07-05T03:40:50Z"
+      commit: "bd453a6742fb8660bf618c298f1e2b80fb9f35e3"
     series: engineering-fundamentals
-  - name: diagnose
+  - name: diagnosing-bugs
     upstream:
       owner: mattpocock
       repo: skills
-      path: skills/engineering/diagnose
+      path: skills/engineering/diagnosing-bugs
       branch: main
     last_sync:
-      date: "2026-05-11T08:38:35Z"
-      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+      date: "2026-07-05T04:20:39Z"
+      commit: "ee8bae40062cd6b435073368ed0c540f48c35862"
     series: engineering-fundamentals
+    # Upstream renamed skills/engineering/diagnose -> diagnosing-bugs in the
+    # 2026-07-05 mattpocock/skills reorg. Kept as a record of the old name.
+    renamed_from: diagnose
   - name: zoom-out
     upstream:
       owner: mattpocock
@@ -167,6 +170,11 @@ skills:
       date: "2026-05-11T08:38:44Z"
       commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
     series: engineering-fundamentals
+    # Upstream deleted skills/engineering/zoom-out in the 2026-07-05
+    # mattpocock/skills reorg. Frozen: keep the last-synced copy, stop syncing.
+    frozen:
+      reason: "upstream removed the skill (mattpocock/skills 2026-07-05 reorg)"
+      since: "2026-07-05"
   - name: to-prd
     upstream:
       owner: mattpocock
@@ -174,8 +182,8 @@ skills:
       path: skills/engineering/to-prd
       branch: main
     last_sync:
-      date: "2026-05-11T08:38:52Z"
-      commit: "70141119e9fe47430b62b93bcf166a73e6580048"
+      date: "2026-07-05T04:20:44Z"
+      commit: "3832253f149ea165f45a32ea727886e6d0094d60"
     series: engineering-fundamentals
   - name: to-issues
     upstream:
@@ -184,8 +192,8 @@ skills:
       path: skills/engineering/to-issues
       branch: main
     last_sync:
-      date: "2026-05-11T08:39:01Z"
-      commit: "ff3ee1dda50d636b4e25b1ba269d25d6d5784164"
+      date: "2026-07-05T04:20:48Z"
+      commit: "788b5c382b769155afcbac0d8402c3b56eae02fd"
     series: engineering-fundamentals
   - name: improve-codebase-architecture
     upstream:
@@ -194,8 +202,8 @@ skills:
       path: skills/engineering/improve-codebase-architecture
       branch: main
     last_sync:
-      date: "2026-05-11T08:39:12Z"
-      commit: "7afa86d3a5dd96edde06ffa014e16c64e733681e"
+      date: "2026-07-05T04:20:53Z"
+      commit: "221ffca96736afefdc08ca7cf0b3965e9ea83f41"
     series: engineering-fundamentals
   - name: triage
     upstream:
@@ -204,8 +212,8 @@ skills:
       path: skills/engineering/triage
       branch: main
     last_sync:
-      date: "2026-05-11T08:39:24Z"
-      commit: "179a14e721034706ffce7abae75b877c922b4ae8"
+      date: "2026-07-05T04:20:59Z"
+      commit: "e00eadb4bb32c3d5a631ead1a5ed5d6a7c5f74e2"
     series: engineering-fundamentals
   - name: prototype
     upstream:
@@ -214,8 +222,8 @@ skills:
       path: skills/engineering/prototype
       branch: main
     last_sync:
-      date: "2026-05-11T08:39:34Z"
-      commit: "ff3ee1dda50d636b4e25b1ba269d25d6d5784164"
+      date: "2026-07-05T04:21:07Z"
+      commit: "850873cd73d5f81826ebf512ad35d2b1e113001f"
     series: engineering-fundamentals
   - name: gstack-openclaw-office-hours
     upstream:

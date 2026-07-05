@@ -114,7 +114,7 @@
       "skills": [
         "./vendor/engineering-fundamentals/grill-with-docs",
         "./vendor/engineering-fundamentals/tdd",
-        "./vendor/engineering-fundamentals/diagnose",
+        "./vendor/engineering-fundamentals/diagnosing-bugs",
         "./vendor/engineering-fundamentals/zoom-out",
         "./vendor/engineering-fundamentals/to-prd",
         "./vendor/engineering-fundamentals/to-issues",

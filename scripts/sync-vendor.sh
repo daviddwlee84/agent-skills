@@ -24,6 +24,10 @@ Options:
 Arguments:
   SKILL_NAME  Optional: sync only the named skill (default: sync all)
 
+Entries with a top-level `frozen:` block in vendor.yaml are skipped (the
+vendored copy is kept as-is). Use this when an upstream skill is deleted or
+renamed away but you want to keep shipping the last-synced version.
+
 Dependencies: gh (GitHub CLI), yq (YAML processor)
 EOF
 }
@@ -130,6 +134,18 @@ sync_skill() {
   # Normalize yq null to empty
   [[ "$last_commit" == "null" || "$last_commit" == '""' ]] && last_commit=""
   [[ "$series" == "null" || "$series" == '""' ]] && series=""
+
+  # Frozen entries: upstream renamed the skill away or deleted it, but we
+  # keep shipping the last vendored copy. Skip fetching entirely so a
+  # vanished upstream path can't break `make sync`. See `frozen:` in vendor.yaml.
+  local frozen frozen_reason
+  frozen=$(yq ".skills[$idx] | has(\"frozen\")" "$VENDOR_YAML")
+  if [[ "$frozen" == "true" ]]; then
+    frozen_reason=$(skill_field "$idx" "frozen.reason")
+    [[ "$frozen_reason" == "null" ]] && frozen_reason="upstream removed"
+    echo -e "$name ($owner/$repo)... ${YELLOW}frozen${NC} — skipping ($frozen_reason)"
+    return 0
+  fi
 
   echo -n "Checking $name ($owner/$repo)... "
 
