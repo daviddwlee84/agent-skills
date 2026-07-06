@@ -40,7 +40,8 @@ and prevention guidance.
 | [`yq-bad-expression-and-silent-null`](yq-bad-expression-and-silent-null.md) | `bad expression`, yq returns null, ISO date parse, `strenv` vs `env` | active |
 | [`symlink-target-relative-to-symlink-not-cwd`](symlink-target-relative-to-symlink-not-cwd.md) | dangling symlink, looks valid in `ls -la`, agent skill not loading | active |
 | [`mkdocs-strict-rejects-build-time-generated-links`](mkdocs-strict-rejects-build-time-generated-links.md) | `Aborted with N warnings in strict mode`, `llms.txt` link, raw-markdown URL, `unrecognized_links` config | active |
-| [`skills-cli-skips-nested-skills-without-full-depth`](skills-cli-skips-nested-skills-without-full-depth.md) | `npx skills add` reports `No matching skills found`, `skills/local/*` invisible, `--full-depth` flag | active |
+| [`skills-cli-skips-nested-skills-without-full-depth`](skills-cli-skips-nested-skills-without-full-depth.md) | `npx skills add` reports `No matching skills found`, `skills/local/*` invisible, `--full-depth` flag | superseded (depth-3 now discovered in `skills@1.5.14`) |
+| [`skills-update-fails-for-series-nested-skills`](skills-update-fails-for-series-nested-skills.md) | `npx skills update` prints `Failed to update` / `Failed to check for deleted skills` for `vendor/<series>/<name>` depth-4 skills; `.claude/skills` symlinks missing; `update` can't pass `--full-depth` | active |
 | [`deploy-pages-times-out-polling-status`](deploy-pages-times-out-polling-status.md) | `actions/deploy-pages@v5`, `Current status:` empty, `Timeout reached, aborting!`, GitHub Pages service-side hang | active |
 
 ## Cross-referenced pitfalls

@@ -1,5 +1,14 @@
 # `npx skills add` ignores skills under `skills/local/` without `--full-depth`
 
+> **Update (skills@1.5.14):** the "`skills/local/*` are invisible" claim
+> below is **stale**. The current CLI's priority walk reaches *two* levels
+> under `skills/`, so depth-3 `skills/local/<name>/` and
+> `skills/vendor/<name>/` are now discovered without `--full-depth`. What
+> still breaks is **depth-4 series subdirs**
+> (`skills/vendor/<series>/<name>/`), and they break on `update` too — see
+> [`skills-update-fails-for-series-nested-skills.md`](skills-update-fails-for-series-nested-skills.md).
+> Kept below as history of the original (older-CLI) behavior.
+
 ## Symptom
 
 ```
