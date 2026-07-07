@@ -36,13 +36,14 @@
     },
     {
       "name": "engineering-quality",
-      "description": "Design verifiable CLI/tool/service surfaces and verify config/dotfile/IaC changes via app-native loaders and harmless runtime smoke",
+      "description": "Design verifiable CLI/tool/service surfaces, verify config/dotfile/IaC changes via app-native loaders and harmless runtime smoke, and capture acceptance evidence (screenshots/recordings/logs) for async review",
       "category": "Quality",
-      "tags": ["cli", "config", "validation", "dry-run", "smoke-test"],
+      "tags": ["cli", "config", "validation", "dry-run", "smoke-test", "evidence", "demo"],
       "source": "./",
       "strict": false,
       "skills": [
-        "./local/verifiable-surfaces"
+        "./local/verifiable-surfaces",
+        "./local/demo-evidence"
       ]
     },
     {

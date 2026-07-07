@@ -21,6 +21,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
 | [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
 | [`verifiable-surfaces`](verifiable-surfaces.md) | Design verifiable CLI/tool/service surfaces (`--help`/`--dry-run`/`--print-config`/isolated smoke) and verify config changes via app-native loaders | [docs](verifiable-surfaces.md) |
+| [`demo-evidence`](demo-evidence.md) | Capture acceptance evidence (screenshots/recordings/HTTP logs) into a gitignored `.evidence/` bundle keyed to git branch/commit + agent session, for async "Demos over diffs" review | [docs](demo-evidence.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
