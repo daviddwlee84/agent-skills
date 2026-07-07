@@ -41,7 +41,7 @@ EOF
 
 log()  { printf '%s\n' "$*" >&2; }
 warn() { printf 'warn: %s\n' "$*" >&2; }
-die()  { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+die()  { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 TITLE=""
 FEATURE=""
@@ -52,13 +52,13 @@ DRY_RUN=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --title=*)   TITLE="${1#--title=}"; shift ;;
-    --title)     TITLE="${2:-}"; shift 2 ;;
+    --title)     TITLE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --feature=*) FEATURE="${1#--feature=}"; shift ;;
-    --feature)   FEATURE="${2:-}"; shift 2 ;;
+    --feature)   FEATURE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --agent=*)   AGENT_OVERRIDE="${1#--agent=}"; shift ;;
-    --agent)     AGENT_OVERRIDE="${2:-}"; shift 2 ;;
+    --agent)     AGENT_OVERRIDE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --root=*)    ROOT="${1#--root=}"; shift ;;
-    --root)      ROOT="${2:-}"; shift 2 ;;
+    --root)      ROOT="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --dry-run)   DRY_RUN=1; shift ;;
     --help|-h)   usage; exit 0 ;;
     -*)          die "unknown flag: $1 (try --help)" 1 ;;
@@ -110,19 +110,29 @@ MANIFEST="$BUNDLE_DIR/manifest.json"
 if [ "$DRY_RUN" = "1" ]; then
   log "[dry-run] would create bundle: $BUNDLE_DIR"
   log "[dry-run] agent=$AGENT session=$SESSION_ID branch=$BRANCH sha=$SHA dirty=$DIRTY"
-  printf '{"bundle_dir":"%s","manifest":"%s","agent":"%s","session":"%s","branch":"%s","sha":"%s","dirty":%s,"dry_run":true}\n' \
-    "$BUNDLE_DIR" "$MANIFEST" "$AGENT" "$SESSION_ID" "$BRANCH" "$SHA" "$DIRTY"
+  jq -nc --arg bd "$BUNDLE_DIR" --arg m "$MANIFEST" --arg a "$AGENT" \
+    --arg s "$SESSION_ID" --arg b "$BRANCH" --arg sha "$SHA" --argjson d "$DIRTY" \
+    '{bundle_dir:$bd, manifest:$m, agent:$a, session:$s, branch:$b, sha:$sha, dirty:$d, dry_run:true}'
   exit 0
 fi
 
 # --- Guarantee the evidence root is gitignored ----------------------------
 # Idiomatic: a root-anchored entry in the repo's .gitignore (cf. /site, /state/).
-ROOT_CLEAN="${ROOT#./}"
-IGNORE_LINE="/$ROOT_CLEAN/"
-if ! grep -qxF "$IGNORE_LINE" .gitignore 2>/dev/null; then
-  { printf '\n# demo-evidence: local acceptance artifacts (never committed)\n%s\n' "$IGNORE_LINE"; } >> .gitignore
-  log "added '$IGNORE_LINE' to .gitignore"
-fi
+# An absolute --root can't be expressed as a root-anchored ignore, so skip the
+# mutation and rely on the git check-ignore warning below.
+case "$ROOT" in
+  /*)
+    log "root '$ROOT' is absolute — skipping .gitignore entry (relying on check-ignore)"
+    ;;
+  *)
+    ROOT_CLEAN="${ROOT#./}"
+    IGNORE_LINE="/$ROOT_CLEAN/"
+    if ! grep -qxF "$IGNORE_LINE" .gitignore 2>/dev/null; then
+      { printf '\n# demo-evidence: local acceptance artifacts (never committed)\n%s\n' "$IGNORE_LINE"; } >> .gitignore
+      log "added '$IGNORE_LINE' to .gitignore"
+    fi
+    ;;
+esac
 
 mkdir -p "$BUNDLE_DIR"
 if ! git check-ignore -q "$BUNDLE_DIR" 2>/dev/null; then
@@ -160,8 +170,10 @@ jq -n \
 } > "$BUNDLE_DIR/MANIFEST.md"
 
 # --- Update the .current pointer (default target for capture.sh) ----------
-printf '%s\n' "$BUNDLE_DIR" > "$ROOT/.current"
+# Write-then-rename so a concurrent reader never sees a truncated pointer.
+printf '%s\n' "$BUNDLE_DIR" > "$ROOT/.current.tmp" && mv "$ROOT/.current.tmp" "$ROOT/.current"
 
 log "created bundle: $BUNDLE_DIR"
-printf '{"bundle_dir":"%s","manifest":"%s","agent":"%s","session":"%s","branch":"%s","sha":"%s","dirty":%s}\n' \
-  "$BUNDLE_DIR" "$MANIFEST" "$AGENT" "$SESSION_ID" "$BRANCH" "$SHA" "$DIRTY"
+jq -nc --arg bd "$BUNDLE_DIR" --arg m "$MANIFEST" --arg a "$AGENT" \
+  --arg s "$SESSION_ID" --arg b "$BRANCH" --arg sha "$SHA" --argjson d "$DIRTY" \
+  '{bundle_dir:$bd, manifest:$m, agent:$a, session:$s, branch:$b, sha:$sha, dirty:$d}'

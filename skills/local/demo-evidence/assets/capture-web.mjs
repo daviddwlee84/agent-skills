@@ -5,9 +5,11 @@
 // process.cwd() via createRequire, so it resolves the *project's* install no
 // matter where this script lives (it ships inside a skill dir).
 //
-// Usage: node capture-web.mjs --url URL --out DIR --name NAME [--steps FILE] [--timeout MS]
+// Usage: node capture-web.mjs --url URL --out DIR --name NAME [--steps FILE] [--timeout MS] [--settle MS]
 //   --steps FILE : a JS module that default-exports `async (page) => { ... }`
 //                  run after navigation (clicks, fills) before the screenshot.
+//   --settle MS  : hold on the final state this long before closing, so even a
+//                  pure-navigation capture yields a usable video (default 1200).
 // Prints {"screenshot","video","trace"} (names relative to --out) to stdout.
 
 import { createRequire } from 'module';
@@ -18,7 +20,7 @@ import fs from 'fs';
 const require = createRequire(process.cwd() + '/');
 
 function parseArgs(argv) {
-  const o = { timeout: 15000 };
+  const o = { timeout: 15000, settle: 1200 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--url') o.url = argv[++i];
@@ -26,6 +28,7 @@ function parseArgs(argv) {
     else if (a === '--name') o.name = argv[++i];
     else if (a === '--steps') o.steps = argv[++i];
     else if (a === '--timeout') o.timeout = parseInt(argv[++i], 10);
+    else if (a === '--settle') o.settle = parseInt(argv[++i], 10);
     else if (a === '--help' || a === '-h') o.help = true;
   }
   return o;
@@ -57,6 +60,9 @@ try {
     if (typeof mod.default === 'function') await mod.default(page);
   }
   await page.screenshot({ path: path.join(opt.out, shotName), fullPage: true });
+  // Hold on the final state so the recorded video isn't a sub-second flash
+  // (a pure goto->screenshot->close clip is otherwise ~1s and useless).
+  if (opt.settle > 0) await page.waitForTimeout(opt.settle);
 } catch (e) {
   ok = false;
   process.stderr.write(`capture-web: ${e.message}\n`);

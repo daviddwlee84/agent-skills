@@ -44,6 +44,7 @@ and prevention guidance.
 | [`skills-update-fails-for-series-nested-skills`](skills-update-fails-for-series-nested-skills.md) | `npx skills update` prints `Failed to update` / `Failed to check for deleted skills` for `vendor/<series>/<name>` depth-4 skills; `.claude/skills` symlinks missing; `update` can't pass `--full-depth` | active |
 | [`deploy-pages-times-out-polling-status`](deploy-pages-times-out-polling-status.md) | `actions/deploy-pages@v5`, `Current status:` empty, `Timeout reached, aborting!`, GitHub Pages service-side hang | active |
 | [`evidence-gitignored-media-cannot-embed-in-pr`](evidence-gitignored-media-cannot-embed-in-pr.md) | broken image in PR comment, `.evidence/` screenshot 404, gitignored media has no public URL, demo-evidence | active |
+| [`specstory-timestamp-regex-assumes-seconds`](specstory-timestamp-regex-assumes-seconds.md) | evidence bundle dir contains full chat title, SpecStory `HH-MMZ` no seconds, Claude project slug non-alnum, demo-evidence session id | active |
 
 ## Cross-referenced pitfalls
 

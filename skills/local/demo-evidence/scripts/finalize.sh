@@ -32,7 +32,7 @@ EOF
 
 log()  { printf '%s\n' "$*" >&2; }
 warn() { printf 'warn: %s\n' "$*" >&2; }
-die()  { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+die()  { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 BUNDLE=""
 ROOT=".evidence"
@@ -44,13 +44,13 @@ DRY_RUN=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --bundle=*)  BUNDLE="${1#--bundle=}"; shift ;;
-    --bundle)    BUNDLE="${2:-}"; shift 2 ;;
+    --bundle)    BUNDLE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --root=*)    ROOT="${1#--root=}"; shift ;;
-    --root)      ROOT="${2:-}"; shift 2 ;;
+    --root)      ROOT="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --verdict=*) VERDICT="${1#--verdict=}"; shift ;;
-    --verdict)   VERDICT="${2:-}"; shift 2 ;;
+    --verdict)   VERDICT="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --step=*)    STEPS+=("${1#--step=}"); shift ;;
-    --step)      STEPS+=("${2:-}"); shift 2 ;;
+    --step)      STEPS+=("${2:-}"); [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --scrub)     SCRUB=1; shift ;;
     --dry-run)   DRY_RUN=1; shift ;;
     --help|-h)   usage; exit 0 ;;
@@ -62,8 +62,11 @@ done
 command -v jq >/dev/null 2>&1 || die "jq not found in PATH (install: brew install jq)" 3
 
 if [ -n "$VERDICT" ]; then
+  # Accept any case; PASS/NEEDS_WORK are canonically upper, pending is lower.
+  VERDICT=$(printf '%s' "$VERDICT" | tr '[:lower:]' '[:upper:]')
   case "$VERDICT" in
-    PASS|NEEDS_WORK|pending) ;;
+    PASS|NEEDS_WORK) ;;
+    PENDING) VERDICT="pending" ;;
     *) die "invalid --verdict: $VERDICT (expected PASS|NEEDS_WORK|pending)" 1 ;;
   esac
 fi
@@ -93,7 +96,11 @@ refresh_sizes() {
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     size=0
-    [ -f "$BUNDLE/$name" ] && size=$(wc -c < "$BUNDLE/$name" | tr -d ' ')
+    if [ -f "$BUNDLE/$name" ]; then
+      size=$(wc -c < "$BUNDLE/$name" | tr -d ' ')
+    else
+      warn "artifact missing on disk: $name (recorded as 0 B)"
+    fi
     jq --arg n "$name" --argjson s "${size:-0}" \
       '(.artifacts[] | select(.name==$n) | .bytes) = $s' "$tmp" > "$tmp.2" \
       && mv "$tmp.2" "$tmp"
@@ -110,12 +117,17 @@ scrub() {
     warn "screenshots/video are NOT auto-scrubbed — review them manually before sharing"
     return 0
   fi
-  local hits=0 f
+  local hits=0 f rc
   while IFS= read -r f; do
     [ -n "$f" ] || continue
-    if ! gitleaks stdin --no-banner < "$f" >/dev/null 2>&1; then
+    gitleaks stdin --no-banner < "$f" >/dev/null 2>&1; rc=$?
+    if [ "$rc" -eq 0 ]; then
+      :  # clean
+    elif [ "$rc" -eq 1 ]; then
       warn "possible secret in $f — review before sharing"
       hits=$((hits + 1))
+    else
+      warn "gitleaks error scanning $f (exit $rc) — not counted as a leak"
     fi
   done <<EOF
 $(find "$BUNDLE" -type f \( -name '*.log' -o -name '*.txt' \) 2>/dev/null)
@@ -165,7 +177,11 @@ render_md() {
       printf '| artifact | kind | tool | size |\n|---|---|---|---|\n'
       jq -r '.artifacts[] | [.name, .kind, .tool, (.bytes|tostring)] | @tsv' "$MANIFEST" \
       | while IFS=$'\t' read -r name kind tool bytes; do
-          printf '| [%s](%s) | %s | %s | %s B |\n' "$name" "$name" "$kind" "$tool" "$bytes"
+          # Escape '|' so a pipe in a field can't break the table; percent-encode
+          # it in the link target.
+          local href="${name//|/%7C}"
+          printf '| [%s](%s) | %s | %s | %s B |\n' \
+            "${name//|/\\|}" "$href" "${kind//|/\\|}" "${tool//|/\\|}" "$bytes"
         done
       printf '\n'
     fi
@@ -191,7 +207,9 @@ cp "$MANIFEST" "$tmp"
 [ -n "$VERDICT" ] && jq --arg v "$VERDICT" '.verdict=$v' "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"
 for s in "${STEPS[@]:-}"; do
   [ -n "$s" ] || continue
-  jq --arg s "$s" '.steps += [$s]' "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"
+  # Idempotent: skip a step that's already recorded (finalize is safe to re-run).
+  jq --arg s "$s" 'if (.steps | index($s)) then . else .steps += [$s] end' \
+    "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"
 done
 mv "$tmp" "$MANIFEST"
 
@@ -202,4 +220,6 @@ render_md
 FINAL_VERDICT=$(jq -r '.verdict' "$MANIFEST")
 NART=$(jq '.artifacts | length' "$MANIFEST")
 log "finalized $BUNDLE — verdict=$FINAL_VERDICT, artifacts=$NART"
-jq -c '{bundle:"'"$BUNDLE"'", verdict:.verdict, artifacts:(.artifacts|length), manifest_md:"'"$BUNDLE"'/MANIFEST.md"}' "$MANIFEST"
+jq -c --arg b "$BUNDLE" \
+  '{bundle:$b, verdict:.verdict, artifacts:(.artifacts|length), manifest_md:($b+"/MANIFEST.md")}' \
+  "$MANIFEST"

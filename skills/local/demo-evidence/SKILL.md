@@ -51,7 +51,10 @@ Detects the agent session + git branch/short-SHA/dirty, creates
 `.evidence/<agent>-<session>/<UTC-ts>-<shortSHA>[-<title>]/`, writes
 `manifest.json` + a `MANIFEST.md` scaffold, ensures `.evidence/` is gitignored,
 and records the path in `.evidence/.current`. Later steps default to
-`.current`, so you rarely pass `--bundle`.
+`.current`, so you rarely pass `--bundle`. The `<session>` segment is a short
+Claude jsonl UUID (`claude-5f932f43`) when a live Claude session is detected, or
+the SpecStory timestamp stamp (`claude-2025-07-18_01-25Z`) when keyed off a
+`.specstory/history/*.md` transcript — the chat title is stripped from the id.
 
 ### 2. Capture one artifact per surface
 
@@ -75,6 +78,15 @@ $CAP screen --seconds 10 --name walkthrough
 
 Capture what actually demonstrates the feature — don't capture blindly. A
 before/after screenshot pair or a 10-second flow beats a folder of noise.
+
+**Evidence a reviewer can't re-derive from the UI must be captured, not just
+asserted.** If your `--feature`/`--step` text claims a DB row, a computed total,
+or a background side effect (e.g. "order priced at 480000¢", "booking_request
+row created"), capture proof — e.g. `capture.sh term --cmd "psql … -c 'select …'"`
+or an `http` probe of the API that returns it. Likewise, screenshot the
+**logged-in** state when the claim is "user logs in": a shot showing logged-out
+chrome undercuts the story. The manifest's steps are the script; the artifacts
+are the proof.
 
 ### 3. Finalize for review
 
@@ -127,6 +139,13 @@ reviewer at `<bundle>/MANIFEST.md`.
   `playwright` doesn't resolve from the CWD it exits `4` with an install hint
   (`npm i -D playwright && npx playwright install chromium`) — or use the
   `microsoft/playwright-cli` skill as the browser engine instead.
+- **A `web` capture with no `--steps` records a short video.** Playwright records
+  for the context lifetime, so a bare `goto → screenshot → close` yields a ~1–2s
+  clip. `capture.sh web` holds the final state for `--settle MS` (default 1200)
+  before closing so the clip is usable; raise `--settle` for a longer hold, or
+  drive real interaction via `--steps` (which records the whole flow). If a
+  Playwright step throws, the capture still records the partial screenshot/video/
+  trace (noted `(partial: capture failed)`) instead of discarding them.
 - **`capture.sh screen` on macOS needs Screen Recording permission** and the
   right avfoundation device index (default `1`, varies per machine). List
   devices with `ffmpeg -f avfoundation -list_devices true -i ""` and pass

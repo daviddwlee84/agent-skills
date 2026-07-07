@@ -30,8 +30,9 @@ Common options:
   --dry-run       Print the capture command; write nothing.
   --help, -h      Show this help and exit.
 
-web    --url URL [--steps FILE] [--timeout MS]
+web    --url URL [--steps FILE] [--timeout MS] [--settle MS]
        Playwright: full-page screenshot + video (webm) + trace (zip).
+       --settle holds the final state (default 1200ms) so no-steps clips are usable.
 term   --cmd "CMD" [--log]
        asciinema recording of CMD; --log (or no asciinema) tees a plain log.
 http   --url URL [--method GET|POST|...] [--data BODY] [--header "K: V"]...
@@ -51,7 +52,7 @@ EOF
 
 log()  { printf '%s\n' "$*" >&2; }
 warn() { printf 'warn: %s\n' "$*" >&2; }
-die()  { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+die()  { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -62,7 +63,7 @@ NAME=""
 NOTE=""
 DRY_RUN=0
 # mode-specific
-URL=""; STEPS=""; TIMEOUT_MS=15000
+URL=""; STEPS=""; TIMEOUT_MS=15000; SETTLE_MS=1200
 CMD=""; LOG_ONLY=0
 METHOD="GET"; DATA=""; HEADERS=()
 SECONDS_REC=8; DEVICE=""; DISPLAY_OVR="${DISPLAY:-:0}"
@@ -77,34 +78,36 @@ esac
 while [ $# -gt 0 ]; do
   case "$1" in
     --bundle=*)  BUNDLE="${1#--bundle=}"; shift ;;
-    --bundle)    BUNDLE="${2:-}"; shift 2 ;;
+    --bundle)    BUNDLE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --root=*)    ROOT="${1#--root=}"; shift ;;
-    --root)      ROOT="${2:-}"; shift 2 ;;
+    --root)      ROOT="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --name=*)    NAME="${1#--name=}"; shift ;;
-    --name)      NAME="${2:-}"; shift 2 ;;
+    --name)      NAME="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --note=*)    NOTE="${1#--note=}"; shift ;;
-    --note)      NOTE="${2:-}"; shift 2 ;;
+    --note)      NOTE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --url=*)     URL="${1#--url=}"; shift ;;
-    --url)       URL="${2:-}"; shift 2 ;;
+    --url)       URL="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --steps=*)   STEPS="${1#--steps=}"; shift ;;
-    --steps)     STEPS="${2:-}"; shift 2 ;;
+    --steps)     STEPS="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --timeout=*) TIMEOUT_MS="${1#--timeout=}"; shift ;;
-    --timeout)   TIMEOUT_MS="${2:-}"; shift 2 ;;
+    --timeout)   TIMEOUT_MS="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
+    --settle=*)  SETTLE_MS="${1#--settle=}"; shift ;;
+    --settle)    SETTLE_MS="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --cmd=*)     CMD="${1#--cmd=}"; shift ;;
-    --cmd)       CMD="${2:-}"; shift 2 ;;
+    --cmd)       CMD="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --log)       LOG_ONLY=1; shift ;;
     --method=*)  METHOD="${1#--method=}"; shift ;;
-    --method)    METHOD="${2:-}"; shift 2 ;;
+    --method)    METHOD="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --data=*)    DATA="${1#--data=}"; shift ;;
-    --data)      DATA="${2:-}"; shift 2 ;;
+    --data)      DATA="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --header=*)  HEADERS+=("${1#--header=}"); shift ;;
-    --header)    HEADERS+=("${2:-}"); shift 2 ;;
+    --header)    HEADERS+=("${2:-}"); [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --seconds=*) SECONDS_REC="${1#--seconds=}"; shift ;;
-    --seconds)   SECONDS_REC="${2:-}"; shift 2 ;;
+    --seconds)   SECONDS_REC="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --device=*)  DEVICE="${1#--device=}"; shift ;;
-    --device)    DEVICE="${2:-}"; shift 2 ;;
+    --device)    DEVICE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --display=*) DISPLAY_OVR="${1#--display=}"; shift ;;
-    --display)   DISPLAY_OVR="${2:-}"; shift 2 ;;
+    --display)   DISPLAY_OVR="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --dry-run)   DRY_RUN=1; shift ;;
     --help|-h)   usage; exit 0 ;;
     -*)          die "unknown flag: $1 (try --help)" 1 ;;
@@ -138,14 +141,17 @@ if [ -z "$NAME" ]; then
   NAME="$MODE-$((n + 1))"
 fi
 
-# add_artifact <name> <kind> <tool> <path-for-size> <note>
+# add_artifact <name> <kind> <tool> <path-for-size> <note> [meta-json]
+# meta-json (optional) is a JSON object of structured fields (e.g. HTTP status);
+# omit or pass "null" for none.
 add_artifact() {
-  local n="$1" kind="$2" tool="$3" path="$4" note="$5" bytes=0 tmp
+  local n="$1" kind="$2" tool="$3" path="$4" note="$5" meta="${6:-null}" bytes=0 tmp
   [ -f "$path" ] && bytes=$(wc -c < "$path" | tr -d ' ')
   tmp="$(mktemp)"
   jq --arg n "$n" --arg k "$kind" --arg t "$tool" \
-     --argjson b "${bytes:-0}" --arg note "$note" \
-     '.artifacts += [{name:$n, kind:$k, tool:$t, bytes:$b, note:$note}]' \
+     --argjson b "${bytes:-0}" --arg note "$note" --argjson meta "$meta" \
+     '.artifacts += [{name:$n, kind:$k, tool:$t, bytes:$b, note:$note}
+        + (if $meta==null then {} else {meta:$meta} end)]' \
      "$MANIFEST" > "$tmp" && mv "$tmp" "$MANIFEST"
   log "recorded artifact: $n ($kind, ${bytes:-0} bytes)"
 }
@@ -160,21 +166,33 @@ capture_web() {
     || die "playwright not resolvable from $(pwd) — run: npm i -D playwright && npx playwright install chromium (or use the microsoft/playwright-cli skill)" 4
 
   if [ "$DRY_RUN" = "1" ]; then
-    log "[dry-run] node $mjs --url $URL --out $BUNDLE --name $NAME ${STEPS:+--steps $STEPS}"
+    log "[dry-run] node $mjs --url $URL --out $BUNDLE --name $NAME --settle $SETTLE_MS ${STEPS:+--steps $STEPS}"
     return 0
   fi
-  local out_json
+  # capture-web.mjs exits 5 on nav/step failure but STILL flushes+prints whatever
+  # trace/video/screenshot it managed to write — record those partials rather than
+  # discarding them. Only a non-{0,5} exit is a hard failure.
+  local out_json rc partial_note=""
+  set +e
   out_json="$(node "$mjs" --url "$URL" --out "$BUNDLE" --name "$NAME" \
-    --timeout "$TIMEOUT_MS" ${STEPS:+--steps "$STEPS"})" \
-    || die "capture-web.mjs failed for $URL" 5
+    --timeout "$TIMEOUT_MS" --settle "$SETTLE_MS" ${STEPS:+--steps "$STEPS"})"
+  rc=$?
+  set -e
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 5 ]; then
+    die "capture-web.mjs failed for $URL (exit $rc)" 5
+  fi
+  if [ "$rc" -eq 5 ]; then
+    warn "web capture incomplete (nav/steps failed) — recording partial artifacts"
+    partial_note=" (partial: capture failed)"
+  fi
   # mjs prints {"screenshot":"..","video":"..","trace":".."} (relative to bundle)
   local shot vid trace
   shot="$(printf '%s' "$out_json" | jq -r '.screenshot // empty')"
   vid="$(printf '%s' "$out_json" | jq -r '.video // empty')"
   trace="$(printf '%s' "$out_json" | jq -r '.trace // empty')"
-  [ -n "$shot" ]  && add_artifact "$shot"  screenshot playwright "$BUNDLE/$shot"  "$NOTE"
-  [ -n "$vid" ]   && add_artifact "$vid"   video      playwright "$BUNDLE/$vid"   "$NOTE"
-  [ -n "$trace" ] && add_artifact "$trace" trace      playwright "$BUNDLE/$trace" "$NOTE"
+  [ -n "$shot" ]  && add_artifact "$shot"  screenshot playwright "$BUNDLE/$shot"  "$NOTE$partial_note"
+  [ -n "$vid" ]   && add_artifact "$vid"   video      playwright "$BUNDLE/$vid"   "$NOTE$partial_note"
+  [ -n "$trace" ] && add_artifact "$trace" trace      playwright "$BUNDLE/$trace" "$NOTE$partial_note"
 }
 
 capture_term() {
@@ -232,7 +250,14 @@ capture_http() {
         > "$sj"
   rm -f "$hdr" "$body"
   log "http $METHOD $URL -> $status (${time_total}s)"
-  add_artifact "http/$NAME.txt" http curl "$txt" "$NOTE status=$status"
+  # Structured meta (status/time) on BOTH the human dump and the machine sidecar,
+  # so the reviewer gets a real status field instead of a note suffix, and the
+  # .json sidecar is recorded too (its bytes are the body only, not the full dump).
+  local meta
+  meta="$(jq -nc --arg s "$status" --arg t "$time_total" \
+            '{status:($s|tonumber?), time_total:($t|tonumber?)}')"
+  add_artifact "http/$NAME.txt"  http curl "$txt" "$NOTE" "$meta"
+  add_artifact "http/$NAME.json" http curl "$sj"  "$NOTE" "$meta"
 }
 
 capture_screen() {

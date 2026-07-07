@@ -39,7 +39,7 @@ EOF
 }
 
 log()  { [ "$QUIET" = "1" ] || printf '%s\n' "$*" >&2; }
-die()  { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+die()  { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 AGENT_OVERRIDE=""
 OUT="json"
@@ -48,7 +48,7 @@ QUIET=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --agent=*) AGENT_OVERRIDE="${1#--agent=}"; shift ;;
-    --agent)   AGENT_OVERRIDE="${2:-}"; shift 2 ;;
+    --agent)   AGENT_OVERRIDE="${2:-}"; [ "$#" -ge 2 ] || die "missing value for $1 (try --help)" 1; shift 2 ;;
     --json)    OUT="json"; shift ;;
     --tsv)     OUT="tsv"; shift ;;
     --quiet)   QUIET=1; shift ;;
@@ -58,17 +58,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Claude's project slug: absolute $PWD with '/' replaced by '-'.
-cwd_slug() { printf '%s' "$PWD" | sed 's|/|-|g'; }
+# Claude's project slug: absolute $PWD with EVERY non-alphanumeric char
+# replaced by '-' (mirrors Claude Code: '/Users/me/.cache' -> '-Users-me--cache').
+cwd_slug() { printf '%s' "$PWD" | sed 's/[^a-zA-Z0-9]/-/g'; }
 
 newest_file() {
   # newest_file <dir> <glob> — newest matching file by mtime, or empty.
-  local dir="$1" glob="$2" found
+  # Bash glob loop (no xargs): avoids the GNU-xargs "run ls on empty input"
+  # footgun and NUL-in-variable issues entirely. Bash 3.2 compatible.
+  local dir="$1" glob="$2" newest="" f
   [ -d "$dir" ] || { printf ''; return 0; }
-  found=$(find "$dir" -maxdepth 1 -type f -name "$glob" -print0 2>/dev/null \
-    | xargs -0 ls -t 2>/dev/null \
-    | head -n 1)
-  printf '%s' "$found"
+  for f in "$dir"/$glob; do
+    [ -e "$f" ] || continue   # unmatched glob stays literal -> skip
+    if [ -z "$newest" ] || [ "$f" -nt "$newest" ]; then newest="$f"; fi
+  done
+  printf '%s' "$newest"
 }
 
 # --- Resolve Claude session (UUID + jsonl) --------------------------------
@@ -110,8 +114,9 @@ if [ -n "$CLAUDE_UUID" ]; then
   SOURCE="claude_jsonl"
 elif [ -n "$SPECSTORY_PATH" ]; then
   base=$(basename "$SPECSTORY_PATH" .md)
-  # SpecStory names: <YYYY-MM-DD_HH-MM-SSZ>[-<title-slug>]. Keep the stamp.
-  SESSION_ID=$(printf '%s' "$base" | sed -E 's/^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}Z).*/\1/')
+  # SpecStory names: <YYYY-MM-DD_HH-MM[-SS]Z>[-<title-slug>]. Seconds are
+  # optional (real transcripts are often minute-precision); keep just the stamp.
+  SESSION_ID=$(printf '%s' "$base" | sed -E 's/^([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}(-[0-9]{2})?Z).*/\1/')
   SOURCE="specstory"
 fi
 
