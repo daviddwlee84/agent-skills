@@ -67,6 +67,17 @@ B becomes optional.
 `2026-07 deferred` — captured as P? pending user's call on keeping the
 series grouping. Interim: downstream refresh with `--full-depth` works.
 
+`2026-07-08` — **Option B actioned** (does not resolve the A-vs-B structural
+choice). Found the canonical upstream bug already open as
+[vercel-labs/skills#1298](https://github.com/vercel-labs/skills/issues/1298)
+("npx skills update does not support --full-depth"), so rather than file a
+duplicate, enriched it with our independent root-cause + 22-vs-47 repro +
+knock-on effects (symlink drift, false-deletion hazard) + suggested fix:
+[comment](https://github.com/vercel-labs/skills/issues/1298#issuecomment-4910758441).
+The **A (flatten) vs keep-nested** decision is still open — B only improves the
+upstream on an unbounded timeline; until it lands, series skills still need the
+manual `--full-depth` refresh downstream.
+
 ## References
 
 - Upstream CLI: https://github.com/vercel-labs/skills (file issue here for option B)
