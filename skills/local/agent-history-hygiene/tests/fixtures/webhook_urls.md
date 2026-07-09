@@ -10,8 +10,8 @@ character-class requirements of each rule's regex. Avoid contiguous
 treats the full alphabet as a stopword and suppresses any rule match
 that contains it.
 
-DISCORD_WEBHOOK=https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-ZAPIER_HOOK=https://hooks.zapier.com/hooks/catch/12345678/aaaaaaa/
-MAKE_HOOK=https://hook.eu1.make.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-INTEGROMAT_HOOK=https://hook.integromat.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-STRIPE_WEBHOOK_SECRET=whsec_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+DISCORD_WEBHOOK=https://discord.com/api/webhooks/123456789012345678/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa <!-- gitleaks:allow -->
+ZAPIER_HOOK=https://hooks.zapier.com/hooks/catch/12345678/aaaaaaa/ <!-- gitleaks:allow -->
+MAKE_HOOK=https://hook.eu1.make.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa <!-- gitleaks:allow -->
+INTEGROMAT_HOOK=https://hook.integromat.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa <!-- gitleaks:allow -->
+STRIPE_WEBHOOK_SECRET=whsec_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa <!-- gitleaks:allow -->

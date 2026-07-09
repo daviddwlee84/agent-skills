@@ -53,6 +53,33 @@ If the alert is annoying on a downstream dashboard, mark it as a false
 positive in skills.sh / Socket with the rationale "intentional secret-shape
 test corpus for a secret-redaction skill."
 
+### Keeping the fixtures out of scan scope
+
+The fixtures are shaped to trip scanners on purpose, so the standing goal is
+"fake test vectors are out of scan scope **by default**, and only fire when a
+test re-plants them." How that is enforced across the surfaces that scan this
+repo (and downstream installs):
+
+- **gitleaks (this repo, downstream, `npx skills add` copies).** Each firing
+  line in the fixtures carries an inline `<!-- gitleaks:allow -->` marker (a
+  `# gitleaks:allow` comment for the two PEM headers in
+  `test_redact_secrets.py`). The marker travels with the file, so it also
+  suppresses in a downstream user's freshly-bootstrapped gitleaks hook. The
+  corpus + shell tests strip the marker before staging into their throwaway
+  repo, so the rules still fire there. See the skill's
+  [`tests/README.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/agent-history-hygiene/tests/README.md)
+  "Test-vector hygiene" section for the byte-identical-strip invariant.
+- **GitHub-native secret scanning / push protection.** Honors neither the
+  marker nor gitleaks config, so the fixtures dir is excluded by path in
+  [`.github/secret_scanning.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/secret_scanning.yml).
+- **What was removed.** A former repo-root `.gitleaksignore` pinned each finding
+  by `file:rule:line`; those fingerprints drift on any line edit (one entry was
+  already stale) and never ship downstream. The co-located marker replaces it.
+
+**Socket is a separate scanner that honors none of the above** — it re-derives
+the credential shape from file content — so the "mark as false positive"
+guidance above still stands for the Socket dashboard specifically.
+
 ## `mkdocs-site-bootstrap` — Snyk Med Risk (expected)
 
 This one is **not** a transitive-dependency CVE — pinning, bumping, or

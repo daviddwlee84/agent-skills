@@ -52,6 +52,30 @@ match 的」與「外洩的真 credential」，所以會在這個 fixture 上 fi
 如果在 downstream dashboard 上太礙眼，可以在 skills.sh / Socket 把它標 false positive，
 理由寫「intentional secret-shape test corpus for a secret-redaction skill」。
 
+### 讓 fixture 預設落在掃描範圍之外
+
+這些 fixture 是**故意**做成會觸發 scanner 的，所以長期目標是「假的 test vector 預設落在
+掃描範圍之外，只有在測試**特別重新植入 (re-plant)** 時才 fire」。在會掃這個 repo（以及
+下游安裝）的各個表面上，這條原則是這樣落實的：
+
+- **gitleaks（本 repo、下游、`npx skills add` 複製過去的副本）。** fixture 裡每一條會
+  fire 的行末尾都帶一個 inline `<!-- gitleaks:allow -->` marker（`test_redact_secrets.py`
+  的兩個 PEM header 用 `# gitleaks:allow` 註解）。marker 跟著檔案走，所以下游使用者剛
+  bootstrap 出來的 gitleaks hook 也會一併被抑制。corpus 與 shell 測試在 stage 進 throwaway
+  repo 之前會先把 marker 剝掉，讓規則在那裡照樣 fire。byte-identical 剝除的 invariant 見
+  skill 的
+  [`tests/README.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/agent-history-hygiene/tests/README.md)
+  「Test-vector hygiene」段落。
+- **GitHub 原生 secret scanning / push protection。** 既不認 marker 也不認 gitleaks
+  設定，所以 fixture 目錄改用路徑排除，寫在
+  [`.github/secret_scanning.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/secret_scanning.yml)。
+- **被移除的東西。** 先前 repo 根目錄有個 `.gitleaksignore`，用 `file:rule:line` 把每條
+  finding 釘死；這種 fingerprint 只要有人在上面插一行就會 drift（其中一條當時已經失準），
+  而且不會跟著下游走。改用與 secret 同行的 marker 取代它。
+
+**Socket 是另一個 scanner，上面這些它一個都不認** — 它是從檔案內容重新推導 credential
+形狀 — 所以針對 Socket dashboard，上面那條「標 false positive」的建議仍然成立。
+
 ## `mkdocs-site-bootstrap` — Snyk Med Risk（預期內）
 
 這條**不是** transitive dependency 的 CVE — pin、bump、或拔掉某個 package 都不會改變

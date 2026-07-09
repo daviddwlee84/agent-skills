@@ -67,7 +67,7 @@ class TestFindPrivateKeyFiles:
         f = tmp_path / "p.md"
         f.write_text(
             "prose\n"
-            "-----BEGIN RSA PRIVATE KEY-----\n"
+            "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow
             "fake material\n"
             "-----END RSA PRIVATE KEY-----\n"
             "more prose\n",
@@ -139,7 +139,7 @@ class TestRedactPrivateKeys:
         f = tmp_path / "p.md"
         f.write_text(
             "prose\n"
-            "-----BEGIN RSA PRIVATE KEY-----\n"
+            "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow
             "fake material\n"
             "-----END RSA PRIVATE KEY-----\n"
             "more prose\n",

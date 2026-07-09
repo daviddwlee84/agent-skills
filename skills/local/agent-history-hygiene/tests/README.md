@@ -30,6 +30,35 @@ bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
   `scripts/scan-staged.sh`: `0` clean, `20` leak, `30` missing
   gitleaks, `2` not a git repo.
 
+## Test-vector hygiene (why the fixtures carry `gitleaks:allow`)
+
+The firing fixtures (`real_anthropic.md`, `real_openai.md`, `private_key.md`,
+`webhook_urls.md`) hold deliberately-fake but realistic-shape secrets. Each
+firing line ends with an inline marker so a repo-root, downstream, or
+`npx skills add`-installed gitleaks scan **skips them by default**:
+
+```
+<SECRET> <!-- gitleaks:allow -->                      # markdown fixtures
+"-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow  # test_redact_secrets.py
+```
+
+The corpus + shell tests **strip the marker before staging** into their
+throwaway repo (`_GITLEAKS_MARKER_RE` in `test_gitleaks_corpus.py`; the `sed` in
+`stage_fixture` in `test_scan_staged.sh`), so the secret bytes are byte-identical
+to the shape the rules expect and the assertions still fire. Principle: **fake
+test vectors are out of scan scope by default, and only "fire" when a test
+re-plants them.**
+
+Invariant — **the strip must be byte-identical**: never change a secret's length
+or the length-sensitive rules (`sk-proj-…{80,}`, `sk-ant-api\d{2}-…{93}AA`, the
+webhook regexes) stop matching. When adding a new firing fixture, append the
+marker with a single leading space (`<SECRET> <!-- gitleaks:allow -->`); the
+strip regex reclaims exactly that separator. `clean.md` / `example_shapes.md`
+carry no marker (the strip is a no-op) and must keep their must-not-fire
+behavior. GitHub-native secret scanning ignores the marker; it's excluded
+separately via the repo's `.github/secret_scanning.yml`. This replaced a former
+repo-root `.gitleaksignore` whose `file:rule:line` fingerprints silently drifted.
+
 ## Why these three levels
 
 The skill already surfaced three regressions during initial hand

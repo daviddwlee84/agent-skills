@@ -46,11 +46,14 @@ make_repo() {
   printf '%s' "$d"
 }
 
-# Copy fixture + stage it under the given relative path.
+# Copy fixture + stage it under the given relative path. Strips the inline
+# `<!-- gitleaks:allow -->` marker so the rules still fire in the throwaway repo
+# (byte-identical to the fixture otherwise). Line-based sed → newline never
+# enters the pattern space, so [[:space:]]* only eats the horizontal separator.
 stage_fixture() {
   local repo="$1" fixture="$2" dest_rel="$3"
   mkdir -p "$(dirname "$repo/$dest_rel")"
-  cp "$FIXTURES/$fixture" "$repo/$dest_rel"
+  sed 's/[[:space:]]*<!-- *gitleaks:allow *-->//g' "$FIXTURES/$fixture" > "$repo/$dest_rel"
   git -C "$repo" add -- "$dest_rel"
 }
 
