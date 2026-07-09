@@ -11766,3 +11766,494 @@ I'm at a safe stopping point — nothing lost, `main` still at `e71d865`, my wor
 - **Option B — bundled `46b61b1` minus the live transcript.** Keep the 3 older transcripts + plan file, drop only `2026-07-09…triage….md` (the one still being written). More surgery, and the live transcript still can't land until the session ends anyway.
 
 Which do you want — A or B? If you don't care about the transcripts landing in *this* commit, A is the clean path.
+
+---
+
+_**User (2026-07-09 18:13:02Z)**_
+
+我剛剛稍微手動操作了一下 你看看是否可以繼續？
+
+---
+
+_**Agent (claude-opus-4-8 2026-07-09 18:13:13Z)**_
+
+<think><details><summary>Thought Process</summary>
+Let me check the git state to see what changed from the user's manual operations.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:13:13Z)**_
+
+讓我先看看你手動操作後現在的 git 狀態，再決定怎麼繼續。
+
+_**Agent (claude-opus-4-8 2026-07-09 18:13:14Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect git state after user's manual operations
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+echo "=== current branch & HEAD ==="; git rev-parse --abbrev-ref HEAD; git log --oneline -1 HEAD
+echo "=== main ==="; git log --oneline -1 main
+echo "=== branch fixture-gitleaks-allow-markers ==="; git rev-parse --verify --quiet fixture-gitleaks-allow-markers >/dev/null 2>&1 && git log --oneline -1 fixture-gitleaks-allow-markers || echo "(branch gone)"
+echo "=== rebase/merge in progress? ==="; { [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; } && echo "REBASE in progress" || echo "no rebase"; [ -f .git/MERGE_HEAD ] && echo "MERGE in progress" || echo "no merge"
+echo "=== main vs origin/main ==="; git rev-parse --short main origin/main 2>/dev/null
+echo "=== is main an ancestor of the branch (ff possible)? ==="; git rev-parse --verify --quiet fixture-gitleaks-allow-markers >/dev/null 2>&1 && { git merge-base --is-ancestor main fixture-gitleaks-allow-markers && echo "YES" || echo "NO/diverged"; }
+echo "=== working tree (non-untracked) ==="; git status --short | grep -vE '^\?\?' | head -25
+echo "=== last 6 reflog ==="; git reflog -6
+```
+
+```text
+=== current branch & HEAD ===
+main
+e71d865 docs(backlog): record Option B actioned via upstream skills#1298 comment
+=== main ===
+e71d865 docs(backlog): record Option B actioned via upstream skills#1298 comment
+=== branch fixture-gitleaks-allow-markers ===
+a44c048 fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+=== rebase/merge in progress? ===
+no rebase
+no merge
+=== main vs origin/main ===
+=== is main an ancestor of the branch (ff possible)? ===
+NO/diverged
+=== working tree (non-untracked) ===
+A  .claude/plans/best-practice-jiap-graceful-pearl.md
+A  .github/secret_scanning.yml
+D  .gitleaksignore
+A  .specstory/history/2026-07-06_15-33-20Z-npx-skills-add-daviddwlee84.md
+A  .specstory/history/2026-07-06_15-33-20Z.md
+A  .specstory/history/2026-07-07_10-33-39Z-agent-feature-code-server.md
+AM .specstory/history/2026-07-09_17-09-57Z-triage-is-conclusive-all.md
+M  docs/reference/skills-risk-evaluations.md
+M  docs/reference/skills-risk-evaluations.zh-TW.md
+M  pitfalls/README.md
+A  pitfalls/gitleaks-fires-on-checked-in-test-fixtures.md
+M  skills/local/agent-history-hygiene/tests/README.md
+M  skills/local/agent-history-hygiene/tests/fixtures/private_key.md
+M  skills/local/agent-history-hygiene/tests/fixtures/real_anthropic.md
+M  skills/local/agent-history-hygiene/tests/fixtures/real_openai.md
+M  skills/local/agent-history-hygiene/tests/fixtures/webhook_urls.md
+M  skills/local/agent-history-hygiene/tests/test_gitleaks_corpus.py
+M  skills/local/agent-history-hygiene/tests/test_redact_secrets.py
+M  skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+=== last 6 reflog ===
+e71d865 HEAD@{0}: checkout: moving from fixture-gitleaks-allow-markers to main
+a44c048 HEAD@{1}: commit (amend): fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+46b61b1 HEAD@{2}: checkout: moving from main to fixture-gitleaks-allow-markers
+e71d865 HEAD@{3}: reset: moving to HEAD
+e71d865 HEAD@{4}: checkout: moving from fixture-gitleaks-allow-markers to main
+46b61b1 HEAD@{5}: reset: moving to HEAD
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:14:24Z)**_
+
+<think><details><summary>Thought Process</summary>
+I'm checking the current git state after the user's manual operations. The main branch is at commit e71d865, while the fixture-gitleaks-allow-markers branch has been amended to a44c048. The two branches have diverged, so a fast-forward merge isn't directly possible.
+
+What's interesting is that I'm currently on main, but the working tree and index still contain all the staged changes from the feature branch. This happened because when the user checked out main with uncommitted staged changes that don't conflict, git carried those changes over to the new branch. So now I'm on main with all the feature modifications staged but not yet committed to this branch.
+
+Looking at the reflog, the user performed several operations—checking out between branches, amending commits, and resetting—and the sequence shows they ended up back on main after working on the fixture branch.
+
+The user wants to "continue," which means completing the merge into main. Since I'm already on main with all the changes staged, the most direct path is to commit these staged changes directly onto main. This would create a linear history where main advances by one commit containing all the feature changes. However, I need to be careful because the staged changes include the transcripts and plan files, which bundles them into the commit—something we discussed earlier as potentially not the cleanest approach.
+
+But given that the user manually staged everything and positioned us on main, they seem to be indicating they want everything committed as-is. The branch `fixture-gitleaks-allow-markers` would remain diverged at its amended commit, but that's fine since the goal is to get the changes into main. I should proceed with committing the staged changes to main to achieve the linear merge they're asking for. The staged snapshot includes the transcripts and plan from the branch, and committing them as-is onto main is the right move—it's the equivalent of the fast-forward merge the user wanted, just executed directly since the branch diverged. After committing, I should consider whether to clean up the fixture-gitleaks-allow-markers branch or leave it pointing at the old commit.
+
+But I need to verify the staged content is actually complete and correct, especially pitfalls/README.md—since main added the specstory-timestamp row after my branch was created, I need to confirm the staged version has both that row and my gitleaks-fires row, not just one or the other. The cleanest approach is to check what `git diff --cached` shows for pitfalls/README.md specifically — that'll tell me exactly what would be committed relative to main and whether I'm accidentally dropping the specstory-timestamp row.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:14:24Z)**_
+
+你手動操作後，現在在 `main` 上，而且我這批改動全部 staged 在 index 裡（等於準備直接 commit 到 main）。但有一個關鍵風險要先驗證：`main` 現在（`e71d865`）已經被另一個 commit 加了一條 `specstory-timestamp-regex-assumes-seconds` 的 pitfalls 索引列，而我這條分支是從舊 base 拉出來的。我要確認 staged 的 `pitfalls/README.md` **同時包含兩條**、不會把 main 那條洗掉。
+
+_**Agent (claude-opus-4-8 2026-07-09 18:14:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify staged pitfalls/README.md keeps both rows, no clobber
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+echo "=== staged files vs main (HEAD) ==="; git diff --cached --stat | tail -30
+echo
+echo "=== conflict markers in any staged file? ==="; git diff --cached --name-only -z | xargs -0 grep -lnE '^(<<<<<<<|>>>>>>>|=======)$' 2>/dev/null || echo "none"
+echo
+echo "=== CRITICAL: what would committing do to pitfalls/README.md vs main? ==="; git diff --cached -- pitfalls/README.md
+echo "=== does main's specstory-timestamp row survive in the staged/working copy? ==="; grep -c 'specstory-timestamp-regex-assumes-seconds' pitfalls/README.md; grep -c 'gitleaks-fires-on-checked-in-test-fixtures' pitfalls/README.md
+```
+
+```text
+=== staged files vs main (HEAD) ===
+ .claude/plans/best-practice-jiap-graceful-pearl.md |   147 +
+ .github/secret_scanning.yml                        |    12 +
+ .gitleaksignore                                    |    21 -
+ ...-07-06_15-33-20Z-npx-skills-add-daviddwlee84.md |   196 +
+ .specstory/history/2026-07-06_15-33-20Z.md         |    15 +
+ ...26-07-07_10-33-39Z-agent-feature-code-server.md | 11046 +++++++++++++++++
+ ...026-07-09_17-09-57Z-triage-is-conclusive-all.md | 11768 +++++++++++++++++++
+ docs/reference/skills-risk-evaluations.md          |    27 +
+ docs/reference/skills-risk-evaluations.zh-TW.md    |    24 +
+ pitfalls/README.md                                 |     1 +
+ .../gitleaks-fires-on-checked-in-test-fixtures.md  |    69 +
+ skills/local/agent-history-hygiene/tests/README.md |    29 +
+ .../tests/fixtures/private_key.md                  |     2 +-
+ .../tests/fixtures/real_anthropic.md               |     2 +-
+ .../tests/fixtures/real_openai.md                  |     2 +-
+ .../tests/fixtures/webhook_urls.md                 |    10 +-
+ .../tests/test_gitleaks_corpus.py                  |    15 +-
+ .../tests/test_redact_secrets.py                   |     4 +-
+ .../tests/test_scan_staged.sh                      |     7 +-
+ 19 files changed, 23362 insertions(+), 35 deletions(-)
+
+=== conflict markers in any staged file? ===
+none
+
+=== CRITICAL: what would committing do to pitfalls/README.md vs main? ===
+diff --git a/pitfalls/README.md b/pitfalls/README.md
+index d302d40..bba6a9c 100644
+--- a/pitfalls/README.md
++++ b/pitfalls/README.md
+@@ -45,6 +45,7 @@ and prevention guidance.
+ | [`deploy-pages-times-out-polling-status`](deploy-pages-times-out-polling-status.md) | `actions/deploy-pages@v5`, `Current status:` empty, `Timeout reached, aborting!`, GitHub Pages service-side hang | active |
+ | [`evidence-gitignored-media-cannot-embed-in-pr`](evidence-gitignored-media-cannot-embed-in-pr.md) | broken image in PR comment, `.evidence/` screenshot 404, gitignored media has no public URL, demo-evidence | active |
+ | [`specstory-timestamp-regex-assumes-seconds`](specstory-timestamp-regex-assumes-seconds.md) | evidence bundle dir contains full chat title, SpecStory `HH-MMZ` no seconds, Claude project slug non-alnum, demo-evidence session id | active |
++| [`gitleaks-fires-on-checked-in-test-fixtures`](gitleaks-fires-on-checked-in-test-fixtures.md) | gitleaks fires on fixtures, `anthropic-api-key` / `private-key` test corpus, Socket 1 alert, downstream pre-commit hook blocks on shipped fixtures, `.gitleaksignore` fingerprint drift, `gitleaks:allow` marker | active |
+ 
+ ## Cross-referenced pitfalls
+ 
+=== does main's specstory-timestamp row survive in the staged/working copy? ===
+1
+1
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:16Z)**_
+
+<think><details><summary>Thought Process</summary>
+The staged changes look good — the diff shows only my new `gitleaks-fires` row added to the table while the `specstory-timestamp` row remains unchanged, and grep confirms both entries are present with no duplicates or conflict markers. The staged diff shows only additions to skills-risk-evaluations.md with no deletions, confirming my subsection was cleanly added after the existing Socket section without overwriting anything. Since the user has explicitly staged everything on main and asked me to continue, I should commit directly here using the original branch commit's message to preserve the full context. I'm debating whether to re-stage the live transcript before committing, but since the staged version is a stable snapshot and the working-tree changes don't affect the feature files, I'll just commit what's already staged. Let me verify that `git commit -C a44c048` will properly reuse the commit message from that earlier commit.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:16Z)**_
+
+驗證通過,可以繼續。關鍵檢查都乾淨:
+
+- staged 的 `pitfalls/README.md` **兩條索引列都在**(main 的 `specstory-timestamp` 保留,我的 `gitleaks-fires` 是唯一新增行)—沒有洗掉別人的改動。
+- 所有 staged 檔案**沒有殘留 conflict marker**。
+- 對 main 的 diff 全是純新增,`docs/reference/*`、tests、`.github/secret_scanning.yml` 等都沒動到並行 commit 的內容。
+
+你手動把它整成「在 main 上、改動全部 staged」的狀態,等於已經把分支內容正確接到 `e71d865` 之上了。現在只差把它 commit 到 main(這就是你要的線性 ff 結果)。我沿用分支 commit `a44c048` 的訊息:
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit staged changes directly onto main
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+git commit -C a44c048 2>&1 | tail -4
+echo "=== result ==="; git log --oneline -3 main
+echo "=== main is now e71d865 + one commit? parent check ==="; git rev-parse --short HEAD~1
+echo "=== branch fixture-gitleaks-allow-markers (now superseded) ==="; git log --oneline -1 fixture-gitleaks-allow-markers
+```
+
+```text
+ create mode 100644 .specstory/history/2026-07-06_15-33-20Z.md
+ create mode 100644 .specstory/history/2026-07-07_10-33-39Z-agent-feature-code-server.md
+ create mode 100644 .specstory/history/2026-07-09_17-09-57Z-triage-is-conclusive-all.md
+ create mode 100644 pitfalls/gitleaks-fires-on-checked-in-test-fixtures.md
+=== result ===
+231512f fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+e71d865 docs(backlog): record Option B actioned via upstream skills#1298 comment
+d0c0126 fix(demo-evidence): repair 22 audited defects across capture/session/finalize
+=== main is now e71d865 + one commit? parent check ===
+e71d865
+=== branch fixture-gitleaks-allow-markers (now superseded) ===
+a44c048 fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:35Z)**_
+
+<think><details><summary>Thought Process</summary>
+The commit went through cleanly with a linear history as intended — main is now at the latest commit with my changes stacked on top. The old branch has diverged and is no longer needed. Now I should run the test suite to make sure nothing broke in the process.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:35Z)**_
+
+Committed. `main` is now `231512f`, parent `e71d865` — clean linear history, exactly the fast-forward result you wanted (main = the new base + one commit with all the changes). Let me re-run the test suite on the committed state to confirm nothing regressed through all the rebasing churn.
+
+_**Agent (claude-opus-4-8 2026-07-09 18:15:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify tests + gitleaks on committed main
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+make test-skill 2>&1 | tail -12
+echo "=== root gitleaks scan of the fixtures tree (should be clean) ==="
+gitleaks dir skills/local/agent-history-hygiene/tests/ --no-banner --exit-code 1 >/dev/null 2>&1 && echo "gitleaks: no leaks (exit 0)" || echo "gitleaks: FOUND leaks (exit $?)"
+```
+
+```text
+bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+== scan-staged exit-code contract ==
+
+  PASS clean fixture → exit 0
+  PASS real Anthropic key → exit 20
+  PASS outside git repo → exit 2
+  PASS no gitleaks on PATH → exit 30
+  PASS allowlisted example shapes → exit 0 (empty [] report)
+
+== summary ==
+pass: 5
+fail: 0
+=== root gitleaks scan of the fixtures tree (should be clean) ===
+gitleaks: no leaks (exit 0)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:16:08Z)**_
+
+<think><details><summary>Thought Process</summary>
+The pytest tests passed since the shell test ran afterward—make would've stopped on the first failure, so the earlier 33 passed results must have succeeded. Now checking gitleaks results.
+
+Gitleaks shows no leaks. Everything's verified on main. I should report back to the user in Chinese, mention what's in the commit (transcripts and plan file), offer to clean up the stale `fixture-gitleaks-allow-markers` branch, and ask before pushing since main is ahead of origin.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:16:16Z)**_
+
+完成 ✅。全部驗證通過:`make test-skill` 的 pytest + shell contract 全綠(shell 5/5;pytest 若失敗 make 會中止,能跑到 shell 代表 pytest 也過),`gitleaks dir` 掃 fixtures 樹 **no leaks**。
+
+## 現在的狀態
+
+`main` 已經是線性的:
+
+```
+231512f  fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers   ← 你要的結果
+e71d865  docs(backlog): record Option B actioned via upstream skills#1298 comment
+d0c0126  fix(demo-evidence): repair 22 audited defects across capture/session/finalize
+```
+
+`231512f` 的 parent 就是 `e71d865`,等於「在最新 main 上加一個 commit」——你原本要的 fast-forward 效果達成了。過程中並行 session 加的 `d0c0126`/`e71d865` 都完整保留,`pitfalls/README.md` 兩條索引列(`specstory-timestamp` + `gitleaks-fires`)都在,沒有互相覆蓋。
+
+這個 commit 含 19 個檔案:14 個功能檔(marker、兩個測試的 strip、redactor 測試的 PEM marker、刪 `.gitleaksignore`、加 `.github/secret_scanning.yml`、docs + pitfalls)+ 你手動一起 bundle 進來的 4 個 `.specstory` transcript 與 plan 檔。
+
+## 兩個收尾(要的話我來做)
+
+1. **舊分支 `fixture-gitleaks-allow-markers`(`a44c048`)已被取代** —— 它是舊 base 上的 diverged 版本,現在冗餘。要我 `git branch -D` 刪掉嗎?
+2. **`main` 目前領先 `origin/main` 一個 commit**,還沒 push。要我 push 嗎?
+
+(先前那個 rebase 卡住的根因也確認了:被 bundle 進去的正是**這場對話的即時 transcript**,harness 每個動作都在改它,rebase 多步驟過程中 git 一直看到 tracked 檔案變動所以拒絕 continue;改成單次 commit 就沒這問題。已寫進 `pitfalls/gitleaks-fires-on-checked-in-test-fixtures.md` 旁邊沒提到這點,如果你覺得值得,我可以再補一條 pitfall 記錄「live transcript 被 track 時無法 rebase」。)
+
+---
+
+_**User (2026-07-09 18:27:59Z)**_
+
+sure add pitfall
+
+---
+
+_**Agent (claude-opus-4-8 2026-07-09 18:28:52Z)**_
+
+<think><details><summary>Thought Process</summary>
+I need to create a new pitfall document with a symptom-focused filename that captures the issue where live transcripts block rebasing, then add an entry to the pitfalls index. Now I'm deciding on the filename and index entry — something like `git-rebase-continue-refuses-with-no-conflicts.md` to lead with the symptom, and I'll make sure to include keywords about the live transcript in the index row so it's discoverable. I need to pull the exact error message and note that this happens specifically when a tracked file (like the SpecStory session transcript) is being continuously rewritten by the running harness during a rebase. After I write the pitfall doc, I'll add the index row to the README and then commit both changes. I need to create the pitfall document file and add its entry to the README index, then commit both changes together. Let me start by writing out the pitfall content and reading the README to get the exact formatting for the index row before making the edits.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:28:52Z)**_
+
+On it — writing the pitfall for the live-transcript-blocks-rebase trap, then adding its index row.
+
+_**Agent (claude-opus-4-8 2026-07-09 18:28:52Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```md
+# `git rebase --continue` refuses with "edit all merge conflicts" on a clean index (a tracked file is being live-written)
+
+## Symptom
+
+Mid-rebase, after resolving the only conflict and `git add`-ing it,
+`git rebase --continue` refuses to proceed and keeps printing:
+
+\```
+You must edit all merge conflicts and then
+mark them as resolved using git add
+\```
+
+…even though the index is provably clean:
+
+\```
+$ git diff --name-only --diff-filter=U   # unmerged paths
+(empty)
+$ git ls-files -u                         # unmerged index entries (stages 1/2/3)
+(empty)
+$ git diff --cached --check               # leftover conflict markers
+(none)
+\```
+
+Re-staging (`git add -A`) and retrying makes no difference. `git status`
+shows one file in the `AM` state (staged-add **and** working-tree-modified),
+e.g. `AM .specstory/history/2026-07-09_..-..Z-<current-session>.md`.
+
+## Root cause
+
+A **tracked file that an external process is continuously rewriting** is part
+of the commit being rebased. In an agent session that file is the **live chat
+transcript** the harness appends to on every action (Claude Code / SpecStory
+writes `.specstory/history/<current-session>.md`; Cursor/others similar). It
+had been committed into the branch being rebased.
+
+A rebase is a multi-step operation (apply → stop at conflict → resolve →
+continue). Between the `git add` and the `git rebase --continue`, the harness
+writes the transcript again, so the tracked file changes underneath git and
+its mid-rebase safety checks trip. The "resolve conflicts" message is
+misleading — there is no conflict; git is reacting to the moving tracked file
+in the shared working directory. The same churn also blocks `git switch`
+("Your local changes to the following files would be overwritten by checkout").
+
+## Workaround
+
+Do not put the running session's live transcript in a commit you intend to
+rebase or cherry-pick. Concretely:
+
+- **Prefer a single `git commit` over a rebase.** A one-shot commit snapshots
+  the index once, so continuous writes to a tracked file don't matter. When
+  the branch has diverged from `main`, land the change by staging it on `main`
+  and committing directly (or `git commit -C <branch-commit>` to reuse the
+  message) instead of rebase-then-ff.
+- If you must rebase, **exclude the live transcript** from the commit first
+  (`git rm --cached .specstory/history/<current-session>.md`), rebase, then
+  add transcripts back in a separate commit.
+- `git rebase --abort` is always the safe exit — it restores the pre-rebase
+  branch tip and re-applies any autostash; nothing is lost (check `git reflog`).
+
+## Prevention
+
+Commit chat transcripts (`.specstory/history/*.md`, `.claude/plans/*.md`) as
+their **own commit, ideally at session end** when the current transcript has
+stopped changing — never bundle the *active* session's transcript into a
+feature commit you then rebase. This is a corollary of the
+[`agent-history-hygiene`](../skills/local/agent-history-hygiene/SKILL.md) skill:
+stage agent artifacts separately from the feature diff. If two agents/terminals
+share one working directory, treat concurrent `git` operations as unsafe — they
+mutate the same `.git` and can corrupt rebase/merge state (`git reflog` will
+show `commit (amend)` / `pull --rebase` entries you didn't run).
+
+```
+
+```text
+File created successfully at: /Users/david/Documents/Program/agent-skills/pitfalls/rebase-continue-refuses-on-clean-index-live-transcript.md (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:28:58Z)**_
+
+Now the index row. Let me read the current index to get the exact anchor.
+
+_**Agent (claude-opus-4-8 2026-07-09 18:28:58Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./pitfalls/README.md`
+
+```text
+36	## Index
+37	
+38	| Slug | Symptom keywords | Status |
+39	|---|---|---|
+40	| [`yq-bad-expression-and-silent-null`](yq-bad-expression-and-silent-null.md) | `bad expression`, yq returns null, ISO date parse, `strenv` vs `env` | active |
+41	| [`symlink-target-relative-to-symlink-not-cwd`](symlink-target-relative-to-symlink-not-cwd.md) | dangling symlink, looks valid in `ls -la`, agent skill not loading | active |
+42	| [`mkdocs-strict-rejects-build-time-generated-links`](mkdocs-strict-rejects-build-time-generated-links.md) | `Aborted with N warnings in strict mode`, `llms.txt` link, raw-markdown URL, `unrecognized_links` config | active |
+43	| [`skills-cli-skips-nested-skills-without-full-depth`](skills-cli-skips-nested-skills-without-full-depth.md) | `npx skills add` reports `No matching skills found`, `skills/local/*` invisible, `--full-depth` flag | superseded (depth-3 now discovered in `skills@1.5.14`) |
+44	| [`skills-update-fails-for-series-nested-skills`](skills-update-fails-for-series-nested-skills.md) | `npx skills update` prints `Failed to update` / `Failed to check for deleted skills` for `vendor/<series>/<name>` depth-4 skills; `.claude/skills` symlinks missing; `update` can't pass `--full-depth` | active |
+45	| [`deploy-pages-times-out-polling-status`](deploy-pages-times-out-polling-status.md) | `actions/deploy-pages@v5`, `Current status:` empty, `Timeout reached, aborting!`, GitHub Pages service-side hang | active |
+46	| [`evidence-gitignored-media-cannot-embed-in-pr`](evidence-gitignored-media-cannot-embed-in-pr.md) | broken image in PR comment, `.evidence/` screenshot 404, gitignored media has no public URL, demo-evidence | active |
+47	| [`specstory-timestamp-regex-assumes-seconds`](specstory-timestamp-regex-assumes-seconds.md) | evidence bundle dir contains full chat title, SpecStory `HH-MMZ` no seconds, Claude project slug non-alnum, demo-evidence session id | active |
+48	| [`gitleaks-fires-on-checked-in-test-fixtures`](gitleaks-fires-on-checked-in-test-fixtures.md) | gitleaks fires on fixtures, `anthropic-api-key` / `private-key` test corpus, Socket 1 alert, downstream pre-commit hook blocks on shipped fixtures, `.gitleaksignore` fingerprint drift, `gitleaks:allow` marker | active |
+49	
+50	## Cross-referenced pitfalls
+51
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/david/Documents/Program/agent-skills/pitfalls/README.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:18Z)**_
+
+<think><details><summary>Thought Process</summary>
+I'm staging the two documentation files for the pitfalls addition and committing them with a message about the git rebase issue, then I'll report back and offer to push the changes.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:18Z)**_
+
+Now committing just the pitfall (two files, nothing else) to `main`.
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:20Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the pitfall to main
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+git add pitfalls/rebase-continue-refuses-on-clean-index-live-transcript.md pitfalls/README.md
+echo "=== staged ==="; git status --short | grep -E '^[MA]'
+git commit -q -F - <<'EOF'
+docs(pitfalls): record live transcript blocking git rebase --continue
+
+git rebase --continue kept printing "You must edit all merge conflicts"
+with a provably clean index (no unmerged entries, no markers). Root cause:
+the running session's live .specstory transcript was tracked in the commit
+being rebased, and the harness rewrites it on every action, so the tracked
+file changed underneath the multi-step rebase and tripped its safety checks.
+Workaround: single git commit (snapshot) over rebase, or exclude the live
+transcript; commit agent transcripts as their own commit at session end.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+EOF
+echo "=== result ==="; git log --oneline -3 main
+```
+
+```text
+=== staged ===
+M  pitfalls/README.md
+A  pitfalls/rebase-continue-refuses-on-clean-index-live-transcript.md
+=== result ===
+6a0e6c0 docs(pitfalls): record live transcript blocking git rebase --continue
+231512f fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+e71d865 docs(backlog): record Option B actioned via upstream skills#1298 comment
+```
+</details></tool-use>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:29Z)**_
+
+<think><details><summary>Thought Process</summary>
+I've committed the pitfall change and now main is two commits ahead of origin with the feature and pitfall commits. I need to clean up by deleting the stale `fixture-gitleaks-allow-markers` branch and pushing the changes, then wrap this up.
+</details></think>
+
+_**Agent (claude-opus-4-8 2026-07-09 18:29:31Z)**_
+
+加好了。新增 `pitfalls/rebase-continue-refuses-on-clean-index-live-transcript.md`(四段格式:症狀含那句 `You must edit all merge conflicts` + `git ls-files -u` 為空、`AM` 檔;根因;workaround;prevention),並登記到 `pitfalls/README.md` 索引。已 commit 到 main:
+
+```
+6a0e6c0  docs(pitfalls): record live transcript blocking git rebase --continue
+231512f  fix(agent-history-hygiene): keep fake test-vectors out of scan scope via gitleaks:allow markers
+e71d865  docs(backlog): record Option B actioned via upstream skills#1298 comment
+```
+
+`main` 現在領先 `origin/main` **兩個 commit**。剩兩個收尾,要的話我來做:
+
+1. 刪掉已被取代的舊分支 `fixture-gitleaks-allow-markers`(`a44c048`)?
+2. `git push` 這兩個 commit 到 `origin/main`?
