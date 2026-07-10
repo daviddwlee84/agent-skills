@@ -61,7 +61,8 @@ class TestFilterByPrefixes:
 
 
 class TestFindPrivateKeyFiles:
-    """`find_private_key_files` detects PEM blocks + bare 'PRIVATE KEY'."""
+    """`find_private_key_files` detects PEM blocks + stray key *headers*, and
+    IGNORES bare 'PRIVATE KEY' prose (which detect-private-key ignores too)."""
 
     def test_detects_pem_block(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.md"
@@ -78,16 +79,43 @@ class TestFindPrivateKeyFiles:
         # Description should mention at least one PEM block
         assert any("PEM" in desc for desc in results[f])
 
-    def test_detects_bare_mention_without_block(self, redact_secrets, tmp_path: Path):
+    def test_ignores_bare_mention_without_header(self, redact_secrets, tmp_path: Path):
+        """Prose that merely says 'PRIVATE KEY' is not key material.
+        detect-private-key ignores it, and flagging it caused a
+        non-converging redact loop, so we ignore it too."""
         f = tmp_path / "p.md"
         f.write_text("hey here is a PRIVATE KEY mention\n", encoding="utf-8")
+        assert redact_secrets.find_private_key_files([f]) == {}
+
+    def test_detects_stray_header_without_block(self, redact_secrets, tmp_path: Path):
+        """A key *header* quoted in prose (no matching END) is exactly what
+        detect-private-key greps for, so it must be flagged."""
+        f = tmp_path / "p.md"
+        f.write_text(
+            "oops pasted -----BEGIN OPENSSH PRIVATE KEY----- then stopped\n",
+            encoding="utf-8",
+        )
         results = redact_secrets.find_private_key_files([f])
         assert f in results
-        assert any('"PRIVATE KEY" mention' in desc for desc in results[f])
+        assert any("header" in desc for desc in results[f])
+
+    def test_detects_non_pem_blacklist_headers(self, redact_secrets, tmp_path: Path):
+        """PuTTY + OpenVPN headers have no 'PRIVATE KEY' text but are on the
+        detect-private-key BLACKLIST. The OpenVPN token is built from split
+        string literals in the source; this guards that it still matches."""
+        f = tmp_path / "p.md"
+        f.write_text(
+            "PuTTY-User-Key-File-2: ssh-rsa\n"
+            "-----BEGIN OpenVPN Static key V1-----\n",
+            encoding="utf-8",
+        )
+        results = redact_secrets.find_private_key_files([f])
+        assert f in results
+        assert any("header" in desc for desc in results[f])
 
     def test_ignores_non_md_suffix(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.txt"
-        f.write_text("PRIVATE KEY here\n", encoding="utf-8")
+        f.write_text("-----BEGIN RSA PRIVATE KEY-----\n", encoding="utf-8")  # gitleaks:allow
         assert redact_secrets.find_private_key_files([f]) == {}
 
     def test_ignores_clean_file(self, redact_secrets, tmp_path: Path):
@@ -133,7 +161,8 @@ class TestRedactFile:
 
 
 class TestRedactPrivateKeys:
-    """`redact_private_keys` scrubs PEM blocks + literal 'PRIVATE KEY'."""
+    """`redact_private_keys` scrubs PEM blocks + stray key *headers*, and
+    LEAVES bare 'PRIVATE KEY' prose untouched."""
 
     def test_replaces_pem_block_wholesale(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.md"
@@ -148,21 +177,35 @@ class TestRedactPrivateKeys:
         modified = redact_secrets.redact_private_keys(f)
         assert modified is True
         content = f.read_text(encoding="utf-8")
-        # Sentinel must NOT contain "PRIVATE KEY" — else the follow-up
-        # literal-string replacement corrupts it into "PRIV***KEY".
+        # Sentinel must contain neither a header token nor the bare phrase, so
+        # a re-run is a no-op.
         assert "[REDACTED PEM PRIVKEY BLOCK]" in content
         assert "fake material" not in content
         # The original PEM header must be gone (it contains "PRIVATE KEY").
         assert "-----BEGIN RSA PRIVATE KEY-----" not in content
 
-    def test_replaces_bare_mention(self, redact_secrets, tmp_path: Path):
+    def test_leaves_bare_mention_untouched(self, redact_secrets, tmp_path: Path):
+        """Bare prose mentions are not key material; redacting them mangled
+        legitimate text and never converged against a live transcript writer."""
         f = tmp_path / "p.md"
-        f.write_text("mention PRIVATE KEY here\n", encoding="utf-8")
+        original = "mention PRIVATE KEY here\n"
+        f.write_text(original, encoding="utf-8")
+        modified = redact_secrets.redact_private_keys(f)
+        assert modified is False
+        assert f.read_text(encoding="utf-8") == original
+
+    def test_redacts_stray_header(self, redact_secrets, tmp_path: Path):
+        """A header quoted in prose (no matching END) still trips
+        detect-private-key, so it is scrubbed to a header-free sentinel."""
+        f = tmp_path / "p.md"
+        f.write_text(
+            "log: -----BEGIN OPENSSH PRIVATE KEY----- truncated\n", encoding="utf-8"
+        )
         modified = redact_secrets.redact_private_keys(f)
         assert modified is True
         content = f.read_text(encoding="utf-8")
-        assert "PRIVATE KEY" not in content
-        assert "PRIV***KEY" in content
+        assert "BEGIN OPENSSH PRIVATE KEY" not in content
+        assert "[REDACTED PRIVKEY HEADER]" in content
 
     def test_leaves_clean_file_unchanged(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.md"

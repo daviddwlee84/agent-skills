@@ -214,6 +214,18 @@ committed / pushed a secret":
   `lsof <file>` (looking for `specstory_*` writers) instead. See
   `pitfalls/redact-secrets-loop-with-active-specstory-writer.md` in
   upstream chezmoi for the full debugging trail.
+  **Fixed sub-case:** the *bare-phrase* variant of this loop — where the
+  redactor's own `PRIVATE KEY` substring match kept flagging prose that
+  merely *discusses* private keys (this skill's docs, or a chat about
+  redaction) with **no real secret present** — no longer happens.
+  `redact_secrets.py` now scopes to key *headers* (the
+  `detect-private-key` BLACKLIST), so prose mentions are ignored and
+  converge immediately. The atomic-commit workaround above is still
+  needed for the harder case: a **real** secret an active writer keeps
+  re-appending. When only the substring redactor (`redact-agent-secrets`)
+  trips while `gitleaks` + `detect-private-key` pass, it's the false
+  positive — verify with `gitleaks git --staged` and, if clean, commit
+  with `SKIP=redact-agent-secrets` (keeps the real gates active).
 
 ## Available scripts
 

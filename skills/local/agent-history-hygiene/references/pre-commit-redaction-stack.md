@@ -33,10 +33,19 @@ hook in `assets/pre-commit-config.yaml.template`. On each commit:
 2. `redact_secrets.py --fix` runs gitleaks against those files in staged
    mode, gathers findings, and replaces each literal secret with
    `first3...last3` (e.g. `sk-proj-abc...xyz`).
-3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----`) are
-   replaced wholesale with `[REDACTED PRIVATE KEY BLOCK]`, and the
-   literal string `PRIVATE KEY` becomes `PRIV***KEY` to stop the
-   detect-private-key hook from firing downstream.
+3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----` … `-----END
+   ... PRIVATE KEY-----`) are replaced wholesale with `[REDACTED PEM
+   PRIVKEY BLOCK]`, and any stray key **header** token (a truncated key,
+   or a header quoted in prose) with `[REDACTED PRIVKEY HEADER]`. These
+   headers — *not* the bare phrase `PRIVATE KEY` — are exactly what the
+   downstream `detect-private-key` hook greps for (its `BLACKLIST`:
+   `BEGIN … PRIVATE KEY`, `PuTTY-User-Key-File-N`, `BEGIN OpenVPN Static
+   key V1`), so the redactor scopes to them. Bare `PRIVATE KEY` prose is
+   left intact on purpose: redacting it mangled legitimate text and,
+   against a live transcript writer that re-appends the words on every
+   diagnostic command, never converged (see the redact-loop pitfall in
+   `SKILL.md`). The two placeholders contain neither a header token nor
+   the bare phrase, so a second pass is a no-op.
 4. Any modified file is rewritten on disk. Pre-commit notices and exits
    non-zero with "files were modified by this hook" — the user then
    `git add`s the redacted files and recommits. Same UX as

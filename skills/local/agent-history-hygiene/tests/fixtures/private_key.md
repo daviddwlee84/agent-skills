@@ -1,8 +1,10 @@
 # private key fixture
 
 Contains a fake PEM-format private key block. `redact_private_keys`
-must replace the block with `[REDACTED PRIVATE KEY BLOCK]`, and the
-literal string `PRIVATE KEY` elsewhere must become `PRIV***KEY`.
+must replace the whole block with `[REDACTED PEM PRIVKEY BLOCK]`. A bare
+mention of `PRIVATE KEY` in prose (below) is intentionally left as-is —
+the redactor scopes to key *headers*, matching what detect-private-key
+greps for, so prose no longer triggers a non-converging redact loop.
 
 -----BEGIN RSA PRIVATE KEY----- <!-- gitleaks:allow -->
 MIIEogIBAAKCAQEAFAKE_KEY_MATERIAL_FOR_TESTING_ONLY_DO_NOT_USE
