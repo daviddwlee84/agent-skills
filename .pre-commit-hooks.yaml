@@ -1,0 +1,31 @@
+# Pre-commit hook manifest for the agent-history-hygiene skill.
+# https://pre-commit.com/#creating-new-hooks
+#
+# Consume from any repo's .pre-commit-config.yaml:
+#
+#   - repo: https://github.com/daviddwlee84/agent-skills
+#     rev: ahh-v1.1.0            # bump with `pre-commit autoupdate`
+#     hooks:
+#       - id: redact-agent-secrets
+#
+# `pre-commit autoupdate` tracks the newest tag on this repo. Because this is a
+# multi-skill monorepo, keep this hook's releases on the `ahh-v*` tag series
+# (or pin a commit SHA in `rev:`) so an unrelated skill's tag can't silently
+# bump this hook.
+#
+# language: script -> pre-commit runs the file directly (its `#!/usr/bin/env
+# python3` shebang picks the interpreter); the redactor is stdlib-only, so no
+# env is built and no uv/pip install is needed. It scans staged files itself
+# (pass_filenames: false) and rewrites any leak in place, so pre-commit reports
+# "files were modified by this hook" and you re-stage + recommit.
+- id: redact-agent-secrets
+  name: Auto-redact secrets in agent artifacts
+  description: >-
+    Redact leaked secrets in agent transcript/plan artifacts (SpecStory,
+    Claude/Cursor/OpenCode plans, spec-kit, Codex) before they are committed.
+  entry: skills/local/agent-history-hygiene/assets/redact_secrets.py --fix
+  language: script
+  pass_filenames: false
+  # Default artifact-dir scope (mirror of assets/artifact-dirs.txt). A consuming
+  # repo may override `files:` in its own .pre-commit-config.yaml to widen it.
+  files: ^(\.specstory/history|\.claude/plans|\.cursor/plans|\.cursor/rules|\.opencode/plans|\.specify|\.codex)/.*\.md$

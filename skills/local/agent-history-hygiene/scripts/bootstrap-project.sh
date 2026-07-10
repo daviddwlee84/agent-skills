@@ -13,21 +13,33 @@ ASSETS_DIR="$SKILL_DIR/assets"
 
 CHEZMOI_SRC="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
 
+# The redactor now ships as a PINNED REMOTE pre-commit hook (not a vendored
+# copy), so fixes propagate via `pre-commit autoupdate`. Keep these in lockstep
+# with assets/pre-commit-config.yaml.template and the repo's .pre-commit-hooks.yaml.
+HOOK_REPO_URL="https://github.com/daviddwlee84/agent-skills"
+HOOK_REV="ahh-v1.1.0"
+
 usage() {
   cat <<'EOF'
 Usage: bootstrap-project.sh [OPTIONS]
 
 Install agent-history-hygiene's pre-commit stack into the current repo:
-  .pre-commit-config.yaml   + redact-agent-secrets + gitleaks-system
+  .pre-commit-config.yaml   redact-agent-secrets (pinned remote hook) +
+                            gitleaks-system + standard hygiene
   .gitleaks.toml            (portable subset; real leaks still fire)
-  scripts/redact_secrets.py (bundled unless --from-chezmoi)
   .git/hooks/pre-commit     (via `pre-commit install`)
 
+The redactor is NOT vendored -- it's a pinned pre-commit hook from the
+agent-skills repo, so `pre-commit autoupdate` keeps every repo current.
+
 Options:
-  --from-chezmoi      Symlink .pre-commit-config.yaml + .gitleaks.toml +
-                      redact_secrets.py from your chezmoi source
-                      ($HOME/.local/share/chezmoi) so updates propagate.
-                      Fails if chezmoi source is missing.
+  --from-chezmoi      Symlink .pre-commit-config.yaml + .gitleaks.toml from your
+                      chezmoi source ($HOME/.local/share/chezmoi) so updates
+                      propagate. Fails if chezmoi source is missing.
+  --migrate           Convert a repo from the OLD vendored layout: remove
+                      scripts/redact_secrets.py and rewrite the local
+                      redact-agent-secrets hook into the pinned remote hook.
+                      Leaves other hooks + .gitleaks.toml untouched.
   --install-hook      Also install a prepare-commit-msg hook that calls
                       stage-agent-artifacts.sh --session-only on every
                       commit (opt-in; surprises users who commit manually).
@@ -41,6 +53,7 @@ Exit codes:
   2  not inside a git repo
   3  chezmoi source missing (and --from-chezmoi was requested)
   4  pre-commit tool unavailable and `uvx` fallback failed
+  5  --migrate could not find the old hook to rewrite (manual edit needed)
 EOF
 }
 
@@ -52,10 +65,12 @@ FROM_CHEZMOI=0
 INSTALL_HOOK=0
 FORCE=0
 DRY_RUN=0
+MIGRATE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --from-chezmoi)  FROM_CHEZMOI=1; shift ;;
+    --migrate)       MIGRATE=1; shift ;;
     --install-hook)  INSTALL_HOOK=1; shift ;;
     --force)         FORCE=1; shift ;;
     --dry-run)       DRY_RUN=1; shift ;;
@@ -117,24 +132,95 @@ install_file() {
   fi
 }
 
-# 1. .pre-commit-config.yaml
-install_file ".pre-commit-config.yaml" \
-  "$ASSETS_DIR/pre-commit-config.yaml.template" \
-  "$CHEZMOI_SRC/.pre-commit-config.yaml"
+# migrate_config: convert an OLD vendored layout to the pinned remote hook.
+# Removes scripts/redact_secrets.py and rewrites the `- repo: local` block whose
+# hook id is redact-agent-secrets into the pinned remote hook. Idempotent.
+migrate_config() {
+  local cfg=".pre-commit-config.yaml"
+  # 1) Drop the vendored redactor.
+  if [ -e "scripts/redact_secrets.py" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+      log "[dry-run] remove vendored scripts/redact_secrets.py"
+    elif git ls-files --error-unmatch "scripts/redact_secrets.py" >/dev/null 2>&1; then
+      git rm -q -f "scripts/redact_secrets.py"; log "removed (git): scripts/redact_secrets.py"
+    else
+      rm -f "scripts/redact_secrets.py"; log "removed: scripts/redact_secrets.py"
+    fi
+  fi
+  # 2) Rewrite the local redact hook -> pinned remote hook.
+  [ -f "$cfg" ] || die "no $cfg to migrate (run without --migrate to create one)" 5
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] rewrite local redact-agent-secrets hook in $cfg -> $HOOK_REPO_URL@$HOOK_REV"
+    return 0
+  fi
+  local rc=0
+  HOOK_REPO_URL="$HOOK_REPO_URL" HOOK_REV="$HOOK_REV" python3 - "$cfg" <<'PY' || rc=$?
+import os, re, sys
 
-# 2. .gitleaks.toml
-install_file ".gitleaks.toml" \
-  "$ASSETS_DIR/gitleaks.toml.template" \
-  "$CHEZMOI_SRC/.gitleaks.toml"
+cfg = sys.argv[1]
+url, rev = os.environ["HOOK_REPO_URL"], os.environ["HOOK_REV"]
+lines = open(cfg, encoding="utf-8").read().splitlines(keepends=True)
 
-# 3. scripts/redact_secrets.py
-install_file "scripts/redact_secrets.py" \
-  "$ASSETS_DIR/redact_secrets.py" \
-  "$CHEZMOI_SRC/scripts/redact_secrets.py"
+remote_block = (
+    f"  - repo: {url}\n"
+    f"    rev: {rev}\n"
+    "    hooks:\n"
+    "      - id: redact-agent-secrets\n"
+)
 
-# Make the redactor executable (cp loses the bit on some filesystems).
-if [ "$DRY_RUN" = "0" ] && [ -f "scripts/redact_secrets.py" ] && [ ! -L "scripts/redact_secrets.py" ]; then
-  chmod +x "scripts/redact_secrets.py"
+def is_top_item(l):  # a `  - repo:` list entry
+    return re.match(r"^  - repo:", l) is not None
+
+# Idempotent: already points at the pinned hook.
+if any(re.match(r"^  - repo:.*agent-skills", l) for l in lines):
+    print("already references the pinned hook; nothing to rewrite", file=sys.stderr)
+    sys.exit(0)
+
+start = None
+for i, l in enumerate(lines):
+    if re.match(r"^  - repo:\s*local\b", l):
+        j = i + 1
+        while j < len(lines) and not is_top_item(lines[j]):
+            j += 1
+        body = "".join(lines[i:j])
+        if "redact-agent-secrets" in body or "redact_secrets.py" in body:
+            start, end = i, j
+            break
+
+if start is None:
+    sys.exit(5)  # no local redact hook found -> caller prints manual instructions
+
+# Don't swallow the blank line / comments that head the NEXT block.
+while end - 1 > start and (lines[end - 1].strip() == "" or lines[end - 1].lstrip().startswith("#")):
+    end -= 1
+
+open(cfg, "w", encoding="utf-8").write("".join(lines[:start] + [remote_block] + lines[end:]))
+print(f"rewrote {cfg}: local redact hook -> {url}@{rev}", file=sys.stderr)
+PY
+  if [ "$rc" = "5" ]; then
+    warn "could not find a local redact-agent-secrets hook in $cfg."
+    warn "  Add this under 'repos:' by hand, then re-run:"
+    warn "    - repo: $HOOK_REPO_URL"
+    warn "      rev: $HOOK_REV"
+    warn "      hooks:"
+    warn "        - id: redact-agent-secrets"
+    exit 5
+  fi
+  [ "$rc" = "0" ] || die "migration rewrite failed (python exit $rc)" "$rc"
+}
+
+if [ "$MIGRATE" = "1" ]; then
+  migrate_config
+else
+  # 1. .pre-commit-config.yaml (redact hook is a pinned remote hook, not vendored)
+  install_file ".pre-commit-config.yaml" \
+    "$ASSETS_DIR/pre-commit-config.yaml.template" \
+    "$CHEZMOI_SRC/.pre-commit-config.yaml"
+
+  # 2. .gitleaks.toml
+  install_file ".gitleaks.toml" \
+    "$ASSETS_DIR/gitleaks.toml.template" \
+    "$CHEZMOI_SRC/.gitleaks.toml"
 fi
 
 # 4. `pre-commit install`. Prefer a local `pre-commit` binary; fall back to

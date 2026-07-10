@@ -75,10 +75,11 @@ already has. It does not duplicate:
   Linear, WakaTime, Cursor, HuggingFace, Notion, Tailscale, Clash /
   V2Ray tokens). The skill's `assets/gitleaks.toml.template` ships the
   same rule IDs so `.gitleaksignore` / allowlist tweaks stay portable.
-- **chezmoi's `scripts/redact_secrets.py`** — remains the upstream
-  source of truth. The skill bundles a copy so non-chezmoi users get
-  protection; sync procedure in
-  [`references/pre-commit-redaction-stack.md`](references/pre-commit-redaction-stack.md).
+- **the pinned `redact-agent-secrets` hook** — the redactor ships as a
+  pinned pre-commit hook from this repo
+  (`.pre-commit-hooks.yaml`), so every consuming repo gets fixes via
+  `pre-commit autoupdate` instead of a vendored copy that drifts. Details
+  in [`references/pre-commit-redaction-stack.md`](references/pre-commit-redaction-stack.md).
 
 What this skill **adds**:
 
@@ -135,18 +136,30 @@ pre-commit run --all-files
 What `bootstrap-project.sh` does:
 
 1. Drops `.pre-commit-config.yaml` + `.gitleaks.toml` into the repo
-   (skips if already present unless `--force`).
-2. Writes `scripts/redact_secrets.py` (bundled copy; use
-   `--from-chezmoi` to symlink the chezmoi source so fixes propagate).
-3. Runs `pre-commit install` (or `uvx pre-commit@4 install` if
+   (skips if already present unless `--force`). The redactor is a pinned
+   remote hook (`repo: …/agent-skills`, `rev: ahh-v1.1.0`), **not** a
+   vendored `scripts/redact_secrets.py` — so `pre-commit autoupdate`
+   keeps it current everywhere.
+2. Runs `pre-commit install` (or `uvx pre-commit@4 install` if
    pre-commit isn't on `PATH`).
-4. Audits `.gitignore` / `.git/info/exclude` for patterns that would
+3. Audits `.gitignore` / `.git/info/exclude` for patterns that would
    silently hide an agent artifact dir — warns without editing.
-5. Checks `~/.claude/settings.json` for `plansDirectory`; prints the
+4. Checks `~/.claude/settings.json` for `plansDirectory`; prints the
    one-line patch if missing.
-6. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
+5. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
    `stage-agent-artifacts.sh --session-only --allow-empty` so every
    `git commit` auto-attaches the current session file.
+
+Migrating a repo off the **old vendored layout** (a committed
+`scripts/redact_secrets.py` + a `- repo: local` redact hook):
+
+```bash
+bash skills/local/agent-history-hygiene/scripts/bootstrap-project.sh --migrate
+```
+
+removes the vendored script and rewrites the local hook into the pinned
+remote hook, leaving your other hooks and `.gitleaks.toml` untouched
+(idempotent; safe to re-run).
 
 ## Workflow C: post-leak remediation
 

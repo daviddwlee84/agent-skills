@@ -7,7 +7,7 @@ transcripts + plan files.
   staged .md (transcript / plan)
             │
             ▼
-  Layer 1: redact-agent-secrets   (pre-commit, local hook)
+  Layer 1: redact-agent-secrets   (pre-commit, pinned remote hook)
             │  rewrites file in place, re-stages via pre-commit
             ▼
   Layer 2: gitleaks-system         (pre-commit, github.com/gitleaks/gitleaks)
@@ -25,11 +25,25 @@ to structured exit codes without parsing pre-commit output.
 
 ## Layer 1: redact-agent-secrets
 
-Implemented by `assets/redact_secrets.py`, wired as a `local` pre-commit
-hook in `assets/pre-commit-config.yaml.template`. On each commit:
+Implemented by `assets/redact_secrets.py` and published as a **pinned
+remote pre-commit hook** via this repo's root `.pre-commit-hooks.yaml`.
+Consuming repos reference it in their `.pre-commit-config.yaml`:
 
-1. Pre-commit matches staged files against the `files:` regex
-   (rendered from `assets/artifact-dirs.txt`).
+```yaml
+- repo: https://github.com/daviddwlee84/agent-skills
+  rev: ahh-v1.1.0
+  hooks:
+    - id: redact-agent-secrets
+```
+
+There is no vendored `scripts/redact_secrets.py`, so a fix here reaches
+every repo via `pre-commit autoupdate` (bumps `rev:`). On each commit:
+
+1. Pre-commit matches staged files against the hook's `files:` default
+   (declared in `.pre-commit-hooks.yaml`, mirroring
+   `assets/artifact-dirs.txt`). `language: script` runs the file
+   directly via its `#!/usr/bin/env python3` shebang — stdlib-only, no
+   env build, no uv/pip.
 2. `redact_secrets.py --fix` runs gitleaks against those files in staged
    mode, gathers findings, and replaces each literal secret with
    `first3...last3` (e.g. `sk-proj-abc...xyz`).
@@ -103,25 +117,39 @@ agents can branch on:
 Scripts always emit **JSON-lines findings on stdout** so the agent can
 feed them to follow-up tooling without parsing prose.
 
-## Keeping the bundled redactor in sync with chezmoi
+## Releasing / updating the pinned hook
 
-The chezmoi version at `~/.local/share/chezmoi/scripts/redact_secrets.py`
-is the **upstream source of truth**. The skill bundles a copy under
-`assets/redact_secrets.py` so non-chezmoi users still get protection.
-
-When chezmoi ships a fix, re-sync:
+`assets/redact_secrets.py` is the single source; it's published to
+consuming repos through this repo's root `.pre-commit-hooks.yaml`, pinned
+by tag. To ship a fix:
 
 ```bash
-cp ~/.local/share/chezmoi/scripts/redact_secrets.py \
-   $(git rev-parse --show-toplevel)/skills/local/agent-history-hygiene/assets/redact_secrets.py
-git diff -- skills/local/agent-history-hygiene/assets/redact_secrets.py
-# review, adjust DEFAULT_PATHS if the skill's list differs, commit.
+# 1. edit assets/redact_secrets.py + tests, run the suite
+uv run --with pytest pytest skills/local/agent-history-hygiene/tests
+
+# 2. tag a new hook release (keep the ahh-v* series for this skill) and push
+git tag ahh-v1.2.0 && git push origin main --tags
+
+# 3. in each consuming repo, bump the rev (or `pre-commit autoupdate`)
+#    - repo: https://github.com/daviddwlee84/agent-skills
+#      rev: ahh-v1.2.0
 ```
 
-The skill's copy intentionally widens `DEFAULT_PATHS` beyond chezmoi's
-default (adds `.cursor/rules`, `.specify`, `.codex`). If chezmoi later
-adopts the wider list, the two converge; otherwise keep the skill
-version as the broader superset.
+**Monorepo caveat:** `pre-commit autoupdate` moves `rev:` to the newest
+tag on this repo, so an unrelated skill's tag could bump this hook. Keep
+hook releases on the `ahh-v*` series and, if you need strict isolation,
+pin a commit SHA in `rev:` instead of a tag.
+
+**Migrating an old vendored repo** (committed `scripts/redact_secrets.py`
++ a `- repo: local` redact hook) to the pinned hook:
+
+```bash
+bash skills/local/agent-history-hygiene/scripts/bootstrap-project.sh --migrate
+```
+
+`DEFAULT_PATHS` in the script and the `files:` default in
+`.pre-commit-hooks.yaml` both mirror `assets/artifact-dirs.txt` — keep
+the three in sync when adding an artifact directory.
 
 ## Inline allowlist pragmas
 

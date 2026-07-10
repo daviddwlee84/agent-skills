@@ -1,8 +1,12 @@
-#!/usr/bin/env -S uv run --script
+#!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.11"
+# requires-python = ">=3.9"
 # dependencies = []
 # ///
+# NOTE: stdlib-only, so a plain `python3` shebang is the portable default
+# (works on macOS system 3.9, CI, and as a pre-commit `language: script` hook
+# with no uv dependency). The PEP 723 block above still lets you run it under
+# `uv run --script redact_secrets.py` if you prefer an isolated interpreter.
 """
 Check for secrets in agent artifact directories (specstory history + coding
 agent plan/rules dirs) using gitleaks and detect-private-key patterns.
@@ -24,6 +28,8 @@ Usage:
     ./redact_secrets.py --paths .specstory/history
     ./redact_secrets.py --fix --paths .cursor/plans .claude/plans
 """
+from __future__ import annotations
+
 import argparse
 import json
 import re
