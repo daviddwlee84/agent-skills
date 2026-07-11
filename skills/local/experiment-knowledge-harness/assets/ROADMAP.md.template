@@ -1,0 +1,43 @@
+# Experiment Roadmap
+
+Queue of experiments for <PROJECT NAME>, ranked by expected value.
+Engineering chores belong in `TODO.md`; this file holds work whose output
+is a *conclusion* (plus the research-adjacent machinery that unblocks it).
+
+> **For agents**: every active item needs `payoff:` (with units!) and
+> `cat:` (`research`/`engineering`/`data`/`tooling`/`infra`); add
+> `depends-on: F-xxx` when the item's priority assumes a ledger finding.
+> After any finding is overturned, run `scripts/retriage.py` and re-sort
+> flagged items with the user. Syntax: skill's `references/tag-schema.md`.
+
+<!-- Item syntax (validated by scripts/render-index.py):
+     - [ ] **[Effort] Title** — description (payoff: ...; cat: ...; depends-on: F-xxx, #NNN)
+     P? lane uses **[?/Effort] Title**.
+     Done: - ✅ [YYYY-MM-DD] [P#/Effort] Title → #NNN (F-xxx..F-yyy)
+     Prose, sub-bullets and comments between items are ignored. -->
+
+## P1
+
+Highest expected value given current findings — would start today.
+
+- [ ] **[S] Example item** — replace me (payoff: +X units on metric Y; cat: research)
+
+## P2
+
+Worth running, not next.
+
+## P3
+
+Someday — usually parked behind a dependency or a cheaper proxy.
+
+## P?
+
+Cannot be priced yet; needs a spike (tag `[?/Effort]`), or the idea is
+still fuzzy. Vaguer sparks than this go to `backlog/inbox.md`.
+
+## Done
+
+Concluded experiments, newest first. Keep forever — this is the queue's
+audit trail. Link the experiment id and the findings it produced.
+
+- ✅ [2026-01-01] [P1/M] Example concluded item → #000 (F-000)
