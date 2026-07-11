@@ -1,0 +1,70 @@
+---
+id: <NNN>
+slug: <slug>
+title: <TITLE>
+status: planned
+question: <RESEARCH QUESTION>
+axis: <THE ONE ABLATION AXIS>
+baseline: "<#NNN ref or explicit config>"
+spec: <COMPARABILITY SPEC LABEL>
+started: <YYYY-MM-DD>
+concluded:
+conclusion:
+findings: []
+tags: []
+refs: []
+mlflow: ""
+---
+
+# #<NNN> <TITLE>
+
+## Pre-registration
+
+<!-- WRITE THIS BEFORE RUNNING ANYTHING. Editing it after results exist is
+     the one thing this harness treats as cheating. -->
+
+- **Hypothesis**: <falsifiable, quantified statement>
+- **Success criteria**: <numeric bar, chosen now>
+- **Decision rule**: if <X> → <action A>; if <Y> → <action B>.
+  <!-- If A == B for every outcome, this experiment cannot change a
+       decision — don't burn the compute. -->
+
+## Setup
+
+- **Data**: <source, explicit date window, filters/staging>
+- **Config**: <strategy/model params; pin everything that isn't the axis>
+- **Commands**: `<entry-point command(s)>`
+- **Compute**: <est. cost; where it runs>
+
+## Results
+
+<!-- One row per run/config. Caption every table with the spec it was
+     produced under; numbers from different specs never share a table.
+     Large grids: put runs.csv next to this file, keep the decisive
+     aggregate view here. -->
+
+### <table caption> (spec: <SPEC>)
+
+| <axis value> | <metric 1> | <metric 2> | notes |
+|---|---|---|---|
+| | | | |
+
+## Log
+
+<!-- Dated bullets: decisions, surprises, dead ends, course corrections. -->
+
+- <YYYY-MM-DD> Scaffolded.
+
+## Conclusion
+
+<!-- Fill when concluding; update front-matter status/concluded/conclusion/
+     findings in the same edit.
+     - Verdict against the pre-registered criteria (quote numbers).
+     - concluded-negative MUST include the dead-end clause:
+       "do not retry unless <assumption / F-xxx> changes".
+     - List findings distilled to the LEDGER. -->
+
+## Provenance
+
+<!-- Paste output of scripts/snapshot-provenance.py --cmd "<repro cmd>".
+     A results table without this block is unverified. -->

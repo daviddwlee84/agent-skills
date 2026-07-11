@@ -1,0 +1,16 @@
+# Inbox — raw research ideas (human scratchpad)
+
+Drop ideas here the moment they occur — half-formed is fine, no format
+police. One `- ` bullet per idea (indented lines continue the same idea).
+Prose outside bullets is ignored by tooling, so you can annotate freely.
+
+An agent formalizes entries into [`ROADMAP.md`](ROADMAP.md) on request
+("sweep the experiments inbox"): complete ideas move straight over, and
+for incomplete ones the agent asks targeted questions (expected payoff?
+research or engineering? which findings does it assume?) instead of
+guessing. Swept bullets are deleted; the idea lives on in the ROADMAP.
+
+Optional inline hints, if you already know them (quotes allowed):
+`lane=P2 effort=M cat=research payoff="decides go/no-go on X" depends-on=F-003 title="..."`
+
+---

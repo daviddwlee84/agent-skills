@@ -1,0 +1,27 @@
+# Experiments
+
+Research-experiment memory for <PROJECT NAME>. Four surfaces:
+
+- [`LEDGER.md`](LEDGER.md) — numbered findings: what we currently believe,
+  with evidence links. Grep it before designing anything new.
+- [`ROADMAP.md`](ROADMAP.md) — the experiment queue, ranked by
+  payoff × cost, with assumption dependencies.
+- [`INBOX.md`](INBOX.md) — human scratchpad for raw ideas; ask an agent to
+  "sweep the experiments inbox" to formalize them into the ROADMAP.
+- `<NNN>-<slug>/REPORT.md` — one report per experiment: pre-registration,
+  results tables, conclusion, provenance.
+
+Scaffold a new experiment with the skill's `scripts/new-experiment.py`;
+refresh the map + index below with `scripts/render-index.py`.
+
+## Map
+
+<!-- experiment-map:begin -->
+_Map not rendered yet — run `scripts/render-index.py`._
+<!-- experiment-map:end -->
+
+## Index
+
+<!-- experiment-index:begin -->
+_Index not rendered yet — run `scripts/render-index.py`._
+<!-- experiment-index:end -->

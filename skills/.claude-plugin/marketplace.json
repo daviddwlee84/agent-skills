@@ -24,13 +24,14 @@
     },
     {
       "name": "project-memory",
-      "description": "Project memory, TODO tracking, and agent-history hygiene",
+      "description": "Project memory (TODO/backlog/pitfalls), research-experiment memory (ledger/roadmap/reports), and agent-history hygiene",
       "category": "Workflow",
-      "tags": ["project-memory", "todo", "hygiene", "specstory"],
+      "tags": ["project-memory", "experiment-memory", "todo", "hygiene", "specstory"],
       "source": "./",
       "strict": false,
       "skills": [
         "./local/project-knowledge-harness",
+        "./local/experiment-knowledge-harness",
         "./local/agent-history-hygiene"
       ]
     },

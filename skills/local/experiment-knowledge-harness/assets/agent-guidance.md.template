@@ -1,0 +1,49 @@
+<!-- Snippet for the project's agent contract file (AGENTS.md / CLAUDE.md /
+     similar). The bundled scripts/init.sh appends this between sentinel
+     markers; safe to re-run. -->
+
+### Research memory → `experiments/` (LEDGER + ROADMAP + INBOX + REPORTs)
+
+This project tracks experiments with the `experiment-knowledge-harness`
+skill (sibling of `project-knowledge-harness`; engineering chores still go
+to `TODO.md`, debugging traps to `pitfalls/`).
+
+**Before designing or running ANY experiment**: grep
+[`experiments/LEDGER.md`](experiments/LEDGER.md) and the map + index in
+[`experiments/README.md`](experiments/README.md). The direction may
+already be settled — or already a documented dead end whose assumptions
+haven't changed. Cite findings as `F-xxx` instead of re-deriving them.
+
+Core loop (scripts live in the skill folder, run with `python3`):
+
+1. **Queue an idea** — add to [`experiments/ROADMAP.md`](experiments/ROADMAP.md)
+   with mandatory `payoff:` (with units) and `cat:`
+   (`research`/`engineering`/`data`/`tooling`/`infra`), plus
+   `depends-on: F-xxx` when its priority assumes a finding. Research sparks
+   that can't be priced yet go to [`experiments/INBOX.md`](experiments/INBOX.md)
+   (humans append free-text bullets there directly). When asked to **sweep
+   the experiments inbox**: run `scripts/sweep-inbox.py`, ask the user the
+   listed open judgments per entry (never invent a `payoff:`), then
+   `--formalize N` each resolved entry into its lane.
+2. **Start an experiment** — `scripts/new-experiment.py --title ... --question ...
+   --axis ... --baseline ...` allocates `#NNN`, scaffolds
+   `experiments/<NNN>-<slug>/REPORT.md`. Fill **Pre-registration**
+   (hypothesis, success criteria, decision rule) *before running*; if the
+   decision rule's branches are identical, don't run it.
+3. **While running** — append dated bullets to the REPORT `## Log`; add
+   results rows as they land. One ablation axis per experiment, vs the
+   named `baseline:`; tables always state their `spec:` (cost model / fee /
+   eval-window version) and never mix specs.
+4. **Conclude (success OR failure)** — write `## Conclusion` (negative
+   results need the dead-end clause: "do not retry unless X changes"),
+   paste the `scripts/snapshot-provenance.py` block, distill 1–5 findings
+   via `scripts/log-finding.py`, then `scripts/render-index.py` and move
+   the ROADMAP item to `## Done`.
+5. **On overturned findings** — `log-finding.py --overturns F-xxx` moves the
+   old finding to the graveyard; immediately run `scripts/retriage.py` and
+   re-sort the flagged ROADMAP items with the user.
+
+Run `scripts/render-index.py --validate-only` after hand-editing any
+surface; the map + index bodies in `experiments/README.md` are generated
+(experiments coloured by status, `baseline:`/`refs:`/`depends-on:` edges,
+queued ROADMAP items) — never edit the sentinel blocks manually.
