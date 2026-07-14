@@ -10,7 +10,7 @@
   },
   "plugins": [
     {
-      "name": "skill-authoring",
+      "name": "02-skill-authoring",
       "description": "Author, refactor, and evaluate Claude Code skills",
       "category": "Authoring",
       "tags": ["skill", "authoring", "evaluation"],
@@ -23,7 +23,7 @@
       ]
     },
     {
-      "name": "project-memory",
+      "name": "01-project-memory",
       "description": "Project memory (TODO/backlog/pitfalls), research-experiment memory (ledger/roadmap/reports), and agent-history hygiene",
       "category": "Workflow",
       "tags": ["project-memory", "experiment-memory", "todo", "hygiene", "specstory"],
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "name": "ml-workflow",
+      "name": "04-ml-workflow",
       "description": "ML experiment tracking, DVC pipelines, batch notebooks, and quant research",
       "category": "ML",
       "tags": ["mlflow", "dvc", "marimo", "quant"],
@@ -62,7 +62,7 @@
       ]
     },
     {
-      "name": "notebooks",
+      "name": "05-notebooks",
       "description": "marimo notebooks, Streamlit migration, and anywidget components",
       "category": "Notebooks",
       "tags": ["marimo", "streamlit", "anywidget"],
@@ -177,7 +177,7 @@
       ]
     },
     {
-      "name": "infra-and-docs",
+      "name": "03-infra-and-docs",
       "description": "Documentation site bootstrap, pueue job queue orchestration, Slurm/HPC job scheduling, and Clash/mihomo proxy control",
       "category": "Infra",
       "tags": ["mkdocs", "pueue", "job-queue", "slurm", "hpc", "gpu", "docs", "clash", "mihomo", "proxy"],

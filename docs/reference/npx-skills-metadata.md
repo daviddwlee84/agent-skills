@@ -144,6 +144,57 @@ official upstream choice and ships in the user-facing UI of
 `anthropics/skills`, so awkward casing is a known quirk; do not work
 around it with weird name fields.
 
+## Ordering in the picker (alphabetical-only)
+
+The picker sorts **purely alphabetically** — the order of the `plugins[]`
+array in `marketplace.json`, and of each group's `skills[]` array, is
+**ignored**. Confirmed in
+[`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+(the interactive `groupMultiselect` path, ~L1298):
+
+```ts
+const sortedSkills = [...skills].sort((a, b) => {
+  if (a.pluginName && b.pluginName && a.pluginName !== b.pluginName)
+    return a.pluginName.localeCompare(b.pluginName);          // ① group name, A→Z
+  return getSkillDisplayName(a).localeCompare(getSkillDisplayName(b)); // ② skill name, A→Z
+});
+```
+
+The non-interactive list / summary / results paths sort the same way via
+`Object.keys(grouped).sort()`. So there are two sort keys, both
+alphabetical and neither array-driven:
+
+1. **Group order** — `plugins[].name` (kebab), A→Z.
+2. **Within a group** — each skill's `SKILL.md` `name`, A→Z.
+
+### The only lever: rename the group so it sorts earlier
+
+Because the sort key is the group `name` string itself, the sole way to
+move a group up is to make its name sort earlier. `localeCompare` orders
+digits before letters, so a two-digit `NN-` prefix pins a group to the
+top in an explicit order (the prefix shows in the header via
+`kebabToTitle` — the accepted trade-off):
+
+| `plugins[].name` | picker header | position |
+|---|---|---|
+| `01-project-memory` | `01 Project Memory` | 1st |
+| `02-skill-authoring` | `02 Skill Authoring` | 2nd |
+| `03-infra-and-docs` | `03 Infra And Docs` | 3rd |
+| `04-ml-workflow` | `04 Ml Workflow` | 4th |
+| `05-notebooks` | `05 Notebooks` | 5th |
+| *(everything else)* | *(kebabToTitle)* | A→Z, after all `NN-` groups |
+
+!!! warning "The `NN-` prefixes are intentional, not typos"
+    Stripping a prefix drops that group back to its A→Z position. This
+    repo pins its frequently-used groups this way; the rest stay
+    alphabetical. Re-run `make marketplace` after any rename.
+
+**Within-group order is not controllable** without renaming the skills
+themselves — and the `SKILL.md` `name` is load-bearing (it's the install
+id), so don't. Example: under `02 Skill Authoring` the rows render
+`mcp-builder → skill-author → skill-creator` regardless of the `skills[]`
+array order.
+
 ## "Other" — the auto-fallback group
 
 Any SKILL.md the CLI discovers under the search root that is **not**

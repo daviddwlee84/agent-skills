@@ -148,6 +148,52 @@ titlecase，組成標頭文字。所以：
 upstream 的選擇，現役在 `anthropics/skills` 的使用者介面中出現，
 所以彆扭的 casing 是已知怪癖；不要用奇怪的 name 欄位來繞過。
 
+## picker 的排序（只按字母）
+
+picker **純粹按字母排序** —— `marketplace.json` 中 `plugins[]` 陣列的順序、
+以及每個分組 `skills[]` 陣列的順序，都會被**忽略**。已在
+[`src/add.ts`](https://github.com/vercel-labs/skills/blob/main/src/add.ts)
+確認（互動 `groupMultiselect` 路徑，約 L1298）：
+
+```ts
+const sortedSkills = [...skills].sort((a, b) => {
+  if (a.pluginName && b.pluginName && a.pluginName !== b.pluginName)
+    return a.pluginName.localeCompare(b.pluginName);          // ① 分組名，A→Z
+  return getSkillDisplayName(a).localeCompare(getSkillDisplayName(b)); // ② skill 名，A→Z
+});
+```
+
+非互動的 list / summary / results 路徑也透過 `Object.keys(grouped).sort()`
+用一樣的方式排序。所以有兩個排序鍵，兩個都按字母、都不吃陣列順序：
+
+1. **分組順序** —— `plugins[].name`（kebab），A→Z。
+2. **分組內順序** —— 每個 skill 的 `SKILL.md` `name`，A→Z。
+
+### 唯一的槓桿：改分組名讓它排在前面
+
+因為排序鍵就是分組 `name` 字串本身，唯一能把分組往上移的方法就是讓它的
+名字排得更前面。`localeCompare` 把數字排在字母前面，所以兩位數 `NN-`
+前綴可以用明確順序把分組釘在最上面（前綴會透過 `kebabToTitle` 出現在
+標頭 —— 這是可接受的取捨）：
+
+| `plugins[].name` | picker 標頭 | 位置 |
+|---|---|---|
+| `01-project-memory` | `01 Project Memory` | 第 1 |
+| `02-skill-authoring` | `02 Skill Authoring` | 第 2 |
+| `03-infra-and-docs` | `03 Infra And Docs` | 第 3 |
+| `04-ml-workflow` | `04 Ml Workflow` | 第 4 |
+| `05-notebooks` | `05 Notebooks` | 第 5 |
+| *(其餘全部)* | *(kebabToTitle)* | 所有 `NN-` 分組之後，A→Z |
+
+!!! warning "`NN-` 前綴是刻意的，不是 typo"
+    拿掉前綴會讓那個分組掉回它的 A→Z 位置。這個 repo 用這招把常用分組
+    釘在上面；其餘維持字母序。任何改名後重跑 `make marketplace`。
+
+**分組內順序無法控制**，除非改 skill 本身的名字 —— 而 `SKILL.md` `name`
+是有實質作用的（它是 install id），所以別改。例：`02 Skill Authoring`
+底下的列會渲染成 `mcp-builder → skill-author → skill-creator`，跟
+`skills[]` 陣列順序無關。
+
 ## "Other" —— 自動 fallback 分組
 
 CLI 在搜尋根目錄底下發現的 SKILL.md，**只要不在**任何

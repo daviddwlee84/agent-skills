@@ -99,6 +99,16 @@ editing — the validator catches broken paths, duplicates, and reserved
 marketplace names. Path format is `./local/<name>` or
 `./vendor/<name>` (relative to `skills/`, not repo root).
 
+**Picker ordering is alphabetical-only.** `npx skills` sorts groups by
+`plugins[].name` (A→Z) and skills within a group by their `SKILL.md`
+`name` — the `plugins[]` / `skills[]` array order is ignored. To pin a
+frequently-used group to the top, prefix its `name` with two digits: this
+repo pins `01-project-memory`, `02-skill-authoring`, `03-infra-and-docs`,
+`04-ml-workflow`, `05-notebooks`; the rest stay alphabetical. **These
+`NN-` prefixes are deliberate — don't strip them.** Full mechanism +
+within-group caveat in
+[`docs/reference/npx-skills-metadata.md`](docs/reference/npx-skills-metadata.md).
+
 ## SKILL.md Format
 
 Each skill is a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`) and markdown body with instructions, conventions, and examples. Vendored skills may include `references/` subdirectories.
