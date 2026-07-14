@@ -118,6 +118,7 @@ nav:
           - dvc-ml-workflow: skills/dvc-ml-workflow.md
           - mlflow-tracking: skills/mlflow-tracking.md
           - agent-history-hygiene: skills/agent-history-hygiene.md
+          - git-workflow: skills/git-workflow.md
           - pueue-job-queue: skills/pueue-job-queue.md
           - clash-proxy-api: skills/clash-proxy-api.md
           - fastapi-ai-patterns: skills/fastapi-ai-patterns.md
@@ -157,6 +158,7 @@ nav:
       - Tag schema: reference/tag-schema.md
       - Pitfalls format: reference/pitfalls.md
       - Bundled scripts: reference/scripts.md
+      - Git workflow: reference/git-workflow.md
       - Downstream docs stack recipe: reference/docs-stack-recipe.md
       - npx skills metadata model: reference/npx-skills-metadata.md
       - Agent skill compatibility: reference/agent-skill-compatibility.md

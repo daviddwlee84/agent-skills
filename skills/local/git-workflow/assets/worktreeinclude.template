@@ -1,0 +1,16 @@
+# .worktreeinclude — copy gitignored files into new git worktrees.
+#
+# Uses .gitignore syntax. Only files that are BOTH matched by a pattern here
+# AND gitignored get copied into a fresh worktree. Tracked files (e.g. a
+# committed .vscode/settings.json) are already present in the checkout, so
+# listing them here does NOTHING — put only genuinely-ignored files below.
+#
+# Not processed when a custom WorktreeCreate hook replaces git (non-git VCS);
+# copy local files inside that hook script instead.
+#
+# Place this file at the repository root and commit it.
+
+.env
+.env.local
+.env.*.local
+config/secrets.json

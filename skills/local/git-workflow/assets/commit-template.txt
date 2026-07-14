@@ -1,0 +1,23 @@
+
+# ^ Subject line above (keep this file's first line blank for it).
+#
+# Conventional Commits format:
+#   <type>(<optional scope>): <subject>
+#
+# Subject: imperative mood, lowercase start, no trailing period, <=72 chars.
+#   good:  feat(auth): add token refresh
+#   bad:   Added token refresh.
+#
+# Types: feat fix docs style refactor perf test build ci chore revert
+# Breaking change: add ! after type/scope (feat(api)!: ...) or a
+#   "BREAKING CHANGE:" footer. Either drives a MAJOR SemVer bump.
+#
+# Body (optional, after a blank line): explain the WHY, wrapped ~72 cols.
+#
+# Footers (optional, one per line):
+#   Refs: #123            Closes: #123
+#   BREAKING CHANGE: <what broke and how to migrate>
+#   Co-Authored-By: Name <email@example.com>
+#
+# Commit messages are written in English even when the prompt is not.
+# Install: git config commit.template skills/local/git-workflow/assets/commit-template.txt

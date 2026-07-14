@@ -154,6 +154,17 @@
       ]
     },
     {
+      "name": "version-control",
+      "description": "Scale-aware git workflow discipline: Conventional Commits, linear history, worktrees for parallel agents, SemVer release tagging, and pre-merge hygiene",
+      "category": "Engineering",
+      "tags": ["git", "commits", "branching", "worktree", "semver", "conventional-commits"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/git-workflow"
+      ]
+    },
+    {
       "name": "web-quality",
       "description": "Warp Oz skills for web quality auditing: WCAG accessibility compliance and Lighthouse/DevTools performance analysis",
       "category": "Quality",
