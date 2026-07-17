@@ -40,7 +40,7 @@ vendored（特定 skill 精選 (cherry-picked) 進
 | Supabase agent skills | [`supabase/agent-skills`](https://github.com/supabase/agent-skills) | `vendored`（部分） | 已 vendor `supabase`、`supabase-postgres-best-practices` 進 `fullstack-nextjs` series。 |
 | marimo team skills | [`marimo-team/skills`](https://github.com/marimo-team/skills) | `vendored`（部分） | 已 vendor `marimo-notebook`、`streamlit-to-marimo`、`anywidget`。 |
 | Streamlit agent skills | [`streamlit/agent-skills`](https://github.com/streamlit/agent-skills) | `wishlist` | 尚未評估；結構鏡射 marimo-team 的樣式。 |
-| Matt Pocock skill | [`mattpocock/skills`](https://github.com/mattpocock/skills) | `vendored`（部分） | 已 vendor 9 個 skill 進 `engineering-fundamentals` series（`tdd`、`diagnose`、`triage`、`prototype`、`to-prd`、`to-issues`、`improve-codebase-architecture`、`zoom-out`、`grill-with-docs`）。 |
+| Matt Pocock skill | [`mattpocock/skills`](https://github.com/mattpocock/skills) | `vendored`（部分） | 已 vendor 這條 15 個 skill 的 end-to-end 流程（grill → spec → tickets → implement → review）進 `engineering-fundamentals` series —— 流程、完整清單與我們跳過的部分見 [`reference/mattpocock-skills.md`](../reference/mattpocock-skills.md)。 |
 | GarryTan / OpenClaw skills | [`garrytan/gstack`](https://github.com/garrytan/gstack) | `vendored`（部分） | 已 vendor 4 個 skill 進 `product-planning` series。 |
 | Warp Oz skills | [`warpdotdev/oz-skills`](https://github.com/warpdotdev/oz-skills) | `vendored`（部分） | 15 個中 vendor 6 個 —— 跳過原因見 [`reference/warp-oz-skills.md`](../reference/warp-oz-skills.md)。 |
 | 199-biotechnologies deep-research | [`199-biotechnologies/deep-research`](https://github.com/199-biotechnologies/deep-research) | `vendored` | 單 skill series。見 [`reference/deep-research-landscape.md`](../reference/deep-research-landscape.md)。 |

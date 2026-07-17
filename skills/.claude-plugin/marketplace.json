@@ -108,21 +108,27 @@
     },
     {
       "name": "engineering-fundamentals",
-      "description": "Matt Pocock's small, composable skills for real engineering: grilling, TDD, diagnosis, architecture care, and PRD/issue breakdown",
+      "description": "Matt Pocock's composable 'skills for real engineers': the end-to-end flow — grill / domain-model → spec → tickets → implement (TDD + code-review) → architecture care, plus a diagnosis loop.",
       "category": "Engineering",
-      "tags": ["tdd", "ddd", "grilling", "prd", "diagnose", "architecture"],
+      "tags": ["tdd", "ddd", "grilling", "spec", "tickets", "implement", "code-review", "diagnose", "architecture"],
       "source": "./",
       "strict": false,
       "skills": [
         "./vendor/engineering-fundamentals/grill-with-docs",
+        "./vendor/engineering-fundamentals/grilling",
+        "./vendor/engineering-fundamentals/domain-modeling",
+        "./vendor/engineering-fundamentals/codebase-design",
+        "./vendor/engineering-fundamentals/to-spec",
+        "./vendor/engineering-fundamentals/to-tickets",
+        "./vendor/engineering-fundamentals/wayfinder",
+        "./vendor/engineering-fundamentals/implement",
         "./vendor/engineering-fundamentals/tdd",
+        "./vendor/engineering-fundamentals/code-review",
         "./vendor/engineering-fundamentals/diagnosing-bugs",
-        "./vendor/engineering-fundamentals/zoom-out",
-        "./vendor/engineering-fundamentals/to-prd",
-        "./vendor/engineering-fundamentals/to-issues",
-        "./vendor/engineering-fundamentals/improve-codebase-architecture",
         "./vendor/engineering-fundamentals/triage",
-        "./vendor/engineering-fundamentals/prototype"
+        "./vendor/engineering-fundamentals/improve-codebase-architecture",
+        "./vendor/engineering-fundamentals/prototype",
+        "./vendor/engineering-fundamentals/zoom-out"
       ]
     },
     {
