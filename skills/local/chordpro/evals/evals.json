@@ -1,0 +1,57 @@
+{
+  "skill_name": "chordpro",
+  "notes": "Test cases used with skill-creator. Fixtures are public domain (Twinkle Twinkle Little Star, This Old Man). Run outputs live in the gitignored chordpro-workspace/ because they contain copyrighted fetched lyrics/chords.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "lyrics-only-luoye-guigen",
+      "prompt": "幫我做一份王力宏〈落葉歸根〉的 ChordPro 吉他譜",
+      "expected_output": "For a named song with no chords supplied, search an existing published chart, fetch lyrics (LRCLIB), adapt to a validated ChordPro sheet, and caption it as an arrangement to verify. Do not fabricate chords as authoritative.",
+      "files": [],
+      "expectations": [
+        "Fetched the actual lyrics (LRCLIB .lrc/plain text present or fetch-lyrics run).",
+        "Is honest that chords are a published/proposed arrangement to verify, not audio-extracted ground truth.",
+        "Offers concrete next-step / verification guidance (transpose, capo, sections to check).",
+        "Does NOT present a fabricated chart as authoritative (chords are chart-sourced + validated)."
+      ]
+    },
+    {
+      "id": 1,
+      "name": "a2crd-convert",
+      "prompt": "Convert this chords-over-lyrics text into ChordPro format for me (fixtures/eval-1-chords-over-lyrics.txt).",
+      "expected_output": "Valid ChordPro with inline [chords] via chordpro --a2crd, parsing under chordpro --strict, preserving the source chords.",
+      "files": ["fixtures/eval-1-chords-over-lyrics.txt"],
+      "expectations": [
+        "Produced a ChordPro (.cho) output with inline bracketed chords like [C] [F] [G7].",
+        "The ChordPro output parses under chordpro --strict (valid syntax, no fatal errors).",
+        "Preserves the source chords (C, F, G7) mapped onto the corresponding lyric syllables.",
+        "Used the official importer chordpro --a2crd rather than only hand-converting by eye."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "transpose-render",
+      "prompt": "I have this ChordPro file (fixtures/eval-2-input.cho). Transpose it up 2 semitones and give me a PDF.",
+      "expected_output": "chordpro -x 2 transposes up 2 semitones (G->A, D->E) and renders a PDF.",
+      "files": ["fixtures/eval-2-input.cho"],
+      "expectations": [
+        "Transposed the chords up 2 semitones correctly (G->A, D->E, C->D).",
+        "Produced a PDF file as an output artifact.",
+        "Used the chordpro CLI transpose (chordpro -x 2 / --transpose=2) rather than editing chords by hand."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "youtube-link",
+      "prompt": "can you make me a chord chart from this song? https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "expected_output": "Prefers an existing published chart over ~80% audio ACR; honest, flags copyright, does not download audio.",
+      "files": [],
+      "expectations": [
+        "Honest that chords need verification (audio ACR ~80% OR a web chart = one arrangement).",
+        "Flags the legal / ToS / copyright / personal-use consideration.",
+        "Sources chords from the best available path — searches for an existing published chart (preferred) or sets up the audio pipeline — rather than reconstructing purely from memory.",
+        "Did NOT actually download the audio (no audio file in outputs)."
+      ]
+    }
+  ]
+}

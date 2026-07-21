@@ -1,6 +1,6 @@
 ---
 name: chordpro
-description: Author, convert, validate, render, and transpose ChordPro chord sheets, and generate them from lyrics or audio. Use when the user mentions ChordPro or .cho/.crd/.pro files, `[C]lyric` inline chords or `{title:}`/`{start_of_chorus}` directives, the `chordpro`/`a2crd` CLI, converting chords-over-lyrics (Ultimate Guitar/OnSong) text, fetching lyrics (LRCLIB/Mojim/Musixmatch), or extracting chords from a YouTube/Bilibili/SoundCloud link or mp3/wav. References chordpro.org.
+description: Author, convert, validate, render, and transpose ChordPro chord sheets, and build one for a song from an existing online chart, lyrics, or audio. Use when the user mentions ChordPro or .cho/.crd/.pro files, `[C]lyric` inline chords or `{title:}`/`{start_of_chorus}` directives, the `chordpro`/`a2crd` CLI, converting chords-over-lyrics (Ultimate Guitar/OnSong) text, making a guitar chord sheet for a song by name, or extracting chords from a YouTube/Bilibili/SoundCloud link or mp3/wav. References chordpro.org.
 ---
 
 # chordpro
@@ -48,12 +48,15 @@ back to interactive, fill-in-the-gaps assistance instead of pretending otherwise
 |---|---|---|
 | A `.cho`/`.crd`/`.pro` file | Render / transpose / **validate** via `chordpro` CLI | High |
 | **Chords-over-lyrics** text (UG/OnSong) | `a2crd` → light manual cleanup → validate | High |
-| **Lyrics only** | Fetch/confirm lyrics → **interactively** fill chords (propose from key, ask the user to confirm/correct) | Medium (human-in-loop) |
-| An **audio file or link** | `scripts/audio-to-chords.py` → *draft* with `AUTO-GENERATED` header → human correction | ~80% draft |
-| Only a **song title** | Fetch lyrics (LRCLIB) ± audio → then one of the above | Depends |
+| A **known song** (title / lyrics / a link) and no chords yet | **Search existing chord charts online** → adapt to ChordPro (often via `a2crd`) → validate. See `references/chord-tab-sources.md` | Med–High (**best first move**) |
+| **Lyrics only**, no chart found | Fetch/confirm lyrics → **interactively** fill chords (propose from key, ask the user to confirm/correct) | Medium (human-in-loop) |
+| An **audio file or link**, want a machine draft | `scripts/audio-to-chords.py` → *draft* with `AUTO-GENERATED` header → human correction | ~80% (last resort) |
 
-Always prefer the highest row that fits. Don't jump to the audio pipeline when
-the user already pasted chords — `a2crd` will be faster and correct.
+Prefer the highest row that fits. Two rules that matter: don't jump to the audio
+pipeline when the user already pasted chords (`a2crd` is faster and correct); and
+for a **named/popular song, search for an existing human-made chart first** — it's
+usually more accurate than audio ACR and sidesteps the download-ToS problem
+entirely.
 
 ## ChordPro cheat-sheet + output template
 
@@ -139,10 +142,30 @@ To auto-normalize to canonical form (fix spacing, round-trip directives):
 installed, the script prints the install one-liner — say so and offer to proceed
 without rendering (the format is still human-checkable).
 
-## Generating from audio / links — honest limits
+## Finding existing chord charts (the usual first move)
 
-This is the ambitious path and the shakiest. **Set expectations first**: open
-automatic chord recognition tops out around **78–80% on simple major/minor pop**
+For a named/popular song, a human-made chart almost always already exists online
+and beats audio extraction on accuracy. Search chart sites, pull the
+**chords-over-lyrics** block, run it through `chordpro --a2crd`, then validate:
+
+```bash
+# 1. search (中文: 吉他谱/和弦/弹唱谱; EN: chords / ultimate guitar)
+# 2. WebFetch the best hit, copy the chords-over-lyrics into chart.txt
+chordpro --a2crd chart.txt -o song.cho   # 3. convert
+scripts/validate-cho.sh song.cho          # 4. validate
+```
+
+Caption the result with a `{comment:}` naming the source and "published
+arrangement — verify against the recording (capo/key may differ)". This is *not*
+machine ACR, so don't use the `AUTO-GENERATED` header — but a web chart is still
+one person's arrangement, not ground truth. Site catalog (91譜/Chord4/Ultimate
+Guitar/…), format taxonomy, and legality → read `references/chord-tab-sources.md`.
+
+## Generating from audio / links — the fallback when no chart exists
+
+This is the shakiest path — reach for it only when no existing chart is available.
+
+**Set expectations first**: open automatic chord recognition tops out around **78–80% on simple major/minor pop**
 and drops sharply on 7ths, extended/jazz chords, key changes, and quiet or dense
 mixes; inversions/slash chords are unreliable; and it cannot know the capo a
 guitarist used. Treat the result as a **draft to correct**, not a transcription.
@@ -220,6 +243,9 @@ copy-paste starting points and few-shot references:
 - `references/chordpro-format.md` — Read **when** hand-authoring or you need a
   directive beyond the cheat-sheet (`{define}` diagrams, `{transpose}`, markup,
   ABC/LilyPond, `x_` custom namespace).
+- `references/chord-tab-sources.md` — Read **when** you need chords for a named
+  song and have none: where to find existing charts (91譜/Chord4/Ultimate
+  Guitar/…), how to adapt them, and the legality.
 - `references/cli-and-rendering.md` — Read **when** installing, rendering,
   transposing, converting with `a2crd`, or validating/normalizing.
 - `references/audio-to-chords.md` — Read **when** the user wants chords from an
@@ -246,6 +272,9 @@ copy-paste starting points and few-shot references:
 - **Chord accuracy from audio is ~80% at best** on simple pop, worse otherwise.
   Never present a machine-extracted sheet without the `AUTO-GENERATED` header and
   a "verify chords/key/timing" caveat.
+- **Auto-generated chart sites are ACR in disguise.** Chordu / Chordify /
+  GuitarTuna charts are machine-derived (~80%, same caveat) — treat them as drafts,
+  unlike human-made charts on 91譜 / Chord4 / Ultimate Guitar.
 - **Detected key is a suggestion.** ACR outputs absolute pitches; key detection
   confuses relative major/minor and keys a fifth apart, and enharmonic spelling
   (Gb vs F#) is ambiguous. Confirm with the user before committing `{key:}`.
