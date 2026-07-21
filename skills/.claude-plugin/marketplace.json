@@ -206,6 +206,17 @@
         "./local/slurm-hpc",
         "./local/clash-proxy-api"
       ]
+    },
+    {
+      "name": "music-notation",
+      "description": "ChordPro chord-sheet authoring: convert chords-over-lyrics via a2crd, render/transpose with the chordpro CLI, fetch lyrics (LRCLIB), and best-effort audio/link -> draft chords",
+      "category": "Creative",
+      "tags": ["chordpro", "music", "chords", "lyrics", "tablature", "transcription"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/chordpro"
+      ]
     }
   ]
 }
