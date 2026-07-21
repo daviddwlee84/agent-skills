@@ -1,0 +1,51 @@
+# Greensleeves - ChordPro feature showcase
+# PUBLIC DOMAIN: English traditional, 16th century. Melody + words long out of copyright.
+# Demonstrates: {define} chord diagrams, {start_of_tab} block, chorus recall,
+# comments, and how to transpose. Substitutes the (equally traditional) rich
+# example; every {start_of_*} has a matching {end_of_*}.
+
+{title: Greensleeves}
+{artist: Traditional}
+{key: Am}
+{time: 6/8}
+{tempo: 90}
+
+# Define fingerings for the two less-obvious chords (low E -> high E; 0=open, x=muted).
+{define: Am base-fret 1 frets x 0 2 2 1 0}
+{define: E7 base-fret 1 frets 0 2 0 1 0 0}
+
+{comment: Intro (simplified Am arpeggio)}
+{start_of_tab}
+e|-------0-------0-----|
+B|-----1-------1-------|
+G|---2-------2---------|
+A|-0-------0-----------|
+{end_of_tab}
+
+{start_of_verse: Verse 1}
+A[Am]las, my [C]love, you [G]do me [Em]wrong
+To [Am]cast me [E7]off dis-[Am]cour-teous-ly
+For [Am]I have [C]loved you [G]oh so [Em]long
+De-[Am]light-ing [E7]in your [Am]com-pa-ny
+{end_of_verse}
+
+{start_of_chorus}
+{comment: Chorus}
+[C]Green-sleeves was [G]all my [Em]joy
+[Am]Green-sleeves was [E7]my de-[Am]light
+[C]Green-sleeves was my [G]heart of [Em]gold
+And [Am]who but my [E7]la-dy [Am]Green-sleeves
+{end_of_chorus}
+
+{start_of_verse: Verse 2}
+I [Am]have been [C]read-y [G]at your [Em]hand
+To [Am]grant what-[E7]ev-er [Am]you would crave
+I [Am]have both [C]wa-ged [G]life and [Em]land
+Your [Am]love and [E7]good-will [Am]for to have
+{end_of_verse}
+
+{chorus}
+
+# Transpose the whole song at render time, e.g. up 3 semitones to Cm:
+#   chordpro -x 3 -o greensleeves.pdf example-greensleeves.cho
+# ...or per-song with a {transpose: 3} directive near the top.

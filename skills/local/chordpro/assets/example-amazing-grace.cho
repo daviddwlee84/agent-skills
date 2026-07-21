@@ -1,0 +1,22 @@
+{title: Amazing Grace}
+{artist: Traditional}
+{key: G}
+{tempo: 90}
+{time: 3/4}
+
+# Public domain: lyrics John Newton (1779), melody "New Britain" (traditional)
+# Simple beginner arrangement in G using G, G7, C, D
+
+{start_of_verse}
+A[G]mazing grace, how [G7]sweet the [C]sound
+That [G]saved a wretch like [D]me
+I [G]once was [G7]lost, but [C]now am [G]found
+Was [D]blind, but [G]now I see
+{end_of_verse}
+
+{start_of_verse}
+'Twas [G]grace that [G7]taught my [C]heart to [G]fear
+And [G]grace my fears re[D]lieved
+How [G]precious [G7]did that [C]grace ap[G]pear
+The [D]hour I [G]first believed
+{end_of_verse}

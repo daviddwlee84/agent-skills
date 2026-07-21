@@ -1,0 +1,34 @@
+# When the Saints Go Marching In - ChordPro example
+# Demonstrates: chorus environment, verse environments, and {chorus} recall.
+# Traditional American gospel song - PUBLIC DOMAIN.
+
+{title: When the Saints Go Marching In}
+{artist: Traditional}
+{key: C}
+{time: 4/4}
+{tempo: 100}
+
+{comment: Chorus}
+{start_of_chorus}
+Oh, when the [C]saints go marching [C]in
+Oh, when the [C]saints go marching [G7]in
+Oh Lord, I [C]want to [C7]be in that [F]number
+When the [C]saints go [G7]marching [C]in
+{end_of_chorus}
+
+{start_of_verse}
+And when the [C]sun refused to [C]shine
+And when the [C]sun refused to [G7]shine
+Oh Lord, I [C]want to [C7]be in that [F]number
+When the [C]sun re-[G7]fused to [C]shine
+{end_of_verse}
+
+{start_of_verse}
+And when the [C]stars have disap-[C]peared
+And when the [C]stars have disap-[G7]peared
+Oh Lord, I [C]want to [C7]be in that [F]number
+When the [C]stars have [G7]disap-[C]peared
+{end_of_verse}
+
+{comment: Recall the chorus without retyping it}
+{chorus}

@@ -1,0 +1,60 @@
+# =============================================================================
+# ChordPro FILL-IN-THE-BLANKS TEMPLATE
+# -----------------------------------------------------------------------------
+# A ready-to-edit scaffold that ALREADY renders, so you can preview as you go:
+#   chordpro -o preview.pdf template-song.cho
+# Replace the CAPITALISED placeholders and the generic chords/lyrics with your
+# song. Lines starting with '#' are comments (ignored by the parser).
+# NOTE: do NOT use angle brackets < > in lyrics or chords — ChordPro v6 reads
+# them as text markup. Use plain-text placeholders like the ones below.
+# Recommended extension: .cho | Encoding: UTF-8
+# =============================================================================
+
+# --- METADATA (replace the values; delete any line you do not need) -----------
+{title: YOUR SONG TITLE}
+{artist: ARTIST NAME}
+{key: G}
+{tempo: 120}
+{time: 4/4}
+# {capo: 2}          # uncomment and set a fret if you use a capo
+# {transpose: 0}     # uncomment and set n semitones to shift every chord
+
+# --- HOW TO PLACE CHORDS ------------------------------------------------------
+# Put each [Chord] IMMEDIATELY before the syllable it sits above (no space):
+#   Swing [G]low, sweet [C]char[G]iot
+# Replace the [G]/[C]/[D]... below with your chords and the words with yours.
+
+{comment: Intro}
+[G] [C] [G] [D]
+
+{start_of_verse: Verse 1}
+[G]Replace this line with your [C]lyrics and [D]chords
+[G]Add or remove lines to [D]fit your [G]verse
+{end_of_verse}
+
+{start_of_chorus}
+{comment: Chorus}
+[C]Type the chorus once [G]here, then re[Em]call it
+[Am]below with a single [D]chorus [G]directive
+{end_of_chorus}
+
+{start_of_verse: Verse 2}
+[G]Second verse goes [C]here, same [D]idea
+[G]Keep each chord over the [D]right [G]syllable
+{end_of_verse}
+
+# Recall the chorus without retyping it:
+{chorus}
+
+# --- OPTIONAL: define an unusual chord (low E -> high E; 0 = open, x = muted) --
+# {define: Cadd9 base-fret 1 frets x 3 2 0 3 0}
+
+# --- OPTIONAL: ASCII tab (monospaced; [chords] are NOT parsed inside) ----------
+{start_of_tab: Outro}
+e|-----------------|
+B|-----------------|
+G|-----------------|
+D|-----------------|
+A|-----------------|
+E|-----------------|
+{end_of_tab}

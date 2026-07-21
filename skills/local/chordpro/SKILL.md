@@ -98,12 +98,16 @@ blocks, `x_` custom namespace) → read `references/chordpro-format.md`.
 
 ## The `chordpro` / `a2crd` CLI (essentials)
 
-The official tool is a Perl program (CPAN dist **`App::Music::ChordPro`**) that
-installs two commands: `chordpro` and `a2crd`.
+The official tool is a Perl program (CPAN dist **`App::Music::ChordPro`**). Current
+6.x releases install the **`chordpro`** command; the chords-over-lyrics importer
+is `chordpro --a2crd` (a standalone `a2crd` binary shipped in older releases and
+may be absent — prefer `chordpro --a2crd`).
 
 ```bash
 # Install (macOS — there is NO official Homebrew formula; use CPAN)
 brew install perl cpanminus && cpanm App::Music::ChordPro
+# If `chordpro` then errors "Can't locate ChordPro.pm", activate local::lib once:
+eval "$(perl -I"$HOME/perl5/lib/perl5" -Mlocal::lib)"   # add to ~/.zshrc to persist
 
 # Render
 chordpro -o song.pdf song.cho          # PDF (format inferred from extension)
@@ -114,7 +118,7 @@ chordpro -x 2  -o up.pdf   song.cho
 chordpro -x -3f -o down.pdf song.cho
 
 # Convert chords-over-lyrics text -> ChordPro (the official importer)
-a2crd input.txt -o song.cho            # or: chordpro --a2crd input.txt -o song.cho
+chordpro --a2crd input.txt -o song.cho
 ```
 
 Install-per-platform, generators, config JSON, songbook `--toc`, and `a2crd`
@@ -194,6 +198,23 @@ Full comparison, legality, and the LRCLIB API → read `references/lyrics-source
   (`yt-dlp` + `chord-extractor`). Degrades gracefully when the ACR backend is
   unavailable. Flags: `-o/--output`, `--lrc`, `--help`, `--dry-run`.
 
+## Bundled assets
+
+Ready-to-open examples + a template under `assets/` (all songs are **public
+domain**; every `.cho` validates clean with `chordpro --strict`). Use them as
+copy-paste starting points and few-shot references:
+
+- `assets/example-amazing-grace.cho` — simplest real song: metadata + inline chords.
+- `assets/example-when-the-saints.cho` — chorus/verse structure + `{chorus}` recall.
+- `assets/example-greensleeves.cho` — feature showcase: `{define}` diagrams, a
+  `{sot}` tab block, chorus recall, transpose note.
+- `assets/template-song.cho` — fill-in-the-blanks scaffold (renders as-is); the
+  starting point for the interactive chord-fill flow.
+- `assets/example-synced-lyrics.lrc` — sample time-synced `.lrc` (what
+  `fetch-lyrics.py` returns; feed it to `audio-to-chords.py --lrc`).
+- `assets/example-a2crd-input.txt` — chords-over-lyrics plain text; convert with
+  `chordpro --a2crd assets/example-a2crd-input.txt`.
+
 ## Reference files
 
 - `references/chordpro-format.md` — Read **when** hand-authoring or you need a
@@ -211,9 +232,15 @@ Full comparison, legality, and the LRCLIB API → read `references/lyrics-source
 - **macOS has no official Homebrew `chordpro`** — install via CPAN
   (`brew install perl cpanminus && cpanm App::Music::ChordPro`). A signed `.dmg`
   GUI exists on GitHub Releases but the CLI is the CPAN route.
-- **`a2crd` output needs a human pass.** It uses heuristics to tell chord lines
-  from lyric lines; misclassifications happen. Always validate and eyeball the
-  result before rendering.
+- **`Can't locate ChordPro.pm in @INC` after cpanm** — cpanm installed into a
+  `local::lib` (`~/perl5`) that isn't on Perl's path. Activate it:
+  `eval "$(perl -I"$HOME/perl5/lib/perl5" -Mlocal::lib)"` (persist in `~/.zshrc`).
+- **No standalone `a2crd` in ChordPro 6.x** — use `chordpro --a2crd input.txt`.
+  Its output needs a human pass (heuristic, column-based chord placement); always
+  validate and eyeball before rendering.
+- **Angle brackets `< >` are text markup in ChordPro v6.** Don't put `<...>`
+  placeholders in lyrics/chords — the parser reads `<b>`/`<i>`-style markup and
+  floods warnings. Use plain-text placeholders (see `assets/template-song.cho`).
 - **No official online validator.** chordpro.org hosts docs + a desktop GUI, not
   a "try it online" box. Validate locally with the CLI (`validate-cho.sh`).
 - **Chord accuracy from audio is ~80% at best** on simple pop, worse otherwise.
