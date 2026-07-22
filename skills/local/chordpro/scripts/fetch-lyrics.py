@@ -3,6 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "httpx>=0.27,<1",
+#   "pypinyin>=0.51",
 # ]
 # ///
 """fetch-lyrics.py — Fetch lyrics from LRCLIB (free, no API key).
@@ -84,6 +85,69 @@ def _emit(text: str, output: str | None) -> None:
         sys.stdout.write(text.rstrip("\n") + "\n")
 
 
+def _has_cjk(s: str) -> bool:
+    return any(
+        0x4E00 <= ord(c) <= 0x9FFF
+        or 0x3040 <= ord(c) <= 0x30FF
+        or 0xAC00 <= ord(c) <= 0xD7AF
+        for c in s
+    )
+
+
+def _romanize_variants(s: str) -> list[str]:
+    """Romanization candidates for CJK text. LRCLIB indexes names the conventional
+    way (surname + concatenated given name, e.g. 李榮浩 -> 'Li Ronghao'), so try that
+    plus a per-syllable form ('Li Rong Hao')."""
+    try:
+        from pypinyin import lazy_pinyin
+    except ImportError:
+        return [s]
+    sylls = [w for w in lazy_pinyin(s) if w]
+    if not sylls:
+        return [s]
+    per_syllable = " ".join(w.capitalize() for w in sylls)  # Li Rong Hao / Li Bai
+    name = sylls[0].capitalize()
+    if len(sylls) > 1:
+        name += " " + "".join(sylls[1:]).capitalize()  # Li Ronghao / Li Bai
+    out: list[str] = []
+    for v in (name, per_syllable):
+        if v and v not in out:
+            out.append(v)
+    return out
+
+
+def _lookup(client, artist, track, album, duration):
+    """Try LRCLIB /get then /search; return the best record or None."""
+    params: dict[str, object] = {"artist_name": artist, "track_name": track}
+    if album:
+        params["album_name"] = album
+    if duration:
+        params["duration"] = duration
+    resp = client.get(f"{LRCLIB}/get", params=params)
+    if resp.status_code == 200:
+        rec = resp.json()
+        log(f"exact match: {rec.get('artistName')} – {rec.get('trackName')}")
+        return rec
+    if resp.status_code != 404:
+        resp.raise_for_status()
+    log("exact /get miss; trying /search…")
+    sresp = client.get(
+        f"{LRCLIB}/search", params={"artist_name": artist, "track_name": track}
+    )
+    sresp.raise_for_status()
+    results = sresp.json() or []
+    if not results:
+        return None
+    if duration:
+        results.sort(key=lambda r: abs((r.get("duration") or 0) - duration))
+    rec = results[0]
+    log(
+        f"best search match: {rec.get('artistName')} – "
+        f"{rec.get('trackName')} ({rec.get('duration')}s)"
+    )
+    return rec
+
+
 def main(argv: list[str] | None = None) -> int:
     args = make_parser().parse_args(argv)
 
@@ -106,33 +170,18 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         with httpx.Client(headers={"User-Agent": UA}, timeout=20.0) as client:
-            rec: dict | None = None
-            resp = client.get(f"{LRCLIB}/get", params=get_params)
-            if resp.status_code == 200:
-                rec = resp.json()
-                log(f"exact match: {rec.get('artistName')} – {rec.get('trackName')}")
-            elif resp.status_code == 404:
-                log("exact /get miss; trying /search…")
-                sresp = client.get(
-                    f"{LRCLIB}/search",
-                    params={"artist_name": args.artist, "track_name": args.track},
-                )
-                sresp.raise_for_status()
-                results = sresp.json() or []
-                if not results:
-                    log("no results from LRCLIB search")
-                    return 3
-                if args.duration:
-                    results.sort(
-                        key=lambda r: abs((r.get("duration") or 0) - args.duration)
-                    )
-                rec = results[0]
-                log(
-                    f"best search match: {rec.get('artistName')} – "
-                    f"{rec.get('trackName')} ({rec.get('duration')}s)"
-                )
-            else:
-                resp.raise_for_status()
+            rec = _lookup(client, args.artist, args.track, args.album, args.duration)
+            if rec is None and (_has_cjk(args.artist) or _has_cjk(args.track)):
+                for a in _romanize_variants(args.artist):
+                    for t in _romanize_variants(args.track):
+                        if (a, t) == (args.artist, args.track):
+                            continue
+                        log(f"CJK miss; retrying romanized: {a!r} / {t!r}")
+                        rec = _lookup(client, a, t, args.album, args.duration)
+                        if rec is not None:
+                            break
+                    if rec is not None:
+                        break
     except httpx.HTTPError as exc:
         log(f"LRCLIB request failed: {exc}")
         return 4

@@ -60,6 +60,30 @@ chordpro --toc -o Songbook.pdf songs/*.cho
 chordpro --filelist=songlist.txt --toc -o Songbook.pdf
 ```
 
+## Rendering CJK (Chinese / Japanese / Korean)
+
+`chordpro`'s default PDF fonts (GNU FreeFont) contain **no CJK glyphs**. A bare
+`chordpro -o song.pdf song.cho` on a Chinese song exits 0 with no warning but
+renders every Han character as a blank tofu box — and `validate-cho.sh` still
+PASSes (it only checks parsing). Use **`scripts/render-cho.sh song.cho`**, which
+auto-detects a CJK font, renders through it, and glyph-checks the PDF (fails on tofu).
+
+To do it by hand, pass a `--config` that points every text font role at a CJK font,
+then confirm the glyphs actually landed:
+
+```bash
+# config.json — set every text-bearing role to a CJK font <FONT>:
+# {"pdf":{"fonts":{"title":{"file":"<FONT>"},"subtitle":{"file":"<FONT>"},
+#   "text":{"file":"<FONT>"},"chord":{"file":"<FONT>"},"comment":{"file":"<FONT>"},
+#   "tab":{"file":"<FONT>"},"toc":{"file":"<FONT>"}}}}
+chordpro --config config.json -o song.pdf song.cho
+pdftotext song.pdf - | grep -q '[一-龥]' && echo "CJK OK" || echo "TOFU"
+```
+
+Font paths: **macOS** `/System/Library/Fonts/Supplemental/Arial Unicode.ttf` (a
+single-face `.ttf`, most reliable) or `PingFang.ttc`; **Linux** install
+`fonts-noto-cjk` → `/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc`.
+
 ## Transpose + capo
 
 ```bash
@@ -104,6 +128,10 @@ chordpro --strict --generate=Text -o - song.cho   # exit 0 + no stderr warnings 
 
 - **Strict mode** (default) enforces the standard and warns on unknown/malformed
   directives (stderr). `--no-strict` is lenient.
+- A **"Unknown chord"** warning on a chord that is actually valid (e.g. `Em/C#`,
+  `F#m7b5`) means chordpro has **no built-in fingering diagram** for it — not that
+  the file is malformed. It renders fine; add a `{define}` for the chord (see
+  `chordpro-format.md`) or ignore the warning.
 - **Normalize**: `chordpro --generate=ChordPro -o song.cho song.cho` reparses and
   re-emits canonical ChordPro — the practical way to clean up spacing/forms and
   to see how your input differs from canonical.

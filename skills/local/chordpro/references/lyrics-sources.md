@@ -38,6 +38,12 @@ Response fields: `syncedLyrics` (LRC with `[mm:ss.xx]` timestamps), `plainLyrics
 Send a descriptive `User-Agent` (the project asks for one). Missing tracks return
 404 on `/get` — fall back to `/search` and pick the closest by duration.
 
+**CJK titles**: `/get` is brittle for Chinese/Japanese/Korean metadata — an exact
+Han query often 404s and `/search` can miss too. Retry with the **romanized/pinyin**
+artist+title (e.g. `Li Ronghao` / `Li Bai`, `Mayday`): LRCLIB frequently indexes the
+romanized name and still returns the CJK lyrics. `fetch-lyrics.py` does this retry
+automatically, but the pattern is worth knowing when querying by hand.
+
 ## How synced lyrics feed a chord sheet
 
 - **Line-synced `.lrc`** gives per-line timestamps. Combined with the chord

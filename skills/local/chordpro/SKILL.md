@@ -58,6 +58,13 @@ for a **named/popular song, search for an existing human-made chart first** — 
 usually more accurate than audio ACR and sidesteps the download-ToS problem
 entirely.
 
+**Before charting a named song, confirm it exists as described** — user-supplied
+artist/album is sometimes wrong, and searching a bad artist can grab a mislabeled
+chart; a quick Wikipedia/LRCLIB match prevents shipping a misattribution.
+**Non-interactive/batch runs** can't use the "ask the user" rows — instead produce a
+best-effort chart from the published chord vocabulary, caption every uncertainty in
+a `{comment:}`, and omit unknown metadata rather than fabricate it.
+
 ## ChordPro cheat-sheet + output template
 
 - **Extensions**: `.cho` (recommended), also `.crd` `.chopro` `.chord` `.pro`.
@@ -70,6 +77,12 @@ entirely.
   `{end_of_chorus}`/`{eoc}`; verse `{sov}`…`{eov}`; bridge `{sob}`…`{eob}`;
   tab (monospaced, chords NOT parsed) `{sot}`…`{eot}`. Recall a chorus with
   `{chorus}`. Comments: `{comment:}`/`{c:}`.
+- **Key vs capo**: `{key:}` is the *written/fingering* key of the shapes shown;
+  `{capo:}` is the capo used. If charts disagree, prefer the one whose chord
+  vocabulary is internally consistent, and caption the *sounding* pitch.
+- **Chorus recall**: `{chorus}` reprints the most-recently-defined chorus (showing
+  only a "Chorus" label by default). With 2+ distinct recurring sections, label
+  them — `{start_of_chorus: name}` … `{chorus: name}` — or expand the repeat.
 
 Emit this shape — metadata block → environments/comments → verses/choruses:
 
@@ -142,24 +155,38 @@ To auto-normalize to canonical form (fix spacing, round-trip directives):
 installed, the script prints the install one-liner — say so and offer to proceed
 without rendering (the format is still human-checkable).
 
+**Producing a PDF? Verify it *renders*, not just parses.** `validate-cho.sh` only
+checks that the file parses — it can't see a broken PDF. `chordpro`'s default
+fonts have **no CJK glyphs**, so a Chinese/Japanese/Korean song renders as blank
+tofu while still exiting 0 and passing validation. Use `scripts/render-cho.sh
+song.cho` — it auto-detects a CJK font, renders, and glyph-checks the PDF (fails
+loudly on tofu).
+
 ## Finding existing chord charts (the usual first move)
 
 For a named/popular song, a human-made chart almost always already exists online
-and beats audio extraction on accuracy. Search chart sites, pull the
-**chords-over-lyrics** block, run it through `chordpro --a2crd`, then validate:
+and beats audio extraction on accuracy. The realistic recipe (WebFetch's
+summarizer strips copyrighted lyrics, and `a2crd`'s column logic mis-aligns
+full-width CJK — so neither is the happy path it looks like):
 
 ```bash
 # 1. search (中文: 吉他谱/和弦/弹唱谱; EN: chords / ultimate guitar)
-# 2. WebFetch the best hit, copy the chords-over-lyrics into chart.txt
-chordpro --a2crd chart.txt -o song.cho   # 3. convert
-scripts/validate-cho.sh song.cho          # 4. validate
+# 2. fetch the RAW html (WebFetch drops the lyrics) and parse chords from the
+#    site's markup — e.g. Chord4 parenthesized-syllable, UG js-store data-content.
+curl -sL "<chart-url>" -o chart.html
+# 3. lyrics come SEPARATELY from LRCLIB (reliable, synced):
+uv run scripts/fetch-lyrics.py --artist "…" --track "…" -o song.lrc
+# 4. align the chart's chords onto the lyric syllables by phrase, NOT by column
+#    (CJK chars are 2 display cells). For pure-Latin chords-over-lyrics you can
+#    still use:  chordpro --a2crd chart.txt -o song.cho
+scripts/validate-cho.sh song.cho && scripts/render-cho.sh song.cho   # 5. validate + render (CJK-safe)
 ```
 
 Caption the result with a `{comment:}` naming the source and "published
-arrangement — verify against the recording (capo/key may differ)". This is *not*
-machine ACR, so don't use the `AUTO-GENERATED` header — but a web chart is still
-one person's arrangement, not ground truth. Site catalog (91譜/Chord4/Ultimate
-Guitar/…), format taxonomy, and legality → read `references/chord-tab-sources.md`.
+arrangement — verify against the recording (capo/key may differ)". Not machine
+ACR, so no `AUTO-GENERATED` header. Per-site extraction patterns, the site catalog
+(91譜/Chord4/UG — many are JS-rendered or image-only 六线谱), simplified↔traditional
+handling, and legality → read `references/chord-tab-sources.md`.
 
 ## Generating from audio / links — the fallback when no chart exists
 
@@ -214,9 +241,13 @@ Full comparison, legality, and the LRCLIB API → read `references/lyrics-source
 - **`scripts/validate-cho.sh <file.cho>`** — verify a file parses cleanly
   (`chordpro --strict`); PASS/FAIL to stdout, warnings to stderr. Guides install
   if `chordpro` is missing. Flags: `--help`.
+- **`scripts/render-cho.sh <file.cho>`** — render to PDF with a **CJK-safe** font
+  (auto-detected) and glyph-check the result, so a Chinese song can't silently
+  render as tofu. Flags: `-o/--output`, `--font`, `--keep-config`, `--help`.
 - **`scripts/fetch-lyrics.py`** — fetch lyrics from LRCLIB (synced `.lrc` default,
-  `--plain` for text). Self-contained via `uv run`. Flags: `--artist`, `--track`,
-  `--duration`, `--album`, `--plain`, `--help`, `--dry-run`.
+  `--plain` for text). Auto-retries a CJK miss with a romanized/pinyin query.
+  Self-contained via `uv run`. Flags: `--artist`, `--track`, `--duration`,
+  `--album`, `--plain`, `-o/--output`, `--help`, `--dry-run`.
 - **`scripts/audio-to-chords.py`** — best-effort link/audio → draft ChordPro
   (`yt-dlp` + `chord-extractor`). Degrades gracefully when the ACR backend is
   unavailable. Flags: `-o/--output`, `--lrc`, `--help`, `--dry-run`.
@@ -269,6 +300,23 @@ copy-paste starting points and few-shot references:
   floods warnings. Use plain-text placeholders (see `assets/template-song.cho`).
 - **No official online validator.** chordpro.org hosts docs + a desktop GUI, not
   a "try it online" box. Validate locally with the CLI (`validate-cho.sh`).
+- **CJK renders as tofu by default — and passes validation.** `chordpro`'s default
+  fonts have no Han/Kana/Hangul glyphs, so a Chinese/Japanese/Korean song produces
+  a blank PDF that still exits 0 and passes `validate-cho.sh` (which only checks
+  parsing). Render CJK with `scripts/render-cho.sh` (auto CJK font + glyph-check),
+  or pass `--config` pointing `pdf.fonts.*` at a CJK font.
+- **`a2crd` is Latin-only.** Its column heuristic assumes 1 char = 1 column, but
+  full-width CJK occupies 2 display cells, so chords drift. For CJK, align chords to
+  syllables/phrases by musical judgment — don't trust column arithmetic.
+- **A strict "Unknown chord" warning ≠ a parse error.** `chordpro --strict` warns
+  "Unknown chord" for a *valid* chord it has no built-in diagram for (e.g. `Em/C#`,
+  `F#m7b5`); it still renders. Add a `{define}` (see the format reference) or ignore.
+- **`{chorus}` recall is a trap with 2+ recurring sections.** It reprints only the
+  most-recently-defined chorus, as a bare "Chorus" tag by default. Label distinct
+  blocks (`{start_of_chorus: name}` / `{chorus: name}`) or expand repeats explicitly.
+- **`WebFetch` strips copyrighted lyrics** (returns "[lyrics omitted]"), so the
+  chart-fetch path needs raw `curl` + per-site parsing; and from an image-only chart
+  `WebFetch` may *fabricate* chord placement — trust only an explicit chord list.
 - **Chord accuracy from audio is ~80% at best** on simple pop, worse otherwise.
   Never present a machine-extracted sheet without the `AUTO-GENERATED` header and
   a "verify chords/key/timing" caveat.

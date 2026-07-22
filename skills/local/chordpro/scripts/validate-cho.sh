@@ -73,6 +73,12 @@ set -e
 warncount="$(grep -c . "$tmperr" 2>/dev/null || true)"
 [ -n "$warncount" ] || warncount=0
 
+# Demystify the most common false-alarm: strict mode warns "Unknown chord" for a
+# valid chord it has no built-in diagram for (e.g. Em/C#, F#m7b5). It renders fine.
+if grep -q "Unknown chord" "$tmperr" 2>/dev/null; then
+  log 'note: "Unknown chord" = no built-in diagram for a valid chord — add a {define} or ignore (not a parse error).'
+fi
+
 if [ "$rc" -eq 0 ]; then
   if [ "$warncount" -gt 0 ]; then
     log "PASS (with $warncount warning line(s) — review below): $FILE"

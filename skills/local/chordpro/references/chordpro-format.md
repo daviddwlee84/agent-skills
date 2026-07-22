@@ -60,6 +60,12 @@ Each has a matching `end_of_*`. The **start** may take an optional label; the
 | LilyPond | `{start_of_ly}` | `{end_of_ly}` | embedded LilyPond |
 | SVG / textblock | `{start_of_svg}` / `{start_of_textblock}` | matching `end_of_*` | |
 
+**Chorus recall**: `{chorus}` reprints the most-recently-defined chorus and, by
+default, renders just a grey "Chorus" label (not the lyrics). With two or more
+distinct recurring blocks (e.g. a refrain *and* a chorus), label each —
+`{start_of_chorus: Refrain}` … `{chorus: Refrain}` — or expand the repeat inline, or
+you'll ship empty "Chorus" tags.
+
 **Instrument / meta selectors** append with a hyphen and may negate with `!`:
 `{comment-alto: Very softly}`, `{start_of_verse-soprano}`, `{define-guitar: ...}`.
 
@@ -76,6 +82,11 @@ ignored by conformant programs** — a safe place to stash tool-specific metadat
 (e.g. mark an auto-generated draft) without breaking rendering.
 
 ## Chord diagrams — `{define}`
+
+Define a fingering for any chord. This is also the fix when `chordpro --strict`
+warns **"Unknown chord"** for a valid chord (e.g. `Em/C#`, `F#m7b5`): the chord
+parses and renders fine — the warning only means there's no *built-in* diagram, so
+add a `{define}` and it disappears.
 
 Fretted instruments:
 
