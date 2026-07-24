@@ -11,17 +11,18 @@ Research-experiment memory for <PROJECT NAME>. Four surfaces:
 - `<NNN>-<slug>/REPORT.md` — one report per experiment: pre-registration,
   results tables, conclusion, provenance.
 
-Scaffold a new experiment with the skill's `scripts/new-experiment.py`;
-refresh the map + index below with `scripts/render-index.py`.
+Scaffold a new experiment with the skill's `new-experiment.py`;
+refresh the map + index below with its `render-index.py`. (These helpers live
+in the `experiment-knowledge-harness` skill — they are not copied into this repo.)
 
 ## Map
 
 <!-- experiment-map:begin -->
-_Map not rendered yet — run `scripts/render-index.py`._
+_Map not rendered yet — run the skill's `render-index.py`._
 <!-- experiment-map:end -->
 
 ## Index
 
 <!-- experiment-index:begin -->
-_Index not rendered yet — run `scripts/render-index.py`._
+_Index not rendered yet — run the skill's `render-index.py`._
 <!-- experiment-index:end -->

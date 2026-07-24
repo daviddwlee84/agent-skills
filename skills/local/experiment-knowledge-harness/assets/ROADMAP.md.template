@@ -7,10 +7,10 @@ is a *conclusion* (plus the research-adjacent machinery that unblocks it).
 > **For agents**: every active item needs `payoff:` (with units!) and
 > `cat:` (`research`/`engineering`/`data`/`tooling`/`infra`); add
 > `depends-on: F-xxx` when the item's priority assumes a ledger finding.
-> After any finding is overturned, run `scripts/retriage.py` and re-sort
+> After any finding is overturned, run the skill's `retriage.py` and re-sort
 > flagged items with the user. Syntax: skill's `references/tag-schema.md`.
 
-<!-- Item syntax (validated by scripts/render-index.py):
+<!-- Item syntax (validated by the skill's render-index.py):
      - [ ] **[Effort] Title** — description (payoff: ...; cat: ...; depends-on: F-xxx, #NNN)
      P? lane uses **[?/Effort] Title**.
      Done: - ✅ [YYYY-MM-DD] [P#/Effort] Title → #NNN (F-xxx..F-yyy)

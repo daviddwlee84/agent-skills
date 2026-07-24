@@ -4,13 +4,13 @@ What <PROJECT NAME> currently believes, one numbered finding per line-item,
 each backed by an experiment. **Grep this file before designing any new
 experiment** — the direction may already be settled, or already a dead end.
 
-> **For agents**: distill 1–5 findings per concluded experiment via
-> `scripts/log-finding.py`. Never delete a finding — overturned ones move
+> **For agents**: distill 1–5 findings per concluded experiment via the
+> skill's `log-finding.py`. Never delete a finding — overturned ones move
 > to `## Overturned` with strikethrough (`--overturns` handles this).
 > Statements must be quantified, decision-relevant, and carry their
 > `(#NNN)` evidence ref. See the skill's `references/ledger-format.md`.
 
-<!-- Syntax (validated by scripts/render-index.py):
+<!-- Syntax (validated by the skill's render-index.py):
      Active:     - **F-001** [YYYY-MM-DD] (#NNN) Statement... → [evidence](path)
      Overturned: - ~~**F-001**~~ [YYYY-MM-DD] (#NNN) Statement... — overturned YYYY-MM-DD by F-XXX
      Optional weakened marker on active findings: (weakened by F-XXX) -->

@@ -48,7 +48,7 @@ from _lib import (  # noqa: E402
 
 def build_table(exps: list[Experiment], root: Path) -> str:
     if not exps:
-        return "_No experiments yet — scaffold one with `scripts/new-experiment.py`._"
+        return "_No experiments yet — scaffold one with the skill's `new-experiment.py`._"
     rows = [
         "| # | title | status | axis | spec | started | concluded | findings | one-line conclusion |",
         "|---|---|---|---|---|---|---|---|---|",

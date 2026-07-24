@@ -66,5 +66,5 @@ mlflow: ""
 
 ## Provenance
 
-<!-- Paste output of scripts/snapshot-provenance.py --cmd "<repro cmd>".
+<!-- Paste output of the skill's snapshot-provenance.py --cmd "<repro cmd>".
      A results table without this block is unverified. -->
