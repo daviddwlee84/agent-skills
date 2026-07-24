@@ -110,17 +110,23 @@ def chord4_meta(raw: str, header_text: str) -> dict:
             meta["title"] = parts[0]
         if len(parts) >= 2:
             meta["artist"] = parts[1]
-    # Key=Bb  Play=G  Capo=3  → {key}=Play (fingered), note the sounding key
-    m = re.search(r"Key=(\S+)\s+Play=(\S+)\s+Capo=(\S+)", header_text)
-    if m:
-        meta["sound_key"], meta["key"], meta["capo"] = m.group(1), m.group(2), m.group(3)
-    else:
-        m = re.search(r"Key=(\S+)", header_text)
-        if m:
-            meta["key"] = m.group(1)
-        m = re.search(r"Capo=(\S+)", header_text)
-        if m:
-            meta["capo"] = m.group(1)
+    # Key / Play / Capo — tolerate `Key=Bb`, `Key:=Em`, `Key: G`, on one line or
+    # separate lines. When a distinct Play= exists, Key= is the SOUNDING key and
+    # Play= is what you finger (→ {key}); otherwise Key= is the fingering key.
+    def _find(pat: str):
+        mm = re.search(pat, header_text, re.I)
+        return mm.group(1) if mm else None
+
+    key = _find(r"Key\s*[:=]+\s*([A-G][#b]?m?)")
+    play = _find(r"Play\s*[:=]+\s*([A-G][#b]?m?)")
+    capo = _find(r"Capo\s*[:=]+\s*(\d+)")
+    if play:
+        meta["sound_key"] = key
+        meta["key"] = play
+    elif key:
+        meta["key"] = key
+    if capo and capo != "0":
+        meta["capo"] = capo
     for line in header_text.splitlines():
         if line.startswith("詞"):
             meta["lyricist"] = _after_colon(line)
@@ -138,19 +144,36 @@ def _after_colon(line: str) -> str:
     return val
 
 
-def chord4_split_header(lines: list[str]) -> int:
-    """Index where the chart body begins: first section label [X] or |-chord line.
+_HDR_CJK = re.compile(
+    r"^(詞|曲|作詞|作曲|編配|編曲|填詞|演唱|監製|原唱|製作|和聲|吉他|節奏|速度)[\w者]{0,3}\s*[:：]"
+)
+_HDR_EN = re.compile(
+    r"^(Key|Play|Capo|Tuning|Tune|Arranged|Arr|Lyrics?|Music|Composed|Composer|"
+    r"Artist|By|Song|BPM|Tempo)\b",
+    re.I,
+)
+_HDR_SEP = re.compile(r"^[-=_—]{3,}$")
+_FINGERING = re.compile(r"^\S+\s+[x0-9X]{4,7}$")
 
-    Everything before (credits, the Key=/Play=/Capo= line, the Name+frets fingering
-    table) is header. Anchoring on [section]/'|' skips the fingering table cleanly —
-    a line like `F#m7  202220` otherwise looks exactly like a chord line.
+
+def chord4_split_header(lines: list[str]) -> int:
+    """Index where the chart body begins.
+
+    Skip the header line-by-line — credits (CJK `詞：/編配者：`, ASCII `Arranged`,
+    `Key=/Play=/Capo=`), the `----` separator, and the `Name  frets` fingering
+    table — and stop at the first real content line. Anchoring on line *content*
+    (not on `[section]`/`|`) means charts that use plain `Intro:`-style text labels
+    with no pipes still get their header stripped, so the `Key=` line lands in the
+    header where the metadata parser can see it. (CJK credit words are colon-anchored
+    because regex `\\b` word boundaries don't fire between two Han characters.)
     """
     for idx, line in enumerate(lines):
         s = line.strip()
-        if re.match(r"^\[[^\]]+\]$", s):
-            return idx
-        if s.startswith("|"):
-            return idx
+        if not s:
+            continue
+        if _HDR_CJK.match(s) or _HDR_EN.match(s) or _HDR_SEP.match(s) or _FINGERING.match(s):
+            continue
+        return idx
     return 0
 
 
@@ -261,6 +284,13 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
             out.append("")
             i += 1
             continue
+        if "<" in line and ">" in line:  # strip embedded HTML (charts sometimes <img> a tab pic)
+            without = re.sub(r"<[^>]+>", "", line)
+            if not without.strip():
+                out.append("{comment: (chart image in source omitted — see the URL)}")
+                i += 1
+                continue
+            line, s = without, without.strip()
         m = re.match(r"^\[([^\]]+)\]$", s)
         if m:  # section label
             out.append(f"{{comment: {m.group(1)}}}")
@@ -270,6 +300,19 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
             out.append("{comment: (repeat the section marked *)}")
             i += 1
             continue
+        # 'Intro:' / '副歌:' / 'RAP:' text label, optionally with inline chords after it.
+        # Only treat as a label when what follows the colon is empty or pure chords —
+        # so a lyric like "他說：..." or "Well: I don't know" is left alone.
+        lm = re.match(r"^\s*([A-Za-z][\w /-]{0,14}|[一-鿿]{1,6})\s*[:：]\s*(.*)$", line)
+        if lm:
+            label, rest = lm.group(1).strip(), lm.group(2).strip()
+            rest_toks = rest.split()
+            if not has_cjk(rest) and (not rest_toks or all(t == "|" or CHORD_TOKEN.match(t) for t in rest_toks)):
+                out.append(f"{{comment: {label}}}")
+                if rest_toks:
+                    out.append(instrumental_line(rest))
+                i += 1
+                continue
         if not has_cjk(line) and is_chord_line(line):
             chords = chord_tokens(line)
             nxt = body[i + 1] if i + 1 < n else ""
