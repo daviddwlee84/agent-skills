@@ -280,6 +280,55 @@ def col_map_cjk(chord_line: str, lyric: str) -> str:
     return re.sub(r" {2,}", " ", res).strip()
 
 
+_SEC_PRECHORUS = ("pre-chorus", "prechorus", "pre chorus", "导歌", "導歌")
+_SEC_CHORUS = ("副歌", "合唱", "高潮", "chorus", "hook", "refrain")
+_SEC_BRIDGE = ("bridge", "桥段", "橋段", "桥", "橋")
+_SEC_VERSE = ("主歌", "verse", "rap")
+# a line that is JUST a section name (+ optional number) → a bare label, e.g. 主歌 /
+# 副歌 / Verse 1 / Pre-Chorus2 / 間奏. Requires the whole line to match so a short
+# lyric line isn't mistaken for a label.
+_SECTION_WORD = re.compile(
+    r"^(主歌|副歌|前奏|間奏|间奏|尾奏|過門|过门|導歌|导歌|橋段|桥段|Intro|Outro|Verse|"
+    r"Chorus|Pre[\s-]?Chorus|Bridge|Interlude|Solo|Hook|Refrain|Break|Ending|RAP)"
+    r"\s*\d*$",
+    re.I,
+)
+
+
+def classify_section(label: str):
+    """Map a section label to a (start, end) ChordPro environment, or None.
+
+    Only verse/chorus/bridge get environments; intro/interlude/outro/solo/instrumental
+    stay as comments (they're usually bare chord runs). Pre-chorus is checked before
+    chorus so 'Pre-Chorus' isn't caught by the 'chorus' substring, and folds into a
+    verse (ChordPro has no dedicated pre-chorus environment).
+    """
+    l = label.lower()
+    if any(w in l for w in _SEC_PRECHORUS):
+        return ("start_of_verse", "end_of_verse")
+    if any(w in l for w in _SEC_CHORUS):
+        return ("start_of_chorus", "end_of_chorus")
+    if any(w in l for w in _SEC_BRIDGE):
+        return ("start_of_bridge", "end_of_bridge")
+    if any(w in l for w in _SEC_VERSE):
+        return ("start_of_verse", "end_of_verse")
+    return None
+
+
+def _emit_section(out: list[str], open_env: str | None, label: str) -> str | None:
+    """Close any open environment, open the new one (or emit a comment). Returns the
+    close-tag now owed, or None. Each labeled section is wrapped in full — no
+    {chorus} recall, which renders empty when mis-used (see the skill's gotchas)."""
+    if open_env:
+        out.append("{" + open_env + "}")
+    env = classify_section(label)
+    if env:
+        out.append("{" + env[0] + ": " + label + "}")
+        return env[1]
+    out.append(f"{{comment: {label}}}")
+    return None
+
+
 def parse_chord4(raw: str) -> tuple[list[str], dict]:
     pre = chord4_pre(raw)
     lines = pre.split("\n")
@@ -288,6 +337,7 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
 
     body = lines[body_start:]
     out: list[str] = []
+    open_env: str | None = None
     i, n = 0, len(body)
     while i < n:
         line = body[i].rstrip()
@@ -303,13 +353,18 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
                 i += 1
                 continue
             line, s = without, without.strip()
-        m = re.match(r"^\[([^\]]+)\]$", s)
+        m = re.match(r"^[\[【]([^\]】]+)[\]】]$", s)  # [Verse] or 【Verse 1】
         if m:  # section label
-            out.append(f"{{comment: {m.group(1)}}}")
+            open_env = _emit_section(out, open_env, m.group(1).strip())
             i += 1
             continue
         if re.match(r"^Repeat\b", s, re.I):
             out.append("{comment: (repeat the section marked *)}")
+            i += 1
+            continue
+        # a bare section word on its own line (主歌 / 副歌 / Verse 1 / 間奏)
+        if _SECTION_WORD.match(s):
+            open_env = _emit_section(out, open_env, s)
             i += 1
             continue
         # 'Intro:' / '副歌:' / 'RAP:' text label, optionally with inline chords after it.
@@ -320,7 +375,7 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
             label, rest = lm.group(1).strip(), lm.group(2).strip()
             rest_toks = rest.split()
             if not has_cjk(rest) and (not rest_toks or all(t == "|" or CHORD_TOKEN.match(t) for t in rest_toks)):
-                out.append(f"{{comment: {label}}}")
+                open_env = _emit_section(out, open_env, label)
                 if rest_toks:
                     out.append(instrumental_line(rest))
                 i += 1
@@ -346,6 +401,8 @@ def parse_chord4(raw: str) -> tuple[list[str], dict]:
         # a lyric/text line with no preceding chord line (continuation) — keep plain
         out.append(re.sub(r"[()*]", "", line).rstrip())
         i += 1
+    if open_env:  # close the final section
+        out.append("{" + open_env + "}")
     return _trim_blanks(out), meta
 
 

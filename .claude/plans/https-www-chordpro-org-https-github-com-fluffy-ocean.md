@@ -1,185 +1,157 @@
-# Plan: Author a `chordpro` agent skill
+# Plan: chordpro skill — faithful chord↔lyric alignment + music-theory progression validator
 
 ## Context
 
-The user wants a new local agent skill for the **ChordPro** chord-sheet format
-(https://www.chordpro.org/, https://github.com/ChordPro/chordpro). The goal is a
-skill that can:
+The `chordpro` skill already ships (author→eval→improve, 3 iterations). But charting
+~10 C-pop songs surfaced two quality problems the user named directly: the
+**chord-change timing vs. the lyrics** and the **overall chord progression** aren't
+captured well.
 
-- Convert existing "sheet music" / chords-over-lyrics into ChordPro.
-- Know how far automatic chord-extraction can realistically go (open-source ACR
-  tools / Hugging Face models), and offer a *best-effort* "paste a
-  YouTube/Bilibili/SoundCloud link or mp3/wav → get a draft sheet" path.
-- Know the common lyrics sources (Mojim/魔鏡, KKBOX, Musixmatch, LRCLIB, NetEase…).
-- When one-shot generation isn't possible, **assist**: fill gaps, ask the user for
-  what's missing, guide interactively.
-- Know the `chordpro` / `a2crd` CLI.
+Inspecting two real outputs pinpoints the cause — and it's an instruction written
+*into* the skill, not a one-off slip:
 
-**Research verdict that shapes the design** (from 3 Explore agents):
-- `a2crd` ships with the ChordPro CLI and is the *official* chords-over-lyrics →
-  ChordPro converter — the reliable backbone of "convert existing sheets."
-- Audio → chords is an **~80%-accurate draft**, not an oracle (MIREX SOTA ~78–80%
-  on maj/min, worse on 7ths/jazz/modulations). Best open path: `yt-dlp` →
-  `chord-extractor`/Chordino. macOS has a painful Vamp-plugin install; the turnkey
-  script must **degrade gracefully**.
-- LRCLIB gives free, key-less, time-synced `.lrc`; most other lyric sources are
-  scrape-only or paid/partner-gated, with ToS/copyright caveats.
+- `~/Documents/chord-sheets/jay-chou-shuohao-buku/shuohao-buku.cho`, chorus:
+  `眼看[G]著妳[B7]難過[Em7] [G/D] 挽[Cmaj7]留…沒有說[G] [D7]` — the `[G/D]`, `[G]`, `[D7]`
+  are **floating** (sit over no syllable).
+- `~/Documents/chord-sheets/li-ronghao-libai/li-ronghao-libai.cho`, verse 1:
+  `[F]大部分人要我[F]學習… 世俗的[C]眼光[C]` — a **duplicate** `[F]…[F]` and a trailing `[C]`.
 
-**Confirmed choices (AskUserQuestion):** name = `chordpro`; audio pipeline =
-best-effort turnkey script; catalog group = new `music-notation`.
+Root cause: `references/chord-tab-sources.md` steps 3–4 tell the agent to fetch
+lyrics *separately* from LRCLIB, treat those as ground truth, and **re-align the
+chart's chords onto them by eyeball** — discarding the one piece of ground-truth
+alignment the chart already had (Chord4's `你不是真正(的)快樂` markup encodes exactly
+which syllable each chord lands on). Floaters and duplicates are what fall out of a
+lossy re-merge.
 
-The skill is justified over the no-skill baseline: a stock session does *not*
-reliably know the full directive set, `a2crd`, the exact validate command, the
-current ACR-tool landscape, or the lyric-source specifics — and the honest
-router/interactive-fill framing adds real value.
+**Outcome of this change:** (1) preserve the source chart's own alignment via a
+deterministic parser so the drift class disappears at the source; (2) add a
+music-theory validator that detects the key, expresses every chord as a scale
+degree (Roman + Nashville), and flags implausible/out-of-key chords via a
+rock-corpus transition matrix — the user's "找調性 → 抓幾級和弦 → 定位簡易版 +
+驗證和弦進行合理性" workflow, turned into a repeatable sanity gate.
 
-## Design overview
+Both research directions were confirmed by two Explore agents (Chord4/UG markup;
+music-theory tooling). User chose the **Full + transition matrix** analyzer depth.
 
-The skill is a **router that degrades gracefully**. It picks the most reliable
-workflow for whatever the user has, and every path ends by validating the `.cho`:
+## Part A — Fix the alignment (Tier 1)
 
-| User has… | Workflow |
-|---|---|
-| A `.cho`/`.crd`/`.pro` file | Render / transpose / validate via `chordpro` CLI |
-| Chords-over-lyrics text (Ultimate Guitar / OnSong) | `a2crd` → clean up → validate |
-| Lyrics only | Fetch/confirm lyrics → interactive chord-fill (agent proposes from key + asks user) |
-| An audio file or link | Best-effort `audio-to-chords.py` (honest ~80% draft) → human correction |
-| Only a song title | Fetch lyrics (LRCLIB) + optionally audio → pipeline or interactive fill |
+### A1. Reverse the re-merge instruction (skill content)
+- Files: `references/chord-tab-sources.md` (steps 3–4), `SKILL.md` (the "Finding
+  existing chord charts" section + the router row for a known song).
+- New rule: **the chart's own (chord↔syllable) pairing is ground truth — preserve
+  it.** LRCLIB is only for the synced `.lrc` sidecar and for filling lines a chart
+  omits, never to re-align. Document two anti-patterns explicitly: no duplicate
+  consecutive chords, no chords floating past the last syllable of a line
+  (fold into an instrumental-bar `{comment}` or attach to the next downbeat).
 
-## Scaffold
+### A2. New `scripts/chart-to-cho.py` (PEP 723 `uv run`; dep: `httpx`; optional `opencc`)
+Deterministic fetch+parse of an existing chart → aligned inline ChordPro.
+- **Chord4 (primary):** browser `User-Agent` + `Accept-Language` + `--compressed`
+  (bare curl is Cloudflare-blocked). Extract the single `<pre>` inside
+  `div.tabs_content`; **skip the header region** (credits + `Key=/Play=/Capo=` +
+  the `Name  frets` fingering table) before the first chord/lyric pair; parse the
+  body by **ordinal parenthesis-pairing** — Nth whitespace-split chord token
+  (drop `|` bars) ↔ Nth `re.findall(r'\(([^)]*)\)')` marker; **detect instrumental
+  lines** (lyric line has no CJK/word chars → emit chords bare with their bars,
+  don't force pairing). Emit `[chord]syllable` preserving alignment — **no column
+  math, no CJK double-width problem.** Pull `Key=`/`Play=`/`Capo=` into `{key}` /
+  `{capo}` + a "sounds in <Play>" comment; standalone `[Word]` lines → `{comment}`.
+  Simplified↔traditional is a URL variant (`/zh-hant/tabs/N` vs `/tabs/N`);
+  `--opencc s2t|t2s` optional post-convert.
+- **Ultimate Guitar (fallback):** regex `data-content="(.*?)"`, HTML-entity-unescape,
+  `json.loads`, index `store.page.data.tab_view.wiki_tab.content`; inside each
+  `[tab]…[/tab]` block do **positional ASCII-column mapping** of `[ch]C[/ch]`
+  tokens over the lyric line (deterministic — all ASCII); capo/tonality from
+  `tab_view.meta`.
+- Interface: `--url <chart-url>` or `--html <file>`; `--site chord4|ug|auto`;
+  `-o`; `--dry-run`; `--help`. Structured stdout (the `.cho`), diagnostics → stderr.
+  Caption output with a `{comment}` naming the source + "published arrangement —
+  verify against the recording (capo/key may differ)". **No** `AUTO-GENERATED`
+  header (human-made chart, not machine ACR). Keep verbatim lyric handling
+  personal-use.
 
-Author downstream-only (not useful while working *on this repo*), so **no**
-discovery symlinks:
+### A3. Cleanup — folded into the analyzer (B1), not a third script
+The parser emits clean output (preserving source alignment ⇒ no floaters/dups by
+construction). The analyzer additionally *reports* duplicate-consecutive and
+trailing-floating chords, covering charts built by other routes (`a2crd`,
+interactive fill).
 
-```bash
-bash skills/local/skill-author/scripts/new-skill.sh --local --no-symlinks chordpro
-```
+## Part B — Music-theory validator (Full + transition matrix)
 
-Canonical dir: `skills/local/chordpro/` (this copy is what ships).
+### B1. New `scripts/analyze-progression.py` (PEP 723 `uv run`; **zero deps**; `music21` optional)
+- **Input:** a `.cho` file (extract `[..]` chords in order, honoring section
+  blocks) **or** `--key K --chords "C G Am F"`.
+- **Pipeline:** chord-symbol parse (root + quality + `/bass` → pitch-class) →
+  candidate-key scoring over 24 keys (`# diatonic − λ·circle-of-fifths-distance`
+  for non-diatonic roots) → **relative maj/min disambiguation** via first/last
+  chord + cadence weighting (the pitch-class set alone can't tell C from Am) →
+  Roman + Nashville emission in the chosen key using **key-signature-aware letter
+  spelling** (so `bVII` isn't mislabeled `#VI`) → per-chord diatonic-fit label
+  {diatonic | borrowed | secondary | out-of-key} → **first-order transition
+  scoring** against an inline rock-corpus-anchored Roman-numeral matrix → verdict.
+- **Verdict output:** detected key + confidence (name the runner-up when
+  relative/parallel is close); per-chord table `chord | Roman | Nashville | fit`;
+  low-probability transition flags framed **"review — surprising, maybe
+  intentional," not "wrong"**; **suspect list = the conjunction** (out-of-key AND
+  reached by a rare move) → "likely mis-transcribed, double-check"; overall
+  plausibility score; duplicate/floating-chord warnings; honesty footer.
+- **Transition matrix:** hand-authored first-order Roman-numeral matrix
+  (7×7 diatonic + a few chromatic rows: `bVII`, `V/V`), numbers **anchored to the
+  de Clercq–Temperley Rock Corpus** (CC BY 4.0 — attribute it), NOT classical
+  theory (rock legitimately does `V→IV`, `bVII→IV→I`; a classical prior over-flags).
+  **Implementation note:** pull `rock_corpus_v2-1.zip` from rockcorpus.midside.com
+  and aggregate, or lift the paper's published two-chord table — do **not**
+  reconstruct the numbers from memory.
+- **`music21` (optional, try-import / documented `--with music21`):** Krumhansl/
+  Aarden key cross-check + reliable secondary-dominant analysis. Not required for
+  the core to run; keeps the default lean and offline.
 
-## Files to create
+### B2. New `references/music-theory.md` (has a TOC)
+Circle of fifths; diatonic-triad tables (major + natural/harmonic minor);
+functional harmony (T / PD / D); common pop progressions; the key-fit scoring
+recipe; the transition-matrix method + how to read the verdict; the
+"find key → think in degrees → simplified version" workflow (matches the user's
+relative-pitch mental model); honesty caveats (first-order prior can't see
+voice-leading/modulation; rock-descriptive not prescriptive; relative maj/min
+ambiguous; wrong key cascades into wrong numerals); the sources list from research.
 
-### `skills/local/chordpro/SKILL.md` (~220–260 lines)
+### B3. Wire into the skill
+- `SKILL.md`: add `analyze-progression.py` to the verify loop as a **non-blocking
+  theory sanity-gate** (after building a `.cho`, run it; many out-of-key/low-prob
+  flags ⇒ re-check the chart or the key) and as a **tie-breaker** in the
+  cross-check note; add both new scripts to **Available scripts**; add
+  `chart-to-cho.py` to the chart-fetch recipe; update **Gotchas** (preserve source
+  alignment; duplicate/floating chords); add `references/music-theory.md` to the
+  **Reference files** list.
+- `references/chord-tab-sources.md`: replace the hand-parse steps (3–4) with
+  "run `chart-to-cho.py`"; keep the markup documentation as the parser's spec.
+- `references/lyrics-sources.md`: one line noting LRCLIB is the `.lrc` sidecar /
+  gap-filler when an aligned chart exists, not the alignment source.
 
-Follow the repo's section skeleton (matches `slurm-hpc`/`dvc-ml-workflow`).
-
-- **Frontmatter description** — pushy, ~450 chars (within 120–500 preferred),
-  with concrete triggers + upstream docs. Draft:
-  > Author, convert, validate, render, and transpose ChordPro chord sheets, and
-  > generate them from lyrics or audio. Use when the user mentions ChordPro or
-  > `.cho`/`.crd`/`.pro` files, `[C]lyric` inline chords or
-  > `{title:}`/`{start_of_chorus}` directives, the `chordpro`/`a2crd` CLI,
-  > converting chords-over-lyrics (Ultimate Guitar/OnSong) text, fetching lyrics
-  > (LRCLIB/Mojim/Musixmatch), or extracting chords from a
-  > YouTube/Bilibili/SoundCloud link or mp3/wav. References chordpro.org.
-- **Overview** — one paragraph: opinionated router + honest draft-assistant scope.
-- **When to use / When NOT to use** — NOT for engraving staff notation
-  (MusicXML/MIDI/LilyPond → hand off); OMR from a scanned score *image* is out of
-  scope (note it, offer manual transcription instead).
-- **Authoritative sources** — chordpro.org, ChordPro/chordpro repo (link, don't
-  paraphrase).
-- **The router** — the decision table above.
-- **ChordPro cheat-sheet + output template** — extensions, `[C]lyric`, core
-  directives, chorus/verse/tab environments, and one compact well-formed `.cho`
-  example (from research) as the copy-paste template. Defer the full directive
-  set to `references/chordpro-format.md`.
-- **The `chordpro`/`a2crd` CLI (essentials)** — macOS install one-liner
-  (`brew install perl cpanminus && cpanm App::Music::ChordPro`), render
-  (`chordpro -o song.pdf song.cho`), transpose (`-x N[s|f]`), `a2crd input.txt`.
-  Defer detail to `references/cli-and-rendering.md`.
-- **Verify loop** — always validate generated files:
-  `chordpro --strict --generate=Text -o - file.cho` (exit 0 + no stderr = valid);
-  auto-normalize with `--generate=ChordPro`. Wrapped by `scripts/validate-cho.sh`.
-- **Generating from audio/links (honest limits)** — the ~80% caveat, the
-  mandatory `AUTO-GENERATED — verify chords/key/timing` header, `audio-to-chords.py`
-  usage, and the **personal-use / ToS / copyright** disclaimer. Defer to
-  `references/audio-to-chords.md`.
-- **Lyrics sources** — quick table, default LRCLIB. Defer to
-  `references/lyrics-sources.md`.
-- **Available scripts / Reference files / Gotchas** — per below.
-
-### `skills/local/chordpro/references/` (4 files, loaded lazily)
-
-- `chordpro-format.md` — full directive reference (metadata, comment,
-  environments, `{define}` chord-diagram syntax, `{transpose}`, markup, `x_`
-  custom namespace) + worked examples (chorus recall, tabs, capo). *Read when
-  hand-authoring or needing a directive beyond the cheat-sheet.*
-- `cli-and-rendering.md` — install per platform; generators (PDF/Text/ChordPro/HTML);
-  transpose/`--decapo`; config JSON; songbook `--toc`; validate/normalize; `a2crd`
-  usage + heuristic tuning. *Read when installing, rendering, transposing,
-  converting, or validating.*
-- `audio-to-chords.md` — the feasibility pipeline in depth: `yt-dlp` commands
-  (YouTube/Bilibili/SoundCloud, `--cookies-from-browser` for gated content); ACR
-  tool comparison (chord-extractor/Chordino default, madmom CNN higher-accuracy,
-  Omnizart heavyweight, HF demos as research-grade only); beat/key helpers
-  (madmom/librosa/Essentia); explicit limitations; commercial escape hatches
-  (Moises API, Songsterr API, Chordify/Chord AI/UG = no API); legal note. *Read
-  when the user wants chords from audio/a link.*
-- `lyrics-sources.md` — source table (LRCLIB / Musixmatch / Genius / Mojim / KKBOX
-  / NetEase / QQ), synced-vs-plain, API-vs-scrape, legal notes, LRCLIB API details.
-  *Read when fetching lyrics.*
-
-### `skills/local/chordpro/scripts/` (3 scripts, all with `--help`)
-
-1. **`validate-cho.sh`** (bash 3.2, `set -euo pipefail`) — agent-facing verify
-   loop. Runs `chordpro --strict --generate=Text -o - "$FILE"`, prints `PASS`/`FAIL`
-   (data→stdout, warnings→stderr), propagates exit code. If `chordpro` isn't
-   installed, prints the install one-liner and exits non-zero with guidance.
-2. **`fetch-lyrics.py`** (PEP 723 `# /// script`, `uv run`, dep: `httpx`) — query
-   LRCLIB `/api/get` (fallback `/api/search`) by `--artist/--track/--duration`;
-   emit synced `.lrc` by default or `--plain`; structured stdout, diagnostics to
-   stderr; `--help`, `--dry-run`. LRCLIB only (free, no key, cross-platform);
-   documents other sources as manual/reference. No scraping shipped.
-3. **`audio-to-chords.py`** (PEP 723, dep: `yt-dlp`; `chord-extractor` guarded) —
-   best-effort turnkey draft generator:
-   - Input: a URL (via `yt-dlp` → bestaudio → wav, needs `ffmpeg`) **or** a local
-     audio file. `--dry-run` prints the plan without downloading.
-   - Runs `chord-extractor`/Chordino → chord/timestamp timeline. **If the Vamp
-     plugin/import is missing (common on macOS), detect it and print exact install
-     guidance + the `sonic-annotator`/`madmom` manual alternatives, then exit
-     cleanly** — the degrade-gracefully contract the user chose.
-   - Emits a ChordPro *skeleton* with the mandatory `AUTO-GENERATED` header,
-     best-guess `{key}`/`{tempo}` (optional librosa), chords placed per
-     bar/line; if an `.lrc`/lyrics arg is supplied, attempt line-level chord
-     placement. Structured stdout (path/text), prose to stderr.
-   - `--help` carries the personal-use / ToS / copyright disclaimer.
-
-**Reuse:** these three wrap the *official* tools the research surfaced
-(`chordpro`, `a2crd`, LRCLIB API, `yt-dlp`, `chord-extractor`) rather than
-reimplementing anything.
-
-## Register in the marketplace
-
-Edit `skills/.claude-plugin/marketplace.json` — add a new **unprefixed** group
-(sorts alphabetically among unprefixed groups; that's fine):
-
-```json
-{ "name": "music-notation", "skills": ["./local/chordpro"] }
-```
-
-Then `make marketplace` (runs `scripts/validate-marketplace.sh` — checks paths,
-dupes, reserved names).
-
-## Optional follow-ups (defer, don't build now)
-
-- `./scripts/add-todo.sh --priority P? --effort M --title "chordpro: higher-accuracy ACR mode + word-level chord alignment" --description "…"` — madmom CNN path + syllable-level placement once the v1 draft flow is proven.
-- Docs-catalog cross-listing: no music/creative domain hub exists; skip for v1.
+## Files touched
+- **New:** `skills/local/chordpro/scripts/chart-to-cho.py`,
+  `skills/local/chordpro/scripts/analyze-progression.py`,
+  `skills/local/chordpro/references/music-theory.md`
+- **Edit:** `skills/local/chordpro/SKILL.md`,
+  `skills/local/chordpro/references/chord-tab-sources.md`,
+  `skills/local/chordpro/references/lyrics-sources.md`
+- **No** `marketplace.json` change (skill already registered under `music-notation`).
 
 ## Verification
-
-1. `bash skills/local/skill-author/scripts/lint-skill.sh skills/local/chordpro`
-   → frontmatter valid, description within limits, SKILL.md < 500 lines, every
-   `references/*.md` mentioned from SKILL.md, every script has shebang + `+x` +
-   `--help`. Fix all errors.
-2. `make marketplace` → passes with `./local/chordpro` under `music-notation`.
-3. Script smoke tests (all must work even if `chordpro` isn't installed here —
-   they should guide, not crash):
-   - `bash skills/local/chordpro/scripts/validate-cho.sh --help`
-   - Create a tiny sample `.cho`; run `validate-cho.sh sample.cho` (if `chordpro`
-     present, expect PASS; else expect the install-guidance path).
-   - `uv run skills/local/chordpro/scripts/fetch-lyrics.py --dry-run --artist "…" --track "…"`, then one real LRCLIB query.
-   - `uv run skills/local/chordpro/scripts/audio-to-chords.py --dry-run <url>` →
-     prints the plan; a real run on a short public clip exercises the
-     download → ACR → skeleton path (or the graceful-degrade message on macOS).
-4. Spot-check the output template renders: `chordpro -o /tmp/test.pdf sample.cho`
-   (only where the CLI is installed).
+1. **Lint:** `bash skills/local/skill-author/scripts/lint-skill.sh skills/local/chordpro`
+   (SKILL.md < 500 lines — watch the budget as mentions grow; refs reachable;
+   every script answers `--help`).
+2. **Parser fidelity:** `uv run scripts/chart-to-cho.py --url https://chord4.com/zh-hant/tabs/30689 -o /tmp/shuohao.cho`;
+   diff its alignment against the current hand-made
+   `shuohao-buku.cho` — confirm **no floaters/duplicates**, and that `{key}`/`{capo}`
+   were extracted. Repeat on one UG song via `--site ug`.
+3. **Parse + render:** `scripts/validate-cho.sh /tmp/shuohao.cho` and
+   `scripts/render-cho.sh /tmp/shuohao.cho` (parses + CJK renders, no tofu).
+4. **Analyzer:** `uv run scripts/analyze-progression.py /tmp/shuohao.cho` → sensible
+   key (G, capo-relative), degree table, plausible flags. Run it on the existing
+   `li-ronghao-libai.cho` and `shuohao-buku.cho` and confirm it **catches the real
+   `[F]…[F]` duplicate and the trailing `[D7]` floater**, and labels `F#m7` /
+   `Em/C#` correctly. Confirm it runs **zero-dep** (no network, no music21).
+5. **Script hygiene:** `--dry-run` and `--help` on both new scripts.
+6. **End-to-end (optional):** re-chart one song fetch→parse→analyze→render to
+   sanity-check the whole revised flow before touching the batch.

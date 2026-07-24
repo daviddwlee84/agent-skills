@@ -243,7 +243,9 @@ def degree_labels(ch, tonic: int, mode: str):
 def _ext_suffix(rest: str) -> str:
     if "maj7" in rest or "M7" in rest:
         return "maj7"
-    for tag in ("7", "6", "9", "11", "13", "add9"):
+    if "add9" in rest:  # check before bare "9" — add9 ≠ dominant 9
+        return "add9"
+    for tag in ("6", "7", "9", "11", "13"):
         if tag in rest:
             return tag
     return ""
@@ -414,10 +416,21 @@ def analyze(chords_meta, key_hint=None):
     trans_score = max(0.0, min(1.0, (mean_lp - math.log(0.01)) / (math.log(0.35) - math.log(0.01))))
     plausibility = round(0.5 * dia_ratio + 0.5 * trans_score, 2)
 
+    # A minor-key framing pushes common V→I-type moves onto the flat side (bVII→bIII,
+    # V→bVI…), where the rock prior reads them as "rare." Flag that so the rare list
+    # isn't mistaken for errors when the song really leans toward its relative major.
+    flat_side = {"bII", "bIII", "bVI", "bVII"}
+    framing_note = ""
+    if mode == "minor" and any(t["from"] in flat_side or t["to"] in flat_side for t in trans):
+        relmaj = MAJOR_KEY_SPELL[(tonic + 3) % 12]
+        framing_note = (f"minor-key framing — several flat-side 'rare' moves above are "
+                        f"ordinary V→I-type moves in the relative {relmaj} major; likely a "
+                        f"tonal-center shift toward the chorus, not an error.")
+
     return {
         "key": key_name, "confidence": conf, "runner_up": runner_name,
         "chords": per_chord, "rare_transitions": trans, "suspects": suspects,
-        "warnings": warnings, "plausibility": plausibility,
+        "warnings": warnings, "plausibility": plausibility, "framing_note": framing_note,
     }
 
 
@@ -441,6 +454,8 @@ def render(rep: dict) -> str:
             L.append(f"  {t['from']:>4} → {t['to']:<4}  rare (p≈{t['p']}){times}")
     else:
         L.append("Transition check: no improbable moves — progression is idiomatic.")
+    if rep.get("framing_note"):
+        L.append(f"  note: {rep['framing_note']}")
     if rep["suspects"]:
         L.append("")
         L.append("SUSPECT (out-of-key AND reached by a rare move) — likely mis-transcribed, double-check:")
@@ -487,7 +502,12 @@ def main(argv=None) -> int:
             log(f"file not found: {args.file}")
             return 2
         with open(args.file, encoding="utf-8") as fh:
-            meta = chords_from_cho(fh.read())
+            text = fh.read()
+        meta = chords_from_cho(text)
+        if not args.key:  # honor the chart's own {key:} directive (the charter's call)
+            km = re.search(r"\{(?:key|k)\s*:\s*([A-G][#b]?m?)\s*\}", text, re.I)
+            if km:
+                args.key = km.group(1)
     else:
         log("give a .cho file or --chords \"...\" (try --help)")
         return 1
