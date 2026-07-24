@@ -178,7 +178,7 @@ def chord4_split_header(lines: list[str]) -> int:
 
 
 def is_chord_line(line: str) -> bool:
-    toks = [t for t in line.split() if t not in ("|", "*")]
+    toks = [t for t in line.replace("|", " ").split() if t != "*"]
     if not toks:
         return "|" in line
     chordish = sum(1 for t in toks if CHORD_TOKEN.match(t))
@@ -186,18 +186,29 @@ def is_chord_line(line: str) -> bool:
 
 
 def chord_tokens(line: str) -> list[str]:
-    return [t for t in line.split() if t not in ("|", "*") and CHORD_TOKEN.match(t)]
+    # bars/repeat-stars may be glued to a chord (|Gm, C7|, |G|) — detach them first
+    toks = []
+    for raw in line.split():
+        for p in re.findall(r"[^|*]+", raw):
+            if CHORD_TOKEN.match(p):
+                toks.append(p)
+    return toks
 
 
 def instrumental_line(line: str) -> str:
-    """A chord line with no sung syllables → inline chords, keeping | bar markers."""
+    """A chord line with no sung syllables → inline chords, keeping | bar markers.
+
+    A bar can be glued to a chord in the source (`|Gm`, `C7|`); split those so the
+    chord isn't lost, while keeping the bar as a visual separator.
+    """
     out = []
-    for t in line.split():
-        if t == "|":
-            out.append("|")
-        elif CHORD_TOKEN.match(t):
-            out.append(f"[{t}]")
-        # drop stray '*' repeat markers
+    for raw in line.split():
+        for p in re.findall(r"\||[^|]+", raw):
+            if p == "|":
+                out.append("|")
+            elif CHORD_TOKEN.match(p):
+                out.append(f"[{p}]")
+        # stray '*' repeat markers fall through (not a bar, not a chord)
     return " ".join(out)
 
 
@@ -239,6 +250,7 @@ def col_map_cjk(chord_line: str, lyric: str) -> str:
     a2crd gets wrong — done right here.
     """
     lyric = re.sub(r"\s*\*\s*$", "", lyric.rstrip("\n"))
+    chord_line = chord_line.replace("|", " ")  # detach glued bars (|Gm, C7|); keeps columns
     # display-column where each lyric char starts
     starts, col = [], 0
     for ch in lyric:
