@@ -48,7 +48,7 @@ back to interactive, fill-in-the-gaps assistance instead of pretending otherwise
 |---|---|---|
 | A `.cho`/`.crd`/`.pro` file | Render / transpose / **validate** via `chordpro` CLI | High |
 | **Chords-over-lyrics** text (UG/OnSong) | `a2crd` → light manual cleanup → validate | High |
-| A **known song** (title / lyrics / a link) and no chords yet | **Search existing chord charts online** → adapt to ChordPro (often via `a2crd`) → validate. See `references/chord-tab-sources.md` | Med–High (**best first move**) |
+| A **known song** (title / lyrics / a link) and no chords yet | **Search existing chord charts online** → `chart-to-cho.py` (preserves the chart's own alignment) → sanity-check → validate. See `references/chord-tab-sources.md` | Med–High (**best first move**) |
 | **Lyrics only**, no chart found | Fetch/confirm lyrics → **interactively** fill chords (propose from key, ask the user to confirm/correct) | Medium (human-in-loop) |
 | An **audio file or link**, want a machine draft | `scripts/audio-to-chords.py` → *draft* with `AUTO-GENERATED` header → human correction | ~80% (last resort) |
 
@@ -155,6 +155,16 @@ To auto-normalize to canonical form (fix spacing, round-trip directives):
 installed, the script prints the install one-liner — say so and offer to proceed
 without rendering (the format is still human-checkable).
 
+**Sanity-check the harmony (non-blocking).** After building a chart — especially a
+fetched or auto-generated one — run `scripts/analyze-progression.py song.cho`. It
+detects the key, re-expresses every chord as a scale degree (Roman + Nashville),
+and flags the ones worth a second look: **out-of-key chords reached by an
+improbable move** (the strongest "likely mis-transcribed" signal), plus duplicate
+and floating chords. It's advisory, not a gate — unusual ≠ wrong — but many
+low-plausibility flags mean the chart or the detected key needs another look, and
+it's a good **tie-breaker** when two fetched charts disagree. Theory + how to read
+the verdict → `references/music-theory.md`.
+
 **Producing a PDF? Verify it *renders*, not just parses.** `validate-cho.sh` only
 checks that the file parses — it can't see a broken PDF. `chordpro`'s default
 fonts have **no CJK glyphs**, so a Chinese/Japanese/Korean song renders as blank
@@ -165,28 +175,33 @@ loudly on tofu).
 ## Finding existing chord charts (the usual first move)
 
 For a named/popular song, a human-made chart almost always already exists online
-and beats audio extraction on accuracy. The realistic recipe (WebFetch's
-summarizer strips copyrighted lyrics, and `a2crd`'s column logic mis-aligns
-full-width CJK — so neither is the happy path it looks like):
+and beats audio extraction on accuracy. **`scripts/chart-to-cho.py` fetches and
+converts it while preserving the chart's own chord-to-syllable alignment** — the
+key to accuracy. The source already encodes which syllable each chord sits on
+(Chord4's `後來的生(活)`, UG's monospace columns); the script reproduces that. **Never
+re-align fetched chords onto separately-fetched lyrics by eye** — that lossy
+re-merge is what drifts chords and drops them as floaters.
 
 ```bash
-# 1. search (中文: 吉他谱/和弦/弹唱谱; EN: chords / ultimate guitar)
-# 2. fetch the RAW html (WebFetch drops the lyrics) and parse chords from the
-#    site's markup — e.g. Chord4 parenthesized-syllable, UG js-store data-content.
-curl -sL "<chart-url>" -o chart.html
-# 3. lyrics come SEPARATELY from LRCLIB (reliable, synced):
+# 1. search: 中文 吉他谱/和弦/弹唱谱 ; EN "<artist> <title>" chords / ultimate guitar
+# 2. convert (auto-detects Chord4 vs Ultimate Guitar; keeps alignment + metadata):
+uv run scripts/chart-to-cho.py --url "<chart-url>" -o song.cho
+#    Cloudflare wall? save the page in a browser, then: --html saved.html --site chord4
+# 3. LRCLIB is only the .lrc sidecar + a gap-filler for missing lines — NOT the
+#    alignment source (the chart already aligned the chords):
 uv run scripts/fetch-lyrics.py --artist "…" --track "…" -o song.lrc
-# 4. align the chart's chords onto the lyric syllables by phrase, NOT by column
-#    (CJK chars are 2 display cells). For pure-Latin chords-over-lyrics you can
-#    still use:  chordpro --a2crd chart.txt -o song.cho
-scripts/validate-cho.sh song.cho && scripts/render-cho.sh song.cho   # 5. validate + render (CJK-safe)
+# 4. sanity-check the harmony (key + degrees + likely mis-transcriptions):
+uv run scripts/analyze-progression.py song.cho
+# 5. validate + render (CJK-safe):
+scripts/validate-cho.sh song.cho && scripts/render-cho.sh song.cho
 ```
 
-Caption the result with a `{comment:}` naming the source and "published
-arrangement — verify against the recording (capo/key may differ)". Not machine
-ACR, so no `AUTO-GENERATED` header. Per-site extraction patterns, the site catalog
-(91譜/Chord4/UG — many are JS-rendered or image-only 六线谱), simplified↔traditional
-handling, and legality → read `references/chord-tab-sources.md`.
+`chart-to-cho.py` adds the source `{comment:}` caption itself. Human-made chart, not
+machine ACR — so no `AUTO-GENERATED` header. Per-site extraction internals, the site
+catalog (91譜/Chord4/UG — many are JS-rendered or image-only 六线谱),
+simplified↔traditional (`--opencc` / URL variant), and legality →
+read `references/chord-tab-sources.md`. Harmony theory behind step 4 →
+`references/music-theory.md`.
 
 ## Generating from audio / links — the fallback when no chart exists
 
@@ -238,6 +253,16 @@ Full comparison, legality, and the LRCLIB API → read `references/lyrics-source
 
 ## Available scripts
 
+- **`scripts/chart-to-cho.py`** — fetch an existing chart (Chord4 primary, Ultimate
+  Guitar fallback) and convert it to inline ChordPro, **preserving the chart's own
+  chord-to-syllable alignment**. Auto-detects the site; pulls title/artist/key/capo.
+  Flags: `--url`/`--html`, `--site chord4|ug|auto`, `-o`, `--opencc s2t|t2s`,
+  `--dry-run`, `--help`.
+- **`scripts/analyze-progression.py`** — sanity-check a progression: detect key,
+  label each chord by scale degree (Roman + Nashville + diatonic/borrowed/secondary/
+  out-of-key), score each move against a rock-corpus transition matrix, and flag
+  likely mis-transcriptions + duplicate/floating chords. Zero-dep (`music21`
+  optional). Flags: `<file.cho>` or `--key`/`--chords`, `--json`, `--help`.
 - **`scripts/validate-cho.sh <file.cho>`** — verify a file parses cleanly
   (`chordpro --strict`); PASS/FAIL to stdout, warnings to stderr. Guides install
   if `chordpro` is missing. Flags: `--help`.
@@ -245,7 +270,8 @@ Full comparison, legality, and the LRCLIB API → read `references/lyrics-source
   (auto-detected) and glyph-check the result, so a Chinese song can't silently
   render as tofu. Flags: `-o/--output`, `--font`, `--keep-config`, `--help`.
 - **`scripts/fetch-lyrics.py`** — fetch lyrics from LRCLIB (synced `.lrc` default,
-  `--plain` for text). Auto-retries a CJK miss with a romanized/pinyin query.
+  `--plain` for text). Auto-retries a CJK miss with a romanized/pinyin query. Use it
+  for the `.lrc` sidecar / to fill missing lines, not to re-align a chart's chords.
   Self-contained via `uv run`. Flags: `--artist`, `--track`, `--duration`,
   `--album`, `--plain`, `-o/--output`, `--help`, `--dry-run`.
 - **`scripts/audio-to-chords.py`** — best-effort link/audio → draft ChordPro
@@ -275,8 +301,11 @@ copy-paste starting points and few-shot references:
   directive beyond the cheat-sheet (`{define}` diagrams, `{transpose}`, markup,
   ABC/LilyPond, `x_` custom namespace).
 - `references/chord-tab-sources.md` — Read **when** you need chords for a named
-  song and have none: where to find existing charts (91譜/Chord4/Ultimate
-  Guitar/…), how to adapt them, and the legality.
+  song and have none: `chart-to-cho.py` usage, where to find existing charts
+  (91譜/Chord4/Ultimate Guitar/…), the per-site markup it parses, and the legality.
+- `references/music-theory.md` — Read **when** validating a progression (key
+  detection, Roman/Nashville degrees, diatonic-fit, the rock-corpus transition
+  matrix, how to read `analyze-progression.py`'s verdict).
 - `references/cli-and-rendering.md` — Read **when** installing, rendering,
   transposing, converting with `a2crd`, or validating/normalizing.
 - `references/audio-to-chords.md` — Read **when** the user wants chords from an
@@ -308,6 +337,15 @@ copy-paste starting points and few-shot references:
 - **`a2crd` is Latin-only.** Its column heuristic assumes 1 char = 1 column, but
   full-width CJK occupies 2 display cells, so chords drift. For CJK, align chords to
   syllables/phrases by musical judgment — don't trust column arithmetic.
+- **Preserve a fetched chart's own alignment — don't re-merge.** A published chart
+  already places each chord on a specific syllable (Chord4's `(字)` markup, UG's
+  columns); `chart-to-cho.py` reproduces that exactly. Re-fetching "clean" lyrics
+  from LRCLIB and re-aligning the chords by eye **discards that ground truth** and is
+  what produces drifted, duplicated, and floating chords. LRCLIB is for the `.lrc`
+  sidecar and for filling lines the chart omits — not for re-alignment. Note that a
+  faithful transcription legitimately includes chords that land on a *rest* between
+  syllables (instrumental beats), so not every "floating" chord is a bug —
+  `analyze-progression.py` flags them for review, not deletion.
 - **A strict "Unknown chord" warning ≠ a parse error.** `chordpro --strict` warns
   "Unknown chord" for a *valid* chord it has no built-in diagram for (e.g. `Em/C#`,
   `F#m7b5`); it still renders. Add a `{define}` (see the format reference) or ignore.

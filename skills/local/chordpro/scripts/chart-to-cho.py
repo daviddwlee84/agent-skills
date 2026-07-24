@@ -1,0 +1,524 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "httpx>=0.27,<1",
+# ]
+# ///
+"""chart-to-cho.py — Convert an existing online chord chart into aligned ChordPro.
+
+Fetches a human-made chart from **Chord4** (chord4.com / 和弦网 — primary, best for
+Mandarin) or **Ultimate Guitar** (fallback) and converts it to inline ChordPro,
+**preserving the chart's own chord-to-syllable alignment** rather than re-aligning
+by eye. That faithful-transcription property is the whole point: the source already
+encodes which syllable each chord sits on — Chord4 via parenthesized-syllable
+markup (`後來的生(活)` → the chord above sits on 活), Ultimate Guitar via monospace
+columns — so we reproduce it exactly instead of guessing. Re-merging fetched chords
+onto separately-fetched lyrics is what drops alignment; this script doesn't do that.
+
+The chart body (data) goes to stdout or --output; diagnostics go to stderr.
+
+Chord4 access note: bare requests are Cloudflare-blocked, so this sends a browser
+User-Agent + Accept-Language and accepts gzip. Simplified vs traditional is a URL
+variant on the same tab id (`/zh-hant/tabs/N` = traditional, `/tabs/N` = simplified).
+
+Examples:
+    uv run chart-to-cho.py --url https://chord4.com/zh-hant/tabs/30689 -o song.cho
+    uv run chart-to-cho.py --site ug --url https://tabs.ultimate-guitar.com/tab/oasis/wonderwall-chords-27596
+    uv run chart-to-cho.py --html saved.html --site chord4        # parse a saved page
+    curl -sL ... | uv run chart-to-cho.py --html - --site chord4  # or from stdin
+
+Exit codes:
+  0  chart parsed and emitted
+  1  invalid arguments
+  3  could not find/parse the chart in the page
+  4  network / fetch error
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import json
+import re
+import sys
+import unicodedata
+
+# --- shared helpers ---------------------------------------------------------
+
+# CJK unified ideographs (+ ext-A + compatibility) — enough to tell a lyric line
+# (has Han characters) from a chord line (Latin chord tokens only).
+CJK = re.compile(r"[㐀-鿿豈-﫿]")
+# A chord token starts with a root A–G, optional accidental, quality/extension,
+# and an optional /bass. Deliberately permissive on the tail (maj7, add9, sus4…).
+CHORD_TOKEN = re.compile(r"^[A-G][#b]?[A-Za-z0-9()+\-]*(?:/[A-G][#b]?)?$")
+
+UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+)
+
+
+def log(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def has_cjk(s: str) -> bool:
+    return bool(CJK.search(s))
+
+
+def read_source(url: str | None, html_path: str | None, site: str) -> str:
+    """Return raw HTML from --html (file or '-' for stdin) or by fetching --url."""
+    if html_path:
+        if html_path == "-":
+            return sys.stdin.read()
+        with open(html_path, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    # network path — import httpx lazily so --html / --help work without it
+    import httpx
+
+    lang = "zh-TW,zh;q=0.9,en;q=0.8" if site != "ug" else "en-US,en;q=0.9"
+    # NB: advertise only gzip/deflate — httpx doesn't decode brotli without the extra
+    # 'brotli' package, and Chord4 will send 'br' if offered, yielding garbled bytes.
+    headers = {"User-Agent": UA, "Accept-Language": lang, "Accept-Encoding": "gzip, deflate"}
+    with httpx.Client(headers=headers, timeout=30.0, follow_redirects=True) as client:
+        resp = client.get(url)
+        resp.raise_for_status()
+        return resp.text
+
+
+# --- Chord4 -----------------------------------------------------------------
+
+
+def chord4_pre(raw: str) -> str:
+    """Extract the single chords-over-lyrics <pre> from Chord4's tabs_content div."""
+    m = re.search(r'<div class="tabs_content">\s*<pre>(.*?)</pre>', raw, re.S)
+    if not m:
+        m = re.search(r"<pre>(.*?)</pre>", raw, re.S)
+    if not m:
+        raise ValueError("no <pre> chart block found (is this a Chord4 tab page?)")
+    return html.unescape(m.group(1))
+
+
+def chord4_meta(raw: str, header_text: str) -> dict:
+    """Pull title/artist (og:title) + written key/capo/credits (pre header)."""
+    meta: dict = {}
+    m = re.search(r'<meta property="og:title" content="([^"]+)"', raw)
+    if m:
+        parts = [p.strip() for p in m.group(1).split(" - ")]
+        # "說好不哭 - 周杰倫 - 吉他譜 - Chord4"
+        if parts:
+            meta["title"] = parts[0]
+        if len(parts) >= 2:
+            meta["artist"] = parts[1]
+    # Key=Bb  Play=G  Capo=3  → {key}=Play (fingered), note the sounding key
+    m = re.search(r"Key=(\S+)\s+Play=(\S+)\s+Capo=(\S+)", header_text)
+    if m:
+        meta["sound_key"], meta["key"], meta["capo"] = m.group(1), m.group(2), m.group(3)
+    else:
+        m = re.search(r"Key=(\S+)", header_text)
+        if m:
+            meta["key"] = m.group(1)
+        m = re.search(r"Capo=(\S+)", header_text)
+        if m:
+            meta["capo"] = m.group(1)
+    for line in header_text.splitlines():
+        if line.startswith("詞"):
+            meta["lyricist"] = _after_colon(line)
+        elif line.startswith("曲"):
+            meta["composer"] = _after_colon(line)
+        elif line.startswith("編配") or "編配者" in line:
+            meta["arranger"] = re.split(r"[:：]", line, maxsplit=1)[-1].strip()
+    return meta
+
+
+def _after_colon(line: str) -> str:
+    # "詞: 方文山 Lyrics/ Vincent Fang" → "方文山" (drop the English gloss)
+    val = re.split(r"[:：]", line, maxsplit=1)[-1].strip()
+    val = re.split(r"\s+(?:Lyrics?|Song|Music)\b", val)[0].strip()
+    return val
+
+
+def chord4_split_header(lines: list[str]) -> int:
+    """Index where the chart body begins: first section label [X] or |-chord line.
+
+    Everything before (credits, the Key=/Play=/Capo= line, the Name+frets fingering
+    table) is header. Anchoring on [section]/'|' skips the fingering table cleanly —
+    a line like `F#m7  202220` otherwise looks exactly like a chord line.
+    """
+    for idx, line in enumerate(lines):
+        s = line.strip()
+        if re.match(r"^\[[^\]]+\]$", s):
+            return idx
+        if s.startswith("|"):
+            return idx
+    return 0
+
+
+def is_chord_line(line: str) -> bool:
+    toks = [t for t in line.split() if t not in ("|", "*")]
+    if not toks:
+        return "|" in line
+    chordish = sum(1 for t in toks if CHORD_TOKEN.match(t))
+    return chordish >= max(1, (len(toks) + 1) // 2)
+
+
+def chord_tokens(line: str) -> list[str]:
+    return [t for t in line.split() if t not in ("|", "*") and CHORD_TOKEN.match(t)]
+
+
+def instrumental_line(line: str) -> str:
+    """A chord line with no sung syllables → inline chords, keeping | bar markers."""
+    out = []
+    for t in line.split():
+        if t == "|":
+            out.append("|")
+        elif CHORD_TOKEN.match(t):
+            out.append(f"[{t}]")
+        # drop stray '*' repeat markers
+    return " ".join(out)
+
+
+def pair_chord_lyric(chords: list[str], lyric: str) -> str:
+    """Replace the Nth (marker) in the lyric with [chordN], preserving alignment.
+
+    Chord4 binds ordinally: the Nth chord token pairs with the Nth `(…)` marker.
+    An empty `( )` marker → a chord with no syllable (lead-in or instrumental beat)
+    → a bare [chord] at that spot. Faithful to the source, including held beats.
+    """
+    lyric = re.sub(r"^\s*\*\s*", "", lyric)  # strip repeat-open marker
+    lyric = re.sub(r"\s*\*\s*$", "", lyric)  # strip repeat-close marker
+    it = iter(chords)
+
+    def repl(m: re.Match) -> str:
+        inner = m.group(1).strip()
+        ch = next(it, None)
+        return inner if ch is None else f"[{ch}]{inner}"
+
+    out = re.sub(r"\(([^)]*)\)", repl, lyric)
+    leftover = list(it)
+    if leftover:  # fewer markers than chords — append the rest so none are lost
+        out = out.rstrip() + " " + " ".join(f"[{c}]" for c in leftover)
+    out = re.sub(r" {2,}", " ", out).strip()
+    return out
+
+
+def _display_width(ch: str) -> int:
+    """Terminal cells a char occupies — CJK/fullwidth = 2, so column math lines up."""
+    return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+
+
+def col_map_cjk(chord_line: str, lyric: str) -> str:
+    """Chords-above-lyrics layout: map each chord's column onto the syllable beneath.
+
+    The other Chord4 layout puts a chord line directly above the lyric, aligned in a
+    monospace grid where CJK glyphs take 2 cells. Insert [chord] before the syllable
+    whose display-column span contains the chord's column. This is the CJK-width math
+    a2crd gets wrong — done right here.
+    """
+    lyric = re.sub(r"\s*\*\s*$", "", lyric.rstrip("\n"))
+    # display-column where each lyric char starts
+    starts, col = [], 0
+    for ch in lyric:
+        starts.append(col)
+        col += _display_width(ch)
+    total = col
+    inserts = []
+    for m in re.finditer(r"\S+", chord_line):
+        tok = m.group(0)
+        if tok in ("|", "*") or not CHORD_TOKEN.match(tok):
+            continue
+        ccol = m.start()  # chord line is ASCII → index == display column
+        if ccol >= total:
+            idx = len(lyric)
+        else:
+            idx = 0
+            for k, st in enumerate(starts):
+                if st <= ccol:
+                    idx = k
+                else:
+                    break
+        inserts.append((idx, tok))
+    res = lyric
+    for idx, chord in sorted(inserts, key=lambda x: x[0], reverse=True):
+        c = min(idx, len(res))
+        res = res[:c] + f"[{chord}]" + res[c:]
+    return re.sub(r" {2,}", " ", res).strip()
+
+
+def parse_chord4(raw: str) -> tuple[list[str], dict]:
+    pre = chord4_pre(raw)
+    lines = pre.split("\n")
+    body_start = chord4_split_header(lines)
+    meta = chord4_meta(raw, "\n".join(lines[:body_start]))
+
+    body = lines[body_start:]
+    out: list[str] = []
+    i, n = 0, len(body)
+    while i < n:
+        line = body[i].rstrip()
+        s = line.strip()
+        if not s:
+            out.append("")
+            i += 1
+            continue
+        m = re.match(r"^\[([^\]]+)\]$", s)
+        if m:  # section label
+            out.append(f"{{comment: {m.group(1)}}}")
+            i += 1
+            continue
+        if re.match(r"^Repeat\b", s, re.I):
+            out.append("{comment: (repeat the section marked *)}")
+            i += 1
+            continue
+        if not has_cjk(line) and is_chord_line(line):
+            chords = chord_tokens(line)
+            nxt = body[i + 1] if i + 1 < n else ""
+            if nxt.strip() and (has_cjk(nxt) or "(" in nxt):
+                if has_cjk(nxt):
+                    # two Chord4 layouts: parenthesized-syllable markers → ordinal
+                    # pairing; plain chords-above-lyrics → CJK-aware column mapping.
+                    if "(" in nxt:
+                        out.append(pair_chord_lyric(chords, nxt))
+                    else:
+                        out.append(col_map_cjk(line, nxt))
+                else:  # marker-only / no-CJK lyric line → instrumental
+                    out.append(instrumental_line(line))
+                i += 2
+                continue
+            out.append(instrumental_line(line))  # no lyric follows
+            i += 1
+            continue
+        # a lyric/text line with no preceding chord line (continuation) — keep plain
+        out.append(re.sub(r"[()*]", "", line).rstrip())
+        i += 1
+    return _trim_blanks(out), meta
+
+
+# --- Ultimate Guitar --------------------------------------------------------
+
+
+def parse_ug(raw: str) -> tuple[list[str], dict]:
+    m = re.search(r'<div class="js-store" data-content="([^"]*)"', raw)
+    if not m:
+        raise ValueError("no js-store data-content found (is this a UG chords page?)")
+    data = json.loads(html.unescape(m.group(1)))
+    page = data["store"]["page"]["data"]
+    content = page["tab_view"]["wiki_tab"]["content"]
+    tab = page.get("tab", {})
+    tv_meta = page["tab_view"].get("meta", {}) or {}
+    meta = {
+        "title": tab.get("song_name"),
+        "artist": tab.get("artist_name"),
+        "key": tab.get("tonality_name") or tv_meta.get("tonality"),
+        "capo": tv_meta.get("capo"),
+    }
+
+    text = content.replace("\r\n", "\n").replace("[tab]", "").replace("[/tab]", "")
+    lines = text.split("\n")
+    out: list[str] = []
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i].rstrip()
+        s = line.strip()
+        if not s:
+            out.append("")
+            i += 1
+            continue
+        if re.match(r"^\[[^\]]+\]$", s) and "[ch]" not in s:  # section header
+            out.append(f"{{comment: {s[1:-1]}}}")
+            i += 1
+            continue
+        if "[ch]" in line:  # chord line
+            nxt = lines[i + 1] if i + 1 < n else ""
+            if nxt.strip() and "[ch]" not in nxt and not re.match(r"^\[[^\]]+\]$", nxt.strip()):
+                out.append(ug_map(line, nxt))
+                i += 2
+            else:  # instrumental — bare chords
+                out.append(" ".join(f"[{c}]" for _, c in ug_positions(line)))
+                i += 1
+            continue
+        out.append(re.sub(r"\[/?ch\]", "", line).rstrip())
+        i += 1
+    return _trim_blanks(out), meta
+
+
+def ug_positions(chord_line: str) -> list[tuple[int, str]]:
+    """Visual column → chord, by stripping [ch]…[/ch] and tracking real columns."""
+    positions: list[tuple[int, str]] = []
+    visual_len = 0
+    idx = 0
+    s = chord_line
+    while idx < len(s):
+        m = re.match(r"\[ch\](.*?)\[/ch\]", s[idx:])
+        if m:
+            positions.append((visual_len, m.group(1)))
+            idx += m.end()
+        else:
+            visual_len += 1
+            idx += 1
+    return positions
+
+
+def ug_map(chord_line: str, lyric: str) -> str:
+    """Insert [chord] into the lyric at the chord's monospace column (ASCII-safe)."""
+    lyric = lyric.rstrip("\n")
+    for col, ch in sorted(ug_positions(chord_line), key=lambda x: x[0], reverse=True):
+        c = min(col, len(lyric))
+        lyric = lyric[:c] + f"[{ch}]" + lyric[c:]
+    return lyric.rstrip()
+
+
+# --- assembly ---------------------------------------------------------------
+
+
+def _trim_blanks(lines: list[str]) -> list[str]:
+    out: list[str] = []
+    for ln in lines:
+        if ln == "" and (not out or out[-1] == ""):
+            continue
+        out.append(ln)
+    while out and out[-1] == "":
+        out.pop()
+    return out
+
+
+def build_cho(body: list[str], meta: dict, url: str | None, site: str) -> str:
+    head: list[str] = []
+    if meta.get("title"):
+        head.append(f"{{title: {meta['title']}}}")
+    if meta.get("artist"):
+        head.append(f"{{artist: {meta['artist']}}}")
+    if meta.get("composer"):
+        head.append(f"{{composer: {meta['composer']}}}")
+    if meta.get("lyricist"):
+        head.append(f"{{lyricist: {meta['lyricist']}}}")
+    if meta.get("key"):
+        head.append(f"{{key: {meta['key']}}}")
+    if meta.get("capo") not in (None, "", "0", 0):
+        head.append(f"{{capo: {meta['capo']}}}")
+
+    src = url or f"{site} chart"
+    note = f"Source: {src}"
+    if meta.get("arranger"):
+        note += f" (arr. {meta['arranger']})"
+    detail = []
+    if meta.get("sound_key"):
+        detail.append(f"sounds in {meta['sound_key']}")
+    if meta.get("key"):
+        detail.append(f"fingered in {meta['key']}")
+    if meta.get("capo"):
+        detail.append(f"capo {meta['capo']}")
+    detail_s = "; ".join(detail)
+    head.append(f"{{comment: {note}. {detail_s + '. ' if detail_s else ''}"
+                "Published arrangement — verify against the recording (capo/key may differ). Personal use.}")
+    return "\n".join(head) + "\n\n" + "\n".join(body) + "\n"
+
+
+def make_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="chart-to-cho.py",
+        description="Convert a Chord4 / Ultimate Guitar chart into aligned ChordPro.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Preserves the chart's own chord-to-syllable alignment (no re-merge).\n"
+            "Chord4 = primary (Mandarin); Ultimate Guitar = fallback.\n\n"
+            "Personal-use only: charts are user arrangements of copyrighted songs —\n"
+            "keep the output local, don't redistribute, and cite the source (auto-added).\n"
+        ),
+    )
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--url", help="Chart URL (Chord4 tab page or UG chords page).")
+    src.add_argument("--html", help="Read raw HTML from this file, or '-' for stdin.")
+    p.add_argument(
+        "--site",
+        choices=("chord4", "ug", "auto"),
+        default="auto",
+        help="Which parser to use (default: auto-detect from URL/markup).",
+    )
+    p.add_argument("-o", "--output", help="Write ChordPro here instead of stdout.")
+    p.add_argument(
+        "--opencc",
+        choices=("s2t", "t2s"),
+        help="Convert Han characters simplified↔traditional (needs the 'opencc' "
+        "package; try `uv run --with opencc chart-to-cho.py ...`). Chords/directives "
+        "are unaffected. Tip: Chord4 also serves both via the URL (/zh-hant/tabs/N).",
+    )
+    p.add_argument("--dry-run", action="store_true", help="Print the plan, then exit.")
+    return p
+
+
+def opencc_convert(text: str, mode: str) -> str:
+    """Simplified↔traditional on the Han characters only (chords/ASCII untouched)."""
+    try:
+        from opencc import OpenCC
+    except ImportError:
+        log("--opencc needs the 'opencc' package — skipping conversion. "
+            "Re-run with: uv run --with opencc chart-to-cho.py …")
+        return text
+    return OpenCC(mode).convert(text)
+
+
+def detect_site(url: str | None, raw: str | None) -> str:
+    if url and "chord4.com" in url:
+        return "chord4"
+    if url and "ultimate-guitar.com" in url:
+        return "ug"
+    if raw and "js-store" in raw and "data-content" in raw:
+        return "ug"
+    return "chord4"
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = make_parser().parse_args(argv)
+    site = args.site
+
+    if args.dry_run:
+        resolved = site if site != "auto" else detect_site(args.url, None)
+        log(f"[dry-run] source: {args.url or args.html}")
+        log(f"[dry-run] parser: {resolved} (auto-detect may refine from markup)")
+        log("[dry-run] would fetch (browser UA), parse chords-over-lyrics preserving")
+        log("[dry-run] the chart's own alignment, and emit ChordPro to "
+            f"{args.output or 'stdout'}.")
+        return 0
+
+    if site == "auto":
+        site = detect_site(args.url, None)
+
+    try:
+        raw = read_source(args.url, args.html, site)
+    except Exception as exc:  # noqa: BLE001 — surface any fetch/read failure cleanly
+        log(f"could not read source: {exc}")
+        return 4
+
+    if args.site == "auto":  # refine now that we have markup
+        site = detect_site(args.url, raw)
+
+    try:
+        body, meta = parse_ug(raw) if site == "ug" else parse_chord4(raw)
+    except ValueError as exc:
+        log(f"parse failed ({site}): {exc}")
+        if site == "chord4" and "Attention Required" in raw:
+            log("hint: Cloudflare challenge page — retry, or open the URL in a browser "
+                "and save the HTML, then pass it with --html.")
+        return 3
+
+    if not any(l.strip() and not l.startswith("{") for l in body):
+        log("parsed no chord/lyric lines — the page markup may have changed.")
+        return 3
+
+    cho = build_cho(body, meta, args.url, site)
+    if args.opencc:
+        cho = opencc_convert(cho, args.opencc)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as fh:
+            fh.write(cho)
+        log(f"wrote {args.output} ({site}; {sum(1 for l in body if l.strip())} chart lines)")
+    else:
+        sys.stdout.write(cho)
+    log("NOTE: published arrangement — verify chords/capo/key against the recording. "
+        "Run analyze-progression.py on the result to sanity-check the harmony.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

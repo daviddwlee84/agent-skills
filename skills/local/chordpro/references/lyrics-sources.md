@@ -5,6 +5,11 @@ only source that is free, key-less, cross-platform, and returns time-synced
 `.lrc`. `scripts/fetch-lyrics.py` uses it. Everything else has a catch (paid,
 partner-gated, or scrape-only with ToS risk).
 
+> **When an aligned chart already exists**, LRCLIB is the **time-synced `.lrc`
+> sidecar** and a **gap-filler for lines the chart omits** — *not* the source of
+> chord alignment. The chart already places each chord on its syllable; re-aligning
+> onto separately-fetched lyrics discards that. See `references/chord-tab-sources.md`.
+
 ## Source table
 
 | Source | Access | Time-synced `.lrc`? | Notes |

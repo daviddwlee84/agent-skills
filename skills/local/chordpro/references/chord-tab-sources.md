@@ -15,36 +15,65 @@ default source of chords, not an afterthought.
 ## The workflow
 
 Verified across a 7-song C-pop batch — the naive "WebFetch → a2crd" path breaks in
-two ways (WebFetch's summarizer strips copyrighted lyrics; `a2crd` mis-aligns CJK),
-so the real recipe is:
+two ways (WebFetch's summarizer strips copyrighted lyrics; `a2crd` mis-aligns CJK).
+The reliable recipe uses **`scripts/chart-to-cho.py`**, which fetches + parses a
+chart and **preserves the chart's own chord-to-syllable alignment** — the single
+most important property. A chart already encodes which syllable each chord sits on
+(Chord4's `後來的生(活)` markup, UG's monospace columns); the script reproduces that
+exactly. **Do not re-align fetched chords onto separately-fetched lyrics by eye** —
+that lossy re-merge is what produces drifted/floating/duplicated chords.
 
 1. **Search.** `WebSearch` for the song + a chart keyword in the right language:
    - EN: `"<artist> <title>" chords`, `... ultimate guitar`, `... chordpro`
    - 中文: `<歌手> <歌名> 吉他谱`, `... 和弦`, `... 弹唱谱`, `... 简谱`
-2. **Fetch RAW, then parse the site's markup.** `WebFetch`'s LLM summary **strips the
-   copyrighted lyrics** (returns "[歌词已移除]" / "[lyrics omitted]"), so you get chords
-   with no alignment. Instead `curl -sL <url>` the raw HTML and parse the site markup:
-   - **Chord4** (best for Mandarin): chords are parenthesized syllables like
-     `你不是真正(的)快樂` (chord sits above the `(char)`), plus `data-chord` attrs,
-     inside the `tabs_content` `<pre>` block.
-   - **Ultimate Guitar**: JS-rendered — the chart is in the embedded **`js-store`
-     `data-content` JSON** as `[ch]C[/ch] … [tab]…[/tab]`.
-   - **Image-only 六线谱** (common for C-pop — jitahome/qinhun/guistudy…): there is NO
-     text to parse. `WebFetch` will *confidently fabricate* per-line placement — trust
-     only an explicit chord **list**, never fabricated alignment.
-3. **Lyrics come SEPARATELY from LRCLIB** (`scripts/fetch-lyrics.py -o song.lrc`).
-   Treat LRCLIB lyrics as ground truth (they arrive traditional or simplified —
-   see below).
-4. **Align by phrase, not by column.** `chordpro --a2crd` only works on **pure-Latin**
-   chords-over-lyrics; for CJK its 1-char = 1-column heuristic drifts (full-width
-   chars are 2 display cells). Place each chord over the syllable/phrase it belongs
-   to by musical judgment. If the chart omits an intro/interlude, reuse the relevant
-   verse loop labeled "verify against recording" — never fabricate a specific riff.
+2. **Convert with `chart-to-cho.py`** (it fetches with a browser UA, parses the
+   site markup, and keeps the alignment):
+
+   ```bash
+   uv run scripts/chart-to-cho.py --url <chart-url> -o song.cho     # Chord4 or UG
+   uv run scripts/chart-to-cho.py --site ug --url <ug-url> -o song.cho
+   # Cloudflare challenge? open the URL in a browser, save the page, then:
+   uv run scripts/chart-to-cho.py --html saved.html --site chord4 -o song.cho
+   ```
+
+   It auto-detects Chord4 vs Ultimate Guitar, pulls title/artist and (Chord4)
+   `Key=/Play=/Capo=` metadata, and captions the source. **Chord4 is primary** for
+   Mandarin; UG is the fallback. For an **image-only 六线谱** (jitahome/qinhun/…)
+   there is no text to parse and the script can't help — `WebFetch` will *fabricate*
+   placement, so transcribe manually from an explicit chord **list** only.
+3. **The chart's alignment is ground truth — keep it.** `chart-to-cho.py` already
+   preserved it. Use **LRCLIB only** for the time-synced **`.lrc` sidecar** and to
+   **fill lines the chart omits** — never to re-align chords that the chart already
+   placed:
+
+   ```bash
+   uv run scripts/fetch-lyrics.py --artist "…" --track "…" -o song.lrc   # sidecar only
+   ```
+
+   (LRCLIB text arrives traditional or simplified; use `--opencc` on `chart-to-cho.py`
+   if you need to match a variant — see below.) If the chart omits an intro/interlude,
+   reuse the relevant verse loop labeled "verify against recording" — never fabricate
+   a specific riff.
+4. **Sanity-check the harmony** with `scripts/analyze-progression.py song.cho`: it
+   detects the key, labels every chord by scale degree, and flags out-of-key +
+   improbable-move chords (likely mis-transcriptions) plus duplicate/floating chords.
+   See `references/music-theory.md`. Use it as a **tie-breaker** when two charts
+   disagree — prefer the one with higher plausibility / fewer suspects.
 5. **Validate AND render.** `scripts/validate-cho.sh` (parse) **and**
    `scripts/render-cho.sh` (CJK-safe render + glyph-check — a bare `chordpro -o`
-   renders Chinese as tofu yet passes validation). Caption a `{comment:}` naming the
-   source + "published arrangement — verify against the recording (capo/key may
-   differ)". Not machine ACR, so no `AUTO-GENERATED` header.
+   renders Chinese as tofu yet passes validation). The source `{comment:}` caption is
+   added by `chart-to-cho.py`. Human-made chart, not machine ACR — so no
+   `AUTO-GENERATED` header.
+
+**When the script needs a hand.** `chart-to-cho.py` covers the two dominant markups;
+the site-specific structure it relies on is documented below, so you can adjust the
+parser or hand-transcribe an oddball chart. The mechanics: **Chord4** = one `<pre>`
+in `div.tabs_content`, ordinal parenthesis-pairing (Nth chord token ↔ Nth `(字)`
+marker, `|` bars ignored), instrumental lines are marker-only `( )`; **Ultimate
+Guitar** = `js-store` `data-content` JSON → `tab_view.wiki_tab.content`, monospace
+ASCII columns of `[ch]C[/ch]` over the lyric line. `chordpro --a2crd` remains an
+option for **pure-Latin** chords-over-lyrics, but its 1-char = 1-column heuristic
+drifts on full-width CJK — the parser sidesteps that entirely.
 
 ## Where the charts live
 
@@ -83,9 +112,13 @@ are effectively ACR — same ~80% caveat.
 
 ## Simplified vs traditional, and the metadata a chart won't give you
 
-- **Char-set mismatch is common**: a simplified-character chart vs traditional LRCLIB
-  lyrics (or vice versa). Treat the **LRCLIB lyrics as ground truth** and map chords by
-  position/meaning, not string equality. `opencc` can convert if you must reconcile.
+- **Char-set mismatch is common**: a simplified-character chart vs a traditional-character
+  preference (or vice versa). The **chart is the source of alignment** — keep its own
+  chord↔syllable pairing. If you want the other character set, pick the Chord4 URL
+  variant (`/zh-hant/tabs/N` = traditional, `/tabs/N` = simplified) or run
+  `chart-to-cho.py --opencc t2s|s2t`; `opencc` converts the *characters* while the
+  chord placement (position-based) is unaffected. Reach for LRCLIB only to fill lines
+  the chart is missing.
 - **capo / tempo / composer / year** are usually **absent from text charts**. Get them
   from a second source (Wikipedia/Baidu/SongBPM), but **tempo is unreliable** — beware
   the half-time trap (a song *felt* at 82 BPM is often listed as 164). Omit an unknown
