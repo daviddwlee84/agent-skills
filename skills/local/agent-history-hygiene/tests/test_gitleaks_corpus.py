@@ -224,6 +224,54 @@ class TestWebhookFixture:
         )
 
 
+class TestLocalCredentials:
+    """age identities and plain password assignments.
+
+    These differ from the SaaS-token rules: an age identity is the one
+    secret that cannot be cheaply rotated, because it decrypts every
+    committed `encrypted_*.age` blob in the repo's history.
+    """
+
+    EXPECTED_RULE_IDS = {
+        "age-secret-key",
+        "generic-password-assignment",
+    }
+
+    def test_rules_fire_outside_artifact_dirs(
+        self, tmp_git_repo, fixtures_dir: Path
+    ):
+        _stage_fixture_at(
+            tmp_git_repo, fixtures_dir / "local_credentials.md", "src/leaks.md"
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        rule_ids = {f["RuleID"] for f in findings}
+        missing = self.EXPECTED_RULE_IDS - rule_ids
+        assert not missing, (
+            f"Expected local-credential rules did not fire: {sorted(missing)}. "
+            f"Got: {sorted(rule_ids)}"
+        )
+
+    def test_rules_NOT_allowlisted_in_artifact_dirs(
+        self, tmp_git_repo, fixtures_dir: Path
+    ):
+        """Real-shape credentials must still fire inside .specstory/history/ —
+        the path-scoped allowlist only covers explicit example/REDACTED
+        markers, and agent transcripts are exactly where these two leak.
+        """
+        _stage_fixture_at(
+            tmp_git_repo,
+            fixtures_dir / "local_credentials.md",
+            ".specstory/history/2026-01-01_00-00-00Z-session.md",
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        rule_ids = {f["RuleID"] for f in findings}
+        missing = self.EXPECTED_RULE_IDS - rule_ids
+        assert not missing, (
+            f"Local-credential leak in .specstory/history/ was incorrectly "
+            f"allowlisted: {sorted(missing)}. Check condition=AND."
+        )
+
+
 class TestConfigValidity:
     """The bundled gitleaks.toml.template must load without errors."""
 

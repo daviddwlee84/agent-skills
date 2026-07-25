@@ -147,3 +147,32 @@ useDefault = true
   description = "Stripe webhook signing secret (whsec_...)"
   regex       = '''\bwhsec_[A-Za-z0-9]{32,}\b'''
   tags        = ["webhook", "stripe", "auto"]
+
+# ---------------------------------------------------------------------------
+# Local-encryption + generic credential shapes. Both were promoted here from a
+# downstream repo (tarlin-infra) after real transcripts hit them: an age
+# identity copied between machines, and sudo/root passwords pasted into chat
+# while walking through an on-box deploy.
+# ---------------------------------------------------------------------------
+
+[[rules]]
+  id          = "age-secret-key"
+  description = "age encryption identity / private key (AGE-SECRET-KEY-1...)"
+  # Matters wherever age/sops/chezmoi encryption is used: the private identity
+  # is the ONE secret that cannot be rotated cheaply, because it decrypts every
+  # committed encrypted_*.age blob in the repo's history.
+  regex       = '''AGE-SECRET-KEY-1[0-9A-Z]{50,64}'''
+  tags        = ["key", "age", "auto"]
+
+[[rules]]
+  id          = "generic-password-assignment"
+  description = "Password / passphrase / sudo password assignment"
+  # [ \t]* (not \s*) around [:=] is deliberate. With \s*, prose like
+  #     "...needs a sudo password:\n  bin/foo-bar"
+  # (a help-text bullet, not an assignment) matched with secret="bin/foo-bar",
+  # because \s* let the separator swallow the newline and treat the next line's
+  # first word as the value. Real single-line assignments (`password: hunter2`,
+  # `passwd=hunter2`) are unaffected.
+  regex       = '''(?i)(?:passwo?r?d|passphrase|sudo[_-]?pass(?:word)?)[ \t]*[:=][ \t]*["']?([^\s"'#]{6,})'''
+  secretGroup = 1
+  tags        = ["password", "auto"]
