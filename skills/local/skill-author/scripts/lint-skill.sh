@@ -153,6 +153,27 @@ else
 
   FM=$(sed -n "${FM_START},${FM_END}p" "$SKILL_MD")
 
+  # Real-parser gate. The awk extractor below is permissive; harnesses
+  # (`npx skills`, Claude Code, Cursor) are not — they skip a skill whose
+  # frontmatter fails to parse. Delegate to the sibling batch linter.
+  FM_LINTER="$(dirname "$0")/lint-frontmatter.sh"
+  if [ -f "$FM_LINTER" ]; then
+    if FM_OUT=$(bash "$FM_LINTER" --quiet "$SKILL_MD" 2>&1); then
+      emit_ok "frontmatter parses as YAML"
+    else
+      while IFS= read -r fm_line; do
+        case "$fm_line" in
+          FAIL*|checked*|'') continue ;;
+          *) emit_err "frontmatter: $(printf '%s' "$fm_line" | sed 's/^ *//')" ;;
+        esac
+      done <<EOF
+$FM_OUT
+EOF
+    fi
+  else
+    emit_note "lint-frontmatter.sh not found next to this script; skipping the YAML parse check"
+  fi
+
   NAME=$(extract_frontmatter_value name)
   if [ -n "$NAME" ]; then
     emit_ok "name field present: $NAME"

@@ -24,6 +24,17 @@ make kanban
 # that drives the grouped install UI of `npx skills add ...`).
 make marketplace
 
+# YAML-parse every skills/**/SKILL.md frontmatter. A file that fails to parse
+# is silently skipped by `npx skills add` — run this before publishing.
+make lint-frontmatter
+
+# All publish gates at once (frontmatter + marketplace + TODO format).
+# Same set as .github/workflows/validate.yml.
+make validate
+
+# Install scripts/git-hooks/pre-push so `git push` runs `make validate` first.
+make install-hooks
+
 # Add a new vendored skill (auto-syncs)
 ./scripts/add-vendor.sh owner/repo/path/to/skill
 ./scripts/add-vendor.sh https://github.com/owner/repo/tree/branch/path/to/skill

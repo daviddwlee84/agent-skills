@@ -239,3 +239,43 @@ bash skills/local/skill-author/scripts/lint-skill.sh --json   skills/local/<name
 Lints a skill directory for frontmatter + length, script hygiene
 (shebang / +x / `--help` handler), and reference reachability. See
 [`skill-author`](../skills/skill-author.md) for the full checklist.
+
+### `lint-frontmatter.sh`
+
+```bash
+make lint-frontmatter                                  # sweep skills/
+./scripts/lint-frontmatter.sh skills/local/<name>/SKILL.md
+./scripts/lint-frontmatter.sh --parser node skills     # exact npx-skills parity
+```
+
+YAML-parses the frontmatter of every `SKILL.md` under the given paths and
+checks that the root is a mapping with string `name` + `description`.
+`lint-skill.sh` delegates to it for the single-skill case.
+
+This exists because harnesses **silently skip** a skill whose frontmatter
+does not parse — `npx skills add` prints `⚠ Skipped … YAML parse error` and
+still exits `0`. The usual cause is an unquoted `description:` containing
+`": "`; a ` #` in an unquoted value is worse, since it parses but truncates
+the description at the comment marker (warning, not error). See
+[pitfalls](../reference/pitfalls.md).
+
+Parser is auto-detected: `yq` → PyYAML → the js `yaml` package (what
+`npx skills` itself uses; force it with `--parser node`). With none
+installed the script degrades to a pattern heuristic and says so.
+
+Exit codes: `0` clean; `1` at least one file failed; `2` bad args, missing
+path, or forced parser unavailable.
+
+### `git-hooks/pre-push`
+
+```bash
+make install-hooks     # symlink it into .git/hooks/pre-push
+git push --no-verify   # bypass once
+rm .git/hooks/pre-push # uninstall
+```
+
+Runs `make validate` (frontmatter + `marketplace.json` + `TODO.md` format)
+and aborts the push on failure, printing the tail of the output. Mirrors
+[`.github/workflows/validate.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/workflows/validate.yml),
+which runs the same three gates on push and PR — the hook just moves the
+signal earlier, since a broken `SKILL.md` is invisible at install time.

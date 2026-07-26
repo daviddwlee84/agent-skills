@@ -238,3 +238,43 @@ bash skills/local/skill-author/scripts/lint-skill.sh --json   skills/local/<name
 檢查一個 skill 目錄的 frontmatter + 長度、script hygiene
 （shebang / +x / `--help` handler）、reference 可達性。完整 checklist
 見 [`skill-author`](../skills/skill-author.md)。
+
+### `lint-frontmatter.sh`
+
+```bash
+make lint-frontmatter                                  # 掃過整個 skills/
+./scripts/lint-frontmatter.sh skills/local/<name>/SKILL.md
+./scripts/lint-frontmatter.sh --parser node skills     # 跟 npx skills 用同一顆 parser
+```
+
+把指定路徑底下每個 `SKILL.md` 的 frontmatter 真的丟給 YAML parser 解析，
+並確認 root 是 mapping、`name` 與 `description` 都是字串。單一 skill 的
+情況 `lint-skill.sh` 會直接呼叫它。
+
+之所以需要這支：frontmatter 解析失敗時各家 harness 是**默默跳過**那個
+skill——`npx skills add` 只印一行 `⚠ Skipped … YAML parse error`，exit code
+仍然是 `0`。最常見的原因是沒加引號的 `description:` 裡出現 `": "`；沒加引號
+的值裡出現 ` #` 更陰險，因為它解析得過，但 description 會被當成註解從那裡
+截斷（所以只報 warning，不是 error）。詳見
+[pitfalls](../reference/pitfalls.md)。
+
+Parser 會自動偵測：`yq` → PyYAML → js 的 `yaml` 套件（`npx skills` 自己用
+的那顆，可用 `--parser node` 強制指定）。三個都沒有時會退化成 pattern
+heuristic，並在輸出裡講明。
+
+Exit codes：`0` 全過；`1` 至少一個檔案失敗；`2` 參數錯誤、路徑不存在，或
+指定的 parser 不可用。
+
+### `git-hooks/pre-push`
+
+```bash
+make install-hooks     # symlink 到 .git/hooks/pre-push
+git push --no-verify   # 單次略過
+rm .git/hooks/pre-push # 移除
+```
+
+跑 `make validate`（frontmatter + `marketplace.json` + `TODO.md` 格式），
+失敗就中止 push 並印出輸出尾巴。跟
+[`.github/workflows/validate.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/workflows/validate.yml)
+是同三道關卡（CI 在 push 與 PR 時跑）；hook 只是把訊號往前挪——畢竟壞掉的
+`SKILL.md` 在安裝當下是看不見的。

@@ -1,0 +1,1 @@
+../skills/local/skill-author/scripts/lint-frontmatter.sh

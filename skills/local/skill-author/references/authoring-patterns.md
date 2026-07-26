@@ -64,6 +64,12 @@ Use this as the portable baseline for coding agents that consume Agent Skills:
 - `description`: required, non-empty string, <=1024 characters. Include both
   what the skill does and concrete trigger contexts. Keep the first 60
   characters meaningful because `npx skills` truncates picker hints there.
+- **Quoting**: a YAML plain (unquoted) scalar may not contain `": "`, and ` #`
+  starts a comment. Long English descriptions hit both constantly
+  (`"…debug a FastAPI app: choosing def vs async def"`). Wrap such values in
+  single quotes — the whole skill is otherwise skipped at install time with
+  "Nested mappings are not allowed in compact mappings", or installs with a
+  silently truncated description. `scripts/lint-frontmatter.sh` gates this.
 - Keep `name` and `description` as the only required frontmatter fields for
   portability. Agent-specific fields are allowed when needed, but isolate them
   intentionally: Cursor uses `disable-model-invocation`, Codex can read

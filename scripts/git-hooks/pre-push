@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# pre-push — run the catalog gates before anything leaves this machine.
+#
+# Installed by `make install-hooks` (symlinked to .git/hooks/pre-push).
+# Mirrors .github/workflows/validate.yml, so CI failures show up here first.
+#
+# Bypass for a genuinely urgent push:  git push --no-verify
+# Uninstall:                           rm .git/hooks/pre-push
+
+set -uo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$REPO_ROOT" || exit 1
+
+LOG="$(mktemp -t agent-skills-prepush.XXXXXX)"
+trap 'rm -f "$LOG"' EXIT
+
+printf 'pre-push: running make validate…\n' >&2
+if make validate --no-print-directory >"$LOG" 2>&1; then
+  printf 'pre-push: ok\n' >&2
+  exit 0
+fi
+
+printf '\npre-push: FAILED — push aborted:\n\n' >&2
+tail -n 25 "$LOG" >&2
+printf '\nRe-run in full with:  make validate\n(bypass with:         git push --no-verify)\n' >&2
+exit 1

@@ -156,6 +156,15 @@ skill runs test cases and benchmarks."
 - **`scripts/lint-skill.sh <skill-dir>`** — Run frontmatter, script hygiene,
   and reference reachability checks. Exit non-zero on any error.
   - Flags: `--strict` (treat warnings as errors); `--quiet` (only print failures).
+- **`scripts/lint-frontmatter.sh [PATH...]`** — YAML-parse the frontmatter of
+  every `SKILL.md` under PATH (default `.`) with a real parser, and check that
+  the root is a mapping with string `name` + `description`. Catches the
+  breakage class `lint-skill.sh`'s awk extractor cannot see — an unquoted
+  `description:` containing `": "` makes `npx skills` (and Claude Code /
+  Cursor) **silently skip the skill**. `lint-skill.sh` calls this for the
+  single-skill case; run it directly to sweep a whole collection.
+  - Flags: `--parser auto|yq|python3|node` (`node` = the js `yaml` package,
+    exactly what `npx skills` uses); `--quiet`.
 
 ## Bundled assets
 
@@ -195,6 +204,14 @@ Templates that `new-skill.sh` copies and that you can reference manually:
   Put concrete trigger phrases in frontmatter, but keep local skills in the
   120-500 char preferred range when possible. Treat >1024 chars as invalid:
   Codex and Cursor/spec-aligned validators can skip the skill entirely.
+- **Quote any `description` containing `:`, `#`, or leading punctuation.** An
+  unquoted YAML plain scalar cannot contain `": "` — `npx skills` fails with
+  "Nested mappings are not allowed in compact mappings" and drops the skill
+  from the picker without a non-zero exit. ` #` is worse: it parses, but YAML
+  treats the rest as a comment and silently truncates your trigger string.
+  Single quotes need no escaping except `'` itself. Run
+  `scripts/lint-frontmatter.sh` to catch both; see
+  `pitfalls/skill-description-colon-breaks-yaml-frontmatter.md` in this repo.
 - **Don't write a skill that wraps something the agent already does well.**
   If a stock Claude session handles the task in one turn without help, a skill
   adds context-window cost for no gain. Test the no-skill baseline before

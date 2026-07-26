@@ -1,0 +1,56 @@
+name: Validate
+
+# Catalog gates that must hold before anything is published. A SKILL.md whose
+# frontmatter fails to parse is SILENTLY skipped by `npx skills add` (it still
+# exits 0), so the failure is invisible without an explicit check — see
+# pitfalls/skill-description-colon-breaks-yaml-frontmatter.md.
+#
+# Same checks run locally: `make validate` (also wired as a pre-push hook via
+# `make install-hooks`).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'scripts/**'
+      - 'vendor.yaml'
+      - 'TODO.md'
+      - 'Makefile'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'scripts/**'
+      - 'vendor.yaml'
+      - 'TODO.md'
+      - 'Makefile'
+      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin the same YAML parser `npx skills` uses, so CI agrees with the CLI
+      # instead of with whatever yq the runner image happens to ship.
+      - name: Install the js yaml parser
+        run: npm install --no-save --no-package-lock yaml@2
+
+      - name: Lint SKILL.md frontmatter
+        run: NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills
+
+      - name: Validate marketplace.json
+        run: ./scripts/validate-marketplace.sh
+
+      - name: Validate TODO.md format
+        run: ./scripts/todo-kanban.sh --validate-only

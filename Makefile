@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace lint-frontmatter validate install-hooks
 
 sync:
 	./scripts/sync-vendor.sh
@@ -17,6 +17,26 @@ kanban:
 # read by `npx skills@latest add daviddwlee84/agent-skills/skills`.
 marketplace:
 	./scripts/validate-marketplace.sh
+
+# YAML-parse every skills/**/SKILL.md frontmatter. A skill whose frontmatter
+# does not parse is silently SKIPPED by `npx skills add` (and by Claude Code /
+# Cursor), so this gate runs before publishing. Uses yq, PyYAML, or the js
+# "yaml" package — whichever is installed.
+lint-frontmatter:
+	./scripts/lint-frontmatter.sh skills
+
+# Everything that must hold before publishing. Same set as
+# .github/workflows/validate.yml, and what the pre-push hook runs.
+validate:
+	./scripts/lint-frontmatter.sh --quiet skills
+	./scripts/validate-marketplace.sh
+	./scripts/todo-kanban.sh --validate-only
+
+# Symlink scripts/git-hooks/pre-push into .git/hooks so `git push` runs
+# `make validate` first. Bypass a single push with `git push --no-verify`.
+install-hooks:
+	@ln -sf "$$(git rev-parse --show-toplevel)/scripts/git-hooks/pre-push" "$$(git rev-parse --git-dir)/hooks/pre-push"
+	@echo "installed: $$(git rev-parse --git-dir)/hooks/pre-push -> scripts/git-hooks/pre-push"
 
 # Convenience wrappers around scripts/add-todo.sh, promote-todo.sh, sweep-inbox.sh.
 # For full flags use the scripts directly.
