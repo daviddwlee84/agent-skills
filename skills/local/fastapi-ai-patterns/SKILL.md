@@ -1,6 +1,6 @@
 ---
 name: fastapi-ai-patterns
-description: Production patterns and gotchas for building FastAPI services, especially AI/ML/LLM serving. Use when you build, review, or debug a FastAPI app: choosing def vs async def, loading models in lifespan, preventing event-loop blocking, setting response_model to stop data leaks, enforcing object-level authz in queries, wrapping LLMs with streaming + Pydantic validation loops, or designing RAG/embedding endpoints.
+description: 'Production patterns and gotchas for building FastAPI services, especially AI/ML/LLM serving. Use when you build, review, or debug a FastAPI app: choosing def vs async def, loading models in lifespan, preventing event-loop blocking, setting response_model to stop data leaks, enforcing object-level authz in queries, wrapping LLMs with streaming + Pydantic validation loops, or designing RAG/embedding endpoints.'
 ---
 
 # FastAPI AI Patterns

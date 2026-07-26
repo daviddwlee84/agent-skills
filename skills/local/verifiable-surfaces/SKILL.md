@@ -1,6 +1,6 @@
 ---
 name: verifiable-surfaces
-description: Design and verify exercisable surfaces on apps, CLIs, services, and config. Use when authoring a new CLI/tool/library/service in Python (uv + tyro / click / argparse), Node (commander/yargs), or Bash to ensure it exposes `--help`, `--dry-run`, `--print-config`, isolated-state smoke entrypoints, and explicit exit-code contracts. Also use when editing app/tool config, CLI args/env parsing, dotfiles such as chezmoi, Ansible playbooks, CI/deploy manifests, or generated/rendered config — forces syntax/schema, then app-native loader/parser/debug/dry-run, then narrowest harmless runtime smoke. The invariant: a surface that cannot be exercised cheaply and harmlessly was not actually verified, regardless of how much linting passed.
+description: 'Design and verify exercisable surfaces on apps, CLIs, services, and config. Use when authoring a new CLI/tool/library/service in Python (uv + tyro / click / argparse), Node (commander/yargs), or Bash to ensure it exposes `--help`, `--dry-run`, `--print-config`, isolated-state smoke entrypoints, and explicit exit-code contracts. Also use when editing app/tool config, CLI args/env parsing, dotfiles such as chezmoi, Ansible playbooks, CI/deploy manifests, or generated/rendered config — forces syntax/schema, then app-native loader/parser/debug/dry-run, then narrowest harmless runtime smoke. The invariant: a surface that cannot be exercised cheaply and harmlessly was not actually verified, regardless of how much linting passed.'
 ---
 
 # Verifiable Surfaces

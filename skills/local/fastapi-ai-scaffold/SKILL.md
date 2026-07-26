@@ -1,6 +1,6 @@
 ---
 name: fastapi-ai-scaffold
-description: Scaffold a production-grade FastAPI AI/ML service from a bundled, opinionated skeleton. Use when starting a new FastAPI inference/LLM/RAG backend, bootstrapping a FastAPI project with clean architecture, or setting up a model-serving API with the production basics pre-wired: router/service/repository layering, lifespan-loaded model + httpx client, /health + /ready probes, JWT auth, SQLModel + Alembic, an SSE LLM gateway, guardrails + a Pydantic validation loop, tests with dependency_overrides, Docker, and gunicorn.
+description: 'Scaffold a production-grade FastAPI AI/ML service from a bundled, opinionated skeleton. Use when starting a new FastAPI inference/LLM/RAG backend, bootstrapping a FastAPI project with clean architecture, or setting up a model-serving API with the production basics pre-wired: router/service/repository layering, lifespan-loaded model + httpx client, /health + /ready probes, JWT auth, SQLModel + Alembic, an SSE LLM gateway, guardrails + a Pydantic validation loop, tests with dependency_overrides, Docker, and gunicorn.'
 ---
 
 # FastAPI AI Scaffold
