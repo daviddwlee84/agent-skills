@@ -35,7 +35,12 @@ import time
 from typing import Any
 
 TERMINAL_RESULTS_GOOD = {"Success"}
-TERMINAL_RESULTS_BAD = {"DependencyFailed", "Killed"}  # plus {"Failed": <int>}
+# Anything terminal that is not Success is a failure. Listing the bad variants
+# explicitly used to mean an unlisted variant silently counted as success --
+# `FailedToSpawn` (dict-shaped: {"FailedToSpawn": "<os error>"}) hit exactly
+# that path, so a task that never even started reported exit 0. Treat the GOOD
+# set as the allowlist instead, so future pueue variants fail closed.
+TERMINAL_RESULTS_BAD = {"DependencyFailed", "Killed", "FailedToSpawn"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -149,6 +154,16 @@ def is_terminal(state: str) -> bool:
     return state == "Done"
 
 
+def is_failure(summary: dict[str, Any]) -> bool:
+    """True when a task reached a terminal state that is not Success.
+
+    Allowlist, not denylist: only `Success` counts as good. Pueue's result is a
+    tagged enum, and an unrecognized future variant must read as failure rather
+    than silently passing (see TERMINAL_RESULTS_BAD).
+    """
+    return summary["state"] == "Done" and summary["result"] not in TERMINAL_RESULTS_GOOD
+
+
 def task_summary(task: dict[str, Any]) -> dict[str, Any]:
     state, result, exit_code = classify_status(task.get("status") or {})
     payload = task.get("status", {}).get(state, {}) if isinstance(task.get("status"), dict) else {}
@@ -218,10 +233,7 @@ def main() -> int:
                 file=sys.stderr,
             )
 
-        if args.fail_fast and any(
-            s["state"] == "Done" and s["result"] in TERMINAL_RESULTS_BAD.union({"Failed"})
-            for s in summaries
-        ):
+        if args.fail_fast and any(is_failure(s) for s in summaries):
             emit_summary(summaries, started)
             return 5
 
@@ -239,7 +251,7 @@ def main() -> int:
 
 
 def emit_summary(summaries: list[dict[str, Any]], started: float) -> None:
-    counts = {"total": len(summaries), "success": 0, "failed": 0, "killed": 0, "dependency_failed": 0, "running": 0, "other": 0}
+    counts = {"total": len(summaries), "success": 0, "failed": 0, "killed": 0, "dependency_failed": 0, "failed_to_spawn": 0, "running": 0, "other": 0}
     for s in summaries:
         if s["state"] != "Done":
             counts["running"] += 1 if s["state"] == "Running" else 0
@@ -254,6 +266,8 @@ def emit_summary(summaries: list[dict[str, Any]], started: float) -> None:
             counts["killed"] += 1
         elif r == "DependencyFailed":
             counts["dependency_failed"] += 1
+        elif r == "FailedToSpawn":
+            counts["failed_to_spawn"] += 1
         else:
             counts["other"] += 1
     elapsed = round(time.monotonic() - started, 3)
@@ -262,10 +276,7 @@ def emit_summary(summaries: list[dict[str, Any]], started: float) -> None:
 
 def emit_summary_and_exit(summaries: list[dict[str, Any]], started: float) -> int:
     emit_summary(summaries, started)
-    bad = sum(
-        1 for s in summaries
-        if s["state"] == "Done" and s["result"] in TERMINAL_RESULTS_BAD.union({"Failed"})
-    )
+    bad = sum(1 for s in summaries if is_failure(s))
     return 5 if bad else 0
 
 

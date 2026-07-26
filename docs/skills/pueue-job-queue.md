@@ -18,6 +18,7 @@ what's running.
 | `references/json-schema.md` | "What does `pueue status --json` actually look like? What's the QUERY DSL syntax?" |
 | `references/dag-patterns.md` | "How do I express fan-out / fan-in / diamond shapes?" |
 | `references/daemon-and-config.md` | "How do I auto-start `pueued` on macOS / Linux?" |
+| `references/remote-daemon.md` | "The daemon is on another machine — can I drive it, and should I?" |
 
 The skill exists to keep three things out of an agent's way:
 
@@ -68,7 +69,8 @@ skills/local/pueue-job-queue/
 │   ├── cli-cheatsheet.md                     # un-wrapped commands
 │   ├── json-schema.md                        # observed status --json shape (4.0.2) + QUERY DSL + jq recipes
 │   ├── dag-patterns.md                       # fan-out / fan-in / diamond + escalation table
-│   └── daemon-and-config.md                  # pueued setup per OS, config knobs, log paths
+│   ├── daemon-and-config.md                  # pueued setup per OS, config knobs, log paths
+│   └── remote-daemon.md                      # SSH socket forwarding, TCP+TLS, the client-resolved-cwd trap
 ├── assets/
 │   ├── dag.example.yaml                      # 5-task fan-out / fan-in fixture
 │   └── pueue.yml.example                     # config with `pause_group_on_failure: true`
@@ -151,3 +153,44 @@ bash skills/local/skill-author/scripts/lint-skill.sh skills/local/pueue-job-queu
 The pytest fixture uses `pueue reset --force` between tests because plain
 `pueue kill --all` also pauses every group — a non-obvious failure mode
 worth documenting (see SKILL.md gotchas).
+
+## Remote daemons: yes, but submit over SSH
+
+Pueue can't schedule *across* hosts, but a local client **can** drive a single
+remote `pueued` — with full control (`add`, `kill`, `log`, `follow`), not just
+status. `references/remote-daemon.md` covers the setup; the short version is
+that the recommended path changes nothing on the server:
+
+```bash
+# forward the daemon's own unix socket — no server reconfiguration, no TLS
+ssh -f -N -L ~/.config/pueue/remote/remote.sock:/run/user/1000/pueue_you.socket myhost
+pueue -c ~/.config/pueue/remote/client.yml status
+```
+
+Verified end to end with a macOS client (4.0.4) against a Linux daemon (4.0.2).
+Findings worth knowing before you try it:
+
+- **`read_local_logs: false` is mandatory** on the client, or `log` / `follow`
+  look for the daemon's logs on your own disk and find nothing.
+- **A version mismatch warns but works** — `Different protocol version detected
+  '0.30.1'` on every command, then normal behaviour. Filter it from stderr;
+  stdout JSON stays clean.
+- **Submitting is the part that doesn't travel.** `pueue add` records the
+  working directory and canonicalizes it *on the client*, so a remote submit
+  fails three ways: the local cwd gets sent and the task ends `FailedToSpawn`;
+  a remote-only path is rejected outright (`Failed to canonicalize given
+  working directory path`); and on macOS `/tmp` is silently rewritten to
+  `/private/tmp`. Only a path that exists and resolves identically on both
+  machines works.
+
+So the honest split is **`ssh host 'pueue add ...'` to submit, forwarded client
+to read and control.**
+
+That investigation also surfaced a real bug in this skill, now fixed: pueue's
+`result` is a tagged enum and `FailedToSpawn` is dict-shaped
+(`{"FailedToSpawn": "<os error>"}`), but `wait.py` matched against an
+enumerated list of *bad* variants — so it fell through and **`wait.py` returned
+exit 0 for a task that never started**. It now allowlists `Success` and fails
+closed on anything else, which also makes it safe against future pueue
+variants. See
+[the pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/pueue-remote-add-fails-to-spawn-on-client-resolved-cwd.md).

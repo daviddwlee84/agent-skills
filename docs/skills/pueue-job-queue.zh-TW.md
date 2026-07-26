@@ -22,6 +22,7 @@ shell 工作。這個 skill 是個 **CLI 橋接器**，**不是**自製排程器
 | `references/json-schema.md` | 「`pueue status --json` 長什麼樣？QUERY DSL 語法是什麼？」 |
 | `references/dag-patterns.md` | 「fan-out / fan-in / 菱形怎麼表達？」 |
 | `references/daemon-and-config.md` | 「macOS / Linux 怎麼自動啟動 `pueued`？」 |
+| `references/remote-daemon.md` | 「daemon 在另一台機器上 —— 我能驅動它嗎？該不該？」 |
 
 這個 skill 存在是為了讓 agent 不必煩三件事：
 
@@ -71,7 +72,8 @@ skills/local/pueue-job-queue/
 │   ├── cli-cheatsheet.md                     # 沒被包裝的指令
 │   ├── json-schema.md                        # 觀察到的 status --json 形狀 (4.0.2) + QUERY DSL + jq 食譜
 │   ├── dag-patterns.md                       # fan-out / fan-in / diamond + 升級表
-│   └── daemon-and-config.md                  # 各 OS 的 pueued setup、config 旋鈕、log 路徑
+│   ├── daemon-and-config.md                  # 各 OS 的 pueued setup、config 旋鈕、log 路徑
+│   └── remote-daemon.md                      # SSH socket forwarding、TCP+TLS、client 端解析 cwd 的陷阱
 ├── assets/
 │   ├── dag.example.yaml                      # 5-task fan-out / fan-in fixture
 │   └── pueue.yml.example                     # config with `pause_group_on_failure: true`
@@ -152,3 +154,39 @@ bash skills/local/skill-author/scripts/lint-skill.sh skills/local/pueue-job-queu
 pytest fixture 在測試之間用 `pueue reset --force`，因為樸素的
 `pueue kill --all` 也會暫停每個 group —— 一個值得文件化、非顯而易見的
 失敗模式（詳見 SKILL.md gotcha）。
+
+## 遠端 daemon：可以，但提交請走 SSH
+
+Pueue 沒辦法**跨**主機排程，但本機 client **可以**驅動單一台遠端的 `pueued`
+—— 而且是完整控制（`add`、`kill`、`log`、`follow`），不只是看 status。
+`references/remote-daemon.md` 有完整設定；簡短版是：**建議路徑完全不用動伺服器**。
+
+```bash
+# 轉發 daemon 自己的 unix socket —— 不用重設伺服器、不用 TLS
+ssh -f -N -L ~/.config/pueue/remote/remote.sock:/run/user/1000/pueue_you.socket myhost
+pueue -c ~/.config/pueue/remote/client.yml status
+```
+
+以 macOS client (4.0.4) 對 Linux daemon (4.0.2) 做過端到端驗證。動手前值得知道的：
+
+- **client 必須設 `read_local_logs: false`**，否則 `log` / `follow` 會去自己的
+  磁碟找 daemon 的 log，然後什麼都找不到。
+- **版本不一致會警告但能用** —— 每個指令都會印
+  `Different protocol version detected '0.30.1'`，然後一切正常。把它從 stderr
+  濾掉即可；stdout 的 JSON 是乾淨的。
+- **「提交」才是不能跨機器的那一半。** `pueue add` 會記錄工作目錄，而且是
+  **在 client 端**做 canonicalize，所以遠端提交會用三種方式失敗：本機 cwd 被送
+  過去、任務以 `FailedToSpawn` 收場；只存在於遠端的路徑會被直接拒絕
+  （`Failed to canonicalize given working directory path`）；在 macOS 上 `/tmp`
+  會被悄悄改寫成 `/private/tmp`。**只有在兩台機器上都存在、且解析結果相同的路徑
+  才行得通。**
+
+所以誠實的分工是：**用 `ssh host 'pueue add ...'` 提交，用轉發的 client 讀取與控制。**
+
+這次調查也挖出這個 skill 裡一個真正的 bug（已修）：pueue 的 `result` 是 tagged
+enum，而 `FailedToSpawn` 是 **dict 形狀**的
+（`{"FailedToSpawn": "<os error>"}`），但 `wait.py` 是拿一份列舉好的「壞」變體
+清單去比對 —— 於是它漏了，**`wait.py` 對一個從未啟動的任務回傳 exit 0**。
+現在改成只允許 `Success`，其他一律 fail closed，這同時也讓它對未來新增的 pueue
+變體是安全的。詳見
+[pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/pueue-remote-add-fails-to-spawn-on-client-resolved-cwd.md)。

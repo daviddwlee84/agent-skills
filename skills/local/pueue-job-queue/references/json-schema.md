@@ -94,7 +94,12 @@ Rare — used during edit/restart transitions.
 | `"DependencyFailed"` | a parent in `dependencies` failed; this task never ran (`start == end`) |
 | `"Killed"` | someone called `pueue kill` |
 | `{"Failed": <int>}` | non-zero exit; the int is the exit code |
-| `"FailedToSpawn"` (rare) | OS-level launch failure |
+| `{"FailedToSpawn": "<os error>"}` | OS-level launch failure — the task never ran. **Dict-shaped, not a bare string** (verified on 4.0.2). Most common cause when driving a remote daemon: the recorded working directory doesn't exist on the daemon's host. |
+
+`result` is a tagged enum, so treat **anything terminal that is not `"Success"`
+as a failure**. Matching against a list of known-bad variants lets an
+unrecognized one (as `FailedToSpawn` once did) silently count as success —
+`wait.py` uses the allowlist form for this reason.
 
 ### `groups`
 

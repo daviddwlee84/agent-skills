@@ -29,7 +29,7 @@ scheduling, escalate to a real orchestrator (see "When NOT to use").
 ## When NOT to use
 
 - **One short shell command** the user wants to run right now. Just run it. Pueue adds daemon overhead for nothing.
-- **Cross-host scheduling** (jobs that must land on specific machines) → Airflow / Dagster / Prefect / Slurm.
+- **Cross-host *scheduling*** (jobs distributed across N machines) → Airflow / Dagster / Prefect / Slurm. Note this is not the same as driving a *single* remote daemon, which pueue does support — see `references/remote-daemon.md`.
 - **Conditional / OR / retry-with-backoff dependencies** → real orchestrator. Pueue's `--after` is AND-only and success-only.
 - **Typed task IO and artifact tracking** (data lineage, cached intermediate outputs) → DVC (`dvc exp run --queue`), Prefect, Airflow.
 - **Long-running services** (web servers, daemons) → systemd, launchd, supervisord. Pueue is for finite tasks.
@@ -259,6 +259,7 @@ for a full sweep. Pair with the agent's existing weekly maintenance habit
 - `references/json-schema.md` — Read **when** writing custom `jq` queries against `pueue status --json` or `pueue log --json`, or when a script's JSON parsing surprises you. Documents the observed schema on pueue 4.0.2 with concrete examples for each status variant.
 - `references/dag-patterns.md` — Read **when** the user asks for shapes beyond fan-out/fan-in (mixed sequential+parallel, diamond, etc.) or hits the AND-only / success-only limitation. Has examples and a "when to escalate to a real orchestrator" decision table.
 - `references/daemon-and-config.md` — Read **when** setting up `pueued` for the first time, configuring per-OS paths, picking config knobs (`pause_group_on_failure`, `default_parallel_tasks`), or wiring up launchd / systemd-user.
+- `references/remote-daemon.md` — Read **when** the daemon is on another machine: SSH unix-socket forwarding (recommended, needs no server change), direct TCP + TLS, and the working-directory trap that makes cross-platform remote *submission* impractical. Short version: `ssh host 'pueue add ...'` to submit; a forwarded client to read/control.
 
 ## See also
 
@@ -283,3 +284,5 @@ for a full sweep. Pair with the agent's existing weekly maintenance habit
 - **`pueue remove` requires each id as a separate positional arg** (not a space-joined string from a subshell). Use bash arrays: `IDS=($(...)) && pueue remove "${IDS[@]}"`.
 - **`pueue clean --successful-only` is a flag, not the default.** Plain `pueue clean` removes ALL finished tasks (including failures, which you may want to keep for debugging). Be deliberate.
 - **`pueue add --print-task-id` writes the bare integer to stdout.** No JSON, no prose. `submit.sh` parses with a regex that tolerates future format changes; if you bypass `submit.sh`, capture with `ID=$(pueue add --print-task-id ... )` directly.
+- **A terminal result that isn't `Success` is a failure — don't enumerate the bad ones.** `result` is a tagged enum, and `{"FailedToSpawn": "<os error>"}` is dict-shaped, not the bare string older notes implied. Matching a known-bad list let it fall through as success, so `wait.py` returned `0` for a task that never started. It now allowlists `Success` and fails closed on anything else.
+- **Driving a remote daemon: the working directory is resolved on the CLIENT.** `pueue add` records and canonicalizes the cwd locally, so submitting to a remote daemon fails three different ways — local cwd sent (task ends `FailedToSpawn`), remote-only path rejected outright (`Failed to canonicalize given working directory path`), or a macOS symlink silently rewritten (`/tmp` → `/private/tmp`). Use `ssh host 'pueue add ...'` to submit; a forwarded client is for reading and control. See `references/remote-daemon.md`.
