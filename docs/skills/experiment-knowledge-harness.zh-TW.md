@@ -44,7 +44,7 @@
 - **可比較性 spec** —— 每張結果表都標明它是在哪個 `spec:`（成本模型、費率、
   評估視窗版本）下產生的。**不同 spec 的數字永遠不共用一張表。**
 
-`references/anti-patterns.md` 點名了這些設計在防的失敗模式：HARKing、
+[`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/experiment-knowledge-harness/references/anti-patterns.md) 點名了這些設計在防的失敗模式：HARKing、
 沒有決策的實驗、winner's curse、spec 漂移、以及沒被寫下來的死路。
 
 ## 長時間執行期間
@@ -105,7 +105,7 @@ skills/local/experiment-knowledge-harness/
 
 ## 可重現性階梯
 
-`references/provenance.md` 把 provenance 分級，而不是要求一步到位的完美：
+[`references/provenance.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/experiment-knowledge-harness/references/provenance.md) 把 provenance 分級，而不是要求一步到位的完美：
 
 | 級別 | 意思 |
 |---|---|

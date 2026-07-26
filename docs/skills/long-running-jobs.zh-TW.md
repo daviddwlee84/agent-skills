@@ -72,10 +72,10 @@ printf '%s\n' "$rc" > runs/v2.exit.tmp && mv runs/v2.exit.tmp runs/v2.exit
 |---|---|
 | `run-and-mark.sh` | 「跑這個、block 住、留下一筆能活過我這個 session 的紀錄。」 |
 | `check-runs.sh` | 「我不在的時候，哪些跑完了？」 |
-| `references/claude-code-mechanisms.md` | 「每一層對應到哪個 harness 工具？」 |
-| `references/scheduler-chaining.md` | 「怎麼接 Phase A → Phase B，讓沒有任何東西需要保持清醒？」 |
-| `references/completion-contracts.md` | 「怎麼記錄完成狀態，才能同時活過 queue 和 session？」 |
-| `assets/chained.sbatch.template` | 「直接給我已經接對的 dependency 管線。」 |
+| [`references/claude-code-mechanisms.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/claude-code-mechanisms.md) | 「每一層對應到哪個 harness 工具？」 |
+| [`references/scheduler-chaining.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/scheduler-chaining.md) | 「怎麼接 Phase A → Phase B，讓沒有任何東西需要保持清醒？」 |
+| [`references/completion-contracts.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/completion-contracts.md) | 「怎麼記錄完成狀態，才能同時活過 queue 和 session？」 |
+| [`assets/chained.sbatch.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/assets/chained.sbatch.template) | 「直接給我已經接對的 dependency 管線。」 |
 
 ## 兩個讓這個 skill 值得存在的事實
 

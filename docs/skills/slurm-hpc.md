@@ -11,7 +11,7 @@ specific partitions and recipes, that repo's own skill wins.
 | Resource requests | "What do `--mem` / `--cpus-per-task` / `--gres` / `--time` actually enforce?" |
 | Chaining and waiting | "How do I run B after A without babysitting the queue?" |
 | Isolation section | "If my neighbour's job goes wrong, do I go down with it?" |
-| `references/gpu-isolation.md` | "How do I cap GPU VRAM — shard vs MPS vs MIG?" |
+| [`references/gpu-isolation.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/slurm-hpc/references/gpu-isolation.md) | "How do I cap GPU VRAM — shard vs MPS vs MIG?" |
 
 ## The question the skill is really built around
 
@@ -33,7 +33,7 @@ differ in whether they actually fence anything:
 
 Sharing a GPU is not the same as isolating one. Slurm's own docs say sharding
 "does not fence the processes" — so a wrong batch size takes down the card and
-its neighbours. `references/gpu-isolation.md` has the `slurm.conf` / `gres.conf`
+its neighbours. [`references/gpu-isolation.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/slurm-hpc/references/gpu-isolation.md) has the `slurm.conf` / `gres.conf`
 snippets, the TaskProlog wiring for the MPS memory limit, and the MIG
 prerequisites.
 

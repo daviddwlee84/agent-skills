@@ -42,7 +42,7 @@ Each REPORT is filled in **before running**:
   fee, eval-window version) it was produced under. Numbers from different specs
   never share a table.
 
-`references/anti-patterns.md` names the failure modes this is defending
+[`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/experiment-knowledge-harness/references/anti-patterns.md) names the failure modes this is defending
 against: HARKing, decision-less experiments, winner's curse, spec drift, and
 unwritten dead ends.
 
@@ -105,7 +105,7 @@ works the same under Claude Code, Cursor, Codex, or a human.
 
 ## Reproducibility ladder
 
-`references/provenance.md` grades provenance rather than demanding perfection:
+[`references/provenance.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/experiment-knowledge-harness/references/provenance.md) grades provenance rather than demanding perfection:
 
 | Rung | Meaning |
 |---|---|

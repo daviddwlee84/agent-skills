@@ -68,10 +68,10 @@ so re-run" is how you end up with two copies of an eight-hour job.
 |---|---|
 | `run-and-mark.sh` | "Run this, block, and leave a record that outlives my session." |
 | `check-runs.sh` | "What finished while I was away?" |
-| `references/claude-code-mechanisms.md` | "Which harness tool implements each tier?" |
-| `references/scheduler-chaining.md` | "How do I wire Phase A → Phase B so nothing has to stay awake?" |
-| `references/completion-contracts.md` | "How do I record completion so it survives the queue and the session?" |
-| `assets/chained.sbatch.template` | "Give me the dependency plumbing already correct." |
+| [`references/claude-code-mechanisms.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/claude-code-mechanisms.md) | "Which harness tool implements each tier?" |
+| [`references/scheduler-chaining.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/scheduler-chaining.md) | "How do I wire Phase A → Phase B so nothing has to stay awake?" |
+| [`references/completion-contracts.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/completion-contracts.md) | "How do I record completion so it survives the queue and the session?" |
+| [`assets/chained.sbatch.template`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/assets/chained.sbatch.template) | "Give me the dependency plumbing already correct." |
 
 ## Two facts worth the skill's existence
 

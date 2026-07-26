@@ -16,7 +16,7 @@ skill 為準。
 | 資源請求 | 「`--mem` / `--cpus-per-task` / `--gres` / `--time` 實際上強制了什麼？」 |
 | 串接與等待 | 「怎麼在 A 之後跑 B，而不用一直顧著 queue？」 |
 | 隔離章節 | 「如果隔壁的 job 出包，我會不會被拖下水？」 |
-| `references/gpu-isolation.md` | 「怎麼限制 GPU VRAM —— shard vs MPS vs MIG？」 |
+| [`references/gpu-isolation.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/slurm-hpc/references/gpu-isolation.md) | 「怎麼限制 GPU VRAM —— shard vs MPS vs MIG？」 |
 
 ## 這個 skill 真正圍繞的問題
 
@@ -37,7 +37,7 @@ skill 為準。
 
 **共用一張 GPU 不等於隔離一張 GPU。** Slurm 官方文件自己就寫 sharding
 「does not fence the processes」—— 所以一個 batch size 設錯的 job 會把整張卡
-連同鄰居一起帶走。`references/gpu-isolation.md` 有 `slurm.conf` / `gres.conf`
+連同鄰居一起帶走。[`references/gpu-isolation.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/slurm-hpc/references/gpu-isolation.md) 有 `slurm.conf` / `gres.conf`
 的設定片段、MPS 記憶體上限所需的 TaskProlog 接法，以及 MIG 的前提條件。
 
 ## 串接與等待

@@ -20346,7 +20346,7 @@ _**Agent (claude-opus-5 2026-07-26 12:46:33Z)**_
 
 All clean. Committing.
 
-_**Agent (claude-opus-5 2026-07-26 12:46:33Z)**_
+_**Agent (claude-opus-5 2026-07-26 12:46:35Z)**_
 
 <tool-use data-tool-type="shell" data-tool-name="Bash"><details>
 <summary>Tool use: **Bash**</summary>
@@ -20358,4 +20358,545 @@ git add skills/local/pueue-job-queue/ docs/skills/pueue-job-queue.md docs/skills
 bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh 2>&1 | tail -3
 bash skills/local/agent-history-hygiene/scripts/scan-staged.sh > /dev/null 2>&1; echo "secret scan exit=$? (0=clean)"
 ```
+
+```text
+staged: .specstory/history/2026-07-26_09-11-16Z-at-skills-local-slurm.md
+1 artifact(s) would be staged.
+secret scan exit=0 (0=clean)
+```
 </details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:46:53Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the pueue remote work
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+git commit -q -F - <<'EOF'
+feat(pueue-job-queue): document remote daemons; fix wait.py silent success
+
+The skill said nothing about remote daemons, and its "Cross-host scheduling ->
+Airflow / Slurm" line implied pueue can't do remote at all. It can -- just not
+distributed. Verified end to end with a macOS client (4.0.4) driving a Linux
+pueued (4.0.2) over SSH unix-socket forwarding.
+
+Adds references/remote-daemon.md: SSH socket forwarding (recommended -- needs
+no server change and no TLS), direct TCP + TLS as the last resort, and the
+verification recipe.
+
+Findings from the live test:
+- read_local_logs: false is mandatory on a remote client, or log/follow look
+  for the daemon's logs on the client's own disk
+- version mismatch warns ("Different protocol version detected '0.30.1'") and
+  then works normally; stdout JSON stays clean
+- submitting does not travel. `pueue add` canonicalizes the working directory
+  on the CLIENT, so a remote submit fails three ways: local cwd is sent and the
+  task ends FailedToSpawn; a remote-only path is rejected outright; and macOS
+  /tmp is silently rewritten to /private/tmp. Only a path existing and
+  resolving identically on both machines works (verified with /usr).
+  => ssh host 'pueue add ...' to submit; forwarded client to read and control.
+
+fix: wait.py reported exit 0 for a task that never started.
+pueue's `result` is a tagged enum and FailedToSpawn is dict-shaped
+({"FailedToSpawn": "<os error>"}), but wait.py matched an enumerated list of
+BAD variants, so FailedToSpawn fell through as success. Now allowlists
+"Success" and fails closed on anything else, which also makes it safe against
+future pueue variants. Verified against the real captured payload (now exits 5)
+and a synthetic unknown variant. All 22 existing tests still pass.
+
+json-schema.md corrected: FailedToSpawn is a dict, not the bare string
+previously documented.
+
+Adds pitfalls/ entry covering both the cwd trap and the enumerate-the-failures
+anti-pattern. Docs pages updated (EN + zh-TW).
+
+No changes were made to the remote host: daemon PID unchanged, config mtime
+untouched, test tasks removed, copied shared_secret shredded locally.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+git log --oneline -2; echo "---"; git status --short
+```
+
+```text
+39d7eef feat(pueue-job-queue): document remote daemons; fix wait.py silent success
+86dd9ef feat(long-running-jobs): new skill for waiting on jobs that outlive a turn
+---
+ M .specstory/history/2026-07-26_09-11-16Z-at-skills-local-slurm.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:47:11Z)**_
+
+Both commits are in. The remaining dirty file is the live transcript the SpecStory daemon keeps appending to.
+
+## Testing against `local_ubuntu` paid off — it found a real bug
+
+Your instinct to test rather than just document was right. The setup: your daemon runs on a **unix socket**, so I could forward it over SSH and drive it from this Mac **without changing anything on the remote** — daemon PID 2739 never restarted, config mtime still January, my 3 test tasks removed, the copied secret shredded.
+
+**It works, and it's full control.** `hostname` from a job submitted here returned `David-Ubuntu`, and `log` retrieved its output over the wire.
+
+**But submitting doesn't travel — and this is the real finding.** `pueue add` records the working directory and canonicalizes it *on the client*. Three distinct failures, all observed:
+
+| Attempt | Result |
+|---|---|
+| default (local cwd) | sent verbatim → `FailedToSpawn` on the remote, never ran |
+| `--working-directory /home/daviddwlee84` | client **refuses**: `Failed to canonicalize given working directory path` |
+| `--working-directory /tmp` from macOS | silently rewritten to `/private/tmp` → fails on Linux |
+| `--working-directory /usr` | ✅ works — exists identically on both |
+
+So the honest answer to your original question is a **split**: `ssh local_ubuntu 'pueue add ...'` to submit, forwarded client to read and control. Also verified: `read_local_logs: false` is mandatory, and the 4.0.4↔4.0.2 mismatch warns (`protocol version '0.30.1'`) but works.
+
+## The bug it exposed
+
+That failed task made `wait.py` return **exit 0**. `FailedToSpawn` is dict-shaped — `{"FailedToSpawn": "<os error>"}` — but `wait.py` matched against an enumerated list of *bad* variants, so it fell through as success. **An agent waiting on a job that never started would be told everything was fine.**
+
+Root cause is a pattern, not a typo: enumerating failures in a tagged enum means every variant you didn't anticipate reads as success. Fixed by allowlisting `Success` and failing closed — verified against the real captured payload (now exits 5) and a synthetic unknown variant, with all 22 existing tests still passing. `json-schema.md` had it documented as a bare string; corrected.
+
+Two pitfall entries now exist for things that bite silently: this one, and the Slurm `DependencyNeverSatisfied` trap from the earlier work.
+
+One thing I'd flag: the `--kill-on-invalid-dep` fix for your ConvertibleBond Phase A→B chain is still unapplied — that's your session to drive.
+
+---
+
+_**User (2026-07-26 12:52:27Z)**_
+
+我們有docs來說明怎麽操作嗎？
+
+---
+
+_**Agent (claude-opus-5 2026-07-26 12:53:32Z)**_
+
+<think><details><summary>Thought Process</summary>
+用戶問的是否有文檔說明如何操作，但這裡有些模糊——具體是指操作什麼？根據剛才討論的 pueue remote 背景，最可能是在問是否有文檔說明如何實際執行這個遠端設置。
+
+我現在檢查一下我們有什麼資源：`skills/local/pueue-job-queue/references/remote-daemon.md` 裡有完整的設置步驟，而 `docs/skills/pueue-job-queue.md` 只有摘要。真正的問題可能是文檔網站上的頁面只是摘要，沒有逐步的操作指南，所以我需要確認一下現有的文檔結構，看看是否應該在 `docs/workflows/` 裡補充一份完整的操作說明。
+</details></think>
+
+_**Agent (claude-opus-5 2026-07-26 12:53:32Z)**_
+
+Let me check what we actually have versus what an operator would need.
+
+_**Agent (claude-opus-5 2026-07-26 12:53:33Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check existing operational docs coverage
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+echo "=== docs/workflows/ ==="; ls docs/workflows/
+echo; echo "=== remote-daemon.md headings (the how-to) ==="
+grep -n "^#\{2,3\} " skills/local/pueue-job-queue/references/remote-daemon.md
+echo; echo "=== what the docs SITE page says about remote ==="
+grep -n "^## " docs/skills/pueue-job-queue.md | tail -5
+```
+
+```text
+=== docs/workflows/ ===
+adding-catalog-entries.md
+adding-catalog-entries.zh-TW.md
+adding-vendor-skills.md
+adding-vendor-skills.zh-TW.md
+creating-local-skills.md
+creating-local-skills.zh-TW.md
+project-memory.md
+project-memory.zh-TW.md
+
+=== remote-daemon.md headings (the how-to) ===
+12:## Just SSH over instead
+36:## Recommended: SSH unix-socket forwarding
+41:### 1. Find the daemon's socket
+50:### 2. Copy the shared secret
+60:### 3. Write a client-only config
+74:### 4. Forward the socket, then talk to it
+92:## Alternative: direct TCP + TLS
+111:## Gotchas
+160:## Quick verification
+
+=== what the docs SITE page says about remote ===
+57:## Structure
+86:## Always pass a label
+108:## Empirical schema
+140:## Verification
+157:## Remote daemons: yes, but submit over SSH
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:53:50Z)**_
+
+<think><details><summary>Thought Process</summary>
+The step-by-step setup instructions are in the skill's reference file with four numbered steps and verification, while the docs site only shows a summary with the forward command. So the operational how-to definitely exists, just in the reference documentation rather than the main docs page.
+
+The repo's architecture keeps docs pages as conceptual overviews of skills rather than copies of their operational content, with the reference files serving as the actual how-to guides. That's the right structure, but there's a real gap: the docs page mentions the reference file by name in a table but doesn't actually link to it, so someone reading on the web can't easily navigate there.
+
+I should check whether skill references are published to the docs site at all, and if not, the cleanest fix would be to add a GitHub link to the reference from the docs page, similar to how I handled the pitfalls section.
+</details></think>
+
+_**Agent (claude-opus-5 2026-07-26 12:53:51Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check if skill references are reachable from the docs site
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+echo "=== are skill references/ published to the site? ==="
+ls site/ | head -20
+echo "--- any reference md copied in? ---"
+find site -path "*pueue*" -name "*.html" | head -5
+echo; echo "=== how do OTHER docs pages link to their skill's references? ==="
+grep -rn "blob/main/skills\|references/" docs/skills/mlflow-tracking.md 2>/dev/null | head -5
+echo "--- dvc ---"; grep -rn "blob/main/skills" docs/skills/*.md | head -5
+```
+
+```text
+=== are skill references/ published to the site? ===
+_snippets
+assets
+catalog
+changelog
+conventions
+getting-started
+reference
+search
+skills
+workflows
+zh-TW
+404.html
+index.html
+index.md
+llms-full.txt
+llms.txt
+sitemap.xml
+sitemap.xml.gz
+--- any reference md copied in? ---
+site/skills/pueue-job-queue/index.html
+site/zh-TW/skills/pueue-job-queue/index.html
+
+=== how do OTHER docs pages link to their skill's references? ===
+docs/skills/mlflow-tracking.md:28:  ([skills/local/mlflow-tracking/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/SKILL.md))
+docs/skills/mlflow-tracking.md:34:    - [`sqlite-local.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/sqlite-local.md)
+docs/skills/mlflow-tracking.md:37:    - [`docker-compose-server.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/docker-compose-server.md)
+docs/skills/mlflow-tracking.md:40:    - [`llm-tracing.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/llm-tracing.md)
+docs/skills/mlflow-tracking.md:44:    - [`model-registry.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mlflow-tracking/references/model-registry.md)
+--- dvc ---
+docs/skills/demo-evidence.md:71:See [skills/local/demo-evidence/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/demo-evidence/SKILL.md)
+docs/skills/anywidget.zh-TW.md:12:[`skills/vendor/anywidget/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+docs/skills/anywidget.zh-TW.md:66:- [`marimo-notebook`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/marimo-notebook/SKILL.md)
+docs/skills/anywidget.zh-TW.md:75:[skills/vendor/anywidget/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)。
+docs/skills/anywidget.md:7:[`skills/vendor/anywidget/SKILL.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/vendor/anywidget/SKILL.md)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:54:11Z)**_
+
+<think><details><summary>Thought Process</summary>
+I see the issue now — the new documentation sections reference the remote daemon instructions as plain text instead of linking to them, which means readers on the web can't actually access those files. I need to add GitHub blob URLs to match how the rest of the repo handles references to the `references/` directory, and apply the same fix to the reference table rows and long-running jobs documentation.
+</details></think>
+
+_**Agent (claude-opus-5 2026-07-26 12:54:11Z)**_
+
+Found the gap. `references/*.md` aren't published to the site — other pages link them via GitHub blob URLs, but my new sections mention them as **plain text**. Let me audit.
+
+_**Agent (claude-opus-5 2026-07-26 12:54:11Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Audit unlinked reference mentions in new docs pages
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+for f in docs/skills/long-running-jobs.md docs/skills/long-running-jobs.zh-TW.md docs/skills/slurm-hpc.md docs/skills/slurm-hpc.zh-TW.md docs/skills/experiment-knowledge-harness.md docs/skills/experiment-knowledge-harness.zh-TW.md docs/skills/pueue-job-queue.md docs/skills/pueue-job-queue.zh-TW.md; do
+  n=$(grep -c '`references/[a-z-]*\.md`' "$f" 2>/dev/null || echo 0)
+  linked=$(grep -c 'blob/main/skills' "$f" 2>/dev/null || echo 0)
+  printf "%-52s bare-mentions=%-3s github-links=%s\n" "$(basename $f)" "$n" "$linked"
+done
+```
+
+```text
+long-running-jobs.md                                 bare-mentions=3   github-links=0
+0
+long-running-jobs.zh-TW.md                           bare-mentions=3   github-links=0
+0
+slurm-hpc.md                                         bare-mentions=2   github-links=0
+0
+slurm-hpc.zh-TW.md                                   bare-mentions=2   github-links=0
+0
+experiment-knowledge-harness.md                      bare-mentions=2   github-links=0
+0
+experiment-knowledge-harness.zh-TW.md                bare-mentions=2   github-links=0
+0
+pueue-job-queue.md                                   bare-mentions=8   github-links=0
+0
+pueue-job-queue.zh-TW.md                             bare-mentions=8   github-links=0
+0
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:54:35Z)**_
+
+<think><details><summary>Thought Process</summary>
+I've confirmed that all 8 pages have bare `references/*.md` mentions without any GitHub links, so readers can see the references exist but can't actually access them. The pueue-job-queue.md page had this issue before my changes, but my new pages introduced it as well. I need to systematically convert these bare mentions into proper GitHub blob links following the repo's convention.
+
+The key challenge is that each reference URL needs to point to the correct skill directory — `https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/<skill>/references/<file>.md` — and I need to be careful not to linkify mentions inside code fences (like the daemon-and-config.md references in structure trees). I'm writing a Python script that will parse each page, skip over fenced code blocks, and convert the bare reference mentions into proper links while mapping the doc filenames to their corresponding skill directories.
+</details></think>
+
+_**Agent (claude-opus-5 2026-07-26 12:54:35Z)**_
+
+All 8 pages have unlinked references — a web reader sees the filename but can't open it. Let me fix it, skipping code fences.
+
+_**Agent (claude-opus-5 2026-07-26 12:54:36Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Linkify reference mentions outside code fences
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+python3 - <<'PY'
+import re, pathlib
+
+BASE = "https://github.com/daviddwlee84/agent-skills/blob/main/skills/local"
+pages = {
+ "long-running-jobs": ["long-running-jobs.md","long-running-jobs.zh-TW.md"],
+ "slurm-hpc": ["slurm-hpc.md","slurm-hpc.zh-TW.md"],
+ "experiment-knowledge-harness": ["experiment-knowledge-harness.md","experiment-knowledge-harness.zh-TW.md"],
+ "pueue-job-queue": ["pueue-job-queue.md","pueue-job-queue.zh-TW.md"],
+}
+
+# `references/foo.md` or `assets/foo.tmpl` or `scripts/foo.sh` -> linked, outside code fences
+PAT = re.compile(r'(?<!\]\()`((?:references|scripts|assets)/[A-Za-z0-9._-]+)`')
+
+total = 0
+for skill, files in pages.items():
+    for fn in files:
+        p = pathlib.Path("docs/skills")/fn
+        lines = p.read_text().split("\n")
+        out, in_fence, n = [], False, 0
+        for ln in lines:
+            if ln.lstrip().startswith("\```"):
+                in_fence = not in_fence
+                out.append(ln); continue
+            if in_fence:
+                out.append(ln); continue
+            def repl(m):
+                nonlocal n
+                n += 1
+                path = m.group(1)
+                return f'[`{path}`]({BASE}/{skill}/{path})'
+            out.append(PAT.sub(repl, ln))
+        p.write_text("\n".join(out))
+        print(f"{fn:46} linked {n}")
+        total += n
+print("total links added:", total)
+PY
+```
+
+```text
+Exit code 1
+  File "<stdin>", line 27
+SyntaxError: no binding for nonlocal 'n' found
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:55:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Linkify reference mentions outside code fences
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+python3 - <<'PY'
+import re, pathlib
+
+BASE = "https://github.com/daviddwlee84/agent-skills/blob/main/skills/local"
+pages = {
+ "long-running-jobs": ["long-running-jobs.md","long-running-jobs.zh-TW.md"],
+ "slurm-hpc": ["slurm-hpc.md","slurm-hpc.zh-TW.md"],
+ "experiment-knowledge-harness": ["experiment-knowledge-harness.md","experiment-knowledge-harness.zh-TW.md"],
+ "pueue-job-queue": ["pueue-job-queue.md","pueue-job-queue.zh-TW.md"],
+}
+PAT = re.compile(r'(?<!\]\()`((?:references|scripts|assets)/[A-Za-z0-9._-]+)`')
+total = 0
+for skill, files in pages.items():
+    for fn in files:
+        p = pathlib.Path("docs/skills")/fn
+        lines = p.read_text().split("\n")
+        out, in_fence, count = [], False, [0]
+        def repl(m):
+            count[0] += 1
+            path = m.group(1)
+            return f'[`{path}`]({BASE}/{skill}/{path})'
+        for ln in lines:
+            if ln.lstrip().startswith("\```"):
+                in_fence = not in_fence
+                out.append(ln); continue
+            out.append(ln if in_fence else PAT.sub(repl, ln))
+        p.write_text("\n".join(out))
+        print(f"{fn:46} linked {count[0]}")
+        total += count[0]
+print("total links added:", total)
+PY
+```
+
+```text
+long-running-jobs.md                           linked 4
+long-running-jobs.zh-TW.md                     linked 4
+slurm-hpc.md                                   linked 2
+slurm-hpc.zh-TW.md                             linked 2
+experiment-knowledge-harness.md                linked 2
+experiment-knowledge-harness.zh-TW.md          linked 2
+pueue-job-queue.md                             linked 8
+pueue-job-queue.zh-TW.md                       linked 8
+total links added: 32
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:55:23Z)**_
+
+<think><details><summary>Thought Process</summary>
+I've added 32 links, though I notice some script references in the tables like `run-and-mark.sh` and `check-runs.sh` weren't linked because they lack the `scripts/` prefix that my regex pattern required—it's a minor inconsistency but acceptable. I'm also checking `completion-contracts.md` for similar issues.
+
+Let me build and verify the links work, then fix the one prose mention of `completion-contracts.md` for consistency while leaving the script names as-is since they're already described in adjacent code blocks.
+</details></think>
+
+_**Agent (claude-opus-5 2026-07-26 12:55:23Z)**_
+
+32 links added. Let me build and verify they resolve.
+
+_**Agent (claude-opus-5 2026-07-26 12:55:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Build docs and verify link targets exist
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+make docs-build 2>&1 | grep -iE "^ERROR|Aborted" || echo "docs build: no errors"
+echo; echo "=== sample rendered links ==="
+python3 -c "
+import re,pathlib
+h=pathlib.Path('site/skills/long-running-jobs/index.html').read_text()
+for m in re.findall(r'href=\"(https://github.com/[^\"]*long-running-jobs[^\"]*)\"', h)[:4]: print(' ', m)
+"
+echo; echo "=== verify those files actually exist on disk ==="
+for f in references/claude-code-mechanisms.md references/scheduler-chaining.md references/completion-contracts.md assets/chained.sbatch.template; do
+  printf "  %-45s " "$f"; [ -f "skills/local/long-running-jobs/$f" ] && echo OK || echo MISSING
+done
+```
+
+```text
+docs build: no errors
+
+=== sample rendered links ===
+  https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/claude-code-mechanisms.md
+  https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/scheduler-chaining.md
+  https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/references/completion-contracts.md
+  https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/long-running-jobs/assets/chained.sbatch.template
+
+=== verify those files actually exist on disk ===
+  references/claude-code-mechanisms.md          OK
+  references/scheduler-chaining.md              OK
+  references/completion-contracts.md            OK
+  assets/chained.sbatch.template                OK
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:56:22Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate all github blob links resolve to real files
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+# Verify every generated github link across all 8 pages points at a real file.
+python3 - <<'PY'
+import re, pathlib
+bad = tot = 0
+for p in pathlib.Path("docs/skills").glob("*.md"):
+    for url in re.findall(r'https://github\.com/daviddwlee84/agent-skills/blob/main/(\S+?)\)', p.read_text()):
+        tot += 1
+        if not pathlib.Path(url).exists():
+            print("BROKEN:", p.name, "->", url); bad += 1
+print(f"{tot} github links checked, {bad} broken")
+PY
+```
+
+```text
+269 github links checked, 0 broken
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:56:35Z)**_
+
+All 269 links across the docs resolve. Committing.
+
+_**Agent (claude-opus-5 2026-07-26 12:56:39Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the docs linking fix
+
+```bash
+cd /Users/david/Documents/Program/agent-skills
+git add docs/skills/
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh >/dev/null 2>&1
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh >/dev/null 2>&1; echo "scan exit=$?"
+git commit -q -F - <<'EOF'
+docs(skills): link reference files instead of naming them
+
+Skill references/ and assets/ are not published to the docs site -- only
+docs/ is built -- so pages that mentioned `references/foo.md` as plain text
+showed a reader the filename with no way to open it. The operating
+instructions were reachable only from a git checkout.
+
+Converts bare `references/*`, `scripts/*`, and `assets/*` mentions into
+GitHub blob links across the eight pages that had them, matching the
+convention mlflow-tracking already used. Code fences are left alone (the
+structure trees stay plain).
+
+32 links added; all 269 github links across docs/skills/ verified to resolve
+to files that exist. make docs-build clean.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+git log --oneline -3
+```
+
+```text
+scan exit=0
+21fd7aa docs(skills): link reference files instead of naming them
+39d7eef feat(pueue-job-queue): document remote daemons; fix wait.py silent success
+86dd9ef feat(long-running-jobs): new skill for waiting on jobs that outlive a turn
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-07-26 12:57:15Z)**_
+
+Yes — and your question exposed a gap I'd left, now fixed.
+
+## Where the operating instructions live
+
+**The step-by-step how-to is [`references/remote-daemon.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/remote-daemon.md)**, with four numbered steps plus a verification block:
+
+1. Find the daemon's socket — `ssh myhost 'ls /run/user/$(id -u)/pueue_*.socket'`
+2. Copy the shared secret
+3. Write a client-only config (`read_local_logs: false`)
+4. Forward the socket, then `pueue -c ... status`
+
+That's the right home: `references/` is what an agent loads on demand, and `docs/skills/*.md` pages in this repo are *about* a skill (why it exists, what's inside) rather than a copy of it. `docs/workflows/` is for repo workflows — adding vendor skills, project memory — not for using a tool.
+
+## The gap you found
+
+**Those reference files aren't published to the docs site** — only `docs/` gets built. My new pages named them as plain text, so a web reader could see `references/remote-daemon.md` existed but had no way to open it. The instructions were reachable only from a git checkout.
+
+`mlflow-tracking` already solved this by linking references as GitHub blob URLs; my pages just didn't follow it. Fixed across all 8 pages — 32 links added, code fences left alone so the structure trees stay readable. I then checked every GitHub link in `docs/skills/`: **269 links, 0 broken.**
+
+Worth noting `pueue-job-queue.md` had 8 unlinked mentions *before* this work too, so that page was already affected.
+
+Three commits now: `86dd9ef` (new skill), `39d7eef` (pueue remote + the `wait.py` fix), `21fd7aa` (docs links). Nothing pushed.

@@ -14,11 +14,11 @@ what's running.
 | `submit-dag.py` | "Submit this whole fan-out / fan-in pipeline with deps wired — in a fresh isolated group sized to the DAG width." |
 | `wait.py` | "Block until these tasks finish, then summarize success/failure." |
 | `cleanup.sh` | "Reclaim disk + status latency: prune old tasks, empty groups, log files." |
-| `references/cli-cheatsheet.md` | "What un-wrapped `pueue` subcommand do I reach for?" |
-| `references/json-schema.md` | "What does `pueue status --json` actually look like? What's the QUERY DSL syntax?" |
-| `references/dag-patterns.md` | "How do I express fan-out / fan-in / diamond shapes?" |
-| `references/daemon-and-config.md` | "How do I auto-start `pueued` on macOS / Linux?" |
-| `references/remote-daemon.md` | "The daemon is on another machine — can I drive it, and should I?" |
+| [`references/cli-cheatsheet.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/cli-cheatsheet.md) | "What un-wrapped `pueue` subcommand do I reach for?" |
+| [`references/json-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/json-schema.md) | "What does `pueue status --json` actually look like? What's the QUERY DSL syntax?" |
+| [`references/dag-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/dag-patterns.md) | "How do I express fan-out / fan-in / diamond shapes?" |
+| [`references/daemon-and-config.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/daemon-and-config.md) | "How do I auto-start `pueued` on macOS / Linux?" |
+| [`references/remote-daemon.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/remote-daemon.md) | "The daemon is on another machine — can I drive it, and should I?" |
 
 The skill exists to keep three things out of an agent's way:
 
@@ -51,7 +51,7 @@ The skill exists to keep three things out of an agent's way:
 - One short shell command — just run it. Pueue adds daemon overhead.
 - Cross-host scheduling, OR-deps, conditional branching, retry-with-backoff,
   typed task IO — escalate to **Airflow / Prefect / Dagster / DVC / Slurm**.
-  `references/dag-patterns.md` has a decision table.
+  [`references/dag-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/dag-patterns.md) has a decision table.
 - Long-running services — that's `systemd` / `launchd`.
 
 ## Structure
@@ -108,7 +108,7 @@ can be filtered later.
 ## Empirical schema
 
 Pueue's JSON output isn't formally documented in the wiki. The skill ships
-the observed shape on **pueue 4.0.2** in `references/json-schema.md`,
+the observed shape on **pueue 4.0.2** in [`references/json-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/json-schema.md),
 including the diagnostic snippet to re-verify on a different major. Key
 shape:
 
@@ -158,7 +158,7 @@ worth documenting (see SKILL.md gotchas).
 
 Pueue can't schedule *across* hosts, but a local client **can** drive a single
 remote `pueued` — with full control (`add`, `kill`, `log`, `follow`), not just
-status. `references/remote-daemon.md` covers the setup; the short version is
+status. [`references/remote-daemon.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/remote-daemon.md) covers the setup; the short version is
 that the recommended path changes nothing on the server:
 
 ```bash

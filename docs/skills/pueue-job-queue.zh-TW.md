@@ -18,11 +18,11 @@ shell 工作。這個 skill 是個 **CLI 橋接器**，**不是**自製排程器
 | `submit-dag.py` | 「把整條 fan-out / fan-in pipeline 提交、依賴接好 —— 在一個依 DAG 寬度開大小的、全新隔離的 group 中。」 |
 | `wait.py` | 「Block 直到這些任務結束，並摘要成功 / 失敗。」 |
 | `cleanup.sh` | 「回收 disk + status 延遲：清掉舊任務、空的 group、log 檔。」 |
-| `references/cli-cheatsheet.md` | 「我該抓哪個沒被包裝的 `pueue` subcommand？」 |
-| `references/json-schema.md` | 「`pueue status --json` 長什麼樣？QUERY DSL 語法是什麼？」 |
-| `references/dag-patterns.md` | 「fan-out / fan-in / 菱形怎麼表達？」 |
-| `references/daemon-and-config.md` | 「macOS / Linux 怎麼自動啟動 `pueued`？」 |
-| `references/remote-daemon.md` | 「daemon 在另一台機器上 —— 我能驅動它嗎？該不該？」 |
+| [`references/cli-cheatsheet.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/cli-cheatsheet.md) | 「我該抓哪個沒被包裝的 `pueue` subcommand？」 |
+| [`references/json-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/json-schema.md) | 「`pueue status --json` 長什麼樣？QUERY DSL 語法是什麼？」 |
+| [`references/dag-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/dag-patterns.md) | 「fan-out / fan-in / 菱形怎麼表達？」 |
+| [`references/daemon-and-config.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/daemon-and-config.md) | 「macOS / Linux 怎麼自動啟動 `pueued`？」 |
+| [`references/remote-daemon.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/remote-daemon.md) | 「daemon 在另一台機器上 —— 我能驅動它嗎？該不該？」 |
 
 這個 skill 存在是為了讓 agent 不必煩三件事：
 
@@ -54,7 +54,7 @@ shell 工作。這個 skill 是個 **CLI 橋接器**，**不是**自製排程器
 - 一個短的 shell 指令 —— 直接跑就好，pueue 帶 daemon 開銷。
 - 跨主機排程、OR-deps、條件分支、retry-with-backoff、typed task IO
   —— 升級到 **Airflow / Prefect / Dagster / DVC / Slurm**。
-  `references/dag-patterns.md` 有決策表。
+  [`references/dag-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/dag-patterns.md) 有決策表。
 - 長時間執行的 service —— 那是 `systemd` / `launchd` 的事。
 
 ## 結構
@@ -110,7 +110,7 @@ model variant) 編進去 —— 不是命令本身：
 ## 經驗 schema (Empirical schema)
 
 Pueue 的 JSON 輸出在 wiki 沒有正式文件化。skill 在
-`references/json-schema.md` 出貨在 **pueue 4.0.2** 上觀察到的形狀，
+[`references/json-schema.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/json-schema.md) 出貨在 **pueue 4.0.2** 上觀察到的形狀，
 含一個用來在不同主版本上重新驗證的診斷片段。關鍵形狀：
 
 ```json
@@ -159,7 +159,7 @@ pytest fixture 在測試之間用 `pueue reset --force`，因為樸素的
 
 Pueue 沒辦法**跨**主機排程，但本機 client **可以**驅動單一台遠端的 `pueued`
 —— 而且是完整控制（`add`、`kill`、`log`、`follow`），不只是看 status。
-`references/remote-daemon.md` 有完整設定；簡短版是：**建議路徑完全不用動伺服器**。
+[`references/remote-daemon.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/pueue-job-queue/references/remote-daemon.md) 有完整設定；簡短版是：**建議路徑完全不用動伺服器**。
 
 ```bash
 # 轉發 daemon 自己的 unix socket —— 不用重設伺服器、不用 TLS
