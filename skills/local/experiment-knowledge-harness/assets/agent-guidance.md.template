@@ -39,6 +39,13 @@ available, maintain the surfaces by hand and validate as noted below.
    results rows as they land. One ablation axis per experiment, vs the
    named `baseline:`; tables always state their `spec:` (cost model / fee /
    eval-window version) and never mix specs.
+   For runs lasting hours or days: have the job write a durable exit-code
+   marker (temp file + `mv`) so a later session can tell "finished" from
+   "killed" without re-running it, and reconcile `status: running` REPORTs
+   against those markers after any restart. If the next experiment is already
+   decided, chain it in the scheduler (`sbatch --dependency=afterok:`,
+   `pueue --after`) — a `depends-on:` tag is documentation and schedules
+   nothing. Don't babysit with a self-rescheduling check-in.
 4. **Conclude (success OR failure)** — write `## Conclusion` (negative
    results need the dead-end clause: "do not retry unless X changes"),
    paste the `snapshot-provenance.py` block, distill 1–5 findings

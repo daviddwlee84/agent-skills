@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# chained.sbatch.template — a Phase A -> Phase B Slurm chain that survives
+# losing the agent session.
+#
+# Copy this next to your batch scripts and edit the marked spots. Submitting it
+# hands the whole pipeline to the scheduler: nothing needs to stay connected,
+# awake, or in context for Phase B to run.
+#
+#   bash chained.sbatch.template
+#
+# Requires phase_a.sbatch and phase_b.sbatch alongside it (skeletons at the
+# bottom of this file).
+
+set -euo pipefail
+
+RUN_DIR="${RUN_DIR:-runs/$(date -u +%Y%m%dT%H%M%SZ)}"   # EDIT if you like
+MAIL_USER="${MAIL_USER:-}"                              # EDIT: your address
+
+mkdir -p "$RUN_DIR"
+
+mail_args=()
+if [ -n "$MAIL_USER" ]; then
+  # INVALID_DEPEND is the one people omit — it is how a never-satisfied
+  # dependency announces itself instead of pending silently forever.
+  mail_args=(--mail-user="$MAIL_USER" --mail-type=INVALID_DEPEND,END,FAIL,TIME_LIMIT)
+fi
+
+# Note the expansion form used below. A bare "${mail_args[@]}" would abort on
+# stock macOS bash 3.2, which treats an empty array under `set -u` as an
+# unbound variable. The ${arr[@]+"${arr[@]}"} idiom expands to nothing instead.
+
+# --- Phase A ---------------------------------------------------------------
+# --parsable prints "jobid" or "jobid;cluster". The %%;* strips the cluster
+# suffix; without it the dependency string below is malformed AND the ';'
+# terminates the shell command.
+JID_A=$(sbatch --parsable \
+               --export=ALL,RUN_DIR="$RUN_DIR",PHASE=a \
+               ${mail_args[@]+"${mail_args[@]}"} \
+               phase_a.sbatch)
+JID_A=${JID_A%%;*}
+
+# --- Phase B ---------------------------------------------------------------
+# afterok, spelled out: the DEFAULT dependency type is afterany, which would
+# run Phase B on top of a crashed Phase A.
+#
+# --kill-on-invalid-dep=yes is not optional. Slurm's default is to leave the
+# dependent job PENDING with reason DependencyNeverSatisfied — indefinitely,
+# looking exactly like a job waiting its turn. Requeueing Phase A does not
+# release it; you would have to resubmit Phase B by hand.
+JID_B=$(sbatch --parsable \
+               --dependency=afterok:"$JID_A" \
+               --kill-on-invalid-dep=yes \
+               --export=ALL,RUN_DIR="$RUN_DIR",PHASE=b \
+               ${mail_args[@]+"${mail_args[@]}"} \
+               phase_b.sbatch)
+JID_B=${JID_B%%;*}
+
+# --- Optional: alert on failure -------------------------------------------
+# afternotok fires only when Phase A fails. Uncomment if you have a notifier.
+# sbatch --dependency=afternotok:"$JID_A" --kill-on-invalid-dep=yes \
+#        --export=ALL,RUN_DIR="$RUN_DIR" notify_failure.sbatch
+
+printf '{"run_dir": "%s", "phase_a": "%s", "phase_b": "%s"}\n' \
+  "$RUN_DIR" "$JID_A" "$JID_B"
+
+cat >&2 <<EOF
+
+Chain submitted. The scheduler owns it from here — you can close the session.
+
+  squeue -j $JID_A,$JID_B -o '%.10i %.9T %.40R'
+  sacct  -j $JID_A,$JID_B --format=JobID,State,ExitCode,Elapsed,MaxRSS
+
+If Phase B shows Reason=DependencyNeverSatisfied, Phase A failed and Phase B
+was cancelled by --kill-on-invalid-dep. Fix Phase A and resubmit the chain.
+EOF
+
+# ===========================================================================
+# phase_a.sbatch — skeleton
+# ===========================================================================
+: <<'PHASE_A'
+#!/usr/bin/env bash
+#SBATCH --job-name=phase_a
+#SBATCH --partition=gpu               # EDIT
+#SBATCH --gres=gpu:1                  # EDIT
+#SBATCH --cpus-per-task=8             # EDIT
+#SBATCH --mem=64G                     # EDIT — hard cgroup cap, not a hint
+#SBATCH --time=08:00:00               # EDIT — job is killed at this limit
+#SBATCH --signal=B:USR1@300           # SIGUSR1 to the batch shell, 300s early
+#SBATCH --output=%x_%j.out
+
+set -uo pipefail
+: "${RUN_DIR:?RUN_DIR must be exported by the submitter}"
+mkdir -p "$RUN_DIR"
+
+# Checkpoint before the wall-clock kill. The 300s budget above must exceed the
+# real checkpoint-write time or this is theatre.
+checkpoint_and_requeue() {
+  kill -USR1 "$TRAIN_PID" 2>/dev/null || true    # ask the trainer to save
+  wait "$TRAIN_PID"
+  scontrol requeue "$SLURM_JOB_ID"
+}
+trap checkpoint_and_requeue USR1
+
+srun python train.py --out "$RUN_DIR" &
+TRAIN_PID=$!
+wait "$TRAIN_PID"
+rc=$?
+
+# Durable completion record: readable long after the job leaves squeue, and
+# without depending on sacct/slurmdbd being configured. Temp-then-rename so a
+# reader never sees a half-written marker.
+printf '%s\n' "$rc" > "$RUN_DIR/phase_a.exit.tmp"
+mv "$RUN_DIR/phase_a.exit.tmp" "$RUN_DIR/phase_a.exit"
+
+exit "$rc"
+PHASE_A
+
+# ===========================================================================
+# phase_b.sbatch — skeleton (same shape; reads Phase A's outputs)
+# ===========================================================================
+: <<'PHASE_B'
+#!/usr/bin/env bash
+#SBATCH --job-name=phase_b
+#SBATCH --partition=gpu               # EDIT
+#SBATCH --gres=gpu:1                  # EDIT
+#SBATCH --cpus-per-task=8             # EDIT
+#SBATCH --mem=64G                     # EDIT
+#SBATCH --time=02:00:00               # EDIT
+#SBATCH --output=%x_%j.out
+
+set -uo pipefail
+: "${RUN_DIR:?RUN_DIR must be exported by the submitter}"
+
+srun python evaluate.py --checkpoints "$RUN_DIR"
+rc=$?
+
+printf '%s\n' "$rc" > "$RUN_DIR/phase_b.exit.tmp"
+mv "$RUN_DIR/phase_b.exit.tmp" "$RUN_DIR/phase_b.exit"
+
+exit "$rc"
+PHASE_B

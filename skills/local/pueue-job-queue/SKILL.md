@@ -260,6 +260,16 @@ for a full sweep. Pair with the agent's existing weekly maintenance habit
 - `references/dag-patterns.md` — Read **when** the user asks for shapes beyond fan-out/fan-in (mixed sequential+parallel, diamond, etc.) or hits the AND-only / success-only limitation. Has examples and a "when to escalate to a real orchestrator" decision table.
 - `references/daemon-and-config.md` — Read **when** setting up `pueued` for the first time, configuring per-OS paths, picking config knobs (`pause_group_on_failure`, `default_parallel_tasks`), or wiring up launchd / systemd-user.
 
+## See also
+
+- `long-running-jobs` — pueue is one *implementation* of "let the queue own the
+  chain" (`--after`) and "block once" (`wait.py`). That skill owns the prior
+  question: **which** of those an agent should reach for, when a scheduled
+  check-in is ever justified, and how to record completion durably so a run
+  survives losing the session. Read it if you are tempted to poll
+  `pueue status` on a timer.
+- `slurm-hpc` — the cluster-side equivalent when jobs leave this machine.
+
 ## Gotchas
 
 - **DAG fan-out is gated by `parallel_tasks` per group.** Even when two siblings both depend only on `A` and the DAG allows them to run in parallel, they will *serialize* if their group's `parallel_tasks=1`. Pueue's parallelism primitive is the group, not the dependency graph. `submit-dag.py` warns when DAG width exceeds the group's slots and suggests the exact `pueue parallel N --group G` command; pass `--auto-parallel` to apply it.

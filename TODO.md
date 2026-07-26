@@ -70,6 +70,8 @@ workflow that agents should follow.
 
 ## Done
 
+- ✅ [2026-07-26] [P3/S] Docs pages for long-running-jobs, slurm-hpc, experiment-knowledge-harness — Added bilingual docs pages (EN + zh-TW) for long-running-jobs, slurm-hpc, and experiment-knowledge-harness; registered in mkdocs nav and docs/skills/index.md. make docs-build clean.
+
 - ✅ [2026-04-23] [P2/L] Author mlflow-tracking skill — MLflow skill: SKILL.md + 6 references (sqlite-local, docker-compose-server, llm-tracing, model-registry, autologging-by-framework, mlflow-widgets) + 3 scripts (init-sqlite/start-server/tail-runs) + vendored docker-compose-stack assets. Lint clean.
 
 - ✅ [2026-04-23] [P2/L] Author dvc-ml-workflow skill — DVC skill: SKILL.md + 4 references (pipelines, experiments-queue, data-remotes, plots-metrics) + 3 scripts (init/queue-helper/lint) + 3 templates. Lint clean.

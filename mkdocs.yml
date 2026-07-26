@@ -120,6 +120,9 @@ nav:
           - agent-history-hygiene: skills/agent-history-hygiene.md
           - git-workflow: skills/git-workflow.md
           - pueue-job-queue: skills/pueue-job-queue.md
+          - slurm-hpc: skills/slurm-hpc.md
+          - long-running-jobs: skills/long-running-jobs.md
+          - experiment-knowledge-harness: skills/experiment-knowledge-harness.md
           - clash-proxy-api: skills/clash-proxy-api.md
           - fastapi-ai-patterns: skills/fastapi-ai-patterns.md
           - fastapi-ai-scaffold: skills/fastapi-ai-scaffold.md

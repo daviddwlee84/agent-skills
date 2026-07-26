@@ -47,6 +47,47 @@ Cancel `scancel <id>`. `--start` on squeue estimates a pending job's start.
 - `--time` is mandatory discipline on most clusters; jobs are killed at it.
 - `--exclusive` gives the whole node. Partitions (`sinfo`) gate limits/priority.
 
+## Chaining and waiting
+
+Do not babysit a job by re-running `squeue` on a timer. Either hand the
+sequencing to the scheduler, or block on it once.
+
+**Chain B behind A** — Phase B is queued at submit time and runs without
+anything staying connected:
+
+```bash
+JID=$(sbatch --parsable phase_a.sbatch); JID=${JID%%;*}   # strip ";cluster"
+sbatch --dependency=afterok:"$JID" \
+       --kill-on-invalid-dep=yes \
+       --mail-type=INVALID_DEPEND,END,FAIL \
+       phase_b.sbatch
+```
+
+| Dependency | Fires when the parent… |
+|---|---|
+| `afterok:<id>` | succeeded (exit 0) |
+| `afternotok:<id>` | failed — the hook for alerting/cleanup |
+| `afterany:<id>` | terminated, either way (**this is the default**) |
+| `after:<id>[+min]` | started (optionally +minutes) |
+| `aftercorr:<id>` | array task N follows parent array task N |
+| `singleton` | previous job of the same name+user ended |
+
+Separators: `,` means **all** must be satisfied, `?` means **any**.
+
+**Block until done** (one command, exit code mirrors the job's):
+
+```bash
+sbatch --wait phase_a.sbatch
+```
+
+**Checkpoint before the wall-clock kill** — `--signal=B:USR1@300` sends
+`SIGUSR1` to the batch shell 300 s before `--time` expires; trap it and save.
+The `B:` prefix is what targets the batch shell rather than the job steps.
+
+For the agent-side question — *how should I, the agent, wait for this?* — see
+the `long-running-jobs` skill, which ranks scheduler chaining, one blocking
+backgrounded wait, filtered event streaming, and scheduled check-ins.
+
 ## Isolation: what actually fences a misbehaving job
 
 **CPU/RAM (cgroups, if the site enables `task/cgroup` + `ConstrainCores/RAMSpace`):**
@@ -84,6 +125,27 @@ or partitioning GPU VRAM, or choosing between shard/mps/MIG.
   gets OOM-killed; bump `--mem`, don't expect bursting into idle RAM.
 - **`sacct` needs accounting (`slurmdbd`) configured.** Without it use
   `scontrol show job <id>` (live only — gone after the job ages out).
+- **`afterany` is the default dependency type.** A bare `-d 12345` runs the
+  child after the parent terminates *either way* — including after it crashed.
+  Always spell out `afterok:`.
+- **A failed parent leaves the child PENDING forever.** Slurm's default is
+  *"the job stays pending with reason DependencyNeverSatisfied"*, which in
+  `squeue` looks identical to waiting for resources. Worse, *"the dependent job
+  will never be run, even if the preceding job is requeued"* — fixing and
+  requeueing the parent does **not** release it; you must resubmit the child.
+  Pass `--kill-on-invalid-dep=yes` and `--mail-type=INVALID_DEPEND`.
+- **`--parsable` prints `jobid;cluster`**, not a bare id, when a cluster name is
+  configured — *"The values are separated by a semicolon."* Strip it with
+  `${JID%%;*}`, or the dependency string is malformed and the `;` truncates
+  your shell command.
+- **`sbatch --wait` collapses every signal death to exit 1.** *"If the job
+  terminated due to a signal rather than a normal exit, the exit code will be
+  set to 1."* An OOM kill, a `TIMEOUT`, a `scancel`, and a plain `exit 1` are
+  indistinguishable from the exit code. Read
+  `sacct -j <id> --format=State,ExitCode` for the real state — the `:signal`
+  suffix and states like `OUT_OF_MEMORY` / `TIMEOUT` / `NODE_FAIL` are what
+  tell you whether a retry could work. For arrays the code is *"the highest
+  value for any task"*.
 - **A failing site `Prolog`/`Epilog` drains the node**, showing jobs as
   `PENDING` with a node `Reason=`. Check `scontrol show node`.
 - **`srun --oversubscribe` is ignored under consumable resources** — you can't

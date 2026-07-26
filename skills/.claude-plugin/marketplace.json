@@ -195,15 +195,16 @@
     },
     {
       "name": "03-infra-and-docs",
-      "description": "Documentation site bootstrap, pueue job queue orchestration, Slurm/HPC job scheduling, and Clash/mihomo proxy control",
+      "description": "Documentation site bootstrap, pueue job queue orchestration, Slurm/HPC job scheduling, long-running job waiting patterns, and Clash/mihomo proxy control",
       "category": "Infra",
-      "tags": ["mkdocs", "pueue", "job-queue", "slurm", "hpc", "gpu", "docs", "clash", "mihomo", "proxy"],
+      "tags": ["mkdocs", "pueue", "job-queue", "slurm", "hpc", "gpu", "docs", "clash", "mihomo", "proxy", "long-running", "polling"],
       "source": "./",
       "strict": false,
       "skills": [
         "./local/mkdocs-site-bootstrap",
         "./local/pueue-job-queue",
         "./local/slurm-hpc",
+        "./local/long-running-jobs",
         "./local/clash-proxy-api"
       ]
     },

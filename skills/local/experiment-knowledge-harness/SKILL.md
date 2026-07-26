@@ -1,6 +1,6 @@
 ---
 name: experiment-knowledge-harness
-description: Set up and operate a research-experiment memory for ML/DL/Quant projects — LEDGER.md of numbered findings (what we currently believe, evidence links, overturn protocol), ROADMAP.md experiment queue triaged by expected payoff × cost × category × assumption dependencies, INBOX.md human scratchpad swept into the roadmap via targeted questions, an auto-rendered Mermaid map of how experiments/findings/queued work reference each other, and per-experiment REPORT.md with pre-registration, single-axis ablation contract, results tables and provenance blocks (git SHA, config hash, data window, seeds, optional MLflow refs). Use when the user wants to track which directions were explored vs not, record which succeeded or failed, avoid re-running dead-end experiments or wasting compute, make results discoverable and comparable, keep experiments reproducible, re-prioritize planned work when a conclusion changes, get a big-picture map of all experiments, jot a raw research idea somewhere, or asks to sweep the experiments inbox.
+description: Set up and operate a research-experiment memory for ML/DL/Quant projects — LEDGER.md of numbered findings (what we believe, evidence links, overturn protocol), ROADMAP.md experiment queue triaged by expected payoff × cost × category × assumption dependencies, INBOX.md human scratchpad swept into the roadmap via targeted questions, an auto-rendered Mermaid map of how experiments/findings/queued work reference each other, and per-experiment REPORT.md with pre-registration, single-axis ablation contract, results tables and provenance blocks (git SHA, config hash, data window, seeds, MLflow refs). Use when the user wants to track which directions were explored vs not, record which succeeded or failed, avoid re-running dead-end experiments or wasting compute, make results discoverable and comparable, keep experiments reproducible, re-prioritize planned work when a conclusion changes, get a big-picture map of all experiments, jot a raw research idea somewhere, or asks to sweep the experiments inbox.
 ---
 
 # experiment-knowledge-harness
@@ -156,6 +156,26 @@ Non-negotiable design contract (details in
 Append dated bullets to the REPORT's `## Log` (decisions, surprises,
 course corrections). Add one row per run/config to the results table as
 results land — don't batch-reconstruct at the end.
+
+For runs measured in hours or days, two things must be true before you walk
+away:
+
+1. **The run writes a durable completion marker.** `status: running` in the
+   front-matter is a note-to-self, not evidence — nothing watches it. Have the
+   job record its own exit code atomically (temp file + `mv`), so a *later*
+   session can tell "finished, exit 0" from "killed at 3am" without re-running
+   GPU time. On a session restart, reconcile every `status: running` REPORT
+   against the actual markers rather than assuming it is still going.
+2. **If the next experiment is already decided, chain it in the scheduler**
+   rather than in your head. A `depends-on: #NNN` tag is documentation — it
+   schedules nothing. When #008 genuinely runs after #007, submit it with a
+   real dependency (`sbatch --dependency=afterok:`, `pueue --after`) at the
+   same time, so the queue survives losing the session.
+
+Do **not** babysit a long run with a repeating check-in that wakes up, greps a
+log, finds nothing changed, and reschedules itself — that costs a full context
+read per tick and still loses the chain if the session dies. See the
+`long-running-jobs` skill for the full ladder.
 
 ### 5. When an experiment concludes (including failures)
 
