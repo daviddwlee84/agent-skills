@@ -36,6 +36,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`fastapi-ai-patterns`](fastapi-ai-patterns.md) | Production FastAPI patterns + gotchas for AI/ML/LLM serving; `def`/`async` decision table + 8 references over all 10 chapters | [docs](fastapi-ai-patterns.md) |
 | [`fastapi-ai-scaffold`](fastapi-ai-scaffold.md) | Generate a production-shaped FastAPI AI service (clean architecture, lifespan model, JWT, SSE, probes, tests, Docker); `new-fastapi-ai-service.sh` + 44-file skeleton | [docs](fastapi-ai-scaffold.md) |
 | [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 self-written FastAPI/AI interview Q&A across 10 topics + a `quiz.py` mock-interview CLI | [docs](fastapi-ai-interview-prep.md) |
+| [`raycast-extension-dev`](raycast-extension-dev.md) | Build/verify/ship Raycast extensions — the launchd PATH trap, the typecheck `ray build` skips, `MenuBarExtra` constraints, and the store checks `ray lint` never runs; ships a scaffolder + readiness checker | [docs](raycast-extension-dev.md) |
 
 ## Vendored skills
 

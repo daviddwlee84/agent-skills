@@ -209,6 +209,17 @@
       ]
     },
     {
+      "name": "desktop-extensions",
+      "description": "Build, verify, and publish extensions for desktop launchers: the Raycast toolchain and its launchd runtime, menu-bar constraints, transport-seam design for CLI wrappers, and the store checks ray lint never runs",
+      "category": "Engineering",
+      "tags": ["raycast", "extension", "macos", "typescript", "menu-bar", "launchd", "store"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/raycast-extension-dev"
+      ]
+    },
+    {
       "name": "music-notation",
       "description": "ChordPro chord-sheet authoring: convert chords-over-lyrics via a2crd, render/transpose with the chordpro CLI, fetch lyrics (LRCLIB), and best-effort audio/link -> draft chords",
       "category": "Creative",
