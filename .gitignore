@@ -220,3 +220,14 @@ __marimo__/
 
 # skill-creator eval workspace (throwaway; contains copyrighted fetched lyrics)
 skills/local/chordpro-workspace/
+
+# npm. This is a Python repo with one npm dependency: scripts/lint-frontmatter.sh
+# needs the same `yaml` parser `npx skills` uses, so running the CI gate locally
+#
+#     npm install --no-save --no-package-lock yaml@2
+#     NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills
+#
+# leaves a node_modules/ behind. The flags keep package.json and the lockfile out
+# of the way, but not this.
+node_modules/
+npm-debug.log*
