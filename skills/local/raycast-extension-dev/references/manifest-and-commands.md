@@ -28,7 +28,7 @@ wiring one command to launch another, or considering AI tools.
   "author": "your_raycast_username",
   "license": "MIT",
   "categories": ["Developer Tools", "Productivity"],
-  "platforms": ["macOS"],
+  "platforms": ["macOS", "Windows"],
   "commands": [],
   "preferences": []
 }
@@ -37,8 +37,12 @@ wiring one command to launch another, or considering AI tools.
 - `name` is the store slug and must be kebab-case. `title` is what users see.
 - `author` must be your **registered Raycast username**, not your name.
 - `icon` resolves relative to `assets/`.
-- **`platforms: ["macOS"]` is mandatory when any command is `menu-bar`** — that
-  mode does not exist elsewhere.
+- **Write `platforms` explicitly.** The changelog says an absent field means
+  `["macOS"]`; the live schema says it means every platform. It is not in the
+  schema's `required` list, so nothing resolves the contradiction for you.
+  `["macOS", "Windows"]` unless something is platform-specific — and it is
+  extension-level, so **one `menu-bar` command forces the whole extension to
+  `["macOS"]`**. See `cross-platform.md`.
 - **There is no `version` field** for a store extension. The store derives it.
 - `$schema` gives you completion in an editor and is what `ray lint` validates
   against.
@@ -66,6 +70,7 @@ line number and have to count. Read straight from
 | `arguments[].name` | 2 | 255 |
 | `arguments[].placeholder` | 1 | 255 |
 | `tools[].name` | 2 | 64 |
+| `tools[].title` | 2 | 255 |
 | `tools[].description` | **12** | 2048 |
 
 "Tasks." is 6 characters and will be rejected. Write a sentence.
@@ -100,6 +105,8 @@ Modes, and what each implies:
 - **`menu-bar`** — returns a `MenuBarExtra`. See `menu-bar.md`. `interval` is
   valid only here and is manifest-only: a preference cannot change it, because
   Raycast renders its own refresh control in the command's settings. Use `"1m"`.
+  The schema's own `mode` description calls it *"an extra item in the **macOS**
+  system menu bar"* — adding one costs you Windows for the whole extension.
 
 Per-command `preferences` and `arguments` are scoped to that command and appear
 in its own settings pane. Extension-level ones live at the top level and apply to
@@ -163,6 +170,16 @@ Conventions that pay off:
   every minute." The description is the only documentation most users read.
 - **Surface invalid input rather than dropping it.** A malformed line that
   silently vanishes is indistinguishable from the feature being broken.
+- **A default can be platform-keyed.** Any manifest value accepts
+  `{ "macOS": …, "Windows": … }`, which matters most for path defaults:
+
+  ```json
+  "default": { "macOS": "/opt/homebrew/bin/mytool",
+               "Windows": "C:\\Program Files\\mytool\\mytool.exe" }
+  ```
+
+  Double the backslashes — a lone `\P` is an invalid JSON escape and fails to
+  parse before `ray lint` reaches the schema.
 
 ## The generated types
 
@@ -262,12 +279,18 @@ screenshot.
 "tools": [{ "name": "list-tasks", "title": "List Tasks", "description": "…" }]
 ```
 
-- **Raycast AI is Pro-gated**, so tools can never be the primary UX of an
-  extension. Ship the commands first.
+- **`tools[].name` maps to `src/tools/<name>.ts`**, exactly as a command's name
+  maps to `src/<name>.tsx`. Pattern `^[a-z0-9-][a-zA-Z0-9-_]*$`, 2–64 chars.
 - Tools do not appear in root search. Raycast AI selects them by `description`,
   so the description is prompt engineering, not documentation.
-- **There is no confirmation surface inside a tool call** comparable to
-  `confirmAlert`. A first version must be read-only. Anything destructive needs a
-  design for consent that does not exist yet in the tool API.
+- `ai.instructions` and `ai.evals` belong in an `ai.yaml` at the extension root.
+  **The eval inputs are also the Suggested Prompts** shown under
+  `@your-extension`, so an extension with tools and no evals looks empty.
+- **Destructive tools are fine** — export a `confirmation`
+  (`Tool.Confirmation<Input>`), which runs before the tool and can return
+  `undefined` to skip itself.
 - If your transport already returns structured data, a tool is a thin wrapper —
   the work is prompt-shaped, not code-shaped.
+
+Full treatment, including the access model and the eval matchers, in
+`ai-extensions.md`.

@@ -33,8 +33,12 @@ the constraints rather than discovering them one at a time.
 { "name": "queue-menu", "title": "Queue Menu Bar", "mode": "menu-bar", "interval": "1m" }
 ```
 
-- **`platforms: ["macOS"]` becomes mandatory** at the top level. Menu bar is
-  macOS-only.
+- **`platforms: ["macOS"]` becomes mandatory** at the top level, and that is a
+  whole-extension decision — `platforms` has no per-command form, so one menu-bar
+  command takes every sibling command off Windows with it. The schema says as
+  much in its own `mode` description: *"an extra item in the **macOS** system menu
+  bar"*. If the rest of the extension is portable, the menu bar has to become a
+  separate extension. See `cross-platform.md`.
 - **`interval` is manifest-only.** A preference cannot change it, because Raycast
   renders its own refresh-interval control in the command's settings. Shipping an
   interval preference would be a lie.

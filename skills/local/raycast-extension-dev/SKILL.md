@@ -1,6 +1,6 @@
 ---
 name: raycast-extension-dev
-description: 'Build, verify, and ship Raycast extensions in TypeScript with @raycast/api. Use when the user says "Raycast extension", "ray build", "ray develop", "ray lint", "menu bar command", "MenuBarExtra", "useCachedPromise", "raycast-env.d.ts", "no-view command", or wants to publish to the Raycast Store. Covers the launchd PATH trap, the typecheck ray build skips, optimistic-update reconcile timing, and the store-readiness checks ray lint never runs.'
+description: 'Build, verify, and ship Raycast extensions in TypeScript with @raycast/api. Use when the user says "Raycast extension", "ray build", "ray develop", "ray lint", "menu bar command", "MenuBarExtra", "useCachedPromise", "raycast-env.d.ts", "no-view command", "Raycast on Windows", "platforms field", "runPowerShellScript", "AI extension", "Raycast AI tool", "ai.yaml", "ai evals", "suggested prompts", or wants to publish to the Raycast Store. Covers the launchd PATH trap, the typecheck ray build skips, optimistic-update reconcile timing, cross-platform macOS/Windows seams, and the store-readiness checks ray lint never runs.'
 ---
 
 # Raycast extension development
@@ -15,8 +15,12 @@ runtime does **not** provide, and what the store checks that the linter does not
 Every claim here was paid for once in a shipped extension; the `## Gotchas`
 section is the compressed bill.
 
-macOS only. `platforms`, `sips`, Homebrew prefixes, and launchd are all
-macOS-shaped, and a `menu-bar` command does not exist anywhere else.
+**macOS is the default, not the premise.** Raycast ships on Windows too, and
+`platforms` in the manifest decides who can see your extension. The UI layer is
+100% shared and domain logic nearly so; only an OS adapter at the bottom differs.
+Declare both platforms and subtract, rather than defaulting to macOS by silence —
+`references/cross-platform.md`. The launchd, Homebrew-prefix, and `sips` material
+below is genuinely macOS-scoped and labelled as such.
 
 ## When to use
 
@@ -29,6 +33,9 @@ macOS-shaped, and a `menu-bar` command does not exist anywhere else.
 - "My action flashes the new state, reverts, then re-applies" → Workflow C.
 - "Get this ready for the Raycast Store" → Workflow F and
   `scripts/check-store-readiness.sh`.
+- "Make this work on Windows" / "why isn't my extension on Windows" → the
+  `platforms` field, then `references/cross-platform.md`.
+- "Add AI to this" / "the @extension prompt list is empty" → Workflow G.
 - Reviewing an existing extension: run the gate (Workflow A) first. It usually
   finds something, because `ray build` alone never would have.
 
@@ -41,9 +48,6 @@ macOS-shaped, and a `menu-bar` command does not exist anywhere else.
   restates none of it.
 - **The semantics of the CLI being wrapped** — `pueue`'s flags, `gh`'s JSON —
   belong to that tool's own skill or its `--help`.
-- **AI Extensions (`tools[]`) when the user has no Raycast Pro.** They are
-  Pro-gated, so they can never be the primary UX. And there is no `confirmAlert`
-  equivalent inside a tool call, so a first version must be read-only.
 - **Taking the store screenshots.** This skill can verify their count and
   dimensions. It cannot capture a window, and no CLI can — see Workflow F.
 
@@ -85,13 +89,13 @@ on every action), and a `ReactNode`/`JSX.Element` clash. Neither printed a line.
 
 The complete list of extension entry points. There is nothing else.
 
-| Entry point | Manifest | Notes |
-| --- | --- | --- |
-| View command | `"mode": "view"` | pushes a view onto the navigation stack |
-| No-view command | `"mode": "no-view"` | runs and exits; **exports `async function Command(props)`, not a component** |
-| Menu bar command | `"mode": "menu-bar"` | returns a `MenuBarExtra`. **macOS only** |
-| AI tools | `"tools": [...]` | invoked by Raycast AI. **Pro-gated** |
-| Script commands | separate repo | shell scripts, not extensions |
+| Entry point | Manifest | Platform | Notes |
+| --- | --- | --- | --- |
+| View command | `"mode": "view"` | both | pushes a view onto the navigation stack |
+| No-view command | `"mode": "no-view"` | both | runs and exits; **exports `async function Command(props)`, not a component** |
+| Menu bar command | `"mode": "menu-bar"` | **macOS** | returns a `MenuBarExtra`. Pins the *whole extension* to macOS |
+| AI tools | `"tools": [...]` | macOS; Windows **undocumented but shipped** | invoked by Raycast AI. Workflow G |
+| Script commands | separate repo | — | shell scripts, not extensions |
 
 **There is no widget API** — no Notification Center, Control Center, or
 Live-Activity surface. A `menu-bar` command is the only way to show something
@@ -105,13 +109,16 @@ to cwd, and `ray publish` copies the extension directory *verbatim* into
 `extensions/<name>/` of the review PR.
 
 ```text
-package.json          the manifest — commands, preferences, arguments
+package.json          the manifest — commands, preferences, arguments, tools
+ai.yaml               AI instructions + evals, when the extension has tools
 raycast-env.d.ts      GENERATED by ray build. Commit it.
 assets/               extension-icon.png (512x512) + monochrome menu-bar SVG
 metadata/             3-6 store screenshots at 2000x1250
 src/<command>.tsx     one file per commands[].name — the names must match
+src/tools/<tool>.ts   one file per tools[].name — the names must match
 src/lib/              shared code
 src/lib/<backend>/    the transport seam (Workflow B)
+src/lib/platform/     the OS adapter, when platforms lists both
 ```
 
 Consequence of the verbatim copy: anything else in the root — notes, task lists,
@@ -123,11 +130,16 @@ to a scratch directory if that bothers you; a `.gitignore` will not help, becaus
 
 ```bash
 bash scripts/new-raycast-extension.sh --dir ./my-ext --name my-ext \
-  --author <your-raycast-username> --command tasks:view --command menu:menu-bar
+  --author <your-raycast-username> --platforms macOS,Windows \
+  --command tasks:view --tool list-tasks
 cd my-ext && npm install
 npm run build          # this is what GENERATES raycast-env.d.ts
 just check             # the four-stage gate
 ```
+
+`--platforms` defaults to `macOS`. Pass `macOS,Windows` unless something in the
+design is platform-specific — the script refuses `Windows` alongside a
+`menu-bar` command, because `platforms` has no per-command form.
 
 For an existing extension, skip the script and copy `assets/Justfile.template`,
 `assets/tsconfig.json.template`, and `assets/dev-check.ts.template` in. The one
@@ -292,7 +304,10 @@ nothing at all.
 ```text
 [ ] author is your REGISTERED Raycast username
 [ ] license: "MIT" AND an MIT LICENSE file
-[ ] at least one category; platforms: ["macOS"] if any command is menu-bar
+[ ] at least one category
+[ ] platforms declared EXPLICITLY — ["macOS"] if any command is menu-bar or any
+    macOS-only API is used, otherwise ["macOS", "Windows"]
+[ ] ai.evals present if tools[] is non-empty, or the prompt list ships empty
 [ ] package-lock.json committed — npm ci must work from a clean checkout
 [ ] assets/extension-icon.png at exactly 512x512, readable light and dark
 [ ] a monochrome template SVG for the menu bar, tinted at runtime
@@ -323,16 +338,71 @@ Read `references/store-publishing.md` **when** the user asks to publish or make
 something store-ready, or when `check-store-readiness.sh` fails and you want the
 reasoning behind a check.
 
+## Workflow G — add an AI tool layer
+
+If Workflow B's transport already returns structured data, a tool is a thin
+wrapper and the remaining work is prompt-shaped:
+
+```ts
+// src/tools/list-tasks.ts   <- filename MUST equal tools[].name
+type Input = {
+  /** Only return tasks in this group. Omit for every group. */
+  group?: string;
+  /** Only return tasks in this state. */
+  status?: "queued" | "running" | "success" | "failed";
+};
+
+export default async function tool(input: Input) {
+  const state = await read({ group: input.group });      // the existing transport
+  return state.tasks.filter((t) => !input.status || t.status === input.status);
+}
+```
+
+- **JSDoc on the `Input` fields IS the parameter schema.** An undocumented field
+  is one the model guesses at. Use string unions, not `string`, for anything
+  enumerable. Say **how to obtain** each value — name the sibling tool that
+  returns the ids — not just what it means.
+- **Return expected failures as data.** An unhandled throw is caught by Raycast,
+  which shows an error screen and ends the run; `{ error: "daemon not running" }`
+  lets the model tell the user something useful instead.
+- **Destructive tools are allowed.** Export a `confirmation` —
+  `Tool.Confirmation<Input>` runs before the tool and can return `undefined` to
+  skip itself when the call turns out to be harmless. (This supersedes the older
+  advice in this skill that a first version had to be read-only.)
+- **`ai.yaml` is where the extension-wide `instructions` go**, and they are
+  injected as a system message whenever the extension is mentioned.
+- **`ai.evals[].input` renders as the Suggested Prompts list** under
+  `@your-extension`. No evals means a working tool set that nobody knows how to
+  address. Three prompts is the difference between "what is this" and a demo.
+
+```yaml
+# ai.yaml
+instructions: |
+  Never restart, kill, or clean anything unless the user explicitly asks.
+evals:
+  - input: "@my-ext What's running right now, and how long has each one been going?"
+  - input: "@my-ext Why did my failed tasks fail? Read the logs — don't fix anything yet."
+```
+
+`npx ray evals` runs them, but it needs AI access and network, so it stays a
+manual step rather than joining `just check`.
+
+Read `references/ai-extensions.md` **when** adding `tools[]`, writing `ai.yaml`,
+or deciding whether the AI layer is worth building at all.
+
 ## Available scripts
 
 - **`scripts/new-raycast-extension.sh`** — scaffold a gated extension: manifest,
   tsconfig, flat ESLint config, Justfile gate, `dev-check` harness, one stub per
-  command, placeholder icon.
+  command, one stub per AI tool, `ai.yaml` when there are tools, placeholder icon.
   - Flags: `--dir DIR --name NAME [--title T] [--author U]
-    [--command NAME:MODE[:TITLE]]… [--license SPDX] [--no-verify-harness]
+    [--platforms macOS[,Windows]] [--command NAME:MODE[:TITLE]]…
+    [--tool NAME[:TITLE]]… [--license SPDX] [--no-verify-harness]
     [--dry-run] [--force] [--json] [--help]`
   - Exit: `0` written · `1` bad args · `2` target not empty · `3` bundled assets
     missing · `4` post-write self-check failed
+  - Refuses `Windows` together with a `menu-bar` command — `platforms` is
+    extension-level, so that combination cannot be expressed.
   - Does not run `npm install`. It prints the ordered next steps instead.
 - **`scripts/check-store-readiness.sh`** — the store preconditions `ray lint`
   does not check. JSON array of `{id, status, detail, fix}` on stdout.
@@ -356,6 +426,8 @@ the published schema, and a copy would drift).
 | `package.json.template` | manifest skeleton with a known-good dependency set |
 | `dev-check.ts.template` | the no-test-runner harness, with the argv-vs-`--help` cross-check |
 | `transport.ts.template` | the `Mutation` data-union seam |
+| `tool.ts.template` | an AI tool: JSDoc'd `Input` plus a ready-to-uncomment `confirmation` |
+| `ai.yaml.template` | `instructions` plus three `evals` — which are also the Suggested Prompts |
 | `error-descriptor.tsx.template` | `ErrorDescriptor` and its four renderers |
 | `metadata-README.md.template` | drop into `metadata/` so "Save to Metadata" appears |
 | `extension-icon.placeholder.png` | a real 512x512 so a fresh scaffold passes `ray lint` — and its sha256 is what `check-store-readiness.sh` fails on |
@@ -371,6 +443,8 @@ Load one only when its condition fires. Do not preload.
 | `references/data-and-state.md` | wiring `useCachedPromise`/`usePromise`/`mutate`, an action visibly reverts and re-applies, or deciding what to persist and under which key |
 | `references/ui-patterns.md` | building a List/Detail/Form surface, adding a dropdown or shortcut, rendering program output as markdown, or designing empty and error states |
 | `references/menu-bar.md` | the extension has or is gaining a `mode: "menu-bar"` command, or the menu bar shows stale data, a wrong count, or nothing |
+| `references/cross-platform.md` | targeting Windows, a shortcut does nothing on one OS, shelling out to a platform-specific script, or an extension is missing from the Windows store |
+| `references/ai-extensions.md` | adding `tools[]`, writing `ai.yaml`, calling `AI.ask`/`useAI`, deciding whether an AI layer is worth it, or the `@extension` Suggested Prompts list is empty |
 | `references/store-publishing.md` | the user asks to publish, submit, or "make this store-ready", or `check-store-readiness.sh` reports a failure you want the reasoning behind |
 
 ## See also
@@ -383,6 +457,8 @@ Load one only when its condition fires. Do not preload.
   the gotchas below were originally recorded in.
 - `pueue-job-queue` — the CLI the source extension wraps, as an example of what
   "the wrapped tool's own skill" means.
+- `claude-api` — if the extension talks to a model directly instead of through
+  `AI.ask`. Raycast's `AI.Model` enum is its own thing and churns fast.
 
 ## Gotchas
 
@@ -453,6 +529,42 @@ Load one only when its condition fires. Do not preload.
   combinations behind every `Keyboard.Shortcut.Common.*` (`Remove` is `⌃X`, not
   `⌘⌫`; `Duplicate` is `⌘D`, not `⌘⇧D`), in
   `references/ui-patterns.md` → *Shortcuts Raycast has already taken*.
+- **A hardcoded `cmd` modifier is silently dropped on Windows**, and a `windows`
+  modifier is silently dropped on macOS. Nothing throws, nothing lints — the
+  action just renders with no key beside it. `Keyboard.Shortcut` is a union: use
+  `Keyboard.Shortcut.Common.*` (Raycast maps those per platform) or the
+  two-branch `{ macOS: {...}, Windows: {...} }` form, where the type makes both
+  branches mandatory. Note the capital `W` — lowercase `windows` is deprecated
+  and still compiles.
+- **`platforms` is extension-level; there is no per-command form.** So a single
+  `mode: "menu-bar"` command pins every other command in the extension to macOS.
+  Splitting the menu bar into its own extension is the only way to have both.
+- **The two authorities disagree on what `platforms` defaults to.** The changelog
+  says `["macOS"]`; the live JSON schema says *"the extension is assumed to be
+  available on all platforms"*. It is not in the schema's `required` list either,
+  so nothing forces the question. Write the field explicitly every time — the
+  alternative is either hiding a portable extension or advertising an untested
+  one, with no way to tell which from the manifest.
+- **A tool call CAN ask for confirmation.** Earlier guidance in this skill said
+  otherwise and was wrong: `Tool.Confirmation<Input>` is exported, runs before the
+  tool, and returning `undefined` skips it so the prompt only appears when the
+  call is actually destructive. Its `style` is `Action.Style`, reused — there is
+  no `Tool`-local style enum. So a first version does **not** have to be
+  read-only.
+- **AI access is a runtime capability, not a subscription check.** Use
+  `environment.canAccess(AI)`. A user may be inside the free message allowance, on
+  Pro, on a Custom Provider via `providers.yaml`, or running a local Ollama model
+  — the dev docs' *"you need to subscribe to Raycast Pro"* has not kept up. A
+  `tools[]` entry never needs the check at all, since Raycast invokes it only
+  after the user has cleared whatever gate applies.
+- **`tools[]` with no `ai.evals` ships an empty Suggested Prompts list.**
+  `evals[].input` is what renders under `@your-extension`; the schema requires
+  only `input`, so there is no excuse for zero. `usedAsExample` defaults to true —
+  set it false on regression cases with contrived phrasing.
+- **`mocks` and `expected` are not in the published schema at all**, and the eval
+  item does not set `additionalProperties: false` — so they validate by omission.
+  A typo in either key passes `ray lint` and simply does nothing. Same for
+  `tools[]` itself, which is `additionalProperties: true`.
 - **`@raycast/api` bundles its own copy of `@types/react`.** Type props that hold
   JSX as `React.JSX.Element`, not `React.ReactNode` — the root `ReactNode` is a
   structurally different type that silently fails to match `ActionPanel`'s
@@ -484,6 +596,21 @@ Load one only when its condition fires. Do not preload.
   in the transport pulls in `@raycast/api` with it.
 - **A `mode: "no-view"` command exports `async function Command(props)`, not a
   React component.** There is no window, so feedback is `showHUD`.
+- **A tool's entry point is `src/tools/<name>.ts`, mapped from `tools[].name`** —
+  the same filename-equals-manifest-name rule as commands, in a different
+  directory. `tools[].description` has a 12-character minimum, like a command's.
+- **Tool schema extraction is the one thing `ray build` DOES enforce.** An `any`,
+  `unknown`, numeric union, intersection, or `Pick`/`Partial` in a tool's `Input`
+  aborts the build with `Error: extracting tool schemas failed` — in the same dev
+  build that happily ships a `TS2345` everywhere else. Supported: `string`,
+  `number`, `boolean`, `string[]`, string unions (become `enum`), optional fields,
+  nested object literals, type aliases.
+- **`interface Input extends Base {}` extracts as `{}` — silently.** No error,
+  build succeeds, and the model is handed a tool that looks like it takes no
+  arguments. Declare members directly or use a type alias.
+- **Tool JSDoc only counts on its own line.** `/** doc */ field: string` on one
+  line, and `//` comments, produce a property with **no description** and no
+  warning — documented-looking in the editor, invisible to the model.
 - **`ray lint` passes with a completely empty `metadata/`.** Screenshots, icon
   dimensions, the CHANGELOG placeholder, and a registered `author` are review-time
   requirements it never checks.

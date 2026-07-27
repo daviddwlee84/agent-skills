@@ -7,10 +7,11 @@
   "author": "__AUTHOR__",
   "license": "__LICENSE__",
   "categories": ["Developer Tools"],
-  "platforms": ["macOS"],
+  "platforms": __PLATFORMS__,
   "commands": [
     __COMMANDS__
   ],
+  __TOOLS__
   "preferences": [],
   "dependencies": {
     "@raycast/api": "^1.104.23",

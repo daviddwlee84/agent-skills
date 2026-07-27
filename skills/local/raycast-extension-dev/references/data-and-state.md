@@ -23,6 +23,7 @@ key.
 | --- | --- | --- |
 | Remote data, want it on screen instantly next launch | `useCachedPromise` | disk-backed, keyed by the argument array |
 | Remote data, no cache wanted | `usePromise` | same shape, nothing persisted |
+| A model's answer to a prompt | `useAI` | same state machine, but **no `abortable`** — see `ai-extensions.md` |
 | View state read synchronously during render | `useCachedState` | sync; survives relaunch |
 | A value another **command** must read | `LocalStorage` | async; the only cross-command channel |
 | Ad-hoc key/value from non-hook code | `Cache` | what `useCachedPromise` writes to |

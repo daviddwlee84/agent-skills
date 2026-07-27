@@ -36,7 +36,9 @@ supply credentials or answers.
 [ ] author is your REGISTERED Raycast username (not your display name)
 [ ] license: "MIT" in package.json AND an MIT LICENSE file at the root
 [ ] at least one category, Title Case, from Raycast's list
-[ ] platforms: ["macOS"] if any command is mode: "menu-bar"
+[ ] platforms declared EXPLICITLY — ["macOS"] if any command is menu-bar or a
+    macOS-only API is used, otherwise ["macOS", "Windows"]
+[ ] ai.evals present if tools[] is non-empty — they are the Suggested Prompts
 [ ] a one-sentence description — this is what the store shows
 [ ] package-lock.json committed; npm ci must work from a clean checkout
 [ ] assets/extension-icon.png at exactly 512x512, readable on light AND dark

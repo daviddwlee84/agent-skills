@@ -220,6 +220,32 @@ Note also that `Pin` is `⌘⇧P`. Reusing that key for something else (a Pause
 action, say) is legal and works, but the moment a panel gains a real pin action
 you have a silent conflict.
 
+**4. Windows, if `platforms` includes it.**
+
+The `Common.*` constants are typed as plain `Shortcut` and their Windows
+bindings are resolved inside the Raycast app, not in `@raycast/api` — so this
+table cannot be extended with a verified Windows column, and you should not
+guess one into a README either. That is an argument *for* the constants: they
+are the only bindings that adapt without you knowing the answer.
+
+For a literal shortcut, `Keyboard.Shortcut` is a union and the per-platform form
+requires **both** branches:
+
+```tsx
+shortcut={{
+  macOS:   { modifiers: ["cmd", "shift"],  key: "k" },
+  Windows: { modifiers: ["ctrl", "shift"], key: "k" },
+}}
+```
+
+A single-branch `{ modifiers: ["cmd"], key: "k" }` also compiles, and on Windows
+the binding is **silently dropped** — no error, no lint failure, just an action
+with no key beside it. `cmd` and `opt` are macOS-only; `windows` and `alt` are
+the Windows side; `ctrl` and `shift` work on both. Capital `W` in `Windows` —
+the lowercase `windows` key is deprecated and still typechecks.
+
+Full treatment in `cross-platform.md`.
+
 ## Confirmations and toasts
 
 ```ts

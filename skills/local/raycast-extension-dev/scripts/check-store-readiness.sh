@@ -6,7 +6,7 @@
 # real author are review-time requirements the linter never touches.
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 PLACEHOLDER_SHA256="8a506edd828a47487e85d5279089305fd8d531eaa790b1692b8c2f8b0c40b24a"
 
 usage() {
@@ -108,6 +108,8 @@ record() { # id status detail fix
 
 # --- manifest ---------------------------------------------------------------
 
+NAME_FIELD=$(q "m.name")
+
 AUTHOR=$(q "m.author")
 case "$AUTHOR" in
   "")            record author-set fail "author is empty" "Set author to your registered Raycast username" ;;
@@ -151,12 +153,108 @@ else
 fi
 
 HAS_MENUBAR=$(q "(m.commands||[]).some(c=>c.mode==='menu-bar')?'yes':'no'")
+PLATFORMS_SET=$(q "Array.isArray(m.platforms)?'yes':'no'")
 HAS_MACOS=$(q "(m.platforms||[]).includes('macOS')?'yes':'no'")
-if [ "$HAS_MENUBAR" = "yes" ] && [ "$HAS_MACOS" != "yes" ]; then
-  record platforms-macos-when-menu-bar fail "a menu-bar command exists but platforms does not list macOS" \
-    "Add \"platforms\": [\"macOS\"] — menu bar is macOS-only"
+HAS_WINDOWS=$(q "(m.platforms||[]).includes('Windows')?'yes':'no'")
+
+# platforms is extension-level — no per-command form — so one menu-bar command
+# takes the whole extension off Windows. An absent platforms field is left alone
+# here: the changelog says it defaults to ["macOS"] and the JSON schema says it
+# defaults to every platform, so `platforms-declared` flags the ambiguity instead.
+if [ "$HAS_MENUBAR" = "yes" ] && [ "$HAS_WINDOWS" = "yes" ]; then
+  record platforms-menu-bar-exclusive fail "a menu-bar command exists but platforms lists Windows" \
+    "Menu bar is macOS-only and platforms has no per-command form — use [\"macOS\"], or move the menu-bar command to its own extension"
+elif [ "$HAS_MENUBAR" = "yes" ] && [ "$PLATFORMS_SET" = "yes" ] && [ "$HAS_MACOS" != "yes" ]; then
+  record platforms-menu-bar-exclusive fail "a menu-bar command exists but platforms does not list macOS" \
+    "Set \"platforms\": [\"macOS\"] — menu bar exists nowhere else"
 else
-  record platforms-macos-when-menu-bar pass "platforms is consistent with the command modes" ""
+  record platforms-menu-bar-exclusive pass "platforms is consistent with the command modes" ""
+fi
+
+if [ "$PLATFORMS_SET" = "yes" ]; then
+  record platforms-declared pass "platforms is declared explicitly" ""
+else
+  record platforms-declared warn "platforms is absent, and the two authorities disagree on the default" \
+    "The changelog says [\"macOS\"], the JSON schema says all platforms — declare it either way"
+fi
+
+# Declaring Windows while calling macOS-only APIs is a silent store bug: it
+# installs there and then fails at the first call.
+if [ "$HAS_WINDOWS" = "yes" ] && [ -d "$DIR/src" ]; then
+  MACOS_HITS=""
+  grep -rq 'runAppleScript' "$DIR/src" 2>/dev/null && MACOS_HITS="${MACOS_HITS}${MACOS_HITS:+, }runAppleScript"
+  grep -rq 'MenuBarExtra' "$DIR/src" 2>/dev/null && MACOS_HITS="${MACOS_HITS}${MACOS_HITS:+, }MenuBarExtra"
+  grep -rq '/opt/homebrew' "$DIR/src" 2>/dev/null && MACOS_HITS="${MACOS_HITS}${MACOS_HITS:+, }a hardcoded /opt/homebrew path"
+  grep -rq '/usr/local/bin' "$DIR/src" 2>/dev/null && MACOS_HITS="${MACOS_HITS}${MACOS_HITS:+, }a hardcoded /usr/local/bin path"
+  if [ -n "$MACOS_HITS" ]; then
+    record platforms-windows-macos-apis fail "platforms lists Windows but src/ uses: $MACOS_HITS" \
+      "Move each behind a platform adapter (runPowerShellScript, Windows paths), or drop Windows from platforms"
+  else
+    record platforms-windows-macos-apis pass "no macOS-only API in src/ while Windows is declared" ""
+  fi
+elif [ "$HAS_WINDOWS" = "yes" ]; then
+  record platforms-windows-macos-apis skip "Windows is declared but there is no src/ to scan" "See command-src-files"
+else
+  record platforms-windows-macos-apis pass "Windows is not declared, so macOS-only APIs are fine" ""
+fi
+
+# A cmd modifier is dropped in SILENCE on Windows — no error, no lint failure.
+if [ "$HAS_WINDOWS" = "yes" ] && [ -d "$DIR/src" ]; then
+  if grep -rqE 'modifiers:[[:space:]]*\[[^]]*"cmd"' "$DIR/src" 2>/dev/null \
+     && ! grep -rq 'Windows:' "$DIR/src" 2>/dev/null; then
+    record shortcuts-hardcoded-cmd warn "a literal \"cmd\" modifier with no Windows branch anywhere in src/" \
+      "Use Keyboard.Shortcut.Common.*, or the two-branch { macOS: {...}, Windows: {...} } form — a bare cmd is ignored on Windows without any error"
+  else
+    record shortcuts-hardcoded-cmd pass "no unpaired cmd modifier while Windows is declared" ""
+  fi
+else
+  record shortcuts-hardcoded-cmd pass "Windows is not declared, so cmd modifiers are fine" ""
+fi
+
+# --- AI extension -----------------------------------------------------------
+
+TOOL_COUNT=$(q "(m.tools||[]).length")
+if [ "${TOOL_COUNT:-0}" -ge 1 ] 2>/dev/null; then
+  # readAIFile accepts ai.json, ai.json5, ai.yaml, ai.yml — first match wins.
+  AI_FILE=""
+  for f in ai.json ai.json5 ai.yaml ai.yml; do
+    [ -f "$DIR/$f" ] && { AI_FILE="$f"; break; }
+  done
+  EVALS_IN_MANIFEST=$(q "(m.ai&&Array.isArray(m.ai.evals)&&m.ai.evals.length)?'yes':'no'")
+  EVALS_IN_FILE="no"
+  [ -n "$AI_FILE" ] && grep -qE '^[[:space:]]*"?evals"?[[:space:]]*:' "$DIR/$AI_FILE" 2>/dev/null && EVALS_IN_FILE="yes"
+
+  if [ "$EVALS_IN_MANIFEST" = "yes" ] || [ "$EVALS_IN_FILE" = "yes" ]; then
+    record ai-evals-present pass "evals are declared in ${AI_FILE:-package.json}" ""
+  else
+    record ai-evals-present warn "$TOOL_COUNT tool(s) but no ai.evals anywhere" \
+      "evals[].input IS the Suggested Prompts list under @${NAME_FIELD:-your-extension} — with none, the AI surface looks empty. Only \"input\" is required"
+  fi
+
+  # Multiple AI files: the first match silently shadows the rest.
+  AI_FILE_COUNT=0
+  for f in ai.json ai.json5 ai.yaml ai.yml; do
+    [ -f "$DIR/$f" ] && AI_FILE_COUNT=$((AI_FILE_COUNT + 1))
+  done
+  if [ "$AI_FILE_COUNT" -gt 1 ]; then
+    record ai-file-unique fail "$AI_FILE_COUNT AI files present; only $AI_FILE is read" \
+      "readAIFile tries ai.json, ai.json5, ai.yaml, ai.yml in that order and stops at the first — delete the others"
+  else
+    record ai-file-unique pass "at most one AI file" ""
+  fi
+
+  # Anchored to the start of the line so the commented-out stub in the scaffold's
+  # tool template does not read as a real export.
+  if [ -d "$DIR/src/tools" ] && grep -rqE '^[[:space:]]*export[[:space:]]+(const|function|async[[:space:]]+function)[[:space:]]+confirmation\b' "$DIR/src/tools" 2>/dev/null; then
+    record ai-tool-confirmation pass "at least one tool exports a confirmation" ""
+  else
+    record ai-tool-confirmation warn "no tool exports a confirmation" \
+      "Fine if every tool is read-only. Anything mutating should export Tool.Confirmation<Input> — it runs before the tool and can return undefined to skip itself"
+  fi
+else
+  record ai-evals-present pass "no tools[], so evals are not applicable" ""
+  record ai-file-unique pass "no tools[], so AI files are not applicable" ""
+  record ai-tool-confirmation pass "no tools[], so confirmations are not applicable" ""
 fi
 
 # Every commands[].name needs a matching src file.
