@@ -56,7 +56,7 @@ macOS-shaped, and a `menu-bar` command does not exist anywhere else.
 | --- | --- | --- |
 | `tsc --noEmit` | types | manifest, formatting, runtime shape |
 | `node dev-check.js` | your own invariants, wire shapes, generated argv | anything you did not assert |
-| `ray lint` | manifest schema, icons, ESLint, Prettier, **reserved-shortcut collisions** | types |
+| `ray lint` | manifest schema, icons, ESLint, Prettier, **reserved-shortcut collisions**, and — **only under `CI=true`** — `package-lock.json` registry hosts | types |
 | `ray build` (`-e dev`) | syntax, that esbuild can bundle it | **types — esbuild strips them without checking** |
 | `ray build -e dist` | the above **plus types** — it shells out to `tsc -p tsconfig.json --noEmit` | manifest, formatting |
 
@@ -444,13 +444,30 @@ Load one only when its condition fires. Do not preload.
 - **A `List.Dropdown` silently resets when its `value` is not among its children.**
   Seed a static fallback so the first paint is never empty, and render a synthetic
   `(gone)` item for an unknown current value.
-- **`⌘K` and `⌘P` are Raycast's own** (Open Action Panel, Open Search Bar
-  Dropdown). Bind them and they are silently ignored — nothing throws. Only
-  `ray lint` catches this.
+- **Raycast has taken more shortcuts than `ray lint` knows about.** `⌘K` and
+  `⌘P` are reserved (Open Action Panel, Open Search Bar Dropdown) and lint fails
+  on them. But while an extension is *in development* Raycast also injects a
+  Debug section into every action panel — `⌘R`, `⇧⌘S`, `⇧⌘D`, `⇧⌘X`, `⌘⌥D` —
+  and **those pass lint, pass typecheck, and silently win over yours.** Your own
+  action just does nothing, on your machine only. Full table, plus the real key
+  combinations behind every `Keyboard.Shortcut.Common.*` (`Remove` is `⌃X`, not
+  `⌘⌫`; `Duplicate` is `⌘D`, not `⌘⇧D`), in
+  `references/ui-patterns.md` → *Shortcuts Raycast has already taken*.
 - **`@raycast/api` bundles its own copy of `@types/react`.** Type props that hold
   JSX as `React.JSX.Element`, not `React.ReactNode` — the root `ReactNode` is a
   structurally different type that silently fails to match `ActionPanel`'s
   children.
+- **`ray lint` runs MORE checks when it thinks it is in CI.** Locally it prints
+  five steps; with `CI=true` it prints seven — `validate package-lock.json` and
+  `validate other lock files` appear only there, and nothing announces the
+  difference. Your local gate is a *subset* of the remote one, which is backwards.
+  Put `CI=true` in the lint recipe so they cannot diverge. The check that bites:
+  every `resolved` URL in the lockfile must be `registry.npmjs.org`, so a global
+  npm registry pointing at a mirror (`registry.npmmirror.com`, an internal
+  Artifactory) writes a lockfile the store rejects. Fix by host substitution —
+  the tarballs are identical, so `integrity` stays valid, and
+  `npm install --package-lock-only --registry=…` will *not* rewrite URLs already
+  in the file.
 - **`@types/node` must match Raycast's runtime (Node 22), not your shell's node.**
   Typing against 24 lets you write APIs that compile and throw at runtime.
 - **Never `shell: true`.** Use `execFile` with an argv array. And raise
