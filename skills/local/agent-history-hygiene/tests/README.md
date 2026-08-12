@@ -33,8 +33,8 @@ bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
 ## Test-vector hygiene (why the fixtures carry `gitleaks:allow`)
 
 The firing fixtures (`real_anthropic.md`, `real_openai.md`, `private_key.md`,
-`webhook_urls.md`) hold deliberately-fake but realistic-shape secrets. Each
-firing line ends with an inline marker so a repo-root, downstream, or
+`webhook_urls.md`) hold deliberately-fake test vectors. Most use realistic
+secret shapes plus an inline marker so a repo-root, downstream, or
 `npx skills add`-installed gitleaks scan **skips them by default**:
 
 ```
@@ -42,12 +42,15 @@ firing line ends with an inline marker so a repo-root, downstream, or
 "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow  # test_redact_secrets.py
 ```
 
-The corpus + shell tests **strip the marker before staging** into their
-throwaway repo (`_GITLEAKS_MARKER_RE` in `test_gitleaks_corpus.py`; the `sed` in
-`stage_fixture` in `test_scan_staged.sh`), so the secret bytes are byte-identical
-to the shape the rules expect and the assertions still fire. Principle: **fake
-test vectors are out of scan scope by default, and only "fire" when a test
-re-plants them.**
+The Stripe webhook fixture is stricter: GitHub's provider-level scanner does
+not honour gitleaks markers, so its source uses
+`__SYNTHETIC_STRIPE_WEBHOOK_SECRET__`. The corpus test expands that placeholder
+inside its throwaway repo. The other corpus + shell tests **strip the marker
+before staging** (`_GITLEAKS_MARKER_RE` in `test_gitleaks_corpus.py`; the `sed`
+in `stage_fixture` in `test_scan_staged.sh`), so the secret bytes have the exact
+shape the rules expect and the assertions still fire. Principle: **fake test
+vectors are out of scan scope by default, and only "fire" when a test re-plants
+them.**
 
 Invariant — **the strip must be byte-identical**: never change a secret's length
 or the length-sensitive rules (`sk-proj-…{80,}`, `sk-ant-api\d{2}-…{93}AA`, the

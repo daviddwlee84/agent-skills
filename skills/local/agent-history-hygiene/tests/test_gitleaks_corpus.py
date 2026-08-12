@@ -26,9 +26,10 @@ pytestmark = pytest.mark.skipif(
 
 
 # Fixtures carry an inline `<!-- gitleaks:allow -->` marker so a repo-root or
-# downstream gitleaks scan skips them by default. Strip it before staging so the
-# secret bytes are byte-identical to the shape the rules expect and the
-# assertions below still fire. No-op for lines without the marker
+# downstream gitleaks scan skips them by default. Strip it before staging and
+# expand provider-scanner-sensitive placeholders so the secret bytes have the
+# exact shape the rules expect and the assertions below still fire. No-op for
+# lines without the marker
 # (clean.md / example_shapes.md), which must keep their must-not-fire behavior.
 _GITLEAKS_MARKER_RE = re.compile(r"[ \t]*<!--[ ]?gitleaks:allow[ ]?-->")
 
@@ -38,7 +39,9 @@ def _stage_fixture_at(repo: Path, fixture_path: Path, dest_rel: str) -> None:
     `gitleaks:allow` marker, and git-add it."""
     dest = repo / dest_rel
     dest.parent.mkdir(parents=True, exist_ok=True)
-    text = fixture_path.read_text(encoding="utf-8")
+    text = fixture_path.read_text(encoding="utf-8").replace(
+        "__SYNTHETIC_STRIPE_WEBHOOK_SECRET__", "whsec_" + "a" * 32
+    )
     dest.write_text(_GITLEAKS_MARKER_RE.sub("", text), encoding="utf-8")
     subprocess.run(["git", "add", "--", dest_rel], cwd=repo, check=True)
 
