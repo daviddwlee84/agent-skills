@@ -21,10 +21,17 @@ project-scoped directory:
 ~/.claude/projects/<slug>/<session-uuid>.jsonl
 ```
 
-The slug is the absolute working directory with `/` replaced by `-`, no
-other transformation. For `$PWD=/Volumes/Data/Program/Personal/agent-skills`
-the slug is `-Volumes-Data-Program-Personal-agent-skills` (leading dash
-included). The UUID is the Claude session ID surfaced in `/status`.
+The slug is the absolute working directory with **every non-alphanumeric
+character** replaced by `-`, not just `/`. For
+`$PWD=/Volumes/Data/Program/Personal/agent-skills` the slug is
+`-Volumes-Data-Program-Personal-agent-skills` (leading dash included). A dot or
+underscore collapses the same way, which is easy to miss:
+`/home/<user>/.local/share/chezmoi` is stored as
+`-home-<user>--local-share-chezmoi` — the dot becomes the second dash. Rebuild
+the slug with `sed 's/[^A-Za-z0-9]/-/g'`, not `tr '/' '-'`, or a path
+containing `.`/`_`/space silently resolves to a directory that doesn't exist
+(`specstory sync` then reports `1 session not found`). The UUID is the Claude
+session ID surfaced in `/status`.
 
 Heuristic: **the newest `.jsonl` in that directory is the active
 session's transcript.** This breaks if you spawn a subagent that writes

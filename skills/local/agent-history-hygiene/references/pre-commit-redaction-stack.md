@@ -4,6 +4,10 @@ The three-layer defense agents can rely on when committing agent
 transcripts + plan files.
 
 ```
+  Layer 0: SpecStory native        (specstory >= 2.4.0, ON BY DEFAULT)
+            │  redacts as it WRITES .specstory/history/*.md (and cloud sync)
+            │  emits [REDACTED:<betterleaks-rule-id>]
+            ▼
   staged .md (transcript / plan)
             │
             ▼
@@ -22,6 +26,31 @@ transcripts + plan files.
 Layers 1 and 2 are installed by `bootstrap-project.sh`. Layer 3 is the
 wrapper agents are expected to call before committing so they can react
 to structured exit codes without parsing pre-commit output.
+
+Layer 0 is not ours — it is SpecStory doing the same job first, and only for
+`.specstory/history/`. It is the reason Layer 1 usually has nothing to do.
+
+## Layer 0: SpecStory native redaction
+
+Since v2.4.0 the SpecStory CLI redacts secrets before writing markdown or
+syncing to cloud, using the Betterleaks ruleset, on by default. Measured
+coverage, the config knobs, and the classes it misses are in
+[`specstory-native-redaction.md`](./specstory-native-redaction.md).
+
+Two consequences for the layers below:
+
+- **Layer 1 must not re-redact what Layer 0 cleaned.** Both write
+  `[REDACTED:<rule-id>]`, and `.gitleaks.toml` allowlists that shape (at
+  `regexTarget = "match"`, so a line holding both a placeholder and a live key
+  still fires). A transcript SpecStory already cleaned passes through
+  untouched — which is what stops the `git add` -> commit -> "files were
+  modified by this hook" -> `git add` -> commit loop.
+- **Layer 1 is still load-bearing.** Layer 0 covers none of the other artifact
+  dirs (`.claude/plans/`, `.cursor/rules/`, …), none of our custom rules, and
+  misses many classes when the token appears in prose rather than `KEY=value`.
+
+Below SpecStory 2.4.0, or with `[redaction] enabled = false`, Layer 0 does not
+exist and Layer 1 should run with `--legacy`.
 
 ## Layer 1: redact-agent-secrets
 
@@ -46,11 +75,15 @@ every repo via `pre-commit autoupdate` (bumps `rev:`). On each commit:
    env build, no uv/pip.
 2. `redact_secrets.py --fix` runs gitleaks against those files in staged
    mode, gathers findings, and replaces each literal secret with
-   `first3...last3` (e.g. `sk-proj-abc...xyz`).
+   `[REDACTED:<rule-id>]` — the same sentinel SpecStory >= 2.4.0 writes
+   natively, so neither layer re-redacts the other's output. (`first3...last3`
+   still appears in the *console report*, where a fingerprint helps identify
+   which credential to rotate; `--legacy` writes it to the file instead.)
 3. Private-key PEM blocks (`-----BEGIN ... PRIVATE KEY-----` … `-----END
-   ... PRIVATE KEY-----`) are replaced wholesale with `[REDACTED PEM
-   PRIVKEY BLOCK]`, and any stray key **header** token (a truncated key,
-   or a header quoted in prose) with `[REDACTED PRIVKEY HEADER]`. These
+   ... PRIVATE KEY-----`) are replaced wholesale with
+   `[REDACTED:private-key]` — SpecStory's own label for this class — and any
+   stray key **header** token (a truncated key, or a header quoted in prose)
+   with `[REDACTED:private-key-header]`. These
    headers — *not* the bare phrase `PRIVATE KEY` — are exactly what the
    downstream `detect-private-key` hook greps for (its `BLACKLIST`:
    `BEGIN … PRIVATE KEY`, `PuTTY-User-Key-File-N`, `BEGIN OpenVPN Static
@@ -59,7 +92,8 @@ every repo via `pre-commit autoupdate` (bumps `rev:`). On each commit:
    against a live transcript writer that re-appends the words on every
    diagnostic command, never converged (see the redact-loop pitfall in
    `SKILL.md`). The two placeholders contain neither a header token nor
-   the bare phrase, so a second pass is a no-op.
+   the bare phrase (they are lowercase; the header regex matches uppercase
+   only), so a second pass is a no-op.
 4. Any modified file is rewritten on disk. Pre-commit notices and exits
    non-zero with "files were modified by this hook" — the user then
    `git add`s the redacted files and recommits. Same UX as
@@ -81,10 +115,21 @@ the template). Runs after Layer 1 so it sees the redacted file. With
 
 ### Allowlist design
 
-Two allowlists in `gitleaks.toml.template`:
+Four allowlists in `gitleaks.toml.template`:
 
-- **Global** (`[allowlist]`): tolerates `*_REDACTED*` sentinels emitted
-  by Layer 1, plus truncated example shapes like `sk-proj-abc...`.
+- **Global** (`[[allowlists]]`, line-scoped): tolerates `*_REDACTED*`
+  sentinels emitted by older Layer 1 runs, plus truncated example shapes like
+  `sk-proj-abc...`.
+- **Shared sentinel** (`[[allowlists]]`, `regexTarget = "match"`): the
+  `[REDACTED:<rule-id>]` shape written by both Layer 0 and Layer 1. Scoped to
+  the match rather than the line on purpose — at line scope, a line carrying
+  both a placeholder and a live key would be allowlisted wholesale.
+- **Skill test corpus** (`[[allowlists]]`, path-only): `npx skills add`
+  installs this skill's `tests/` into the consuming repo, and that suite
+  exists to be detected. Without this, every repo installing the skill fails
+  its first commit on the skill's own test data. The `detect-private-key` hook
+  has no allowlist mechanism, so the pre-commit template excludes the same
+  path there instead.
 - **Path-scoped** (`[[allowlists]]` with `paths`): inside agent
   artifact directories, tolerate example markers (`example-key`,
   `your-api-key-here`) and truncated example shapes. Both the **path

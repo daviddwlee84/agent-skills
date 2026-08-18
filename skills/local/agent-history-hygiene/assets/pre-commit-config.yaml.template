@@ -35,6 +35,11 @@ repos:
     rev: v5.0.0
     hooks:
       - id: detect-private-key
+        # This hook honours neither `gitleaks:allow` markers nor
+        # .github/secret_scanning.yml -- it greps for `BEGIN ... PRIVATE KEY`
+        # as a plain substring. agent-history-hygiene's installed test suite
+        # carries those headers on purpose, so exclude that one directory.
+        exclude: ^\.(agents|claude)/skills/agent-history-hygiene/tests/
       - id: check-added-large-files
         args: ['--maxkb=2048']
       - id: check-merge-conflict

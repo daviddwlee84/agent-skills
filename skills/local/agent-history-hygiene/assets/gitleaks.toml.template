@@ -24,6 +24,22 @@ useDefault = true
     '''sk-[a-zA-Z0-9]{3,8}\.\.\.''',
   ]
 
+# Shared redaction sentinel: `[REDACTED:<rule-id>]` is what redact_secrets.py
+# writes AND what SpecStory >= 2.4.0 writes natively (its binary carries the
+# format string `[REDACTED:%s]`). Allowlisting it keeps the two layers
+# idempotent -- neither re-flags the other's output, so pre-commit stops
+# rewriting transcripts on every commit.
+#
+# regexTarget = "match" on purpose: at "line" scope a line holding both a
+# placeholder and a live key would be allowlisted wholesale. Matching the
+# finding's own bytes means only an inert placeholder is ever suppressed.
+[[allowlists]]
+  description = "Shared [REDACTED:<rule-id>] sentinel (ours + SpecStory native)"
+  regexTarget = "match"
+  regexes = [
+    '''\[REDACTED:[A-Za-z0-9._-]+\]''',
+  ]
+
 # Path-scoped allowlist: inside agent artifact dirs, tolerate explicit
 # example/demo markers without unlocking real leaks. Both the path AND a
 # regex must match, so a real `sk-ant-api03-<95 chars>AA` still fires.

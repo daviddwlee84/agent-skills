@@ -17,6 +17,7 @@ Three surfaces, separated by purpose:
 | `stage-agent-artifacts.sh`       | "Which agent files belong in the next commit?"               |
 | `bootstrap-project.sh`           | "How do I get pre-commit + gitleaks + redactor into a repo?" |
 | `scan-staged.sh`                 | "Is there a leaked secret in what I'm about to commit?"      |
+| `probe-specstory-redaction.py`   | "What does SpecStory already redact, so we don't redo it?"   |
 | `references/remediation.md`      | "I already pushed a secret — now what?"                      |
 
 ## Core invariants
@@ -175,6 +176,25 @@ committed / pushed a secret":
 
 ## Gotchas
 
+- **SpecStory >= 2.4.0 already redacts on write — plan around it, not
+  against it.** Since
+  [PR #235](https://github.com/specstoryai/getspecstory/pull/235) shipped in
+  v2.4.0 (2026-07-20), the CLI redacts secrets via the
+  [Betterleaks](https://github.com/betterleaks/betterleaks) ruleset **by
+  default**, covering both local markdown and cloud sync, writing
+  `[REDACTED:<rule-id>]`. Measured coverage is 36 of 54 class/context pairs;
+  15 are ours alone (every webhook rule, plus every custom key in prose
+  context — betterleaks catches many classes only in `KEY=value` form via its
+  entropy-based `generic-api-key` rule). So: **keep this layer, but never
+  rewrite what SpecStory already cleaned.** `redact_secrets.py` writes the
+  same `[REDACTED:<rule-id>]` sentinel and `.gitleaks.toml` allowlists it, so
+  a cleaned transcript is left untouched and pre-commit stops demanding a
+  re-`git add`. Full matrix + knobs in
+  [`references/specstory-native-redaction.md`](references/specstory-native-redaction.md).
+  Only `[redaction] enabled` is configurable upstream — the PR's
+  `extra_patterns` did not survive the Betterleaks rewrite, so repo-specific
+  rules stay our job. For SpecStory older than 2.4.0 (or with redaction
+  disabled), run `redact_secrets.py --fix --legacy`.
 - **`plansDirectory` project-level sometimes ignored.** Claude Code
   issue [#19537](https://github.com/anthropics/claude-code/issues/19537)
   reports project-level `plansDirectory` being ignored in some
@@ -259,9 +279,16 @@ committed / pushed a secret":
   (0 clean / 10 redacted / 20 leaks / 30 gitleaks missing). JSON lines
   on stdout, prose diagnostics on stderr.
 
-- **`scripts/bootstrap-project.sh [--from-chezmoi] [--install-hook] [--force] [--dry-run]`**
-  Install `.pre-commit-config.yaml` + `.gitleaks.toml` + the redactor
-  into the current repo, then run `pre-commit install`. Audits
+- **`scripts/probe-specstory-redaction.py [--json] [--keep] [--dry-run]`**
+  Measure which secret classes SpecStory's native redaction covers, by
+  synthesizing a Claude Code session and rendering it twice (with and without
+  `--no-redact-secrets`). Prints a coverage matrix and the residual set our
+  layer must still handle. Exit 30 when specstory isn't installed.
+
+- **`scripts/bootstrap-project.sh [--from-chezmoi] [--migrate] [--install-hook] [--force] [--dry-run]`**
+  Install `.pre-commit-config.yaml` + `.gitleaks.toml` into the current
+  repo, wire the hook to the installed skill's redactor, then run
+  `pre-commit install`. Audits
   `.gitignore` and `~/.claude/settings.json` for misconfigurations
   (warns, never silently edits).
 
@@ -278,9 +305,12 @@ committed / pushed a secret":
 - `assets/gitleaks.toml.template` — portable subset of the chezmoi
   `.gitleaks.toml` with custom rule IDs + a path-scoped allowlist for
   agent artifact dirs.
-- `assets/redact_secrets.py` — bundled copy of chezmoi's
-  `scripts/redact_secrets.py`. Chezmoi version is upstream; sync doc
-  in `references/pre-commit-redaction-stack.md`.
+- `assets/redact_secrets.py` — the redactor, published to consuming repos
+  as the pinned `redact-agent-secrets` pre-commit hook (root
+  `.pre-commit-hooks.yaml`). Writes `[REDACTED:<rule-id>]`, the sentinel
+  SpecStory also writes natively; `--legacy` writes the pre-2.4.0
+  placeholders instead. Release procedure in
+  `references/pre-commit-redaction-stack.md`.
 
 ## Reference files
 
@@ -291,6 +321,10 @@ committed / pushed a secret":
   — three-layer defense (redact → gitleaks → `scan-staged.sh`),
   allowlist design, sync procedure for the bundled redactor. Read
   when tuning rules or debugging unexpected pre-commit failures.
+- [`references/specstory-native-redaction.md`](references/specstory-native-redaction.md)
+  — what SpecStory >= 2.4.0 redacts on its own, measured per secret class and
+  per context, plus the upstream PRs, config knobs, and why our layer is still
+  load-bearing. Read before changing anything about redaction placeholders.
 - [`references/remediation.md`](references/remediation.md) —
   rotate-first runbook for "I committed / pushed a secret". Read
   **before** any `git filter-repo` / `git push --force` action.
@@ -310,6 +344,8 @@ make test-skill
   allowlisted only inside configured artifact dirs.
 - `test_scan_staged.sh` — exit-code contract for
   `scripts/scan-staged.sh` (0 / 20 / 30 / 2).
+- `test_specstory_coverage.py` — locks in that SpecStory still redacts by
+  default and still writes `[REDACTED:<label>]`; skips without the CLI.
 
 The corpus + shell tests skip gracefully when `gitleaks` isn't on
 `PATH`. See [`tests/README.md`](tests/README.md) for what each

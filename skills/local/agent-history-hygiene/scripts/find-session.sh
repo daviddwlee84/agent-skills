@@ -60,12 +60,15 @@ case "$FORMAT" in
   *) die "invalid --format: $FORMAT (expected both|specstory|claude)" 1 ;;
 esac
 
-# Claude's project slug: absolute $PWD with '/' replaced by '-'.
-#   /Volumes/Data/x -> -Volumes-Data-x
-# The leading dash is intentional — it mirrors how Claude Code names the
-# subdirectory under ~/.claude/projects/.
+# Claude's project slug: absolute $PWD with every NON-ALPHANUMERIC character
+# replaced by '-' -- not just '/'.
+#   /Volumes/Data/x          -> -Volumes-Data-x
+#   /home/u/.local/share/foo -> -home-u--local-share-foo   (the dot collapses)
+# The leading dash is intentional -- it mirrors how Claude Code names the
+# subdirectory under ~/.claude/projects/. Using `tr '/' '-'` here silently
+# returns an empty result for any path containing '.', '_' or a space.
 cwd_slug() {
-  printf '%s' "$PWD" | sed 's|/|-|g'
+  printf '%s' "$PWD" | sed 's|[^A-Za-z0-9]|-|g'
 }
 
 newest_file() {
