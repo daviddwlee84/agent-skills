@@ -14,7 +14,7 @@ domain.
 | [AI/ML Research](ai-ml-research.md) | Experiment tracking, model lifecycle, fine-tuning, agent frameworks. | Populated |
 | [Web & Fullstack](web-fullstack.md) | Next.js / React / Tailwind / Supabase / Vercel / browser automation / web quality audits. | Populated |
 | [Knowledge Work](knowledge-work.md) | Sales / legal / customer support / product / marketing / data / etc. | Mostly template |
-| [Agent Harness](agent-harness.md) | SDD frameworks + agent harnesses (the layer above skills). | Template only |
+| [Agent Harness](agent-harness.md) | SDD frameworks + agent harnesses (the layer above skills), plus reusable control adapters. | Populated |
 
 "Mostly template" / "Template only" hubs are honest about being mostly
 empty — they exist so the structure is in place when content arrives.

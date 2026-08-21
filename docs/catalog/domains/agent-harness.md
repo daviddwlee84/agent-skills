@@ -5,8 +5,9 @@ Spec-driven development (SDD) frameworks and agent harnesses — the layer
 execute → verify loop, manages context windows, or runs sub-agents.
 
 This repo focuses on **skills** and intentionally does not ship a SDD
-framework or harness, but skills are *consumed* by harnesses, so we track
-the major options here for awareness.
+framework or harness. It does ship Herdr's official control adapter: the
+runtime is a harness/multiplexer, while the vendored artifact is still a
+normal agent skill.
 
 ## Skills in this repo
 
@@ -20,7 +21,7 @@ the major options here for awareness.
 
 | Skill | Upstream | Series |
 |---|---|---|
-| _none — out of scope_ | | |
+| [`herdr`](../../skills/herdr.md) | [`herdrdev/herdr`](https://github.com/herdrdev/herdr/tree/master/skills/herdr) | flat |
 
 ## External skills (manual install)
 
@@ -42,9 +43,10 @@ the major options here for awareness.
 
 ## Backlog (TODO `P?` items)
 
-- _none planned — harnesses are out of scope for this repo._
+- Harness runtimes remain out of scope; only their reusable skill adapters are eligible for vendoring.
 
 ## See also
 
 - [`docs/reference/sdd-and-harnesses.md`](../../reference/sdd-and-harnesses.md) — full survey of SDD frameworks and agent harnesses, with the layering explanation (skill vs SDD framework vs harness).
 - `product-planning` series in [`docs/skills/index.md`](../../skills/index.md) — vendored OpenClaw skills (`gstack-openclaw-*`) that *are* in this repo's scope.
+- [`herdr`](../../skills/herdr.md) — official control skill, including why binary-emitted installs are preferred for exact version alignment.

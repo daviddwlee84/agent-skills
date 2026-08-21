@@ -133,6 +133,7 @@ nav:
           - streamlit-to-marimo: skills/streamlit-to-marimo.md
           - anywidget: skills/anywidget.md
           - skill-creator: skills/skill-creator.md
+          - herdr: skills/herdr.md
           - Fullstack Next.js:
               - nextjs: skills/nextjs.md
               - shadcn: skills/shadcn.md

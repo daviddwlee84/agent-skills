@@ -60,6 +60,28 @@ series in this repo:
 
 - **`fullstack-nextjs`** — see [Skills overview > Fullstack Next.js series](../skills/index.md#fullstack-nextjs-series)
 
+## Repository-level licenses
+
+If the skill subtree does not contain the upstream license, add `license_path`
+to its manifest entry:
+
+```yaml
+- name: my-skill
+  upstream:
+    owner: org-name
+    repo: project
+    path: skills/my-skill
+    branch: main
+  license_path: LICENSE
+  last_sync:
+    date: ""
+    commit: ""
+    license_sha: ""
+```
+
+The sync script copies it to `skills/vendor/<name>/LICENSE.txt` and tracks its
+blob SHA independently, so license-only updates are detected by `make sync-check`.
+
 ## Manual config
 
 If you'd rather edit `vendor.yaml` by hand:

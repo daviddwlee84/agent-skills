@@ -18,7 +18,7 @@
 | [AI/ML Research](ai-ml-research.md) | 實驗追蹤 (experiment tracking)、模型生命週期 (model lifecycle)、fine-tuning、agent framework。 | 已填入 |
 | [Web & Fullstack](web-fullstack.md) | Next.js / React / Tailwind / Supabase / Vercel / browser automation / web quality 稽核 (audits)。 | 已填入 |
 | [Knowledge Work](knowledge-work.md) | 銷售 (sales) / 法務 (legal) / 客服 (customer support) / 產品 (product) / 行銷 (marketing) / 資料 (data) 等。 | 多數為 template |
-| [Agent Harness](agent-harness.md) | SDD framework + agent harness（skill 之上的層級）。 | 僅 template |
+| [Agent Harness](agent-harness.md) | SDD framework + agent harness（skill 之上的層級），以及可重用的控制 adapter。 | 已填入 |
 
 「多數為 template」/「僅 template」hub 直白地呈現「目前大部分為空」——
 這種結構先佔位，等之後內容到位即可。

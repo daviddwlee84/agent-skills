@@ -65,6 +65,28 @@ Supabase + shadcn），傳 `--series <name>`，這樣 skill 會落到
 
 - **`fullstack-nextjs`** —— 詳見 [Skills 總覽 > Fullstack Next.js series](../skills/index.md#fullstack-nextjs-series)
 
+## Repo 層級授權檔
+
+若 skill subtree 本身沒有包含 upstream license，請在 manifest entry 加上
+`license_path`：
+
+```yaml
+- name: my-skill
+  upstream:
+    owner: org-name
+    repo: project
+    path: skills/my-skill
+    branch: main
+  license_path: LICENSE
+  last_sync:
+    date: ""
+    commit: ""
+    license_sha: ""
+```
+
+同步腳本會將它複製成 `skills/vendor/<name>/LICENSE.txt`，並獨立記錄 blob
+SHA，因此 `make sync-check` 也能偵測只有授權檔發生的更新。
+
 ## 手動 config
 
 如果你比較想直接編輯 `vendor.yaml`：

@@ -61,6 +61,7 @@ series 怎麼運作見
 | [`streamlit-to-marimo`](streamlit-to-marimo.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/streamlit-to-marimo) | [docs](streamlit-to-marimo.md) |
 | [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
 | [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
+| [`herdr`](herdr.md) | [herdrdev/herdr](https://github.com/herdrdev/herdr/tree/master/skills/herdr) | [docs](herdr.md) |
 
 ### Fullstack Next.js series
 

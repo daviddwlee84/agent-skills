@@ -11,8 +11,8 @@ tasks → execute → verify 這個 loop，或管理 context window、執行
 sub-agent。
 
 本 repo 聚焦在 **skill**，刻意 (intentionally) 不 ship SDD framework
-或 harness，但 skill 是被 harness 所*消費*的，因此把主要選項記錄於
-此供認識用。
+或 harness。不過會收錄 Herdr 的官方控制 adapter：runtime 本身是
+harness／multiplexer，而 vendored artifact 仍是一般 agent skill。
 
 ## 此 repo 內的 skill
 
@@ -26,7 +26,7 @@ sub-agent。
 
 | Skill | Upstream | Series |
 |---|---|---|
-| _無 —— 不在範圍_ | | |
+| [`herdr`](../../skills/herdr.md) | [`herdrdev/herdr`](https://github.com/herdrdev/herdr/tree/master/skills/herdr) | flat |
 
 ## External skills（手動安裝）
 
@@ -48,7 +48,7 @@ sub-agent。
 
 ## Backlog（TODO `P?` 條目）
 
-- _無計畫 —— harness 不在本 repo 範圍。_
+- Harness runtime 仍不在範圍；只有可重用的 skill adapter 才適合 vendor。
 
 ## 另見
 
@@ -58,3 +58,5 @@ sub-agent。
 - `product-planning` series 在
   [`docs/skills/index.md`](../../skills/index.md) —— vendored 的
   OpenClaw skill（`gstack-openclaw-*`），這些*是*在本 repo 範圍內。
+- [`herdr`](../../skills/herdr.md) —— 官方控制 skill，以及為何安裝 binary
+  時應優先用 binary-emitted copy 取得精確版本對齊。

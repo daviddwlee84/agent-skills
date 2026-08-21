@@ -78,6 +78,21 @@ get_latest_commit() {
   fi
 }
 
+# Get the blob SHA for one file, used to detect license-only updates without
+# treating every unrelated commit in a large upstream repo as a skill update.
+get_file_sha() {
+  local owner="$1" repo="$2" branch="$3" path="$4"
+  gh api "repos/$owner/$repo/contents/$path?ref=$branch" \
+    --jq '.sha' 2>/dev/null || echo ""
+}
+
+download_file() {
+  local owner="$1" repo="$2" branch="$3" src_path="$4" dest_path="$5"
+  mkdir -p "$(dirname "$dest_path")"
+  gh api "repos/$owner/$repo/contents/$src_path?ref=$branch" \
+    --jq '.content' | base64 -d > "$dest_path"
+}
+
 # Download a directory tree from GitHub. src_path="." means whole repo root.
 download_tree() {
   local owner="$1" repo="$2" branch="$3" src_path="$4" dest_dir="$5"
@@ -122,18 +137,22 @@ download_tree() {
 sync_skill() {
   local idx="$1" check_only="${2:-false}"
 
-  local name series owner repo path branch last_commit
+  local name series owner repo path branch license_path last_commit last_license_sha
   name=$(skill_field "$idx" "name")
   series=$(skill_field "$idx" "series")
   owner=$(skill_field "$idx" "upstream.owner")
   repo=$(skill_field "$idx" "upstream.repo")
   path=$(skill_field "$idx" "upstream.path")
   branch=$(skill_field "$idx" "upstream.branch")
+  license_path=$(skill_field "$idx" "license_path")
   last_commit=$(skill_field "$idx" "last_sync.commit")
+  last_license_sha=$(skill_field "$idx" "last_sync.license_sha")
 
   # Normalize yq null to empty
   [[ "$last_commit" == "null" || "$last_commit" == '""' ]] && last_commit=""
+  [[ "$last_license_sha" == "null" || "$last_license_sha" == '""' ]] && last_license_sha=""
   [[ "$series" == "null" || "$series" == '""' ]] && series=""
+  [[ "$license_path" == "null" || "$license_path" == '""' ]] && license_path=""
 
   # Frozen entries: upstream renamed the skill away or deleted it, but we
   # keep shipping the last vendored copy. Skip fetching entirely so a
@@ -149,7 +168,7 @@ sync_skill() {
 
   echo -n "Checking $name ($owner/$repo)... "
 
-  local latest_commit
+  local latest_commit latest_license_sha=""
   latest_commit=$(get_latest_commit "$owner" "$repo" "$branch" "$path")
 
   if [[ -z "$latest_commit" ]]; then
@@ -157,7 +176,15 @@ sync_skill() {
     return 1
   fi
 
-  if [[ "$latest_commit" == "$last_commit" ]]; then
+  if [[ -n "$license_path" ]]; then
+    latest_license_sha=$(get_file_sha "$owner" "$repo" "$branch" "$license_path")
+    if [[ -z "$latest_license_sha" ]]; then
+      echo -e "${RED}failed to fetch license: $license_path${NC}"
+      return 1
+    fi
+  fi
+
+  if [[ "$latest_commit" == "$last_commit" && "$latest_license_sha" == "$last_license_sha" ]]; then
     echo -e "${GREEN}up to date${NC}"
     return 0
   fi
@@ -178,11 +205,19 @@ sync_skill() {
   # Clean existing and re-download
   rm -rf "$dest"
   download_tree "$owner" "$repo" "$branch" "$path" "$dest"
+  if [[ -n "$license_path" ]]; then
+    download_file "$owner" "$repo" "$branch" "$license_path" "$dest/LICENSE.txt"
+  fi
 
   # Update vendor.yaml with sync info
   local sync_date
   sync_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   yq -i ".skills[$idx].last_sync.date = \"$sync_date\" | .skills[$idx].last_sync.commit = \"$latest_commit\"" "$VENDOR_YAML"
+  if [[ -n "$license_path" ]]; then
+    yq -i ".skills[$idx].last_sync.license_sha = \"$latest_license_sha\"" "$VENDOR_YAML"
+  else
+    yq -i "del(.skills[$idx].last_sync.license_sha)" "$VENDOR_YAML"
+  fi
 
   echo -e "  ${GREEN}synced${NC} to ${latest_commit:0:7}"
 }
