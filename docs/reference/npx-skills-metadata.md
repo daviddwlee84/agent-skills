@@ -18,8 +18,8 @@ and the official [Claude Code plugin-marketplaces docs](https://code.claude.com/
 - Edit the manifest by hand; run `make marketplace` (= `bash
   scripts/validate-marketplace.sh`) to catch broken paths, duplicates, or
   on-disk skills that would silently fall under "Other".
-- We do **not** ship `.claude-plugin/plugin.json` — that's only for
-  single-plugin repos.
+- We do **not** ship per-plugin `.claude-plugin/plugin.json` files: each
+  marketplace entry is already a complete inline `strict: false` skill bundle.
 
 ## How the CLI resolves the manifest path
 
@@ -57,6 +57,48 @@ This repo uses the second form because the `skills/local/` and
     file at the root is never read, and every skill ends up in **Other**.
     Match the manifest's location to the install command's subpath.
 
+## Reusing the nested manifest with Claude Code and Codex
+
+The same file is consumed by three installers, but each chooses its marketplace
+root independently:
+
+| Consumer | Marketplace root |
+|---|---|
+| `npx skills add daviddwlee84/agent-skills/skills` | the requested `skills/` subpath |
+| `claude plugin marketplace add owner/repo` | the cloned repository root |
+| `claude plugin marketplace add ./local/path` | the local path passed to the command |
+| `codex plugin marketplace add ./local/path` | the local path passed to the command |
+
+A local checkout therefore provides zero-duplication native routes for both
+plugin CLIs:
+
+```bash
+git clone https://github.com/daviddwlee84/agent-skills.git
+
+claude plugin marketplace add ./agent-skills/skills
+claude plugin install version-control@daviddwlee84-skills
+
+codex plugin marketplace add ./agent-skills/skills
+codex plugin add version-control@daviddwlee84-skills
+```
+
+Verified with Claude Code 2.1.235 and Codex 0.147.0. Codex reads the inline
+Claude-format marketplace entry and generates a `.codex-plugin/plugin.json`
+adapter in its install cache with only that category's explicit `skills[]`.
+There is no second source manifest to maintain.
+
+The bare repository root does not contain a supported marketplace manifest, so
+pass its `skills/` directory. The Claude GitHub shorthand `claude plugin
+marketplace add daviddwlee84/agent-skills` consequently fails. A direct URL to
+the nested JSON is not an equivalent Claude workaround: URL marketplaces fetch
+the catalog file without the adjacent repository tree, so relative `source:
+"./"` and skill paths have no installable source beside them.
+
+Both native routes install a category plugin, while `npx skills` can install one
+selected skill across agents. `make native-marketplace-smoke` exercises both
+local native paths in temporary configuration state and verifies that the
+runtime adapter preserves category boundaries.
+
 ## Manifest shape
 
 Reference: official [marketplace manifest schema](https://code.claude.com/docs/en/plugin-marketplaces).
@@ -67,8 +109,7 @@ Reference: official [marketplace manifest schema](https://code.claude.com/docs/e
   "owner": { "name": "...", "email": "..." },
   "metadata": {
     "description": "...",
-    "version": "1.0.0",
-    "pluginRoot": "./"
+    "version": "1.0.0"
   },
   "plugins": [
     {
@@ -237,26 +278,33 @@ inside the manifest is restricted. The validator script enforces this.
 
 ## Versioning
 
-- If `metadata.version` is **omitted** and the marketplace is hosted in
-  git, every commit is treated as a new version — users always see
-  whatever's on `main`. This matches `anthropics/skills`.
-- If `metadata.version` is **set**, users only see updates when the
-  number changes (semver-style).
+Top-level `metadata.version` describes the marketplace catalog; it does not pin
+these inline plugins. Claude Code 2.1.235 resolves plugin version identity from
+`plugin.json`, then an individual `plugins[].version`, then the git source SHA.
+These entries define neither of the first two, so an isolated update test advanced the installed SHA
+and content after a new commit even while `metadata.version` stayed at
+`"1.0.0"`; omitting the field behaved the same.
 
-We currently set `metadata.version: "1.0.0"` as a baseline. To switch to
-"every commit is latest" semantics, drop the field.
+This repository therefore keeps `metadata.version: "1.0.0"` as catalog
+metadata, not as a release gate. A git-backed install still needs its normal
+refresh sequence: fetch the new source (for the documented local checkout,
+`git pull`), run `claude plugin marketplace update daviddwlee84-skills`, then
+`claude plugin update <plugin>@daviddwlee84-skills`. The `npx skills` grouping
+path ignores this field.
 
 ## `marketplace.json` vs `plugin.json`
 
 | File | Purpose | When to use |
 |---|---|---|
-| `.claude-plugin/marketplace.json` | Catalog of multiple plugins / categories | Multi-category collections (this repo, `anthropics/skills`) |
-| `.claude-plugin/plugin.json` | Manifest for a **single** plugin | Single-plugin repos (one bundle of skills, no grouping) |
+| `.claude-plugin/marketplace.json` | Catalog of one or more plugins / categories | A repository that users register as a marketplace |
+| `<plugin>/.claude-plugin/plugin.json` | Manifest for one plugin | Conventional strict marketplace plugins that own their component tree |
 
-The two files are not redundant. `anthropics/skills` ships only
-`marketplace.json`; we do the same. A repo can technically ship both,
-but for a multi-category catalog like this one, `plugin.json` is
-unnecessary.
+The two files are not redundant, but a marketplace entry may define a
+manifest-less bundle inline. This repository does exactly that: every entry sets
+`strict: false`, points `source` at the shared `skills/` root, and explicitly
+lists its skill directories. Adding a set of near-empty `plugin.json` files
+would not make discovery more correct; it would only create another identity/version
+surface to keep synchronized.
 
 ## Cross-agent portability
 
@@ -264,21 +312,27 @@ unnecessary.
 SKILL.md files into each target agent's native skills directory
 (supported targets enumerated in
 [`src/types.ts`](https://github.com/vercel-labs/skills/blob/main/src/types.ts)).
-Other agents (OpenCode, Codex, Cursor, Aider, …) do **not** read
-`.claude-plugin/marketplace.json` natively — they have their own
-conventions (`.opencode/`, `AGENTS.md`, `.cursor/rules/`, etc.).
+Most other agents (OpenCode, Cursor, Aider, …) do **not** read
+`.claude-plugin/marketplace.json` natively; they have their own conventions
+(`.opencode/`, `AGENTS.md`, `.cursor/rules/`, etc.). Codex 0.147.0 is a verified
+exception: its plugin marketplace CLI accepts this manifest directly.
 
-So the trade-off is:
+The resulting distribution paths are:
 
 - One `marketplace.json` is enough for cross-agent **install** via
   `npx skills add`.
-- Native discovery in non-Claude agents requires whatever that agent
-  expects, separate from this manifest.
+- The same file provides category-plugin installation through both Claude Code
+  and Codex when `skills/` is passed as the local marketplace root.
+- Standalone Codex skills installed under `.agents/skills/` continue to use its
+  canonical shared discovery path; they do not require plugin packaging.
 
-If we ever need a second native catalog format, the cleanest
-intermediate is to start treating `marketplace.json` as a *generated*
-artifact from a canonical YAML and add a generator script. We have not
-done that yet — single-consumer hand-edit is fine.
+On `codex plugin add`, Codex copies the shared source and generates a cache-local
+`.codex-plugin/plugin.json` whose `skills[]` contains only the selected category.
+Do not commit a second manifest merely to reproduce that adapter. A source
+`.codex-plugin/plugin.json` remains relevant only if this repository later
+chooses to publish a standalone Codex-specific package with its richer interface
+metadata. Codex's public CLI does not install arbitrary `.plugin` or ZIP
+archives, so a packaging script would still need a named release/upload consumer.
 
 ## Hiding / deprecating a skill without deleting it
 
@@ -357,6 +411,9 @@ make marketplace
 
 # Or run the script directly with verbose output.
 bash scripts/validate-marketplace.sh
+
+# Exercise native Claude + Codex add/list/install in temporary config state.
+make native-marketplace-smoke
 ```
 
 After adding a new local or vendored skill:

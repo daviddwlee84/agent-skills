@@ -5,8 +5,9 @@ name: Validate
 # exits 0), so the failure is invisible without an explicit check — see
 # pitfalls/skill-description-colon-breaks-yaml-frontmatter.md.
 #
-# Same checks run locally: `make validate` (also wired as a pre-push hook via
-# `make install-hooks`).
+# Portable checks run locally via `make validate` (also wired as a pre-push
+# hook via `make install-hooks`). CI additionally exercises the Claude Code and
+# Codex marketplace loaders; run both with `make native-marketplace-smoke`.
 
 on:
   push:
@@ -17,6 +18,11 @@ on:
       - 'vendor.yaml'
       - 'TODO.md'
       - 'Makefile'
+      - 'README.md'
+      - 'CLAUDE.md'
+      - 'docs/_snippets/install.md'
+      - 'docs/reference/npx-skills-metadata.md'
+      - 'docs/reference/npx-skills-metadata.zh-TW.md'
       - '.github/workflows/validate.yml'
   pull_request:
     paths:
@@ -25,6 +31,11 @@ on:
       - 'vendor.yaml'
       - 'TODO.md'
       - 'Makefile'
+      - 'README.md'
+      - 'CLAUDE.md'
+      - 'docs/_snippets/install.md'
+      - 'docs/reference/npx-skills-metadata.md'
+      - 'docs/reference/npx-skills-metadata.zh-TW.md'
       - '.github/workflows/validate.yml'
   workflow_dispatch:
 
@@ -46,11 +57,19 @@ jobs:
       - name: Install the js yaml parser
         run: npm install --no-save --no-package-lock yaml@2
 
+      - name: Install the pinned native plugin CLIs
+        run: |
+          npm install --global --no-audit --no-fund @anthropic-ai/claude-code@2.1.235
+          npm install --global --no-audit --no-fund @openai/codex@0.147.0
+
       - name: Lint SKILL.md frontmatter
         run: NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills
 
       - name: Validate marketplace.json
         run: ./scripts/validate-marketplace.sh
+
+      - name: Smoke-test native Claude and Codex marketplace loading
+        run: make native-marketplace-smoke
 
       - name: Validate TODO.md format
         run: ./scripts/todo-kanban.sh --validate-only

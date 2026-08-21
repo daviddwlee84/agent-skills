@@ -23,8 +23,8 @@
 - 用手編輯 manifest；跑 `make marketplace`（= `bash
   scripts/validate-marketplace.sh`）抓出壞掉的路徑、重複條目、
   或會被靜默歸到 "Other" 的 on-disk skill。
-- 我們**不**出貨 `.claude-plugin/plugin.json` —— 那只是給單一 plugin
-  repo 用的。
+- 我們**不**出貨每個 plugin 各自的 `.claude-plugin/plugin.json`；每個
+  marketplace entry 已經是完整的 inline `strict: false` skill bundle。
 
 ## CLI 怎麼解析 manifest 路徑
 
@@ -63,6 +63,45 @@ const pluginGroupings = await getPluginGroupings(searchPath);
     根目錄的檔案永遠不會被讀，每個 skill 都會落到 **Other**。
     讓 manifest 的位置匹配安裝指令的 subpath。
 
+## 讓 Claude Code 與 Codex 共用 nested manifest
+
+同一個檔案由三種 installer 消費，但各自獨立決定 marketplace root：
+
+| Consumer | Marketplace root |
+|---|---|
+| `npx skills add daviddwlee84/agent-skills/skills` | 指定的 `skills/` subpath |
+| `claude plugin marketplace add owner/repo` | clone 後的 repo 根目錄 |
+| `claude plugin marketplace add ./local/path` | 指令指定的 local path |
+| `codex plugin marketplace add ./local/path` | 指令指定的 local path |
+
+因此 local checkout 可以零重複地提供兩條原生 plugin 路徑：
+
+```bash
+git clone https://github.com/daviddwlee84/agent-skills.git
+
+claude plugin marketplace add ./agent-skills/skills
+claude plugin install version-control@daviddwlee84-skills
+
+codex plugin marketplace add ./agent-skills/skills
+codex plugin add version-control@daviddwlee84-skills
+```
+
+已用 Claude Code 2.1.235 與 Codex 0.147.0 驗證。Codex 會讀 inline 的
+Claude-format marketplace entry，並在 install cache 裡生成
+`.codex-plugin/plugin.json` adapter；其中只保留該 category 明列的
+`skills[]`。repo 不需要維護第二份 source manifest。
+
+repo 根目錄沒有支援的 marketplace manifest，所以必須傳入其 `skills/`
+目錄。因此 Claude 的 GitHub shorthand `claude plugin marketplace add
+daviddwlee84/agent-skills` 會失敗。直接給 nested JSON URL 也不是等價的
+Claude workaround：URL marketplace 只取得 catalog 檔，旁邊沒有 repo tree，
+相對的 `source: "./"` 與 skill path 就沒有可安裝的 source。
+
+兩條原生路徑的安裝單位都是 category plugin；`npx skills` 則能跨 agent
+安裝單一指定 skill。`make native-marketplace-smoke` 會在 temporary config
+state 中實際跑兩條 local native 路徑，並驗證 runtime adapter 沒有跨
+category 洩漏。
+
 ## Manifest 形狀
 
 參考：官方
@@ -74,8 +113,7 @@ const pluginGroupings = await getPluginGroupings(searchPath);
   "owner": { "name": "...", "email": "..." },
   "metadata": {
     "description": "...",
-    "version": "1.0.0",
-    "pluginRoot": "./"
+    "version": "1.0.0"
   },
   "plugins": [
     {
@@ -236,45 +274,56 @@ validator script 會強制這條。
 
 ## Versioning
 
-- 如果 `metadata.version` **省略**且 marketplace 是 git-hosted，
-  每個 commit 都被當成新版本 —— 使用者永遠看到 `main` 上的東西。
-  這跟 `anthropics/skills` 一致。
-- 如果 `metadata.version` **有設**，使用者只在數字改變時看到更新
-  （semver 風格）。
+Top-level `metadata.version` 描述 marketplace catalog；它不會 pin 這些
+inline plugin。Claude Code 2.1.235 的 plugin version identity 優先順序是
+`plugin.json`、個別 `plugins[].version`、最後才是 git source SHA。這些 entry
+沒有前兩者，所以隔離更新測試中，即使 `metadata.version` 一直保持
+`"1.0.0"`，新 commit 後安裝的 SHA 與內容仍會前進；省略欄位的行為相同。
 
-我們目前設 `metadata.version: "1.0.0"` 當作基線。要切到「每個 commit
-都是 latest」的語義，就拿掉這個欄位。
+因此這個 repo 保留 `metadata.version: "1.0.0"` 作為 catalog metadata，
+不是 release gate。git-backed install 仍要走正常 refresh：取得新 source
+（文件中的 local checkout 先跑 `git pull`）、執行 `claude plugin
+marketplace update daviddwlee84-skills`，再執行 `claude plugin update
+<plugin>@daviddwlee84-skills`。`npx skills` 分組路徑不使用這個欄位。
 
 ## `marketplace.json` vs `plugin.json`
 
 | 檔案 | 目的 | 何時使用 |
 |---|---|---|
-| `.claude-plugin/marketplace.json` | 多個 plugin / 分類的 catalog | 多分類集合（這個 repo、`anthropics/skills`） |
-| `.claude-plugin/plugin.json` | **單一** plugin 的 manifest | 單一 plugin 的 repo（一捆 skill，沒分組） |
+| `.claude-plugin/marketplace.json` | 一個或多個 plugin / 分類的 catalog | 讓使用者註冊成 marketplace 的 repo |
+| `<plugin>/.claude-plugin/plugin.json` | 一個 plugin 的 manifest | 擁有自己 component tree 的 conventional strict marketplace plugin |
 
-兩個檔案不是冗餘的。`anthropics/skills` 只出貨 `marketplace.json`；
-我們做一樣的事。一個 repo 技術上可以兩個都出貨，但對於這種多分類
-catalog 來說，`plugin.json` 是不必要的。
+兩個檔案不是冗餘的，但 marketplace entry 可以 inline 定義 manifest-less
+bundle。這個 repo 正是如此：每個 entry 設 `strict: false`、讓 `source`
+指向共用的 `skills/` root，並明列其 skill 目錄。加入一批近乎空白的
+`plugin.json` 不會讓 discovery 更正確，只會多一個要同步的 identity / version
+surface。
 
 ## Cross-agent portability
 
 `npx skills` 是個單向安裝器：它讀 manifest，然後把 SKILL.md 檔案
 複製到每個目標 agent 的原生 skills 目錄（支援的目標列在
 [`src/types.ts`](https://github.com/vercel-labs/skills/blob/main/src/types.ts)）。
-其他 agent (OpenCode、Codex、Cursor、Aider、…) **不會**原生讀
-`.claude-plugin/marketplace.json` —— 它們有自己的慣例
-(`.opencode/`、`AGENTS.md`、`.cursor/rules/` 等)。
+大多數其他 agent（OpenCode、Cursor、Aider、…）**不會**原生讀
+`.claude-plugin/marketplace.json`；它們有自己的慣例（`.opencode/`、
+`AGENTS.md`、`.cursor/rules/` 等）。Codex 0.147.0 是已驗證的例外：
+它的 plugin marketplace CLI 會直接接受這份 manifest。
 
-所以取捨是：
+因此 distribution path 是：
 
-- 一個 `marketplace.json` 對於透過 `npx skills add` 做 cross-agent
-  **install** 是夠用的。
-- 在非 Claude agent 中做原生發現需要那個 agent 期望的東西，跟這個
-  manifest 分開。
+- 一個 `marketplace.json` 足以透過 `npx skills add` 做 cross-agent
+  **install**。
+- 傳入 `skills/` 作為 local marketplace root 時，同一份檔案也提供
+  Claude Code 與 Codex 的 category-plugin 安裝。
+- 安裝在 `.agents/skills/` 的 standalone Codex skill 繼續使用 canonical
+  shared discovery path，不需要 plugin packaging。
 
-如果哪天我們需要第二種原生 catalog 格式，最乾淨的中介方案是把
-`marketplace.json` 當成由 canonical YAML **生成 (generated)** 的產物，
-並加一個 generator script。我們還沒這樣做 —— 單一消費者手動編輯目前是 OK 的。
+執行 `codex plugin add` 時，Codex 會複製共用 source，並在 cache 中生成
+`.codex-plugin/plugin.json`；其 `skills[]` 只包含選定 category。不要為了
+重製這個 adapter 而 commit 第二份 manifest。只有當這個 repo 日後選擇
+發布帶 richer interface metadata 的獨立 Codex-specific package 時，source
+`.codex-plugin/plugin.json` 才有意義。Codex public CLI 不安裝任意 `.plugin`
+或 ZIP archive，所以 packaging script 仍需要明確的 release / upload consumer。
 
 ## 不刪除而是隱藏 / 棄用 (deprecate) 一個 skill
 
@@ -349,6 +398,9 @@ make marketplace
 
 # 或直接跑 script 取得 verbose 輸出。
 bash scripts/validate-marketplace.sh
+
+# 在 temporary config state 實跑 Claude + Codex 原生 add/list/install。
+make native-marketplace-smoke
 ```
 
 加入新的 local 或 vendored skill 後：

@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 sync:
 	./scripts/sync-vendor.sh
@@ -18,6 +18,17 @@ kanban:
 marketplace:
 	./scripts/validate-marketplace.sh
 
+# Exercise both native marketplace loaders in isolated config state. Kept
+# separate from `validate` so contributors without either CLI can run the
+# portable publish gates.
+native-marketplace-smoke: native-claude-smoke native-codex-smoke
+
+native-claude-smoke:
+	./scripts/smoke-claude-marketplace.sh
+
+native-codex-smoke:
+	./scripts/smoke-codex-marketplace.sh
+
 # YAML-parse every skills/**/SKILL.md frontmatter. A skill whose frontmatter
 # does not parse is silently SKIPPED by `npx skills add` (and by Claude Code /
 # Cursor), so this gate runs before publishing. Uses yq, PyYAML, or the js
@@ -25,8 +36,8 @@ marketplace:
 lint-frontmatter:
 	./scripts/lint-frontmatter.sh skills
 
-# Everything that must hold before publishing. Same set as
-# .github/workflows/validate.yml, and what the pre-push hook runs.
+# Portable publish gates and the set run by the pre-push hook. CI runs these
+# plus `native-marketplace-smoke`; both CLI dependencies stay optional locally.
 validate:
 	./scripts/lint-frontmatter.sh --quiet skills
 	./scripts/validate-marketplace.sh

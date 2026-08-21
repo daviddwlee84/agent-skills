@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
+A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills/skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
 
 The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior — including vendor `series` subdirs (e.g. `skills/vendor/fullstack-nextjs/<name>/SKILL.md` at depth 4).
 
@@ -24,12 +24,15 @@ make kanban
 # that drives the grouped install UI of `npx skills add ...`).
 make marketplace
 
+# Exercise native Claude Code + Codex marketplace add/list/install in isolated state.
+make native-marketplace-smoke
+
 # YAML-parse every skills/**/SKILL.md frontmatter. A file that fails to parse
 # is silently skipped by `npx skills add` — run this before publishing.
 make lint-frontmatter
 
-# All publish gates at once (frontmatter + marketplace + TODO format).
-# Same set as .github/workflows/validate.yml.
+# All portable publish gates at once (frontmatter + marketplace + TODO format).
+# CI additionally runs `make native-marketplace-smoke` with pinned CLIs.
 make validate
 
 # Install scripts/git-hooks/pre-push so `git push` runs `make validate` first.
