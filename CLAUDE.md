@@ -63,11 +63,11 @@ make docs-build     # produces ./site/
 
 ## Vendor System
 
-- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; entries without `series` stay flat at `skills/vendor/<name>/`
+- `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; optional `license_path:` copies a repo-level license into the vendored directory as `LICENSE.txt`; entries without `series` stay flat at `skills/vendor/<name>/`
 - `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations, and skips any entry carrying a `frozen:` block (see below)
 - `scripts/add-vendor.sh` — adds entries to `vendor.yaml`, verifies upstream exists, deduplicates; pass `--series <name>` to group into a series subdir
 
-Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA.
+Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA. When `license_path` is present it also tracks the license blob SHA, so a license-only upstream change is visible to `make sync-check`.
 
 Active series in this repo:
 - `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
