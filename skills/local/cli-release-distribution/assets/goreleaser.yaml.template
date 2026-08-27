@@ -1,0 +1,81 @@
+# GoReleaser builds every release artifact from a single Linux runner.
+#
+# Assumes the binary is pure Go (no cgo), so CGO_ENABLED=0 cross-compiles all
+# six targets in one job — no docker images, no macOS or Windows runners. Verify
+# with `CGO_ENABLED=0 go build ./...` before relying on it. The Go linker
+# ad-hoc-signs darwin binaries even when cross-compiling, so they run on Apple
+# Silicon without notarization.
+#
+# What this publishes:
+#   - GitHub Release: 6 archives + checksums.txt
+#   - Scoop manifest pushed to OWNER/scoop-bucket
+# The Homebrew formula is NOT published here: GoReleaser deprecated `brews:`
+# (formulae) in v2.10 in favour of `homebrew_casks:`, and a cask would be
+# quarantined by Gatekeeper. bump-formula.sh handles the tap instead.
+#
+# Replace: mytool, OWNER, the module path, and the description.
+version: 2
+
+project_name: mytool
+
+before:
+  hooks:
+    - go mod download
+    # Shell completions ride along inside every archive. Package managers do
+    # not generate these for you, and `go install` never will.
+    - sh -c 'mkdir -p completions'
+    - sh -c 'go run . completion bash       > completions/mytool.bash'
+    - sh -c 'go run . completion zsh        > completions/mytool.zsh'
+    - sh -c 'go run . completion fish       > completions/mytool.fish'
+    - sh -c 'go run . completion powershell > completions/mytool.ps1'
+
+builds:
+  - id: mytool
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    # cmd.version is a plain `var version string`. Do NOT point -X at
+    # debug.ReadBuildInfo().Main.Version — that is not a linker symbol, so the
+    # substitution silently no-ops. See backlog/homebrew-distribution.md.
+    ldflags:
+      - -s -w -X github.com/OWNER/mytool/cmd.version={{ .Tag }}
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - completions/*
+
+checksum:
+  name_template: checksums.txt
+
+scoops:
+  - name: mytool
+    repository:
+      owner: OWNER
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: https://github.com/OWNER/mytool
+    description: SHORT DESCRIPTION
+    license: MIT
+    commit_author:
+      name: goreleaser-bot
+      email: bot@goreleaser.com
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^test:'

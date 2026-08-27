@@ -201,6 +201,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./local/cli-release-distribution",
         "./local/mkdocs-site-bootstrap",
         "./local/pueue-job-queue",
         "./local/slurm-hpc",

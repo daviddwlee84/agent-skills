@@ -1,0 +1,62 @@
+# Template for OWNER/homebrew-tap Formula/mytool.rb.
+#
+# Replace: Mytool/mytool, OWNER, the description, and the license.
+#
+# Rendered and pushed by bump-formula.sh on every tag — do not edit the formula
+# in the tap repo by hand; it is a generated artifact of the tool's repo.
+#
+# This is a FORMULA, deliberately not a cask. Homebrew applies the
+# com.apple.quarantine attribute in the cask code path only, so a formula that
+# installs a prebuilt binary never triggers "mytool is damaged and cannot be
+# opened" — which is what ruled prebuilt binaries out back when the tap was
+# first written. See references/homebrew-tap.md.
+class Mytool < Formula
+  desc "SHORT DESCRIPTION"
+  homepage "https://github.com/OWNER/mytool"
+  version "__VERSION__"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/OWNER/mytool/releases/download/v__VERSION__/mytool___VERSION___darwin_arm64.tar.gz"
+      sha256 "__SHA256_DARWIN_ARM64__"
+    end
+    on_intel do
+      url "https://github.com/OWNER/mytool/releases/download/v__VERSION__/mytool___VERSION___darwin_amd64.tar.gz"
+      sha256 "__SHA256_DARWIN_AMD64__"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/OWNER/mytool/releases/download/v__VERSION__/mytool___VERSION___linux_arm64.tar.gz"
+      sha256 "__SHA256_LINUX_ARM64__"
+    end
+    on_intel do
+      url "https://github.com/OWNER/mytool/releases/download/v__VERSION__/mytool___VERSION___linux_amd64.tar.gz"
+      sha256 "__SHA256_LINUX_AMD64__"
+    end
+  end
+
+  head do
+    url "https://github.com/OWNER/mytool.git", branch: "main"
+    depends_on "go" => :build
+  end
+
+  def install
+    if build.head?
+      system "go", "build", *std_go_args(ldflags: "-s -w")
+    else
+      bin.install "mytool"
+    end
+
+    # shell_parameter_format: :cobra runs `mytool completion <shell>`.
+    # Without this the tap ships NO completions at all and users are left
+    # generating them by hand. Other formats: :clap, :click, :go.
+    generate_completions_from_executable(bin/"mytool", shell_parameter_format: :cobra)
+  end
+
+  test do
+    assert_match "v#{version}", shell_output("#{bin}/mytool --version")
+  end
+end
