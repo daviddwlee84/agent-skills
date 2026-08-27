@@ -69,6 +69,25 @@ else
     note "gh missing or unauthenticated — skipping release/tap/bucket checks"
 fi
 
+# Run a gh command with retries, and — critically — tell "the thing is absent"
+# apart from "the API call failed". A network blip reported as "no GitHub
+# Release" is worse than no answer at all, because it reads as a real finding.
+# stdout: command output on success. Exit: 0 found, 1 genuinely absent,
+# 2 unreachable (caller should skip the check, not report a finding).
+gh_try() {
+    local out rc i
+    for i in 1 2 3; do
+        out="$("$@" 2>&1)"; rc=$?
+        if [ "$rc" -eq 0 ]; then printf '%s' "$out"; return 0; fi
+        case "$out" in
+            *"not found"*|*"Not Found"*|*"404"*|*"No release found"*) return 1 ;;
+        esac
+        [ "$i" -lt 3 ] && sleep 2
+    done
+    note "gh call failed after 3 attempts (${*:1:2}…) — skipping that check"
+    return 2
+}
+
 # --- tags -------------------------------------------------------------------
 if [ -z "$TAG" ]; then
     TAG="$(git tag -l --sort=-v:refname | head -n1)"
@@ -129,10 +148,11 @@ fi
 
 # --- GitHub release ---------------------------------------------------------
 if [ "$HAVE_GH" = 1 ] && [ -n "$TAG" ]; then
-    if ! gh release view "$TAG" >/dev/null 2>&1; then
+    assets="$(gh_try gh release view "$TAG" --json assets --jq '.assets[].name')"
+    rc=$?
+    if [ "$rc" -eq 1 ]; then
         finding "tag $TAG has no GitHub Release — users have no binary to download"
-    else
-        assets="$(gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null)"
+    elif [ "$rc" -eq 0 ]; then
         printf '%s\n' "$assets" | grep -qi 'checksum' || \
             finding "release $TAG publishes no checksums file"
         printf '%s\n' "$assets" | grep -qi 'windows' || \
@@ -144,10 +164,12 @@ fi
 
 # --- tap --------------------------------------------------------------------
 if [ "$HAVE_GH" = 1 ] && [ -n "$TAP" ]; then
-    formula="$(gh api "repos/$TAP/contents/Formula/${NAME}.rb" --jq .content 2>/dev/null | base64 -d 2>/dev/null)"
-    if [ -z "$formula" ]; then
+    formula_b64="$(gh_try gh api "repos/$TAP/contents/Formula/${NAME}.rb" --jq .content)"
+    rc=$?
+    formula="$(printf '%s' "$formula_b64" | base64 -d 2>/dev/null)"
+    if [ "$rc" -eq 1 ] || { [ "$rc" -eq 0 ] && [ -z "$formula" ]; }; then
         finding "no Formula/${NAME}.rb in $TAP"
-    else
+    elif [ "$rc" -eq 0 ]; then
         fver="$(printf '%s' "$formula" | sed -n 's/.*version "\([^"]*\)".*/\1/p' | head -n1)"
         [ -z "$fver" ] && fver="$(printf '%s' "$formula" | sed -n 's#.*/archive/refs/tags/v\([^/"]*\)\.tar\.gz.*#\1#p' | head -n1)"
         if [ -n "$fver" ] && [ "v$fver" != "$TAG" ]; then
@@ -155,17 +177,30 @@ if [ "$HAVE_GH" = 1 ] && [ -n "$TAP" ]; then
         fi
         printf '%s' "$formula" | grep -q 'generate_completions_from_executable' || \
             finding "tap formula does not install shell completions"
-        printf '%s' "$formula" | grep -q 'depends_on "go" => :build' && \
-            finding "tap formula still builds from source (depends_on go) — every user downloads a toolchain"
+        # A `depends_on "go" => :build` INSIDE `head do ... end` is correct — it
+        # only applies to `brew install --HEAD`. Only the default install path
+        # matters here, so strip the head block before looking.
+        printf '%s' "$formula" | awk '
+            /head do/ && !inhead { inhead = 1; depth = 1; next }
+            inhead {
+                if ($0 ~ /[[:space:]]do[[:space:]]*$/) depth++
+                if ($0 ~ /^[[:space:]]*end[[:space:]]*$/) { depth--; if (depth == 0) inhead = 0 }
+                next
+            }
+            { print }
+        ' | grep -q 'depends_on "go" => :build' && \
+            finding "tap formula builds from source on the default path (depends_on go) — every user downloads a toolchain"
     fi
 fi
 
 # --- bucket -----------------------------------------------------------------
 if [ "$HAVE_GH" = 1 ] && [ -n "$BUCKET" ]; then
-    manifest="$(gh api "repos/$BUCKET/contents/bucket/${NAME}.json" --jq .content 2>/dev/null | base64 -d 2>/dev/null)"
-    if [ -z "$manifest" ]; then
+    manifest_b64="$(gh_try gh api "repos/$BUCKET/contents/bucket/${NAME}.json" --jq .content)"
+    rc=$?
+    manifest="$(printf '%s' "$manifest_b64" | base64 -d 2>/dev/null)"
+    if [ "$rc" -eq 1 ] || { [ "$rc" -eq 0 ] && [ -z "$manifest" ]; }; then
         finding "no bucket/${NAME}.json in $BUCKET"
-    else
+    elif [ "$rc" -eq 0 ]; then
         bver="$(printf '%s' "$manifest" | sed -n 's/.*"version"[: ]*"\([^"]*\)".*/\1/p' | head -n1)"
         if [ -n "$bver" ] && [ "v$bver" != "$TAG" ]; then
             finding "scoop manifest is at $bver but the latest tag is $TAG"
