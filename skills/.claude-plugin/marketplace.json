@@ -24,7 +24,7 @@
     },
     {
       "name": "01-project-memory",
-      "description": "Project memory (TODO/backlog/pitfalls), research-experiment memory (ledger/roadmap/reports), and agent-history hygiene",
+      "description": "Project memory (TODO/backlog/pitfalls), research-experiment memory (ledger/roadmap/reports), and agent-history hygiene with staged commit provenance",
       "category": "Workflow",
       "tags": ["project-memory", "experiment-memory", "todo", "hygiene", "specstory"],
       "source": "./",
@@ -161,9 +161,9 @@
     },
     {
       "name": "version-control",
-      "description": "Scale-aware git workflow discipline: Conventional Commits, linear history, worktrees for parallel agents, SemVer release tagging, and pre-merge hygiene",
+      "description": "Scale-aware git workflow discipline: English Conventional Commits, cross-harness AI provenance, linear history, worktrees, SemVer release tagging, and pre-merge hygiene",
       "category": "Engineering",
-      "tags": ["git", "commits", "branching", "worktree", "semver", "conventional-commits"],
+      "tags": ["git", "commits", "ai-provenance", "commit-signing", "branching", "worktree", "semver", "conventional-commits"],
       "source": "./",
       "strict": false,
       "skills": [

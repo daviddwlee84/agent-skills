@@ -1,6 +1,6 @@
 ---
 name: agent-history-hygiene
-description: Commit SpecStory chat transcripts (`.specstory/history/*.md`), Claude Code plan files (`.claude/plans/*.md`, `plansDirectory`), and other coding-agent artifacts (`.cursor/plans/`, `.cursor/rules/`, `.opencode/plans/`, `.specify/`, `.codex/`) alongside the feature diff they produced — without leaking `.env` contents, API keys, or private-key PEM blocks into git history. Use when the user says "commit my chat", "save this specstory session", "stage the plan file", "scrub the transcript", "my .env leaked in chat", "bootstrap pre-commit for this project", or when you notice untracked `.specstory/history/*.md` or `.claude/plans/*.md` files while running `git status`. Also use after an accidental push of a secret to enforce rotate-first, rewrite-last remediation instead of reflexive `git push --force`.
+description: Commit SpecStory transcripts and Claude/Cursor/OpenCode/Codex plans with feature diffs, derive staged `AI-Assisted-By` + transcript/plan trailers, and prevent secret leaks. Use when asked to "commit my chat", save/stage a plan, record cross-harness provenance, scrub a transcript, bootstrap pre-commit, handle untracked agent artifacts, or remediate an accidental secret commit/push with rotate-first discipline.
 ---
 
 # agent-history-hygiene
@@ -9,12 +9,13 @@ Keep agent chat transcripts and plan files committed together with the
 code they produced, without leaking secrets. Pairs with the
 `redact-agent-secrets` + `gitleaks` pre-commit hooks the skill installs.
 
-Three surfaces, separated by purpose:
+Surfaces, separated by purpose:
 
 | Surface                          | Question it answers                                          |
 |----------------------------------|--------------------------------------------------------------|
 | `find-session.sh`                | "Which transcript / plan file is *my* current session?"      |
 | `stage-agent-artifacts.sh`       | "Which agent files belong in the next commit?"               |
+| `agent-commit-metadata.sh`       | "Which harness/model + artifact trailers belong in it?"      |
 | `bootstrap-project.sh`           | "How do I get pre-commit + gitleaks + redactor into a repo?" |
 | `scan-staged.sh`                 | "Is there a leaked secret in what I'm about to commit?"      |
 | `probe-specstory-redaction.py`   | "What does SpecStory already redact, so we don't redo it?"   |
@@ -32,6 +33,8 @@ Three surfaces, separated by purpose:
    leak.** At best it's useless; at worst it destroys teammate work and
    silently re-introduces the secret when someone merges their old
    history back.
+4. **Provenance is derived from the staged snapshot.** Never point a commit
+   trailer at an unstaged transcript/plan, and never guess an unknown model.
 
 ## When to use this skill
 
@@ -108,16 +111,21 @@ bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
 # Use --session-only if you want ONLY the current SpecStory + newest plan;
 # default stages every dirty *.md in every configured agent dir.
 
-# 3. Belt-and-suspenders secret scan before commit. Exit 0 = clean.
+# 3. Generate the canonical FINAL trailer block from staged artifacts.
+bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
+
+# 4. Belt-and-suspenders secret scan before commit. Exit 0 = clean.
 bash skills/local/agent-history-hygiene/scripts/scan-staged.sh || {
   # Exit 10/20: leaks found. Jump to references/remediation.md.
   echo "Leaks detected — see references/remediation.md before committing." >&2
   exit 1
 }
 
-# 4. Commit. pre-commit (installed by bootstrap) runs redact-agent-secrets
-#    then gitleaks again as a catch-all.
-git commit -m "feat: ..."
+# 5. Append that block after any native attribution, validate with the
+#    git-workflow companion, then commit. pre-commit re-runs redaction/gitleaks.
+bash skills/local/git-workflow/scripts/check-commit-msg.sh \
+  --agentic --staged --file /path/to/commit-message.txt
+git commit -F /path/to/commit-message.txt
 ```
 
 ## Workflow B: bootstrap a new project
@@ -149,7 +157,10 @@ What `bootstrap-project.sh` does:
    one-line patch if missing.
 5. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
    `stage-agent-artifacts.sh --session-only --allow-empty` so every
-   `git commit` auto-attaches the current session file.
+   `git commit` auto-attaches the current session file. If `core.hooksPath` is
+   configured, bootstrap fails before writing anything: `.git/hooks/` would be
+   inactive, so the user must integrate the hook into the configured directory
+   or unset that override for the repo.
 
 Migrating a repo off the **old vendored layout** (a committed
 `scripts/redact_secrets.py` + a `- repo: local` redact hook):
@@ -226,6 +237,11 @@ committed / pushed a secret":
   exists — so a repo without `.pre-commit-config.yaml` has no
   protection. Run `bootstrap-project.sh` before the first commit with
   agent artifacts, not after.
+- **`--install-hook` cannot bypass `core.hooksPath`.** Git reads hooks from the
+  configured directory instead of `.git/hooks/`; writing a repo-local
+  `prepare-commit-msg` there would silently do nothing. Bootstrap now exits 6
+  before creating files and prints the two valid remedies. It never edits a
+  user's global hook directory on their behalf.
 - **Active SpecStory writer can defeat the redact loop.** The standard
   `git add → git commit → pre-commit auto-fixes → re-stage → re-commit`
   flow assumes the file is **quiescent** during the commit. SpecStory's
@@ -274,6 +290,12 @@ committed / pushed a secret":
   Refuses to run if there are no code changes (prevents "commit just
   transcript"); override with `--allow-empty`.
 
+- **`scripts/agent-commit-metadata.sh [--harness NAME --model NAME] [--format trailers|json]`**
+  Read staged SpecStory/plan artifacts and emit deduplicated
+  `AI-Assisted-By`, `Agent-Transcript`, and `Agent-Plan` values. Parses the
+  staged blob rather than a concurrently-changing working-tree transcript;
+  requires explicit harness+model overrides when it cannot prove them.
+
 - **`scripts/scan-staged.sh [--redact] [--verbose]`**
   Run `gitleaks git --staged` with agent-friendly exit codes
   (0 clean / 10 redacted / 20 leaks / 30 gitleaks missing). JSON lines
@@ -290,7 +312,8 @@ committed / pushed a secret":
   repo, wire the hook to the installed skill's redactor, then run
   `pre-commit install`. Audits
   `.gitignore` and `~/.claude/settings.json` for misconfigurations
-  (warns, never silently edits).
+  (warns, never silently edits). `--install-hook` exits 6 when
+  `core.hooksPath` would make the repo-local hook inert.
 
 ## Bundled assets
 
@@ -346,12 +369,17 @@ make test-skill
   `scripts/scan-staged.sh` (0 / 20 / 30 / 2).
 - `test_specstory_coverage.py` — locks in that SpecStory still redacts by
   default and still writes `[REDACTED:<label>]`; skips without the CLI.
+- `test_agent_commit_metadata.sh` — staged transcript/model parsing, model
+  deduplication, path handling, JSON output, and explicit-override failures.
 
 The corpus + shell tests skip gracefully when `gitleaks` isn't on
 `PATH`. See [`tests/README.md`](tests/README.md) for what each
 regression the suite locks in.
 
 ## Related skills
+
+- [`git-workflow`](../git-workflow/SKILL.md) — defines and validates the
+  English Conventional Commit + canonical provenance contract emitted here.
 
 - [`project-knowledge-harness`](../project-knowledge-harness/SKILL.md)
   — complementary memory harness (TODO.md + backlog/ + pitfalls/) that

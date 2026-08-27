@@ -13,7 +13,7 @@ tag 不再每個專案各自為政。Commit 一律用**英文**並遵循 Convent
 | Surface | 回答的問題 |
 |---|---|
 | `references/project-tiers.md` | 「該直接 commit 到 `main`、開 `dev` branch、還是走 PR？」 |
-| `references/conventional-commits.md` | 「Commit message 到底要寫什麼？」 |
+| `references/conventional-commits.md` | 「Commit message 與 AI provenance 到底要寫什麼？」 |
 | `references/worktrees-parallel-agents.md` | 「怎麼平行跑多個 agent 又不互相衝突？」 |
 | `references/versioning-and-releases.md` | 「什麼時候、怎麼打版本 tag？」 |
 | `references/branch-hygiene.md` | 「哪些 local branch 做完了、哪些還在開發？」 |
@@ -48,8 +48,9 @@ tag 不再每個專案各自為政。Commit 一律用**英文**並遵循 Convent
 
 ## 預設一覽
 
-- **Commit**：`type(scope): subject`——祈使句 (imperative)、小寫開頭、標題
-  ≤72 字元、英文。`feat!`/`BREAKING CHANGE:` 觸發 major bump。
+- **Commit**：英文 `type(scope): subject`；非瑣碎 agent commit 加上 why/outcome
+  body，以及 `AI-Assisted-By`、`Agent-Transcript`、有 plan 時的
+  `Agent-Plan` trailers。`feat!`/`BREAKING CHANGE:` 觸發 major bump。
 - **歷史**：線性——`pull.rebase=true`、`merge.ff=only`；嘈雜的 vibe-coding PR
   用 squash-merge，整理過的用 rebase-merge。
 - **Branch**：人工意圖用 `feat/ fix/ chore/ docs/ refactor/ exp/`，agent/vibe
@@ -68,7 +69,9 @@ skills/local/git-workflow/
 ├── SKILL.md
 ├── scripts/
 │   ├── branch-status.sh        # 分類 branch：active/merged/gone/stale
-│   └── check-commit-msg.sh     # 驗證 Conventional Commits 標題
+│   └── check-commit-msg.sh     # 驗證標題與可選 agentic contract
+├── tests/
+│   └── test_check_commit_msg.sh
 ├── references/
 │   ├── project-tiers.md        # main vs dev vs PR + GitHub Flow
 │   ├── conventional-commits.md # commit message 規範精簡版
@@ -90,6 +93,30 @@ skills/local/git-workflow/
 transcript check in，就在 squash-merge 前移除；若有 check in，就用那個 skill
 去 stage。
 
+## 跨 harness 的 agentic commit
+
+Human 保持 Git author/committer，所有 harness 使用同一個可攜的 final trailer
+block：
+
+```text
+feat(scope): add concise imperative summary
+
+Explain why the change was needed, its outcome, and meaningful validation.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
+Agent-Plan: .claude/plans/plan.md
+```
+
+Claude/Cursor 原生 attribution 或 signing 仍可額外保留。搭配的
+`agent-history-hygiene/scripts/agent-commit-metadata.sh` 從 staged artifacts
+產生此區塊；`check-commit-msg.sh --agentic --staged` 驗證完整訊息。Signing
+是另一層且只在使用者要求時設定，本 skill 不會自行修改 Git/harness config。
+
+各 harness 的日期化盤點，以及 co-author trailer、Cursor line tracking/cloud
+signature、Codex 尚無文件化 attribution 設定之間的差異，見
+[Git workflow best practices](../reference/git-workflow.md#agentic-commit-provenance)。
+
 ## Gotchas（陷阱）
 
 - `merge.ff only` 會刻意拒絕分歧 (diverged) 的 pull——用 `git pull --rebase`
@@ -101,6 +128,10 @@ transcript check in，就在 squash-merge 前移除；若有 check in，就用�
   的比對項；已 commit 的 `.vscode/settings.json` 本來就在 worktree 裡。
 - 英文 commit 規則在中文 prompt 下依然成立——翻譯意圖，不要把 prompt 語言
   照抄進歷史。
+- Agent 常用的 `git commit -m` 不會讀 commit template；要靠
+  `check-commit-msg.sh --agentic` 驗證。
+- Squash/amend 會建立新的 commit object；要把 canonical trailers 帶進 squash
+  message，也不要只為 metadata 去 amend vendor-signed commit。
 
 ## 另見
 

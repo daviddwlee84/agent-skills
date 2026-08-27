@@ -8,6 +8,7 @@ keys into git history.
 |---|---|
 | `find-session.sh` | "Which transcript / plan file is *my* current session?" |
 | `stage-agent-artifacts.sh` | "Which agent files belong in the next commit?" |
+| `agent-commit-metadata.sh` | "Which harness/model and artifact trailers belong in it?" |
 | `bootstrap-project.sh` | "How do I get pre-commit + gitleaks + redactor into a new repo?" |
 | `scan-staged.sh` | "Is there a leaked secret in what I'm about to commit?" |
 | `probe-specstory-redaction.py` | "What does SpecStory already redact, so we don't redo it?" |
@@ -39,10 +40,11 @@ The skill exists to stop three common failure modes:
 
 ```
 skills/local/agent-history-hygiene/
-├── SKILL.md                                  # ~260 lines
+├── SKILL.md                                  # agent-facing workflow and invariants
 ├── scripts/
 │   ├── find-session.sh                       # locate current SpecStory + Claude session
 │   ├── stage-agent-artifacts.sh              # git-add the right artifacts
+│   ├── agent-commit-metadata.sh               # derive staged provenance trailers
 │   ├── bootstrap-project.sh                  # install pre-commit + gitleaks, wire the redactor
 │   ├── probe-specstory-redaction.py          # measure SpecStory's own redaction coverage
 │   └── scan-staged.sh                        # gitleaks wrapper with agent-friendly exit codes
@@ -91,6 +93,11 @@ depends on where `npx skills` happened to install the skill.
 `bootstrap-project.sh --migrate` converts a repo off the old vendored
 `scripts/redact_secrets.py` layout.
 
+`--install-hook` refuses to run when `core.hooksPath` redirects Git away from
+`.git/hooks/`. It exits before writing bootstrap files and tells the user to
+integrate the hook into the configured directory or unset the override for that
+repo; the skill never edits a global hook directory on the user's behalf.
+
 ## Default workflow: commit feature + chat together
 
 ```bash
@@ -101,12 +108,22 @@ bash skills/local/agent-history-hygiene/scripts/find-session.sh
 git add path/to/feature.ts
 bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
 
-# 3. Belt-and-suspenders secret scan.
-bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+# 3. Generate the canonical final trailer block from staged artifacts.
+bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
 
-# 4. Commit. Pre-commit re-runs redact + gitleaks as a catch-all.
-git commit -m "feat: ..."
+# 4. Scan secrets and validate the complete English message.
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+bash skills/local/git-workflow/scripts/check-commit-msg.sh \
+  --agentic --staged --file /path/to/commit-message.txt
+
+# 5. Commit. Pre-commit re-runs redact + gitleaks as a catch-all.
+git commit -F /path/to/commit-message.txt
 ```
+
+The metadata helper reads staged blobs, not concurrently-changing working
+files. It emits deduplicated `AI-Assisted-By: Harness (model)`,
+`Agent-Transcript`, and conditional `Agent-Plan` trailers. Pass explicit
+`--harness` + `--model` only when a transcript cannot prove that identity.
 
 ## SpecStory native redaction (v2.4.0+)
 
@@ -178,6 +195,13 @@ The runbook explicitly forbids `git push --force` against shared
 branches — see `references/remediation.md` §5.
 
 ## Gotchas
+
+- A configured `core.hooksPath` makes `.git/hooks/prepare-commit-msg` inert.
+  `bootstrap-project.sh --install-hook` now exits 6 instead of installing a
+  hook that Git will never execute.
+- Native Claude/Cursor attribution is additive. The portable minimum is the
+  final `AI-Assisted-By` + transcript/plan block; do not invent an AI email or
+  confuse message attribution with cryptographic signing.
 
 - SpecStory ≥ 2.4.0 already redacts on write — don't let the hook redo it.
   See [SpecStory native redaction](#specstory-native-redaction-v240) above.

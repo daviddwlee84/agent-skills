@@ -54,6 +54,7 @@ Exit codes:
   3  chezmoi source missing (and --from-chezmoi was requested)
   4  pre-commit tool unavailable and `uvx` fallback failed
   5  --migrate could not find the old hook to rewrite (manual edit needed)
+  6  --install-hook requested while core.hooksPath redirects repo hooks
 EOF
 }
 
@@ -86,6 +87,16 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 fi
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
+
+# A repository-local .git/hooks/prepare-commit-msg is dead when core.hooksPath
+# points elsewhere. Fail before writing any bootstrap files so --install-hook
+# never reports success for a hook Git cannot execute.
+if [ "$INSTALL_HOOK" = "1" ]; then
+  configured_hooks_path="$(git config --get core.hooksPath 2>/dev/null || true)"
+  if [ -n "$configured_hooks_path" ]; then
+    die "--install-hook cannot write an active repo hook while core.hooksPath is '$configured_hooks_path'. Add the prepare-commit-msg integration to that hook directory, or unset core.hooksPath for this repo." 6
+  fi
+fi
 
 if [ "$FROM_CHEZMOI" = "1" ] && [ ! -d "$CHEZMOI_SRC" ]; then
   die "chezmoi source not found at $CHEZMOI_SRC (skip --from-chezmoi to use bundled copies)" 3

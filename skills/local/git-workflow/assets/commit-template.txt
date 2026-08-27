@@ -12,12 +12,19 @@
 # Breaking change: add ! after type/scope (feat(api)!: ...) or a
 #   "BREAKING CHANGE:" footer. Either drives a MAJOR SemVer bump.
 #
-# Body (optional, after a blank line): explain the WHY, wrapped ~72 cols.
+# Body: explain the WHY, outcome, and meaningful validation, wrapped ~72 cols.
+# Required for non-trivial agent-produced commits; trivial changes may omit it.
 #
-# Footers (optional, one per line):
+# Standard/native footers (optional, one per line):
 #   Refs: #123            Closes: #123
 #   BREAKING CHANGE: <what broke and how to migrate>
 #   Co-Authored-By: Name <email@example.com>
+#
+# Canonical agent provenance (FINAL trailer block; repeat paths as needed):
+#   AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+#   Agent-Transcript: .specstory/history/session.md
+#   Agent-Plan: .claude/plans/plan.md
+# Preserve tool-native attribution/signatures; never invent an AI email.
 #
 # Commit messages are written in English even when the prompt is not.
 # Install: git config commit.template skills/local/git-workflow/assets/commit-template.txt

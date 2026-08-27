@@ -12,11 +12,12 @@ spec and the house rules for this workflow.
 3. [Scope](#scope)
 4. [Subject line rules](#subject-line-rules)
 5. [Body and footers](#body-and-footers)
-6. [Breaking changes](#breaking-changes)
-7. [SemVer mapping](#semver-mapping)
-8. [Examples](#examples)
-9. [The English rule](#the-english-rule)
-10. [Tooling](#tooling)
+6. [Agentic provenance](#agentic-provenance)
+7. [Breaking changes](#breaking-changes)
+8. [SemVer mapping](#semver-mapping)
+9. [Examples](#examples)
+10. [The English rule](#the-english-rule)
+11. [Tooling](#tooling)
 
 ---
 
@@ -70,11 +71,33 @@ Optional noun in parentheses naming the area touched: `feat(auth):`,
 ## Body and footers
 
 - **Body** (optional): the *why* and any context that won't be obvious from the
-  diff. Wrap at ~72 columns. Bullet lists are fine.
+  diff. Wrap at ~72 columns. Bullet lists are fine. For non-trivial commits
+  produced with an agent harness, the body is required; include the outcome and
+  meaningful validation, not a line-by-line diff recital.
 - **Footers** (optional), one per line, `Key: value`:
   - `Refs: #123` / `Closes: #123` — issue linkage.
-  - `Co-Authored-By: Name <email>` — attribution.
+  - `Co-Authored-By: Name <email>` — native/human co-author attribution.
   - `BREAKING CHANGE: <description>` — see below.
+
+## Agentic provenance
+
+Keep the human as Git author/committer and add a portable final trailer block:
+
+```text
+AI-Assisted-By: Claude Code (Claude Fable 5)
+Agent-Transcript: .specstory/history/2026-08-27_session.md
+Agent-Plan: .claude/plans/session.md
+```
+
+- `AI-Assisted-By` always names both harness and model. Repeat it for distinct
+  contributors; never use `unknown` or manufacture an AI email address.
+- Artifact paths are repo-relative and must name files in the same commit.
+- Native metadata such as Claude Code's `Co-Authored-By` is preserved. Put any
+  Generated-with prose before the trailer block, and keep the canonical fields
+  in the final block so `git interpret-trailers --parse` sees them.
+- Message attribution and SSH/GPG signing are independent. A signature proves
+  control of a key over the exact commit object; amending or squash-merging
+  creates a different object and discards the original signature.
 
 ## Breaking changes
 
@@ -111,6 +134,14 @@ BREAKING CHANGE: the --out flag is removed; use --output.
 revert: feat(auth): add token refresh
 
 This reverts commit 9fceb02.
+
+feat(agent-history): emit staged provenance trailers
+
+Derive harness, model, transcript, and plan metadata from the staged snapshot
+so different coding-agent harnesses produce the same reviewable history.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
 ```
 
 ## The English rule
@@ -123,8 +154,11 @@ description or issue comments can be bilingual; the git object graph stays EN.)
 
 ## Tooling
 
-- **This skill**: `scripts/check-commit-msg.sh` validates the header shape
-  (type + optional scope/`!` + subject) with agent-friendly exit codes.
+- **This skill**: `scripts/check-commit-msg.sh` keeps its header-only default;
+  `--agentic --staged` validates the English description, canonical trailers,
+  and artifact paths with agent-friendly exit codes.
+- **Companion**: `agent-history-hygiene/scripts/agent-commit-metadata.sh`
+  derives the canonical trailer block from staged artifacts.
 - **Escape hatch — enforce in-repo**: [`commitlint`](https://commitlint.js.org/)
   via a `commit-msg` hook, or [`commitizen`](https://commitizen-tools.github.io/commitizen/)
   for guided prompts + automated version bumps. Adopt these when a team needs

@@ -74,10 +74,13 @@ docs-build:
 docs-deploy:
 	uv run mkdocs gh-deploy --force
 
-# Test the agent-history-hygiene skill: pytest (unit + corpus) + bash
-# exit-code contract. Requires `uv sync --extra dev` once, plus
+# Test agent-history-hygiene plus git-workflow's commit contract: pytest
+# (unit + corpus) + bash exit-code/metadata/message contracts. Requires
+# `uv sync --extra dev` once, plus
 # `gitleaks` on PATH for the corpus + shell tests (they skip gracefully
 # if missing).
 test-skill:
 	uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
 	bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+	bash skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
+	bash skills/local/git-workflow/tests/test_check_commit_msg.sh

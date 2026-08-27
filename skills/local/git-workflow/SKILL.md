@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: Opinionated, scale-aware git workflow — Conventional Commits (English even under Chinese prompts), linear history via `pull --rebase` + fast-forward, when to commit to `main` vs open a PR, GitHub-Flow, worktrees for parallel agents, SemVer release tags, and pre-merge secret hygiene. Use when committing, branching, merging, opening a PR, tagging a release, setting up worktrees, or cleaning up stale branches — incl. "幫我 commit / 整理 git", "should I branch or PR", "git 工作流".
+description: Opinionated, scale-aware git workflow — English Conventional Commits, cross-harness AI provenance (`AI-Assisted-By` + transcript/plan trailers), linear history, main-vs-PR tiers, worktrees for parallel agents, SemVer releases, and pre-merge hygiene. Use when committing, writing commit bodies, recording Claude/Codex/Cursor attribution, signing commits, branching, merging, opening a PR, tagging a release, or cleaning stale branches — incl. "幫我 commit / 整理 git" and "git 工作流".
 ---
 
 # git-workflow
@@ -10,12 +10,12 @@ project to a multi-person, multi-month repo — so you (and your agents) stop
 improvising commit messages, branch names, and release habits per project.
 The defaults here favor a **clean, linear, reviewable history**.
 
-Six surfaces, separated by the question they answer:
+Surfaces, separated by the question they answer:
 
 | Surface | Question it answers |
 |---|---|
 | `references/project-tiers.md` | "Do I commit to `main`, use a `dev` branch, or open PRs?" |
-| `references/conventional-commits.md` | "What exactly goes in the commit message?" |
+| `references/conventional-commits.md` | "What exactly goes in the commit message, including AI provenance?" |
 | `references/worktrees-parallel-agents.md` | "How do I run parallel agents without collisions?" |
 | `references/versioning-and-releases.md` | "When and how do I tag a version?" |
 | `references/branch-hygiene.md` | "Which local branches are done vs still in-dev?" |
@@ -39,6 +39,9 @@ Six surfaces, separated by the question they answer:
    handling is owned by the [`agent-history-hygiene`](../agent-history-hygiene/SKILL.md)
    skill — this skill *defers* to it at commit/merge time rather than
    reimplementing it.
+5. **Keep authorship, AI provenance, and cryptographic signing separate.** The
+   human remains Git author/committer; agent harness + model live in canonical
+   trailers; SSH/GPG signing proves key possession, not who wrote each line.
 
 ## Pick your tier first
 
@@ -66,9 +69,10 @@ it when writing a non-obvious commit or wiring `check-commit-msg.sh`):
 ```
 <type>(<optional scope>): <subject>
 
-<optional body — the "why", wrapped ~72 cols>
+<body — the "why" for non-trivial agent commits, wrapped ~72 cols>
 
-<optional footers — Refs: #123 / BREAKING CHANGE: … / Co-Authored-By: …>
+<optional standard/native footers>
+<canonical agent trailers — AI-Assisted-By / Agent-Transcript / Agent-Plan>
 ```
 
 - **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
@@ -89,6 +93,51 @@ printf 'feat(auth): add token refresh\n' | \
 ```bash
 git config commit.template skills/local/git-workflow/assets/commit-template.txt
 ```
+
+### Agentic commit contract
+
+Use this portable minimum for commits produced with Claude Code, Codex,
+Cursor, OpenCode, or another coding-agent harness:
+
+```text
+feat(scope): add concise imperative summary
+
+Explain why the change was needed, the resulting behavior, and meaningful
+validation. Keep this in English even when the prompt was not English.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
+Agent-Plan: .claude/plans/plan.md
+```
+
+- A non-trivial agent commit requires a body. Use the validator's
+  `--allow-no-body` only for a genuinely self-explanatory change such as a typo.
+- Repeat `AI-Assisted-By` for every distinct harness/model that materially
+  contributed. Never invent a vendor email merely to make GitHub show an AI as
+  a co-author.
+- Repeat transcript/plan trailers for every staged artifact, using repo-relative
+  paths. Omit `Agent-Plan` when no plan file is in the commit.
+- Preserve tool-native metadata (for example Claude's `Co-Authored-By`) as
+  additive evidence. Put the canonical fields in the **final Git trailer
+  block** so `git interpret-trailers --parse` can query them.
+- When `agent-history-hygiene` is installed, generate the block from the staged
+  snapshot instead of copying paths/model names by hand:
+
+```bash
+bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
+```
+
+Validate the complete message before committing:
+
+```bash
+bash skills/local/git-workflow/scripts/check-commit-msg.sh \
+  --agentic --staged --file /path/to/commit-message.txt
+```
+
+Cryptographic signing is opt-in and user-owned. Configure SSH/GPG signing only
+when the user explicitly asks; never silently change global Git or harness
+settings. A vendor-signed cloud-agent commit must not be amended solely to add
+metadata, because amending replaces the signed commit object.
 
 ## Branch naming
 
@@ -194,7 +243,10 @@ bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
    `stage-agent-artifacts.sh`. Either way, a leaked secret is remediated via
    its `references/remediation.md` (rotate first — never reflexive
    `git push --force`).
-4. **Branch cleanup** after the PR merges:
+4. **Agentic squash metadata**: a squash merge creates a new commit, so copy the
+   canonical `AI-Assisted-By` / artifact trailers into the squash message. The
+   source commit's cryptographic signature cannot survive object replacement.
+5. **Branch cleanup** after the PR merges:
 
 ```bash
 git fetch --prune
@@ -228,9 +280,11 @@ bash skills/local/git-workflow/scripts/branch-status.sh   # find gone/merged/sta
   stdout by default, `--json` for callers, prose on stderr. Always exits 0
   (state is data). Enriches `merged`/`gone` with `gh`/`glab` when available,
   falling back to pure git otherwise.
-- **`scripts/check-commit-msg.sh [--file PATH] [--types] [--help]`** — validate
-  a Conventional Commits header from an argument, `--file`, or stdin. Exit
-  **0** valid / **1** invalid (rule printed to stderr) / **2** bad args.
+- **`scripts/check-commit-msg.sh [--file PATH] [--agentic] [--staged] [--allow-no-body] [--types]`**
+  — default mode validates a Conventional Commits header. `--agentic` also
+  requires an English body + canonical harness/model trailers; `--staged`
+  cross-checks transcript/plan paths against the index. Exit **0** valid /
+  **1** invalid / **2** bad args or repository context.
 
 ## Bundled assets
 
@@ -275,6 +329,13 @@ bash skills/local/git-workflow/scripts/branch-status.sh   # find gone/merged/sta
   files inside the hook script instead.
 - **English-commit rule holds under Chinese prompts.** Don't mirror the
   prompt's language into the commit subject; translate the intent to English.
+- **A commit template does not affect `git commit -m`.** Agent harnesses usually
+  pass `-m` directly, so the template is guidance, not enforcement. Use
+  `check-commit-msg.sh --agentic` for the actual contract.
+- **Native attribution is not cryptographic signing.** `Co-Authored-By` and
+  `AI-Assisted-By` are message metadata; a Verified badge comes from a signed
+  commit object. Preserve both when present, but do not describe them as the
+  same guarantee.
 - **Don't tag before the release commit exists.** An annotated tag points at a
   commit — create/land the release commit first, then `git tag -a`, then push
   the tag. A tag on the wrong commit means re-tagging (`-f`) and a force-push.

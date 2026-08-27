@@ -31,6 +31,72 @@ Commit message 既是文件，也是給工具的 API。
 語言思考與下 prompt，commit 也一律**英文**——object graph 是給工具與未來的
 協作者讀的。
 
+## Agentic commit provenance
+
+Agentic coding 帶來幾種很容易混在一起的訊號，應分層理解：
+
+| 層次 | 代表意義 |
+|---|---|
+| Git author / committer | 建立 commit object 的人類或 service identity。 |
+| `Co-Authored-By` | Hosting UI 會辨識的 message attribution；不是簽名。 |
+| `AI-Assisted-By` | 本工作流定義的可攜 harness + model provenance。 |
+| Transcript / plan trailer | 指向跟 diff 一起 commit 的詳細 review trail。 |
+| SSH/GPG signature | 證明某把 key 簽過這個精確 commit object。 |
+
+可攜 contract：
+
+```text
+feat(scope): add concise imperative summary
+
+Explain why the change was needed, the resulting behavior, and meaningful
+validation. Agent-produced non-trivial commits always include this body.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
+Agent-Plan: .claude/plans/plan.md
+```
+
+多個 agent 或 artifact 就重複對應 trailer。路徑必須是 repo-relative，且檔案
+必須真的存在於同一個 commit。工具原生 attribution 可以保留，但 canonical
+欄位要放在**最後一個 trailer block**，才能由
+[`git interpret-trailers --parse`](https://git-scm.com/docs/git-interpret-trailers)
+穩定查詢。
+
+### 2026-08-27 的 harness 盤點
+
+| Harness | 原生行為 | 對可攜工作流的影響 |
+|---|---|---|
+| Claude Code | Commit/PR attribution 是可設定的 runtime 功能；預設 commit attribution 帶 Generated-with 文字與含 model 的 `Co-Authored-By`。 | 保留原生資訊，再加 canonical `AI-Assisted-By` 與 artifact path。Body 品質是另一層 agent 行為。 |
+| Cursor | AI commit message 會參考 staged diff 與 repo history；另有 line-level AI tracking。Cloud Agent commit 則用 HSM-backed Ed25519 key 做 cryptographic signing。 | Line attribution、message trailer 與 Verified commit 不是同一件事；保留原生訊號並補上可攜 trailers。 |
+| Codex CLI | **推論：**截至盤點日，官方 configuration reference 沒有記載 commit attribution 設定。 | 使用 skill/helper contract，不虛構 OpenAI co-author email；日後聲稱此限制前要重查 upstream。 |
+
+來源：[Claude Code settings](https://code.claude.com/docs/en/settings)、
+[Cursor AI commit messages](https://docs.cursor.com/en/more/ai-commit-message)、
+[Cursor analytics](https://cursor.com/docs/account/teams/analytics)、
+[Cursor Cloud security](https://cursor.com/docs/cloud-agent/security)、
+[Codex configuration reference](https://developers.openai.com/codex/config-reference/)。
+
+Squash merge 會建立新的 commit，因此要把 canonical provenance 複製到 squash
+message；原 commit hash 與 signature 都不會存活。同理，不要只為了補 metadata
+而 amend vendor-signed cloud-agent commit——amend 後已是另一個 object。
+
+## Commit signing
+
+Signing 是 opt-in 且由使用者擁有。Skill 不會默默修改 global Git 或 harness
+設定。使用者明確要求 SSH signing 時，先檢查現有 config 與 public key、確認 key
+和 scope，再設定：
+
+```bash
+git config gpg.format ssh
+git config user.signingkey /path/to/public-key.pub
+git config commit.gpgsign true
+git config tag.gpgsign true       # 可選：release tag 也簽名
+```
+
+SSH signing 可在 matching private key 已由 `ssh-agent` 載入時使用 public-key
+path；詳見 [`user.signingKey`](https://git-scm.com/docs/git-config#Documentation/git-config.txt-usersigningKey)。
+Signature 驗證 key；`AI-Assisted-By` 記錄 coding harness/model，兩者不能互相取代。
+
 ## 語意化版本 (Semantic Versioning)
 
 [SemVer](https://semver.org/) 用 `MAJOR.MINOR.PATCH` 標號 release：

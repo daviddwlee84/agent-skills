@@ -12,6 +12,7 @@ commit，且不讓 `.env` 內容或 API key 漏到 git 歷史。
 |---|---|
 | `find-session.sh` | 「**我**目前 session 的 transcript / plan 是哪一個？」 |
 | `stage-agent-artifacts.sh` | 「下次 commit 應該包含哪些 agent 檔？」 |
+| `agent-commit-metadata.sh` | 「這次 commit 該帶哪些 harness/model 與 artifact trailers？」 |
 | `bootstrap-project.sh` | 「怎麼把 pre-commit + gitleaks + redactor 裝進新 repo？」 |
 | `scan-staged.sh` | 「我準備 commit 的東西裡有沒有洩漏的 secret？」 |
 | `probe-specstory-redaction.py` | 「SpecStory 自己已經 redact 了什麼，我們不用重做？」 |
@@ -41,10 +42,11 @@ commit，且不讓 `.env` 內容或 API key 漏到 git 歷史。
 
 ```
 skills/local/agent-history-hygiene/
-├── SKILL.md                                  # ~260 行
+├── SKILL.md                                  # agent-facing 工作流程與 invariants
 ├── scripts/
 │   ├── find-session.sh                       # 定位目前 SpecStory + Claude session
 │   ├── stage-agent-artifacts.sh              # git-add 對的 artifact
+│   ├── agent-commit-metadata.sh               # 從 staged snapshot 產生 provenance trailers
 │   ├── bootstrap-project.sh                  # 安裝 pre-commit + gitleaks，接上 redactor
 │   ├── probe-specstory-redaction.py          # 量測 SpecStory 自身的 redaction 覆蓋率
 │   └── scan-staged.sh                        # 帶 agent-friendly exit code 的 gitleaks 包裝
@@ -91,6 +93,10 @@ redactor **不會**被複製進 repo：產生的 `.pre-commit-config.yaml` 以 t
 舊的 vendored `scripts/redact_secrets.py` 佈局可用
 `bootstrap-project.sh --migrate` 轉換過來。
 
+若 `core.hooksPath` 把 Git hook 導向 `.git/hooks/` 以外的位置，
+`--install-hook` 會在寫入 bootstrap 檔案前拒絕執行，並提示把整合加入設定中的
+hook directory，或只對該 repo 取消 override。Skill 不會自行修改 global hook。
+
 ## 預設工作流程：把功能跟對話一起 commit
 
 ```bash
@@ -101,12 +107,22 @@ bash skills/local/agent-history-hygiene/scripts/find-session.sh
 git add path/to/feature.ts
 bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
 
-# 3. Belt-and-suspenders 的 secret 掃描。
-bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+# 3. 從 staged artifacts 產生 canonical final trailer block。
+bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
 
-# 4. Commit。Pre-commit 會把 redact + gitleaks 當成 catch-all 再跑一次。
-git commit -m "feat: ..."
+# 4. 掃描 secret，再驗證完整英文 commit message。
+bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
+bash skills/local/git-workflow/scripts/check-commit-msg.sh \
+  --agentic --staged --file /path/to/commit-message.txt
+
+# 5. Commit。Pre-commit 會把 redact + gitleaks 當成 catch-all 再跑一次。
+git commit -F /path/to/commit-message.txt
 ```
+
+Metadata helper 讀 staged blob，而不是仍可能被背景程序修改的 working file。
+它輸出去重後的 `AI-Assisted-By: Harness (model)`、`Agent-Transcript` 與有 plan
+時的 `Agent-Plan`。只有 transcript 無法證明 identity 時，才同時傳入
+`--harness` 與 `--model`。
 
 ## SpecStory 原生 redaction（v2.4.0+）
 
@@ -175,6 +191,12 @@ runbook 顯式禁止對共用 branch 做 `git push --force` —— 詳見
 `references/remediation.md` §5。
 
 ## Gotchas
+
+- 設定 `core.hooksPath` 後，`.git/hooks/prepare-commit-msg` 不會執行。
+  `bootstrap-project.sh --install-hook` 現在會 exit 6，而不是安裝一個無效 hook。
+- Claude/Cursor 原生 attribution 可以保留。可攜 minimum 是最後的
+  `AI-Assisted-By` + transcript/plan block；不要虛構 AI email，也不要把 message
+  attribution 說成 cryptographic signing。
 
 - SpecStory ≥ 2.4.0 寫檔時就已經 redact —— 別讓 hook 再做一次，
   見上面的「SpecStory 原生 redaction」。

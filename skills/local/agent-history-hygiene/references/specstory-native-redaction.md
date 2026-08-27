@@ -131,6 +131,12 @@ discuss key shapes in prose.
 per class, then re-scans the redacted markdown with our gitleaks config to
 compute the residual set. It cleans up after itself unless `--keep`.
 
+The synthetic project path is resolved before deriving `<slug>`. On macOS,
+`/var` resolves to `/private/var`; SpecStory looks up sessions from the physical
+subprocess cwd, so using the unresolved temp path produces `1 session not
+found`. See
+[`pitfalls/specstory-sync-1-session-not-found-under-macos-var.md`](../../../../pitfalls/specstory-sync-1-session-not-found-under-macos-var.md).
+
 Probe tokens are generated at runtime from a seeded PRNG, so this repo carries
 key *shapes* but never a literal high-entropy token that would trip a scanner
 on the probe's own source.

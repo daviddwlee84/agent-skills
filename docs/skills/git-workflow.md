@@ -9,7 +9,7 @@ prompt is in another language.
 | Surface | Question it answers |
 |---|---|
 | `references/project-tiers.md` | "Do I commit to `main`, use a `dev` branch, or open PRs?" |
-| `references/conventional-commits.md` | "What exactly goes in the commit message?" |
+| `references/conventional-commits.md` | "What goes in the commit message, including AI provenance?" |
 | `references/worktrees-parallel-agents.md` | "How do I run parallel agents without collisions?" |
 | `references/versioning-and-releases.md` | "When and how do I tag a version?" |
 | `references/branch-hygiene.md` | "Which local branches are done vs still in-dev?" |
@@ -47,8 +47,9 @@ A solo vibe-coding project can jump straight to Tier 3: the PR becomes the
 
 ## Defaults at a glance
 
-- **Commits**: `type(scope): subject` — imperative, lowercase, ≤72-char header,
-  English. `feat!`/`BREAKING CHANGE:` drives a major bump.
+- **Commits**: English `type(scope): subject`; non-trivial agent commits add a
+  why/outcome body plus `AI-Assisted-By`, `Agent-Transcript`, and conditional
+  `Agent-Plan` trailers. `feat!`/`BREAKING CHANGE:` drives a major bump.
 - **History**: linear — `pull.rebase=true`, `merge.ff=only`; squash-merge noisy
   vibe-coding PRs, rebase-merge curated ones.
 - **Branches**: `feat/ fix/ chore/ docs/ refactor/ exp/` for human intent,
@@ -67,7 +68,9 @@ skills/local/git-workflow/
 ├── SKILL.md
 ├── scripts/
 │   ├── branch-status.sh        # classify branches: active/merged/gone/stale
-│   └── check-commit-msg.sh     # validate a Conventional Commits header
+│   └── check-commit-msg.sh     # validate header + optional agentic contract
+├── tests/
+│   └── test_check_commit_msg.sh
 ├── references/
 │   ├── project-tiers.md        # main vs dev vs PR + GitHub Flow
 │   ├── conventional-commits.md # the commit message spec, condensed
@@ -89,6 +92,31 @@ leaks) and points at its rotate-first remediation runbook rather than
 reimplementing any of it. When a project doesn't check agent transcripts in,
 drop them before a squash-merge; when it does, stage them with that skill.
 
+## Cross-harness agentic commits
+
+Keep the human as Git author/committer and use one portable final trailer block:
+
+```text
+feat(scope): add concise imperative summary
+
+Explain why the change was needed, its outcome, and meaningful validation.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
+Agent-Plan: .claude/plans/plan.md
+```
+
+Native Claude/Cursor attribution or signing remains additive. The companion
+`agent-history-hygiene/scripts/agent-commit-metadata.sh` derives this block from
+staged artifacts; `check-commit-msg.sh --agentic --staged` validates the full
+message. Signing is separate and opt-in—this skill never changes Git or harness
+configuration unless the user explicitly asks.
+
+The dated behavior matrix and the distinction between co-author trailers,
+Cursor line tracking/cloud signatures, and Codex's currently undocumented
+attribution setting are in
+[Git workflow best practices](../reference/git-workflow.md#agentic-commit-provenance).
+
 ## Gotchas
 
 - `merge.ff only` refuses a diverged pull on purpose — resolve with
@@ -100,6 +128,10 @@ drop them before a squash-merge; when it does, stage them with that skill.
   matches; a committed `.vscode/settings.json` is already in the worktree.
 - The English-commit rule holds under Chinese prompts — translate the intent,
   don't mirror the prompt language into the log.
+- Commit templates do not affect `git commit -m`, which agent harnesses commonly
+  use; validate with `check-commit-msg.sh --agentic` instead.
+- Squash/amend creates a new commit object, so copy canonical trailers into the
+  squash message and do not amend a vendor-signed commit solely for metadata.
 
 ## See also
 

@@ -9,14 +9,16 @@ scale from solo work to a team.
 ## Table of contents
 
 1. [Commit messages: Conventional Commits](#commit-messages-conventional-commits)
-2. [Semantic Versioning](#semantic-versioning)
-3. [Choosing a workflow by project scale](#choosing-a-workflow-by-project-scale)
-4. [Rebase, fast-forward, and squash](#rebase-fast-forward-and-squash)
-5. [Branch naming](#branch-naming)
-6. [Worktrees for parallel work](#worktrees-for-parallel-work)
-7. [Forge CLIs: gh and glab](#forge-clis-gh-and-glab)
-8. [Tag-driven versioning for packages](#tag-driven-versioning-for-packages)
-9. [Sources](#sources)
+2. [Agentic commit provenance](#agentic-commit-provenance)
+3. [Commit signing](#commit-signing)
+4. [Semantic Versioning](#semantic-versioning)
+5. [Choosing a workflow by project scale](#choosing-a-workflow-by-project-scale)
+6. [Rebase, fast-forward, and squash](#rebase-fast-forward-and-squash)
+7. [Branch naming](#branch-naming)
+8. [Worktrees for parallel work](#worktrees-for-parallel-work)
+9. [Forge CLIs: gh and glab](#forge-clis-gh-and-glab)
+10. [Tag-driven versioning for packages](#tag-driven-versioning-for-packages)
+11. [Sources](#sources)
 
 ---
 
@@ -40,6 +42,75 @@ generate, a version bump you can compute, and a history you can `git log
 --grep 'feat'` months later. Write commits in **English** even when you think
 and prompt in another language — the object graph is read by tools and future
 collaborators.
+
+## Agentic commit provenance
+
+Agentic coding adds several signals that are easy to conflate. Keep them as
+separate layers:
+
+| Layer | What it means |
+|---|---|
+| Git author / committer | The human or service identity that created the commit object. |
+| `Co-Authored-By` | Message attribution recognized by hosting UIs; not a signature. |
+| `AI-Assisted-By` | This workflow's portable harness + model provenance. |
+| Transcript / plan trailers | Repo-relative links to the detailed review trail committed with the diff. |
+| SSH/GPG signature | Proof that a key signed the exact commit object. |
+
+The portable contract is:
+
+```text
+feat(scope): add concise imperative summary
+
+Explain why the change was needed, the resulting behavior, and meaningful
+validation. Agent-produced non-trivial commits always include this body.
+
+AI-Assisted-By: Codex CLI (gpt-5.6-sol)
+Agent-Transcript: .specstory/history/session.md
+Agent-Plan: .claude/plans/plan.md
+```
+
+Repeat the trailers for multiple agents or artifacts. Keep paths repo-relative
+and include only files in the same commit. Tool-native attribution is additive,
+but the canonical fields stay in the **final trailer block**, which is the
+structure [`git interpret-trailers --parse`](https://git-scm.com/docs/git-interpret-trailers)
+can query.
+
+### Harness behavior observed on 2026-08-27
+
+| Harness | Native behavior | Portable-workflow consequence |
+|---|---|---|
+| Claude Code | Commit/PR attribution is a configurable runtime feature; its default commit attribution includes a Generated-with line and model-specific `Co-Authored-By`. | Preserve it and append canonical `AI-Assisted-By` + artifact paths. Commit-body quality is a separate agent behavior. |
+| Cursor | AI commit-message generation uses the staged diff and repository history. Cursor also has line-level AI tracking; Cloud Agent commits are cryptographically signed with an HSM-backed Ed25519 key. | Do not call line attribution, a message trailer, and a Verified commit the same thing. Preserve native signals and add the portable trailers. |
+| Codex CLI | **Inference:** the official configuration reference reviewed on this date documents no commit-attribution setting. | Use the skill/helper contract instead of inventing an OpenAI co-author email. Re-check upstream docs before claiming this is permanent. |
+
+Sources: [Claude Code settings](https://code.claude.com/docs/en/settings),
+[Cursor AI commit messages](https://docs.cursor.com/en/more/ai-commit-message),
+[Cursor analytics](https://cursor.com/docs/account/teams/analytics),
+[Cursor Cloud security](https://cursor.com/docs/cloud-agent/security), and the
+[Codex configuration reference](https://developers.openai.com/codex/config-reference/).
+
+Squash merges create a new commit. Copy the canonical provenance into the
+squash message; neither the source commit hash nor its signature survives.
+Likewise, do not amend a vendor-signed cloud-agent commit solely to add
+metadata—the amended commit is a different object.
+
+## Commit signing
+
+Signing is optional and user-owned. This skill never silently changes global
+Git or agent settings. When the user explicitly asks for SSH signing, inspect
+their existing config and available public keys, confirm key + scope, then use:
+
+```bash
+git config gpg.format ssh
+git config user.signingkey /path/to/public-key.pub
+git config commit.gpgsign true
+git config tag.gpgsign true       # optional, for signed release tags
+```
+
+With SSH signing, Git accepts a public-key path when the matching private key is
+available through `ssh-agent`; see [`user.signingKey`](https://git-scm.com/docs/git-config#Documentation/git-config.txt-usersigningKey).
+The signature authenticates the configured key, while `AI-Assisted-By` records
+the coding harness/model. One does not replace the other.
 
 ## Semantic Versioning
 
@@ -163,6 +234,8 @@ the release commit → `git tag -a vX.Y.Z` → push the tag.
 ## Sources
 
 - [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
+- [git-interpret-trailers](https://git-scm.com/docs/git-interpret-trailers)
+- [git-config signing keys](https://git-scm.com/docs/git-config#Documentation/git-config.txt-usersigningKey)
 - [Semantic Versioning 2.0.0](https://semver.org/)
 - [GitHub Flow](https://docs.github.com/en/get-started/using-github/github-flow)
 - [Claude Code worktrees](https://code.claude.com/docs/en/worktrees)

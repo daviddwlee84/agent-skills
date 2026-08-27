@@ -144,13 +144,19 @@ _SLUG_UNSAFE_RE = re.compile(r"[^A-Za-z0-9]")
 def slug_for(path: Path) -> str:
     """Claude Code project slug for an absolute path.
 
-    Every non-alphanumeric character becomes '-', not just '/'. Verified
+    Resolve symlinks first, then replace every non-alphanumeric character with
+    '-', not just '/'. The realpath step is load-bearing on macOS, where
+    `/var` resolves to `/private/var`: SpecStory derives the provider lookup
+    from the physical subprocess cwd, so a slug built from the logical temp
+    path produces "1 session not found".
+
+    Verified
     against a real session: `/home/<user>/.local/share/chezmoi` is stored as
     `-home-<user>--local-share-chezmoi` (the dot collapses to a second dash).
     Getting this wrong makes `specstory sync` report "1 session not found",
     which is why the probe also keeps its own temp path alphanumeric.
     """
-    return _SLUG_UNSAFE_RE.sub("-", str(path))
+    return _SLUG_UNSAFE_RE.sub("-", str(path.resolve()))
 
 
 def build_session(project_dir: Path, catalog: list[dict]) -> tuple[Path, str]:
@@ -391,7 +397,9 @@ def main() -> int:
 
     # Alphanumeric suffix on purpose: tempfile.mkdtemp() can emit '_', and a
     # slug-collapsed character makes the session undiscoverable (see slug_for).
-    project_dir = Path(tempfile.gettempdir()) / f"specstoryprobe{uuid.uuid4().hex[:12]}"
+    project_dir = (
+        Path(tempfile.gettempdir()) / f"specstoryprobe{uuid.uuid4().hex[:12]}"
+    ).resolve()
     project_dir.mkdir(parents=True, exist_ok=False)
     jsonl, session_id = build_session(project_dir, catalog)
     claude_dir = jsonl.parent
