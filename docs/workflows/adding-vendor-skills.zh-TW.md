@@ -114,6 +114,33 @@ make sync-check
 這會對每個條目記錄的 `last_sync.commit` 做 dry-run，並印出哪些 skill
 有 upstream 新 commit。跑 `make sync` 套用更新。
 
+## 定期自動 sync (GitHub Actions)
+
+[`.github/workflows/vendor-sync.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/workflows/vendor-sync.yml)
+每週一 03:00 UTC 跑 `make sync`（也可手動 `workflow_dispatch`，並可指定
+只 sync 單一 skill）。有 diff 時它會跑過發佈閘門，然後在固定分支
+`chore/vendor-sync` 上開一個 PR — 已存在就更新同一個 PR。
+
+之所以開 PR 而不是直接 commit 到 `main`：vendored 的 `SKILL.md` 內容會
+透過 `npx skills update` 直接進到下游 agent 的 context；而且 frontmatter
+一旦壞掉，`npx skills add`
+[會靜默跳過](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/skill-description-colon-breaks-yaml-frontmatter.md)
+而不是報錯。
+
+兩個必知重點：
+
+- **`validate.yml` 不會在這個 sync PR 上執行。** GitHub 不會為
+  `GITHUB_TOKEN` 建立的 PR 觸發其他 workflow，所以 sync job 自己跑完
+  閘門（frontmatter lint、marketplace、kanban、native smoke），並把結果
+  寫進 PR 內文。
+- **job 紅燈通常代表 upstream 改名或刪除。** `upstream.path` 解析不到時
+  `make sync` 會直接失敗，這需要人來決定 `renamed_from:` 還是 `frozen:`
+  （見[慣例](../conventions.zh-TW.md)）。
+
+Repo 需要先設定一次：**Settings → Actions → General → Workflow
+permissions** 設為 *Read and write*，並勾選 *Allow GitHub Actions to
+create and approve pull requests*。
+
 ## 為什麼不直接從 upstream 安裝？
 
 `npx skills add owner/repo/path/to/skill` 一次只裝一個 skill，

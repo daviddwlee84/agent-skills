@@ -110,6 +110,35 @@ This dry-runs the sync against the recorded `last_sync.commit` for each
 entry and prints which skills have new commits upstream. Run `make sync`
 to apply.
 
+## Scheduled sync (GitHub Actions)
+
+[`.github/workflows/vendor-sync.yml`](https://github.com/daviddwlee84/agent-skills/blob/main/.github/workflows/vendor-sync.yml)
+runs `make sync` every Monday 03:00 UTC (plus `workflow_dispatch`, which
+takes an optional single-skill filter). When there is a diff it runs the
+publish gates and opens — or updates — a PR on the fixed branch
+`chore/vendor-sync`.
+
+It opens a PR instead of committing to `main` because vendored `SKILL.md`
+content ships straight into downstream agents' context via
+`npx skills update`, and because a SKILL.md whose frontmatter stops
+parsing is [silently skipped](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/skill-description-colon-breaks-yaml-frontmatter.md)
+by `npx skills add` rather than erroring.
+
+Two things to know:
+
+- **`validate.yml` does not run on the sync PR.** GitHub does not trigger
+  workflows for PRs created with `GITHUB_TOKEN`, so the sync job runs the
+  gates itself (frontmatter lint, marketplace, kanban, native smoke) and
+  reports the result in the PR body.
+- **A red job usually means an upstream rename or removal.** `make sync`
+  fails hard when `upstream.path` no longer resolves — that needs a human
+  to choose `renamed_from:` vs `frozen:` (see
+  [conventions](../conventions.md)).
+
+Repo setup required once: **Settings → Actions → General → Workflow
+permissions** must be *Read and write* with *Allow GitHub Actions to
+create and approve pull requests* enabled.
+
 ## Why not just install upstream directly?
 
 `npx skills add owner/repo/path/to/skill` works one skill at a time and

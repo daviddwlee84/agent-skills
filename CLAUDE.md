@@ -72,6 +72,15 @@ make docs-build     # produces ./site/
 
 Sync uses the git trees API to recursively download skill directories (SKILL.md + references/ etc.) and updates `vendor.yaml` with the latest commit SHA. When `license_path` is present it also tracks the license blob SHA, so a license-only upstream change is visible to `make sync-check`.
 
+`.github/workflows/vendor-sync.yml` runs `make sync` weekly (Mon 03:00 UTC,
+plus `workflow_dispatch` with an optional single-skill filter) and opens/updates
+a PR on the fixed branch `chore/vendor-sync` — never a direct commit to `main`,
+because vendored content ships to downstream agents via `npx skills update` and
+a broken frontmatter is silently skipped rather than erroring. PRs created with
+`GITHUB_TOKEN` do not trigger `validate.yml`, so the sync job runs the publish
+gates itself. A red sync job usually means an upstream rename/removal — handle
+it with `renamed_from:` or `frozen:` as below.
+
 Active series in this repo:
 - `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
 

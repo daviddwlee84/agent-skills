@@ -1,0 +1,159 @@
+name: Vendor Sync
+
+# Weekly `make sync` against every upstream in vendor.yaml, opened as a PR
+# rather than pushed to main.
+#
+# Why a PR and not an auto-commit:
+#   1. Vendored SKILL.md content lands directly in downstream agents' context
+#      via `npx skills update` — an upstream change deserves a human diff.
+#   2. A SKILL.md whose frontmatter stops parsing is SILENTLY skipped by
+#      `npx skills add` (it still exits 0) — see
+#      pitfalls/skill-description-colon-breaks-yaml-frontmatter.md.
+#   3. When upstream renames or deletes a skill, `make sync` fails hard. That
+#      needs a human to pick `renamed_from:` vs `frozen:` (see CLAUDE.md).
+#
+# GOTCHA: PRs created with GITHUB_TOKEN do NOT trigger other workflows, so
+# validate.yml will not run on the sync PR. That is why this job runs the
+# publish gates itself before handing the PR over.
+
+on:
+  schedule:
+    # Mondays 03:00 UTC.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: 'Sync only this skill (vendor.yaml name); blank = all'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: vendor-sync
+  cancel-in-progress: false
+
+env:
+  SYNC_BRANCH: chore/vendor-sync
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to the version used locally. sync-vendor.sh rewrites vendor.yaml
+      # with `yq -i`, and a different yq major/minor can reflow unrelated lines
+      # into the diff.
+      - name: Install pinned yq
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.53.2/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Sync vendored skills
+        id: sync
+        # Passed through env, never interpolated into the script body.
+        env:
+          SKILL_FILTER: ${{ inputs.skill }}
+        run: |
+          set -o pipefail
+          ./scripts/sync-vendor.sh ${SKILL_FILTER:+"$SKILL_FILTER"} 2>&1 | tee /tmp/sync.log
+
+      - name: Detect changes
+        id: changed
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "any=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat | tail -40
+          else
+            echo "any=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream changes."
+          fi
+
+      # Same parser `npx skills` uses, so CI agrees with the CLI rather than
+      # with whatever yq the runner image ships. Mirrors validate.yml.
+      - name: Install the js yaml parser
+        if: steps.changed.outputs.any == 'true'
+        run: npm install --no-save --no-package-lock yaml@2
+
+      - name: Install the pinned native plugin CLIs
+        if: steps.changed.outputs.any == 'true'
+        run: |
+          npm install --global --no-audit --no-fund @anthropic-ai/claude-code@2.1.235
+          npm install --global --no-audit --no-fund @openai/codex@0.147.0
+
+      # continue-on-error so a broken upstream still produces a reviewable PR;
+      # the job is failed explicitly in the last step.
+      - name: Run publish gates
+        id: validate
+        if: steps.changed.outputs.any == 'true'
+        continue-on-error: true
+        run: |
+          NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills
+          ./scripts/validate-marketplace.sh
+          ./scripts/todo-kanban.sh --validate-only
+          make native-marketplace-smoke
+
+      - name: Open or update the sync PR
+        if: steps.changed.outputs.any == 'true'
+        run: |
+          set -euo pipefail
+
+          # sync-vendor.sh colorizes unconditionally, so strip ANSI before
+          # matching or quoting: the marker is "\e[0;32msynced\e[0m to <sha>".
+          sed 's/\x1b\[[0-9;]*m//g' /tmp/sync.log > /tmp/sync.txt
+          synced=$(grep -c 'synced to' /tmp/sync.txt || true)
+          gates="✅ passed"
+          [[ "${{ steps.validate.outcome }}" == "failure" ]] && gates="❌ FAILED — see the run log before merging"
+
+          {
+            echo "Automated \`make sync\` of \`vendor.yaml\` upstreams."
+            echo
+            echo "**Publish gates:** $gates"
+            echo
+            echo '<details><summary>sync log</summary>'
+            echo
+            echo '```'
+            cat /tmp/sync.txt
+            echo '```'
+            echo
+            echo '</details>'
+            echo
+            echo "> validate.yml does not run on this PR: GitHub does not trigger"
+            echo "> workflows for PRs created with \`GITHUB_TOKEN\`. The gates above"
+            echo "> ran inside the Vendor Sync job instead."
+          } > /tmp/pr-body.md
+
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # The sync branch is bot-owned and regenerated from main every run, so
+          # a plain force push is the intended behaviour, not a lost update.
+          git checkout -B "$SYNC_BRANCH"
+          git add -A
+          git commit \
+            -m "chore(vendor): sync ${synced} skill(s) from upstream" \
+            -m "Opened by .github/workflows/vendor-sync.yml. Review the vendored diff before merging: this content ships to downstream agents via 'npx skills update'."
+          git push --force origin "$SYNC_BRANCH"
+
+          pr=$(gh pr list --head "$SYNC_BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$pr" ]]; then
+            gh pr edit "$pr" --body-file /tmp/pr-body.md
+            echo "Updated PR #$pr"
+          else
+            gh pr create --base main --head "$SYNC_BRANCH" \
+              --title "chore(vendor): sync vendored skills from upstream" \
+              --body-file /tmp/pr-body.md
+          fi
+
+      - name: Fail if the publish gates failed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "::error::Publish gates failed on the synced vendor content — PR opened but not safe to merge as-is."
+          exit 1
