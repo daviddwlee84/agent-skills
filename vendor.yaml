@@ -74,8 +74,8 @@ skills:
       path: skills/vercel-storage
       branch: main
     last_sync:
-      date: "2026-04-24T05:17:15Z"
-      commit: "8e24d0694a31e85be951167e59e0dc9913c05073"
+      date: "2026-08-28T04:15:44Z"
+      commit: "93a4de9d97d54ce3d6ea4951717873731ac8c3ec"
     series: fullstack-nextjs
   - name: supabase
     upstream:
@@ -84,8 +84,8 @@ skills:
       path: skills/supabase
       branch: main
     last_sync:
-      date: "2026-07-05T03:39:39Z"
-      commit: "1356046015476711a769601079262b5635929427"
+      date: "2026-08-28T04:15:49Z"
+      commit: "8331f910845103c08d51f6ca1d86ebb7d1f745e3"
     series: fullstack-nextjs
   - name: supabase-postgres-best-practices
     upstream:
@@ -94,8 +94,8 @@ skills:
       path: skills/supabase-postgres-best-practices
       branch: main
     last_sync:
-      date: "2026-07-05T03:40:31Z"
-      commit: "1356046015476711a769601079262b5635929427"
+      date: "2026-08-28T04:16:21Z"
+      commit: "1207767388a0ffb55f21fb4e6988fee96942431d"
     series: fullstack-nextjs
   - name: web-design-guidelines
     upstream:
@@ -134,8 +134,8 @@ skills:
       path: skills/engineering/grill-with-docs
       branch: main
     last_sync:
-      date: "2026-07-17T06:54:24Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:27Z"
+      commit: "447ca70872026d5b79d6073a546dac082117fed7"
     series: engineering-fundamentals
   - name: tdd
     upstream:
@@ -144,8 +144,8 @@ skills:
       path: skills/engineering/tdd
       branch: main
     last_sync:
-      date: "2026-07-17T06:54:35Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:32Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: diagnosing-bugs
     upstream:
@@ -154,8 +154,8 @@ skills:
       path: skills/engineering/diagnosing-bugs
       branch: main
     last_sync:
-      date: "2026-07-17T06:54:45Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:36Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
     # Upstream renamed skills/engineering/diagnose -> diagnosing-bugs in the
     # 2026-07-05 mattpocock/skills reorg. Kept as a record of the old name.
@@ -182,8 +182,8 @@ skills:
       path: skills/engineering/to-spec
       branch: main
     last_sync:
-      date: "2026-07-17T06:55:22Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:39Z"
+      commit: "5c89081d4bbeb3d039a42093653f90bb698d780e"
     series: engineering-fundamentals
     # Upstream renamed skills/engineering/to-prd -> to-spec in the 2026-07
     # mattpocock/skills reorg (PRD framing -> spec). Kept as a record of the old name.
@@ -195,8 +195,8 @@ skills:
       path: skills/engineering/to-tickets
       branch: main
     last_sync:
-      date: "2026-07-17T06:55:29Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:42Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
     # Upstream renamed skills/engineering/to-issues -> to-tickets in the 2026-07
     # mattpocock/skills reorg (tracer-bullet tickets). Kept as a record of the old name.
@@ -208,8 +208,8 @@ skills:
       path: skills/engineering/improve-codebase-architecture
       branch: main
     last_sync:
-      date: "2026-07-17T06:54:54Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:46Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: triage
     upstream:
@@ -218,8 +218,8 @@ skills:
       path: skills/engineering/triage
       branch: main
     last_sync:
-      date: "2026-07-17T06:55:04Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:51Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: prototype
     upstream:
@@ -228,8 +228,8 @@ skills:
       path: skills/engineering/prototype
       branch: main
     last_sync:
-      date: "2026-07-17T06:55:14Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:16:57Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: gstack-openclaw-office-hours
     upstream:
@@ -268,8 +268,8 @@ skills:
       path: openclaw/skills/gstack-openclaw-retro
       branch: main
     last_sync:
-      date: "2026-05-11T08:40:20Z"
-      commit: "1211b6b40becb684eaf29b0f30a650a8a9b222a5"
+      date: "2026-08-28T04:17:02Z"
+      commit: "008dd65b1fc3df8af618408f5aea37a24dcea411"
     series: product-planning
   - name: deep-research
     upstream:
@@ -351,8 +351,8 @@ skills:
       path: skills/productivity/grilling
       branch: main
     last_sync:
-      date: "2026-07-17T06:55:50Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:17:13Z"
+      commit: "85f83d3fde1d3a90d5c9a657f6998c79a6c37308"
     series: engineering-fundamentals
   - name: domain-modeling
     upstream:
@@ -361,8 +361,8 @@ skills:
       path: skills/engineering/domain-modeling
       branch: main
     last_sync:
-      date: "2026-07-17T06:56:04Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:17:17Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: implement
     upstream:
@@ -381,8 +381,8 @@ skills:
       path: skills/engineering/code-review
       branch: main
     last_sync:
-      date: "2026-07-17T06:56:25Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:17:22Z"
+      commit: "5c89081d4bbeb3d039a42093653f90bb698d780e"
     series: engineering-fundamentals
   - name: wayfinder
     upstream:
@@ -391,8 +391,8 @@ skills:
       path: skills/engineering/wayfinder
       branch: main
     last_sync:
-      date: "2026-07-17T06:56:37Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:17:25Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: codebase-design
     upstream:
@@ -401,8 +401,8 @@ skills:
       path: skills/engineering/codebase-design
       branch: main
     last_sync:
-      date: "2026-07-17T06:58:29Z"
-      commit: "697d4ce9742da558fd1ba6697c8e9775e2e302dd"
+      date: "2026-08-28T04:17:30Z"
+      commit: "321658273cb1d20b76026717d027d505790106d4"
     series: engineering-fundamentals
   - name: herdr
     upstream:
