@@ -37,12 +37,13 @@
     },
     {
       "name": "engineering-quality",
-      "description": "Design verifiable CLI/tool/service surfaces, verify config/dotfile/IaC changes via app-native loaders and harmless runtime smoke, and capture acceptance evidence (screenshots/recordings/logs) for async review",
+      "description": "Design and review reliable LLM application architecture, build verifiable CLI/tool/service surfaces, verify config via app-native loaders and harmless runtime smoke, and capture acceptance evidence for async review",
       "category": "Quality",
-      "tags": ["cli", "config", "validation", "dry-run", "smoke-test", "evidence", "demo"],
+      "tags": ["llm", "agent-architecture", "reliability", "cli", "config", "validation", "dry-run", "smoke-test", "evidence", "demo"],
       "source": "./",
       "strict": false,
       "skills": [
+        "./local/12-factor-agent-design-review",
         "./local/verifiable-surfaces",
         "./local/demo-evidence"
       ]

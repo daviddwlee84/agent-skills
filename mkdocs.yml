@@ -112,6 +112,7 @@ nav:
           - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
           - skill-author: skills/skill-author.md
           - verifiable-surfaces: skills/verifiable-surfaces.md
+          - 12-factor-agent-design-review: skills/12-factor-agent-design-review.md
           - demo-evidence: skills/demo-evidence.md
           - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
           - marimo-batch-mlflow: skills/marimo-batch-mlflow.md

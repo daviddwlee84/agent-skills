@@ -69,7 +69,9 @@ one — not formally evaluated yet.
 
 | Candidate | Upstream | Status | Notes |
 |---|---|---|---|
-| 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `wishlist` | Adjacent design philosophy; could inform a `12-factor-agent-review` skill. |
+| 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `skipped` | Canonical methodology, not an installable skill. Not vendored; it is the attributed CC BY-SA source for the local [`12-factor-agent-design-review`](../skills/12-factor-agent-design-review.md) skill. |
+| `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Useful evidence gates, but its rubric hard-codes Python/Pydantic/Jinja/REST implementation choices. The framework-neutral evidence pattern is cited as an extension in the local skill. |
+| 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | Useful design/review/debug decomposition, but single-skill installs risk missing cross-skill references and the heuristic scanner can report its own source as evidence. Cited as an extension, not vendored. |
 | The Twelve-Factor App | [12factor.net](https://12factor.net/) | `evaluated` | Original 12-factor manifesto. Inspiration source, not a skill. |
 | `agent-skill-creator` | [`FrancyJGLisboa/agent-skill-creator`](https://github.com/FrancyJGLisboa/agent-skill-creator) | `wishlist` | Alternative authoring tool; compare with our [`skill-author`](../skills/skill-author.md) + vendored `skill-creator`. |
 | `find-skills` | [`vercel-labs/skills/find-skills`](https://skills.sh/vercel-labs/skills/find-skills) | `evaluated` | Discovery skill from `vercel-labs/skills`. Useful pattern. |

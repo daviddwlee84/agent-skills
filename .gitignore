@@ -218,8 +218,9 @@ __marimo__/
 /state/
 /config/pueue.yml
 
-# skill-creator eval workspace (throwaway; contains copyrighted fetched lyrics)
+# skill-creator eval workspaces (throwaway; may contain fetched or generated artifacts)
 skills/local/chordpro-workspace/
+skills/local/12-factor-agent-design-review-workspace/
 
 # npm. This is a Python repo with one npm dependency: scripts/lint-frontmatter.sh
 # needs the same `yaml` parser `npx skills` uses, so running the CI gate locally

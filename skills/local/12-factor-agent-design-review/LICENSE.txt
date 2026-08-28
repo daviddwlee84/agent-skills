@@ -1,0 +1,14 @@
+12-factor-agent-design-review documentation and skill content
+Copyright (c) 2026 Da-Wei Lee
+
+This work adapts "12-Factor Agents" by Dexter Horthy / HumanLayer:
+https://github.com/humanlayer/12-factor-agents
+
+The upstream documentation is licensed under the Creative Commons
+Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0). This adapted
+skill documentation is distributed under the same license:
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Related implementations and commentary are cited in references/extensions.md.
+Those sources retain their respective copyrights and licenses. This repository
+does not reproduce the paywalled Medium article referenced there.

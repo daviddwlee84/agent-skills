@@ -1,0 +1,82 @@
+[
+  {
+    "query": "We're adding an AI refund workflow to our FastAPI service. Email and Slack should enter the same flow, refunds over $500 need a manager, and jobs must resume after deploys. Help me design the architecture before we choose an agent framework.",
+    "should_trigger": true
+  },
+  {
+    "query": "Audit src/agent and docs/workflow.md for why our customer-facing tool-calling agent keeps looping and can't resume after a webhook. I want evidence-backed architecture findings, not prompt tweaks.",
+    "should_trigger": true
+  },
+  {
+    "query": "Our LangGraph app works in demos but the framework owns the message history and retry loop. Review what we have and propose a migration that can keep LangGraph where it helps.",
+    "should_trigger": true
+  },
+  {
+    "query": "Design a human approval flow for an LLM deployment agent. The approver may answer hours later by email, callbacks can arrive twice, and the worker won't stay alive.",
+    "should_trigger": true
+  },
+  {
+    "query": "Can you review whether this agent's prompts, context builder, tool schemas, state persistence, retries, and control flow are ready for production? Cite code lines for every verdict.",
+    "should_trigger": true
+  },
+  {
+    "query": "We need an auditable claims-triage LLM for a regulated insurer. Map which decisions belong to the model, policy code, or humans, and define replay and idempotency requirements.",
+    "should_trigger": true
+  },
+  {
+    "query": "The bot is stuck at about 80% reliability: long runs forget earlier constraints, malformed tool calls sometimes reach handlers, and failures retry forever. Diagnose the architecture and give a prioritized target design.",
+    "should_trigger": true
+  },
+  {
+    "query": "Before we implement this agentic feature, turn the product requirements into a concrete event/state/control-flow design with launch, pause, resume, cancellation, and acceptance tests.",
+    "should_trigger": true
+  },
+  {
+    "query": "Please assess our PydanticAI workflow against HumanLayer's 12-Factor Agents principles, but don't penalize us merely for using a framework or inline prompt constants.",
+    "should_trigger": true
+  },
+  {
+    "query": "Review an architecture spec for a multi-tenant LLM tool runner. Focus on typed outputs, authorization before effects, durable correlation IDs, error compaction, and reproducible model inputs.",
+    "should_trigger": true
+  },
+  {
+    "query": "Convert this Rails service to follow the Twelve-Factor App methodology: config in env vars, stateless processes, backing services, logs, and dev/prod parity.",
+    "should_trigger": false
+  },
+  {
+    "query": "Rewrite this system prompt so the assistant sounds warmer and stops using bullet points. Don't change the application architecture.",
+    "should_trigger": false
+  },
+  {
+    "query": "Compare GPT-5, Claude Opus, and Gemini pricing, context limits, tool calling accuracy, and latency for our chatbot procurement decision.",
+    "should_trigger": false
+  },
+  {
+    "query": "Do a normal code review of this TypeScript pull request. It changes date formatting and React component props; there are no model calls.",
+    "should_trigger": false
+  },
+  {
+    "query": "Scaffold a runnable TypeScript AI agent project with package.json, Dockerfile, OpenAI client, tests, and a Slack bot. I want files, not an architecture review.",
+    "should_trigger": false
+  },
+  {
+    "query": "Threat-model our LLM service for prompt injection, SSRF, data exfiltration, tenant isolation, and secrets leakage. Produce a security assessment.",
+    "should_trigger": false
+  },
+  {
+    "query": "Add OpenTelemetry spans and dashboards to our existing agent service. We already know the architecture; focus only on instrumentation code and Grafana panels.",
+    "should_trigger": false
+  },
+  {
+    "query": "Benchmark whether our RAG answer accuracy improves when chunk size changes from 400 to 800 tokens. Build an experiment and analyze the results.",
+    "should_trigger": false
+  },
+  {
+    "query": "Explain factor 3 from the HumanLayer 12-Factor Agents article in two paragraphs. I only need a conceptual summary, not a design or audit.",
+    "should_trigger": false
+  },
+  {
+    "query": "Fix the failing retry test in src/worker.test.ts. The desired retry policy is already documented; diagnose the code bug and implement the patch.",
+    "should_trigger": false
+  }
+]

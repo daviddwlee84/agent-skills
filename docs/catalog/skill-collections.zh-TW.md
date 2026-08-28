@@ -73,7 +73,9 @@ vendored（特定 skill 精選 (cherry-picked) 進
 
 | 候選 | Upstream | Status | 備註 |
 |---|---|---|---|
-| 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `wishlist` | 相關設計哲學；可能啟發 `12-factor-agent-review` skill。 |
+| 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `skipped` | Canonical methodology，不是可安裝 skill，因此不 vendor；它是 local [`12-factor-agent-design-review`](../skills/12-factor-agent-design-review.md) 的 CC BY-SA attribution source。 |
+| `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence gate 有價值，但 rubric 綁定 Python/Pydantic/Jinja/REST implementation choice。Local skill 只引用 framework-neutral 的 evidence pattern。 |
+| 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | Design/review/debug decomposition 可借鏡，但單獨安裝 skill 可能缺少 cross-skill reference，heuristic scanner 也可能把自身 source 當成證據；只作 extension reference，不 vendor。 |
 | The Twelve-Factor App | [12factor.net](https://12factor.net/) | `evaluated` | 原始 12-factor 宣言。靈感來源，非 skill。 |
 | `agent-skill-creator` | [`FrancyJGLisboa/agent-skill-creator`](https://github.com/FrancyJGLisboa/agent-skill-creator) | `wishlist` | 另一個 authoring 工具；與本 repo 的 [`skill-author`](../skills/skill-author.md) + vendored `skill-creator` 對照。 |
 | `find-skills` | [`vercel-labs/skills/find-skills`](https://skills.sh/vercel-labs/skills/find-skills) | `evaluated` | 來自 `vercel-labs/skills` 的探索 skill。 |

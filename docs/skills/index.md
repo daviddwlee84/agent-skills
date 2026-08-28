@@ -21,6 +21,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
 | [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
 | [`verifiable-surfaces`](verifiable-surfaces.md) | Design verifiable CLI/tool/service surfaces (`--help`/`--dry-run`/`--print-config`/isolated smoke) and verify config changes via app-native loaders | [docs](verifiable-surfaces.md) |
+| [`12-factor-agent-design-review`](12-factor-agent-design-review.md) | Design or evidence-review production LLM applications across prompts, context, typed tools, durable state, owned control flow, pause/resume, humans, retries, and replay | [docs](12-factor-agent-design-review.md) |
 | [`demo-evidence`](demo-evidence.md) | Capture acceptance evidence (screenshots/recordings/HTTP logs) into a gitignored `.evidence/` bundle keyed to git branch/commit + agent session, for async "Demos over diffs" review | [docs](demo-evidence.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |

@@ -1,0 +1,57 @@
+{
+  "skill_name": "12-factor-agent-design-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a production refund-support agent for an existing FastAPI + PostgreSQL service. Requests arrive from email and Slack. The agent may approve refunds up to USD 500 when policy checks pass; larger refunds or policy exceptions need human approval. Workers may restart while waiting for a person, duplicate webhooks are possible, and finance needs an auditable explanation of every refund. Produce the architecture design, not implementation code.",
+      "expected_output": "A Design-mode architecture artifact that separates LLM judgment, deterministic policy, and human approval; defines typed decisions, durable state/events, idempotent pause/resume, bounded failures, factor relevance, and executable acceptance checks.",
+      "files": [],
+      "expectations": [
+        "The output explicitly selects Design mode and defines the user-visible outcome and non-goals.",
+        "The output separates LLM, deterministic code, and human ownership; the USD 500 threshold and refund execution are enforced outside the LLM.",
+        "The output defines typed model decisions plus validation/policy before any refund side effect.",
+        "The output defines durable state/events, correlation and idempotency for duplicate webhooks, and pause/resume after worker restart or human response.",
+        "The output includes bounded retry/error handling, timeout or cancellation behavior, and escalation.",
+        "The output classifies factor relevance with Required, Recommended, or justified N/A values and labels Factor 13 as an appendix.",
+        "The output includes concrete replay, restart, duplicate-event, policy-boundary, and approval acceptance checks without claiming runtime behavior was already verified."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review the attached refund-agent fixture against the 12-Factor Agents principles. Cite repo-relative file:line evidence, distinguish confirmed gaps from unverified behavior, identify strengths worth preserving, and prioritize the smallest production-readiness fixes. Do not rewrite the application.",
+      "expected_output": "A Review-mode report grounded in the fixture that identifies the unsafe direct side effect, unbounded context/loop, volatile state, and missing resume path while preserving the typed schema as a strength and avoiding invented claims.",
+      "files": [
+        "evals/files/refund-agent/src/agent.ts",
+        "evals/files/refund-agent/src/state.ts",
+        "evals/files/refund-agent/src/tools.ts",
+        "evals/files/refund-agent/docs/architecture.md"
+      ],
+      "expectations": [
+        "The output explicitly selects Review mode and names the inspected fixture scope.",
+        "Material findings cite the supplied files with line numbers or exact document excerpts.",
+        "The output identifies that model-produced refund arguments reach issueRefund without schema parsing or deterministic policy enforcement as the highest-severity risk.",
+        "The output identifies unbounded raw message accumulation and the unbounded while loop as separate context/control-flow risks.",
+        "The output identifies volatile in-memory state and the lack of a durable pause/resume path, including duplicate callback or restart consequences.",
+        "The output recognizes the discriminated Zod schema as a strength while noting that the execution path does not use it.",
+        "The output uses Unverified for behavior not provable from the fixture, avoids a compliance percentage, and proposes an ordered minimal remediation with verification steps."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use Mixed mode on the attached current-state design. First review its reliability against 12-Factor Agents using document evidence, then propose a target design that keeps LangGraph where it remains useful. The target must support asynchronous manager approval, process restarts, bounded tool failures, and reproducible model inputs. Do not assume a greenfield rewrite.",
+      "expected_output": "A Mixed-mode current-state review and traceable target design that preserves useful framework primitives while reclaiming prompt/context/control/state ownership and adding durable approval/resume/replay behavior.",
+      "files": [
+        "evals/files/mixed-workflow.md"
+      ],
+      "expectations": [
+        "The output explicitly selects Mixed mode and completes a current-state review before the target design.",
+        "Review findings cite exact statements from the supplied design and separate confirmed facts from unverified implementation details.",
+        "The target design retains LangGraph as an implementation primitive where useful rather than treating framework use as an automatic failure.",
+        "Each material target-state change traces back to a review finding or stated requirement.",
+        "The target defines owned/versioned prompt and reproducible context construction, durable external state, correlated approval events, and restart-safe resume.",
+        "The target defines bounded tool-error compaction, termination/escalation, and replay or transition tests.",
+        "The output labels Factor 13 as an appendix and does not report a compliance percentage."
+      ]
+    }
+  ]
+}

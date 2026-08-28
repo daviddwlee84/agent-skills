@@ -11,8 +11,9 @@ tasks → execute → verify 這個 loop，或管理 context window、執行
 sub-agent。
 
 本 repo 聚焦在 **skill**，刻意 (intentionally) 不 ship SDD framework
-或 harness。不過會收錄 Herdr 的官方控制 adapter：runtime 本身是
-harness／multiplexer，而 vendored artifact 仍是一般 agent skill。
+或 harness。不過會提供一個設計／審查 LLM application layer 的 local
+skill，並收錄 Herdr 的官方控制 adapter；兩者都不會把此 collection 變成
+harness runtime。
 
 ## 此 repo 內的 skill
 
@@ -20,7 +21,7 @@ harness／multiplexer，而 vendored artifact 仍是一般 agent skill。
 
 | Skill | 一句話 | 備註 |
 |---|---|---|
-| _無 —— 不在範圍 (out of scope)_ | | 本 repo ship skill；harness ship 的是「驅動 skill 的 loop」。不同層。 |
+| [`12-factor-agent-design-review`](../../skills/12-factor-agent-design-review.md) | 用 HumanLayer 12-Factor Agents 原則設計或 evidence-review production LLM application | 審查 harness 下方的 workflow/application layer：prompt、context、typed decision、state、control flow、pause/resume、human、retry 與 replay；不提供 runtime。 |
 
 ### Vendored
 
@@ -39,6 +40,8 @@ harness／multiplexer，而 vendored artifact 仍是一般 agent skill。
 | `gsd-2` | [`gsd-build/gsd-2`](https://github.com/gsd-build/gsd-2) | `evaluated` | 獨立 harness（不只是 SDD framework）。 | （見 upstream README） |
 | OpenClaw | [`openclaw/openclaw`](https://github.com/openclaw/openclaw) | `evaluated` | 控制 agent session 的獨立 CLI / runtime。同時也產出 `gstack-openclaw-*` skill（已歸在 `product-planning` series vendored）。 | （見 upstream README） |
 | Pi SDK | [`badlogic/pi-mono`](https://github.com/badlogic/pi-mono) | `evaluated` | Agent harness 的另一選項。 | （見 upstream README） |
+| `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence-first 12-Factor review 有價值，但 rubric 綁定 Python 與特定 implementation；local skill 只引用可攜的 evidence-gate 構想。 | `npx skills add existential-birds/beagle --skill agent-architecture-analysis` |
+| 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | 五個 skill 的廣泛組合，但 cross-skill reference 與 scanner self-match 問題使它不適合原樣 vendor。 | `npx skills add tika/12-factor-agent-skills` |
 
 ## MCP servers
 
@@ -60,3 +63,5 @@ harness／multiplexer，而 vendored artifact 仍是一般 agent skill。
   OpenClaw skill（`gstack-openclaw-*`），這些*是*在本 repo 範圍內。
 - [`herdr`](../../skills/herdr.md) —— 官方控制 skill，以及為何安裝 binary
   時應優先用 binary-emitted copy 取得精確版本對齊。
+- [`12-factor-agent-design-review`](../../skills/12-factor-agent-design-review.md)
+  —— 何時應設計／審查 LLM application layer，而不是導入 harness。
