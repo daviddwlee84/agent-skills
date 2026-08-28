@@ -128,6 +128,7 @@ nav:
           - fastapi-ai-scaffold: skills/fastapi-ai-scaffold.md
           - fastapi-ai-interview-prep: skills/fastapi-ai-interview-prep.md
           - raycast-extension-dev: skills/raycast-extension-dev.md
+          - python-project-best-practice: skills/python-project-best-practice.md
       - Vendored:
           - marimo-notebook: skills/marimo-notebook.md
           - streamlit-to-marimo: skills/streamlit-to-marimo.md

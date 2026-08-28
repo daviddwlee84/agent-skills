@@ -41,6 +41,7 @@
 | [`fastapi-ai-scaffold`](fastapi-ai-scaffold.md) | 生成 production 形狀的 FastAPI AI 服務（clean architecture、lifespan 載入模型、JWT、SSE、probe、測試、Docker）；`new-fastapi-ai-service.sh` + 44 檔 skeleton | [docs](fastapi-ai-scaffold.md) |
 | [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 題自撰的 FastAPI/AI 面試問答，橫跨 10 個主題 + `quiz.py` mock interview CLI | [docs](fastapi-ai-interview-prep.md) |
 | [`raycast-extension-dev`](raycast-extension-dev.md) | 開發／驗證／上架 Raycast 擴充 —— launchd 的 PATH 陷阱、`ray build` 跳過的型別檢查、`MenuBarExtra` 限制，以及 `ray lint` 從不執行的 store 檢查；附 scaffolder 與上架就緒檢查器 | [docs](raycast-extension-dev.md) |
+| [`python-project-best-practice`](python-project-best-practice.md) | 現代 Python 專案慣例 —— uv + src layout、Tyro CLI、loguru、Justfile 後面的 ruff/型別/pytest gate、AGENTS.md docs-drift 檢查；附六種 profile 的 scaffolder 與 26 項唯讀 legacy 盤點 | [docs](python-project-best-practice.md) |
 
 ## Vendored skills
 

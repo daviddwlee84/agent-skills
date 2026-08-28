@@ -75,6 +75,17 @@
       ]
     },
     {
+      "name": "06-python-project",
+      "description": "Modern Python project conventions for the agentic era: uv + src layout, Tyro CLIs, loguru, ruff/type/pytest gates behind a Justfile, an AGENTS.md contract with a docs-drift gate, a six-profile scaffolder, and a read-only legacy audit",
+      "category": "Engineering",
+      "tags": ["python", "uv", "tyro", "ruff", "pytest", "packaging", "scaffold", "refactor"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/python-project-best-practice"
+      ]
+    },
+    {
       "name": "fullstack-nextjs",
       "description": "Next.js App Router + Supabase + shadcn/ui + design + testing series",
       "category": "Web",

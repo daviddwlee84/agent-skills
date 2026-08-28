@@ -30,7 +30,6 @@ workflow that agents should follow.
 
 ## P?
 
-- [ ] **[?/M] Python + uv workflow skill** — evaluate package management, `uv run`, and virtualenv activation conventions for Python-focused repos.
 - [ ] **[?/L] Next.js + Supabase + shadcn/ui + Tailwind CSS + Vercel** — evaluate a full-stack app skill that covers auth, data, UI scaffolding, and deployment together.
 - [ ] **[?/M] VectorBT skill** — assess the minimum workflow for factor research, backtesting, and result inspection with VectorBT.
 - [ ] **[?/L] VectorBT Pro skill** — assess whether a premium-only skill can reliably point agents at the correct documentation page and paid workflow nuances.
@@ -69,6 +68,8 @@ workflow that agents should follow.
 - [ ] **[?/M] Evaluate remaining mattpocock/skills for engineering-fundamentals** — Core flow vendored (15 skills). Decide on the rest: setup-matt-pocock-skills (opinionated per-repo bootstrap; soft prereq the flow references), research (overlaps deep-research; wayfinder delegates to /research), ask-matt (router), resolving-merge-conflicts, grill-me, handoff, teach, writing-great-skills (dup skill-author). Skip misc/deprecated/in-progress/personal buckets. See docs/reference/mattpocock-skills.md. → [research](backlog/evaluate-remaining-mattpocock-skills-for-engineering-fundamentals.md)
 
 ## Done
+
+- ✅ [2026-08-28] [P?/M] Python + uv workflow skill — Shipped as python-project-best-practice: uv/src-layout/Tyro/loguru/ruff+ty+pytest conventions, a six-profile scaffolder, and a 26-check read-only legacy audit
 
 - ✅ [2026-07-26] [P3/S] Docs pages for long-running-jobs, slurm-hpc, experiment-knowledge-harness — Added bilingual docs pages (EN + zh-TW) for long-running-jobs, slurm-hpc, and experiment-knowledge-harness; registered in mkdocs nav and docs/skills/index.md. make docs-build clean.
 

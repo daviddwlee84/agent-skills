@@ -37,6 +37,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`fastapi-ai-scaffold`](fastapi-ai-scaffold.md) | Generate a production-shaped FastAPI AI service (clean architecture, lifespan model, JWT, SSE, probes, tests, Docker); `new-fastapi-ai-service.sh` + 44-file skeleton | [docs](fastapi-ai-scaffold.md) |
 | [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 self-written FastAPI/AI interview Q&A across 10 topics + a `quiz.py` mock-interview CLI | [docs](fastapi-ai-interview-prep.md) |
 | [`raycast-extension-dev`](raycast-extension-dev.md) | Build/verify/ship Raycast extensions — the launchd PATH trap, the typecheck `ray build` skips, `MenuBarExtra` constraints, and the store checks `ray lint` never runs; ships a scaffolder + readiness checker | [docs](raycast-extension-dev.md) |
+| [`python-project-best-practice`](python-project-best-practice.md) | Modern Python project conventions — uv + src layout, Tyro CLIs, loguru, ruff/type/pytest behind a Justfile, an AGENTS.md docs-drift gate; ships a six-profile scaffolder and a 26-check read-only legacy audit | [docs](python-project-best-practice.md) |
 
 ## Vendored skills
 
