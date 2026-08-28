@@ -24,6 +24,7 @@ Catalog 存在的理由：
 |---|---|---|
 | [Domains](domains/index.md) | 每個專業領域 (professional domain) 一頁 hub —— 從該領域視角整合 skill + MCP + backlog。 | [Finance](domains/finance.md) 是內容最完整的範例。 |
 | [External skills](skill-collections.md) | 收整 upstream skill collection 與相關閱讀的單一索引。取代過去的 `Collections.md` 與 README「Resources」段落。 | 頁首的完整表格。 |
+| [趣味收藏架](curiosities.md) | 只放在 docs 的有趣、挑釁性或高度個人化 skill；不進入日常 discovery 與工作流。 | Persona 與 meta-skill 實驗。 |
 | [MCP wiki](mcp/index.md) | MCP server 的個人知識區 —— 一個 MCP 一頁，附 frontmatter 供未來自動化使用。 | [Financial Datasets MCP](mcp/financialdatasets-ai.md) 是第一筆完整條目。 |
 
 ## Catalog 的 status 機制

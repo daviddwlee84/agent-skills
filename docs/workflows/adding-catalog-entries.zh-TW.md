@@ -17,6 +17,7 @@ vendoring 透過既有 script 進行。
 | 你發現了… | 放哪 | 起始 status |
 |---|---|---|
 | 可能想 vendor 的 external skill | [`skill-collections.md`](../catalog/skill-collections.md) + 對應的 [domain hub](../catalog/domains/index.md) | `wishlist` |
+| 明確不想進日常 discovery，但值得收藏的有趣 skill | [`curiosities.md`](../catalog/curiosities.md) | `skipped`，並寫明只放 docs 的理由 |
 | 想記住的 MCP server | [`catalog/mcp/`](../catalog/mcp/index.md) 下新檔 + 對應的 domain hub | `wishlist` |
 | 全新的專業領域 (professional domain) | [`catalog/domains/`](../catalog/domains/index.md) 下新檔（複製 `_template.md`） | （hub 本身，不是條目） |
 | 看過後決定不要 vendor 的 skill | 加進 `skill-collections.md` 並寫理由 | `skipped` |

@@ -238,10 +238,12 @@ domain-specific hubs lives in the docs site:
 
 📚 **[Catalog](https://daviddwlee84.github.io/agent-skills/catalog/)** —
 external skill collections, per-domain hubs (Finance, Quant Research, AI/ML
-Research, Web & Fullstack, Knowledge Work, Agent Harness), and an MCP wiki.
+Research, Web & Fullstack, Knowledge Work, Agent Harness), a docs-only
+curiosity shelf, and an MCP wiki.
 
 Highlights:
 
 - [Skill collections index](https://daviddwlee84.github.io/agent-skills/catalog/skill-collections/) — every upstream we track, with `vendored / deferred / skipped / evaluated / wishlist` status per entry.
+- [Skill curiosity shelf](https://daviddwlee84.github.io/agent-skills/catalog/curiosities/) — unusual or playful skills worth remembering without adding them to normal discovery or workflows.
 - [Finance hub](https://daviddwlee84.github.io/agent-skills/catalog/domains/finance/) — covers `anthropics/financial-services`, `RKiding/Awesome-finance-skills`, the [Financial Datasets MCP](https://daviddwlee84.github.io/agent-skills/catalog/mcp/financialdatasets-ai/), and more.
 - [Adding catalog entries workflow](https://daviddwlee84.github.io/agent-skills/workflows/adding-catalog-entries/) — how to record an external skill / MCP / domain decision.

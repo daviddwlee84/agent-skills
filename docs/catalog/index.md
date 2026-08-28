@@ -21,6 +21,7 @@ The catalog exists because:
 |---|---|---|
 | [Domains](domains/index.md) | One hub page per professional domain — pulls together skills + MCPs + backlog from the domain's perspective. | [Finance](domains/finance.md) is the most-populated example. |
 | [External skills](skill-collections.md) | Single curated index of upstream skill collections + adjacent reading. Replaces the historical `Collections.md` + README "Resources" section. | The full table at the top of the page. |
+| [Curiosity shelf](curiosities.md) | Docs-only collection of amusing, provocative, or highly personal skills that should not enter routine discovery or workflows. | Persona and meta-skill experiments. |
 | [MCP wiki](mcp/index.md) | Personal-knowledge area for MCP servers — one page per MCP with frontmatter for future automation. | [Financial Datasets MCP](mcp/financialdatasets-ai.md) is the first populated entry. |
 
 ## How catalog status works

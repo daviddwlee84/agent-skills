@@ -157,6 +157,7 @@ nav:
           - Knowledge Work: catalog/domains/knowledge-work.md
           - Agent Harness: catalog/domains/agent-harness.md
       - External skills: catalog/skill-collections.md
+      - Curiosity shelf: catalog/curiosities.md
       - MCP wiki:
           - Overview: catalog/mcp/index.md
           - Financial Datasets: catalog/mcp/financialdatasets-ai.md

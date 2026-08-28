@@ -221,11 +221,11 @@ item, also mark it as shipped (don't delete — keep it as historical record).
 Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
 when it contains items from a previous calendar year or grows past 20 entries.
 
-### External skill / MCP / domain catalog -> `docs/catalog/`
+### External skill / MCP / domain / curiosity catalog -> `docs/catalog/`
 
 `docs/catalog/` is the vendoring decision log + external-awareness
 registry, separate from `Skills` (what we ship) and `Reference` (our
-own conventions). It has three subareas:
+own conventions). It has four subareas:
 
 - `docs/catalog/domains/` — per-domain hub pages (one per professional
   domain: Finance, Quant Research, AI/ML Research, Web & Fullstack,
@@ -236,6 +236,10 @@ own conventions). It has three subareas:
   upstream skill collections (Anthropic, Vercel, Supabase, marimo,
   Warp Oz, Orchestra-Research, etc.) with status per entry. Replaces
   the historical `Collections.md` (kept as a stub).
+- `docs/catalog/curiosities.md` — docs-only shelf for interesting,
+  provocative, or highly personal skills that are deliberately excluded
+  from `vendor.yaml`, marketplace grouping, and routine skill discovery.
+  Entries use `skipped` with the reason they remain docs-only.
 - `docs/catalog/mcp/` — MCP wiki, modeled after Karpathy's
   [LLM Wiki pattern](docs/reference/llm-wiki-pattern.md). One markdown
   file per MCP with required YAML frontmatter

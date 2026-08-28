@@ -14,6 +14,7 @@ scripts.
 | You discovered… | Where it goes | Status to start with |
 |---|---|---|
 | An external skill you might want to vendor | [`skill-collections.md`](../catalog/skill-collections.md) + relevant [domain hub](../catalog/domains/index.md) | `wishlist` |
+| An interesting skill you explicitly do not want in routine discovery | [`curiosities.md`](../catalog/curiosities.md) | `skipped` with the docs-only reason |
 | An MCP server you want to remember | New file under [`catalog/mcp/`](../catalog/mcp/index.md) + relevant domain hub | `wishlist` |
 | A whole new professional domain | New file under [`catalog/domains/`](../catalog/domains/index.md) (copy `_template.md`) | (hub itself, not entry) |
 | A skill you looked at and rejected | Add to `skill-collections.md` with reason | `skipped` |
