@@ -210,6 +210,12 @@ runbook 顯式禁止對共用 branch 做 `git push --force` —— 詳見
   （`Private key found: .agents/skills/agent-history-hygiene/tests/…`），
   請跑 `npx skills@latest update`，不要去放寬 `exclude:` ——
   [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/detect-private-key-blocks-commits-in-downstream-repos.md)。
+- Formatter 跟 linter 需要跟 scanner 一樣的範圍限制。ruff 0.16 起會格式化
+  Markdown code block 裡的 Python，因此會改寫已 commit 的 transcript；
+  `.agents/skills/` 下裝的 skill 則是 vendored code。請排除 `.agents`、
+  `.claude`、`.codex`、`.cursor`、`.opencode`、`.specify`、`.specstory` ——
+  `.claude` 要單獨列，因為 `.claude/skills/<name>` 是指向 `.agents` 的
+  symlink，只排除 `.agents` 仍然掃得到同一批檔案 —— [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/formatter-rewrites-committed-agent-transcripts.md)。
 - Claude Code 的 project-level `plansDirectory` 有時會被忽略
   ([issue #19537](https://github.com/anthropics/claude-code/issues/19537))；
   把它設在 user-level (`~/.claude/settings.json`) 當預設。

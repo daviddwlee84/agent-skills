@@ -240,6 +240,17 @@ committed / pushed a secret":
   `extra_patterns` did not survive the Betterleaks rewrite, so repo-specific
   rules stay our job. For SpecStory older than 2.4.0 (or with redaction
   disabled), run `redact_secrets.py --fix --legacy`.
+- **Scope formatters and linters past the artifact dirs, not just
+  scanners.** Since ruff 0.16, `ruff format` formats Python inside Markdown
+  code blocks, so it rewrites committed transcripts — falsifying the record,
+  and churning forever against SpecStory rewriting the same file. Installed
+  skills under `.agents/skills/` are vendored code and equally out of scope.
+  Exclude `.agents`, `.claude`, `.codex`, `.cursor`, `.opencode`, `.specify`,
+  `.specstory`; `.claude` matters separately from `.agents` because
+  `.claude/skills/<name>` symlinks into it, so an `.agents`-only exclude still
+  reaches the same files. The template already excludes `^\.specstory/` from
+  `end-of-file-fixer` + `trailing-whitespace` for the same reason — this is
+  that rule applied to tools the template does not install.
 - **`plansDirectory` project-level sometimes ignored.** Claude Code
   issue [#19537](https://github.com/anthropics/claude-code/issues/19537)
   reports project-level `plansDirectory` being ignored in some

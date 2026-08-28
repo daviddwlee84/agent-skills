@@ -216,6 +216,12 @@ branches — see `references/remediation.md` §5.
   commit with `Private key found: .agents/skills/agent-history-hygiene/tests/…`,
   run `npx skills@latest update` rather than widening `exclude:` —
   [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/detect-private-key-blocks-commits-in-downstream-repos.md).
+- Formatters and linters need the same scoping as scanners. Ruff 0.16 formats
+  Python inside Markdown code blocks, so it rewrites committed transcripts;
+  installed skills under `.agents/skills/` are vendored code. Exclude
+  `.agents`, `.claude`, `.codex`, `.cursor`, `.opencode`, `.specify`,
+  `.specstory` — `.claude` separately, since `.claude/skills/<name>` symlinks
+  into `.agents` — [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/formatter-rewrites-committed-agent-transcripts.md).
 - Claude Code `plansDirectory` project-level is sometimes ignored
   ([issue #19537](https://github.com/anthropics/claude-code/issues/19537));
   set at the user level (`~/.claude/settings.json`) as the default.

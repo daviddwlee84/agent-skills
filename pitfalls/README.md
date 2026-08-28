@@ -51,6 +51,7 @@ and prevention guidance.
 | [`rebase-continue-refuses-on-clean-index-live-transcript`](rebase-continue-refuses-on-clean-index-live-transcript.md) | `You must edit all merge conflicts`, `git rebase --continue` loops, `git ls-files -u` empty, `AM` file, `.specstory` live transcript rewritten mid-rebase, checkout "local changes would be overwritten", concurrent git in shared worktree | active |
 | [`skill-description-colon-breaks-yaml-frontmatter`](skill-description-colon-breaks-yaml-frontmatter.md) | `npx skills` prints `⚠ Skipped … YAML parse error`, `Nested mappings are not allowed in compact mappings`, `mapping values are not allowed in this context`, skill missing from picker, unquoted `description:` with `": "`, ` #` silently truncates description | active |
 | [`detect-private-key-blocks-commits-in-downstream-repos`](detect-private-key-blocks-commits-in-downstream-repos.md) | `detect private key.....Failed`, `Private key found: .agents/skills/...`, downstream repo cannot commit anything, hook honours no `gitleaks:allow` / `.github/secret_scanning.yml`, BLACKLIST plain-substring match, shipped skill tests inside consumer scan scope | active |
+| [`formatter-rewrites-committed-agent-transcripts`](formatter-rewrites-committed-agent-transcripts.md) | `ruff format` reformats `.specstory/history/*.md`, Python inside Markdown code blocks since ruff 0.16, installed skills under `.agents/skills` flagged, `.claude/skills` symlink escapes an `.agents`-only exclude, transcript churn never converges | active |
 
 ## Cross-referenced pitfalls
 
