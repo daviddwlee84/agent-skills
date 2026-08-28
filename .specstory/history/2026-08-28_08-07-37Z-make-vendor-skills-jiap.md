@@ -2201,3 +2201,533 @@ Exit codes:
   4  harness/model provenance could not be resolved
 ```
 </details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:29:02Z)**_
+
+Staging and running the hygiene gate:
+
+_**Agent (claude-opus-5 2026-08-28 08:29:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Stage changes and scan for secrets
+
+`git add -A && git status --short && echo "=== scan-staged ===" && bash skills/local/agent-history-hygiene/scripts/scan-staged.sh 2>&1 | tail -20`
+
+```text
+A  .github/workflows/vendor-sync.yml
+A  .specstory/history/2026-08-28_08-07-37Z-make-vendor-skills-jiap.md
+M  CLAUDE.md
+M  TODO.md
+M  docs/workflows/adding-vendor-skills.md
+M  docs/workflows/adding-vendor-skills.zh-TW.md
+=== scan-staged ===
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:29:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check scan exit code and generate provenance trailers
+
+`bash skills/local/agent-history-hygiene/scripts/scan-staged.sh; echo "scan exit=$?"; echo "=== metadata ==="; bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh; echo "meta exit=$?"`
+
+```text
+scan exit=0
+=== metadata ===
+AI-Assisted-By: Claude Code (claude-opus-5)
+Agent-Transcript: .specstory/history/2026-08-28_08-07-37Z-make-vendor-skills-jiap.md
+metadata: 1 assistant(s), 1 transcript(s), 0 plan(s)
+meta exit=0
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:29:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Draft and validate the commit message
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+cat > "$SP/msg.txt" <<'EOF'
+ci(vendor-sync): open the weekly vendor sync as a PR
+
+`make sync` rewrites skills/vendor/ and stamps vendor.yaml but never commits,
+so keeping vendored skills current was a manual chore nobody scheduled. This
+runs it Mondays 03:00 UTC (plus workflow_dispatch with an optional single-skill
+filter, which sync-vendor.sh already supported and the Makefile never exposed).
+
+It opens a PR on the fixed branch chore/vendor-sync instead of pushing to main.
+Vendored SKILL.md content reaches downstream agents' context directly through
+`npx skills update`, and a SKILL.md whose frontmatter stops parsing is silently
+skipped by `npx skills add` rather than erroring - an unreviewed auto-commit
+would ship both an unread upstream diff and an invisible breakage.
+
+validate.yml does not run on that PR: GitHub does not trigger workflows for PRs
+created with GITHUB_TOKEN. The sync job therefore runs the publish gates itself
+(frontmatter lint with the same js yaml parser the CLI uses, marketplace, TODO
+kanban, both native marketplace smokes) and reports the outcome in the PR body.
+The gate step is continue-on-error so a broken upstream still produces a
+reviewable PR; a final step fails the job explicitly.
+
+Three details that would otherwise bite:
+
+- yq is pinned to v4.53.2, the version used locally. sync-vendor.sh rewrites
+  vendor.yaml with `yq -i`, and a different yq reflows unrelated lines into
+  the diff.
+- sync-vendor.sh colorizes unconditionally, so the success marker on disk is
+  "\e[0;32msynced\e[0m to <sha>" and a plain `grep -c 'synced to'` counts zero.
+  ANSI is stripped once, then reused for both the count and the PR body.
+- The workflow_dispatch input is passed through env rather than interpolated
+  into the script body.
+
+A red job is the intended signal for an upstream rename or removal: sync fails
+hard when upstream.path no longer resolves, and that needs a human to choose
+`renamed_from:` vs `frozen:`.
+
+Requires Settings -> Actions -> General -> Workflow permissions set to read and
+write with PR creation allowed.
+
+Also files the Makefile-to-Justfile migration as P3 with its measured cost
+(~100 live `make <target>` references; .specstory/history and .claude/plans are
+historical records and stay untouched), rather than doing it in this commit.
+
+AI-Assisted-By: Claude Code (claude-opus-5)
+Agent-Transcript: .specstory/history/2026-08-28_08-07-37Z-make-vendor-skills-jiap.md
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+EOF
+bash skills/local/git-workflow/scripts/check-commit-msg.sh --agentic --staged --file "$SP/msg.txt"; echo "exit=$?"
+```
+
+```text
+warn: could not run the UTF-8 language check in this locale
+valid: type=ci scope=vendor-sync agentic=true
+{"valid":true,"type":"ci","scope":"vendor-sync","breaking":false,"agentic":true,"assistants":1,"transcripts":1,"plans":0}
+exit=0
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:29:33Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the changes
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+git commit -q -F "$SP/msg.txt" && git log -1 --format='%h %s' && git status --short
+```
+
+```text
+a9538b8 ci(vendor-sync): open the weekly vendor sync as a PR
+ M .specstory/history/2026-08-28_08-07-37Z-make-vendor-skills-jiap.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:29:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate, check remote and workflow permissions
+
+`make validate >/dev/null 2>&1 && echo "validate: PASS" || echo "validate: FAIL"; git remote -v | head -2; gh api repos/daviddwlee84/agent-skills/actions/permissions/workflow 2>&1`
+
+```text
+validate: PASS
+origin	https://github.com/daviddwlee84/agent-skills.git (fetch)
+origin	https://github.com/daviddwlee84/agent-skills.git (push)
+{"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:30:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Push to main
+
+`git push origin main 2>&1 | tail -5`
+
+```text
+To https://github.com/daviddwlee84/agent-skills.git
+   08a369e..a9538b8  main -> main
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:30:24Z)**_
+
+Pushed. Note this carried up three previously-unpushed local commits too (`e3c8504`, `df1dda0`, `01fca9b`) — remote `main` had been at `08a369e`.
+
+Confirmed the blocker before triggering: `{"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}`. The second flag hard-blocks `gh pr create` from the Actions token regardless of what the workflow's `permissions:` key says.
+
+_**Agent (claude-opus-5 2026-08-28 08:32:34Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="AskUserQuestion"><details>
+<summary>Tool use: **AskUserQuestion**</summary>
+**要我用 gh API 改 repo 的 Actions workflow permissions 嗎？（這是觸發前的必要前置）**
+
+Options:
+- **兩個都開（推薦）** - default_workflow_permissions=write + can_approve_pull_request_reviews=true。這是 GitHub 文件對自動開 PR 的標準設定。代價：沒寫 permissions: 的 workflow 預設拿到 write token（你現有兩支 workflow 都有寫死 permissions:，不受影響）。一行 API 可還原。
+- **只開 PR 建立權** - 只設 can_approve_pull_request_reviews=true，預設維持 read。權限最小，但不確定 workflow 內的 permissions: contents: write 能不能超過 repo 預設—— 可以先試，失敗再補。
+- **我自己到 UI 改** - 你到 Settings → Actions → General 手動勾，改完告訴我，我再觸發。
+- **先不改，直接觸發** - 先跑一次看實際斷在哪。反正目前 upstream 都是 up to date，很可能根本不會走到開 PR 那步—— 只能驗證 sync 本身不會壞。
+
+
+**Answer:** 兩個都開（推薦）
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:32:39Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Enable write permissions and PR creation for Actions
+
+```bash
+gh api -X PUT repos/daviddwlee84/agent-skills/actions/permissions/workflow \
+  -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true 2>&1
+echo "--- verify ---"
+gh api repos/daviddwlee84/agent-skills/actions/permissions/workflow
+```
+
+```text
+--- verify ---
+{"default_workflow_permissions":"write","can_approve_pull_request_reviews":true}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:33:10Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Trigger the vendor-sync workflow
+
+`gh workflow run vendor-sync.yml --ref main 2>&1; sleep 8 2>/dev/null; gh run list --workflow=vendor-sync.yml --limit 3 2>&1`
+
+```text
+https://github.com/daviddwlee84/agent-skills/actions/runs/33155785824
+in_progress		Vendor Sync	Vendor Sync	main	workflow_dispatch	33155785824	9s	2026-08-28T08:33:00Z
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:33:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Watch the workflow run to completion
+
+`gh run watch 33155785824 --exit-status --interval 10 2>&1 | tail -25; echo "watch exit=$?"`
+
+```text
+  * Open or update the sync PR
+  * Fail if the publish gates failed
+  * Post Run actions/checkout@v4
+✓ main Vendor Sync · 33155785824
+Triggered via workflow_dispatch less than a minute ago
+
+JOBS
+✓ sync in 21s (ID 98798100373)
+  ✓ Set up job
+  ✓ Run actions/checkout@v4
+  ✓ Install pinned yq
+  ✓ Sync vendored skills
+  ✓ Detect changes
+  - Install the js yaml parser
+  - Install the pinned native plugin CLIs
+  - Run publish gates
+  - Open or update the sync PR
+  - Fail if the publish gates failed
+  ✓ Post Run actions/checkout@v4
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+sync: .github#2
+
+watch exit=0
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:33:52Z)**_
+
+No-change path is green (21s). Now exercising the untested half — the PR step — locally with a scratch repo, a bare remote, and a stubbed `gh`:
+
+_**Agent (claude-opus-5 2026-08-28 08:34:02Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Set up scratch repo, bare remote and gh stub
+
+```bash
+set -euo pipefail
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+T="$SP/prstep"; rm -rf "$T"; mkdir -p "$T/bin"
+
+# Stub gh: record args, emit an empty PR list (so the create branch is taken).
+cat > "$T/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "GH-CALL: $*" >> "$GH_LOG"
+if [[ "$1 $2" == "pr list" ]]; then
+  if [[ -n "${FAKE_EXISTING_PR:-}" ]]; then echo "$FAKE_EXISTING_PR"; fi
+  exit 0
+fi
+exit 0
+STUB
+chmod +x "$T/bin/gh"
+
+# Bare remote + working clone with a vendor-ish change staged in the tree.
+git init -q --bare "$T/remote.git"
+git init -q -b main "$T/work"
+cd "$T/work"
+git config user.email t@e; git config user.name t
+echo base > vendor.yaml; git add -A; git commit -qm init
+git remote add origin "$T/remote.git"; git push -q origin main
+printf 'last_sync: NEWSHA\n' > vendor.yaml
+mkdir -p skills/vendor/foo && echo "# foo" > skills/vendor/foo/SKILL.md
+
+# Synthetic colorized sync log, exactly as sync-vendor.sh emits it.
+printf 'Checking foo (o/r)... \033[1;33msyncing...\033[0m\n  \033[0;32msynced\033[0m to abc1234\n' > /tmp/sync.log
+printf 'Checking bar (o/r)... \033[0;32mup to date\033[0m\n' >> /tmp/sync.log
+
+export GH_LOG="$T/gh.log"; : > "$GH_LOG"
+export PATH="$T/bin:$PATH" SYNC_BRANCH=chore/vendor-sync
+echo "=== running extracted PR step ==="
+```
+
+```text
+=== running extracted PR step ===
+Shell cwd was reset to /home/daviddwlee84/Documents/Program/Personal/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:34:17Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run the real PR step against a scratch repo
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+REPO=/home/daviddwlee84/Documents/Program/Personal/agent-skills
+cat > "$SP/test-prstep.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+SP="$1"; REPO="$2"; OUTCOME="${3:-success}"; EXISTING="${4:-}"
+T="$SP/prstep"; rm -rf "$T"; mkdir -p "$T/bin"
+
+cat > "$T/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "GH-CALL: $*" >> "$GH_LOG"
+if [[ "${1:-} ${2:-}" == "pr list" ]]; then
+  [[ -n "${FAKE_EXISTING_PR:-}" ]] && echo "$FAKE_EXISTING_PR"
+  exit 0
+fi
+exit 0
+STUB
+chmod +x "$T/bin/gh"
+
+git init -q --bare "$T/remote.git"
+git init -q -b main "$T/work"
+cd "$T/work"
+git config user.email t@e; git config user.name t
+echo base > vendor.yaml; git add -A; git commit -qm init
+git remote add origin "$T/remote.git"; git push -q origin main
+printf 'last_sync: NEWSHA\n' > vendor.yaml
+mkdir -p skills/vendor/foo && echo "# foo" > skills/vendor/foo/SKILL.md
+mkdir -p node_modules/x && echo junk > node_modules/x/a.js
+printf 'node_modules/\n' > .gitignore
+
+printf 'Checking foo (o/r)... \033[1;33msyncing...\033[0m\n  \033[0;32msynced\033[0m to abc1234\n' > /tmp/sync.log
+printf 'Checking bar (o/r)... \033[0;32mup to date\033[0m\n' >> /tmp/sync.log
+
+# Extract the real step body from the workflow, substituting the GHA expression.
+python3 - "$REPO" "$OUTCOME" > "$T/step.sh" <<'PY'
+import yaml, sys
+repo, outcome = sys.argv[1], sys.argv[2]
+d = yaml.safe_load(open(repo + '/.github/workflows/vendor-sync.yml'))
+step = next(s for s in d['jobs']['sync']['steps'] if s['name'] == 'Open or update the sync PR')
+print(step['run'].replace("${{ steps.validate.outcome }}", outcome))
+PY
+
+export GH_LOG="$T/gh.log"; : > "$GH_LOG"
+export PATH="$T/bin:$PATH" SYNC_BRANCH=chore/vendor-sync
+[[ -n "$EXISTING" ]] && export FAKE_EXISTING_PR="$EXISTING"
+
+bash "$T/step.sh"
+echo "STEP-EXIT=$?"
+echo "--- gh calls ---"; cat "$GH_LOG"
+echo "--- pr body ---"; cat /tmp/pr-body.md
+echo "--- commit on sync branch ---"
+git --no-pager log -1 --format='%s%n%n%b' "$SYNC_BRANCH"
+echo "--- files pushed to remote ---"
+git --no-pager ls-tree -r --name-only "$SYNC_BRANCH" | head
+SCRIPT
+bash "$SP/test-prstep.sh" "$SP" "$REPO" success 2>&1
+```
+
+```text
+Exit code 1
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+  File "<stdin>", line 4, in <genexpr>
+KeyError: 'name'
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:34:23Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Rerun the PR step test
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+sed -i "s|s\['name'\] == 'Open or update the sync PR'|s.get('name') == 'Open or update the sync PR'|" "$SP/test-prstep.sh"
+bash "$SP/test-prstep.sh" "$SP" /home/daviddwlee84/Documents/Program/Personal/agent-skills success 2>&1
+```
+
+```text
+Switched to a new branch 'chore/vendor-sync'
+M	vendor.yaml
+[chore/vendor-sync 1f952c1] chore(vendor): sync 1 skill(s) from upstream
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+ create mode 100644 .gitignore
+ create mode 100644 skills/vendor/foo/SKILL.md
+To /tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad/prstep/remote.git
+ * [new branch]      chore/vendor-sync -> chore/vendor-sync
+STEP-EXIT=0
+--- gh calls ---
+GH-CALL: pr list --head chore/vendor-sync --state open --json number --jq .[0].number // empty
+GH-CALL: pr create --base main --head chore/vendor-sync --title chore(vendor): sync vendored skills from upstream --body-file /tmp/pr-body.md
+--- pr body ---
+Automated `make sync` of `vendor.yaml` upstreams.
+
+**Publish gates:** ✅ passed
+
+<details><summary>sync log</summary>
+
+```
+Checking foo (o/r)... syncing...
+  synced to abc1234
+Checking bar (o/r)... up to date
+```
+
+</details>
+
+> validate.yml does not run on this PR: GitHub does not trigger
+> workflows for PRs created with `GITHUB_TOKEN`. The gates above
+> ran inside the Vendor Sync job instead.
+--- commit on sync branch ---
+chore(vendor): sync 1 skill(s) from upstream
+
+Opened by .github/workflows/vendor-sync.yml. Review the vendored diff before merging: this content ships to downstream agents via 'npx skills update'.
+
+--- files pushed to remote ---
+.gitignore
+skills/vendor/foo/SKILL.md
+vendor.yaml
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:34:31Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Test failure and existing-PR variants, validate bot commit message
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+REPO=/home/daviddwlee84/Documents/Program/Personal/agent-skills
+echo "########## variant: gates FAILED + existing PR #42 ##########"
+bash "$SP/test-prstep.sh" "$SP" "$REPO" failure 42 2>&1 | sed -n '/STEP-EXIT/,/--- commit/p'
+echo
+echo "########## bot commit message vs repo contract ##########"
+git --no-pager log -1 --format='%B' -C "$SP/prstep/work" chore/vendor-sync 2>/dev/null | bash "$REPO/skills/local/git-workflow/scripts/check-commit-msg.sh" 2>&1
+```
+
+```text
+Exit code 2
+########## variant: gates FAILED + existing PR #42 ##########
+STEP-EXIT=0
+--- gh calls ---
+GH-CALL: pr list --head chore/vendor-sync --state open --json number --jq .[0].number // empty
+GH-CALL: pr edit 42 --body-file /tmp/pr-body.md
+--- pr body ---
+Automated `make sync` of `vendor.yaml` upstreams.
+
+**Publish gates:** ❌ FAILED — see the run log before merging
+
+<details><summary>sync log</summary>
+
+```
+Checking foo (o/r)... syncing...
+  synced to abc1234
+Checking bar (o/r)... up to date
+```
+
+</details>
+
+> validate.yml does not run on this PR: GitHub does not trigger
+> workflows for PRs created with `GITHUB_TOKEN`. The gates above
+> ran inside the Vendor Sync job instead.
+--- commit on sync branch ---
+
+########## bot commit message vs repo contract ##########
+error: empty commit message
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:34:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate the bot commit message against the repo contract
+
+```bash
+SP=/tmp/claude-1000/-home-daviddwlee84-Documents-Program-Personal-agent-skills/d2a3bafe-c2e9-423c-b2dc-6dc26f160bdc/scratchpad
+REPO=/home/daviddwlee84/Documents/Program/Personal/agent-skills
+git -C "$SP/prstep/work" log -1 --format='%B' chore/vendor-sync | bash "$REPO/skills/local/git-workflow/scripts/check-commit-msg.sh" 2>&1
+```
+
+```text
+valid: type=chore scope=vendor
+{"valid":true,"type":"chore","scope":"vendor","breaking":false,"agentic":false,"assistants":0,"transcripts":0,"plans":0}
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5 2026-08-28 08:34:55Z)**_
+
+PR step is verified locally (both the create and the `pr edit` update path, and the ❌ gates variant). The one thing still untested is the real `gh pr create` under the Actions token. Running a true end-to-end from a throwaway branch so `main` is never touched:
+
+_**Agent (claude-opus-5 2026-08-28 08:34:57Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Pick a small vendored skill for the e2e test
+
+```bash
+cd /home/daviddwlee84/Documents/Program/Personal/agent-skills
+du -sh skills/vendor/*/ 2>/dev/null | sort -h | head -5
+echo "=== entry ==="
+yq '.skills[] | select(.name == "skill-creator")' vendor.yaml
+```
+
+```text
+8.0K	skills/vendor/anywidget/
+8.0K	skills/vendor/ci-fix/
+12K	skills/vendor/github-issue-dedupe/
+12K	skills/vendor/streamlit-to-marimo/
+12K	skills/vendor/web-performance-audit/
+=== entry ===
+name: skill-creator
+upstream:
+  owner: anthropics
+  repo: skills
+  path: skills/skill-creator
+  branch: main
+last_sync:
+  date: "2026-07-05T03:39:20Z"
+  commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
+```
+</details></tool-use>

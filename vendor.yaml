@@ -36,7 +36,7 @@ skills:
       branch: main
     last_sync:
       date: "2026-04-23T10:40:25Z"
-      commit: "0add481fb753a3695ba3d0d0a91bdf72f5626506"
+      commit: "0000000000000000000000000000000000000000"
   - name: nextjs
     upstream:
       owner: vercel
