@@ -27,6 +27,8 @@ Install agent-history-hygiene's pre-commit stack into the current repo:
   .pre-commit-config.yaml   redact-agent-secrets (pinned remote hook) +
                             gitleaks-system + standard hygiene
   .gitleaks.toml            (portable subset; real leaks still fire)
+  .specstory/.gitignore     ignores only machine-local project identity +
+                            generated statistics; keeps history committable
   .git/hooks/pre-commit     (via `pre-commit install`)
 
 The redactor is NOT vendored -- it's a pinned pre-commit hook from the
@@ -43,6 +45,10 @@ Options:
   --install-hook      Also install a prepare-commit-msg hook that calls
                       stage-agent-artifacts.sh --session-only on every
                       commit (opt-in; surprises users who commit manually).
+  --untrack-specstory-state
+                      Stop tracking .specstory/.project.json and
+                      .specstory/statistics.json after adding precise ignore
+                      rules. Files remain on disk; stages their Git removals.
   --force             Overwrite existing files instead of skipping.
   --dry-run           Print what would happen without making changes.
   --help, -h          Show this help and exit.
@@ -67,12 +73,14 @@ INSTALL_HOOK=0
 FORCE=0
 DRY_RUN=0
 MIGRATE=0
+UNTRACK_SPECSTORY_STATE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --from-chezmoi)  FROM_CHEZMOI=1; shift ;;
     --migrate)       MIGRATE=1; shift ;;
     --install-hook)  INSTALL_HOOK=1; shift ;;
+    --untrack-specstory-state) UNTRACK_SPECSTORY_STATE=1; shift ;;
     --force)         FORCE=1; shift ;;
     --dry-run)       DRY_RUN=1; shift ;;
     --help|-h)       usage; exit 0 ;;
@@ -233,6 +241,70 @@ else
     "$ASSETS_DIR/gitleaks.toml.template" \
     "$CHEZMOI_SRC/.gitleaks.toml"
 fi
+
+# 3. Keep SpecStory's machine-local state out of Git without hiding the
+#    review-bearing .specstory/history/*.md files. Merge exact, nested rules
+#    instead of ignoring the whole .specstory directory. Idempotent.
+append_specstory_ignore_rule() {
+  local file="$1" pattern="$2" comment="$3"
+  if [ -f "$file" ] && grep -Fqx "$pattern" "$file"; then
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = "1" ]; then
+    log "[dry-run] add '$pattern' to $file"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$file")"
+  if [ -s "$file" ]; then
+    # Preserve hand-written content, including a file missing its final newline.
+    if [ "$(tail -c 1 "$file" | wc -l | tr -d '[:space:]')" = "0" ]; then
+      printf '\n' >> "$file"
+    fi
+    printf '\n' >> "$file"
+  fi
+  printf '%s\n%s\n' "$comment" "$pattern" >> "$file"
+  log "updated: $file (added $pattern)"
+}
+
+ensure_specstory_gitignore() {
+  local file=".specstory/.gitignore"
+  append_specstory_ignore_rule "$file" "/.project.json" \
+    "# SpecStory machine-local project identity"
+  append_specstory_ignore_rule "$file" "/statistics.json" \
+    "# SpecStory generated session statistics"
+}
+
+handle_tracked_specstory_state() {
+  local path
+  local tracked=()
+  for path in .specstory/.project.json .specstory/statistics.json; do
+    if git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+      tracked+=("$path")
+    fi
+  done
+  [ "${#tracked[@]}" -gt 0 ] || return 0
+
+  if [ "$UNTRACK_SPECSTORY_STATE" = "1" ]; then
+    if [ "$DRY_RUN" = "1" ]; then
+      log "[dry-run] git rm --cached -- ${tracked[*]}"
+    else
+      git rm --cached -- "${tracked[@]}" >/dev/null
+      log "untracked SpecStory machine state (files remain on disk): ${tracked[*]}"
+    fi
+    return 0
+  fi
+
+  warn "SpecStory machine state is already tracked, so .gitignore cannot hide it:"
+  for path in "${tracked[@]}"; do
+    warn "  $path"
+  done
+  warn "  Re-run with --untrack-specstory-state to keep the files locally and stage their Git removals."
+}
+
+ensure_specstory_gitignore
+handle_tracked_specstory_state
 
 # 4. `pre-commit install`. Prefer a local `pre-commit` binary; fall back to
 #    `uvx pre-commit@4` so users without a manual install still get hooks.

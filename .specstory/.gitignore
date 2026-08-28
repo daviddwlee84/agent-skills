@@ -1,2 +1,5 @@
-# SpecStory project identity file
+# SpecStory machine-local project identity
 /.project.json
+
+# SpecStory generated session statistics
+/statistics.json

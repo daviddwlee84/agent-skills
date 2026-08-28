@@ -29,6 +29,9 @@ bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
 - `test_scan_staged.sh` — exit-code contract for
   `scripts/scan-staged.sh`: `0` clean, `20` leak, `30` missing
   gitleaks, `2` not a git repo.
+- `test_bootstrap_project.py` — verifies precise, idempotent nested SpecStory
+  ignores; confirms `history/` stays visible; checks dry-run and the explicit
+  `--untrack-specstory-state` migration contract.
 
 ## Test-vector hygiene (why the fixtures carry `gitleaks:allow`)
 

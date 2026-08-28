@@ -1,6 +1,6 @@
 ---
 name: agent-history-hygiene
-description: Commit SpecStory transcripts and Claude/Cursor/OpenCode/Codex plans with feature diffs, derive staged `AI-Assisted-By` + transcript/plan trailers, and prevent secret leaks. Use when asked to "commit my chat", save/stage a plan, record cross-harness provenance, scrub a transcript, bootstrap pre-commit, handle untracked agent artifacts, or remediate an accidental secret commit/push with rotate-first discipline.
+description: Commit SpecStory transcripts and Claude/Cursor/OpenCode/Codex plans with feature diffs, derive staged `AI-Assisted-By` plus transcript/plan trailers, prevent secret leaks, and ignore SpecStory machine-local state. Use when asked to commit/save/stage agent sessions, record cross-harness provenance, bootstrap pre-commit, fix `.specstory/statistics.json` churn, scrub a transcript, or remediate accidental secret commits/pushes with rotate-first discipline.
 ---
 
 # agent-history-hygiene
@@ -26,10 +26,14 @@ Surfaces, separated by purpose:
 1. **Agent transcripts and plan files are committed alongside the diff
    that produced them.** Never add them to `.gitignore`. An agent that
    drops these from a commit has broken the user's review trail.
-2. **Rotate at the provider before any git rewrite.** The only act
+2. **SpecStory state is not review history.** Precisely ignore
+   `.specstory/.project.json` (machine/path-derived identity) and
+   `.specstory/statistics.json` (regenerable statistics), but never ignore
+   `.specstory/` or `.specstory/history/` as a whole.
+3. **Rotate at the provider before any git rewrite.** The only act
    that revokes a leaked credential is rotation. History rewriting
    scrubs bytes on one clone and leaves them on every other.
-3. **`git push --force` against a shared branch is never the fix for a
+4. **`git push --force` against a shared branch is never the fix for a
    leak.** At best it's useless; at worst it destroys teammate work and
    silently re-introduces the secret when someone merges their old
    history back.
@@ -45,6 +49,8 @@ Use it when the user (or you) surface any of:
 - You see dirty `.specstory/history/*.md`, `.claude/plans/*.md`,
   `.cursor/plans/*.md`, or any other configured agent artifact during
   `git status` and you're about to commit a feature.
+- You see recurring `.specstory/.project.json` or
+  `.specstory/statistics.json` churn, especially across machines.
 - "Scrub this transcript" / "redact my key" / "gitleaks flagged my
   chat history".
 - "Set up pre-commit for this repo" / "I'm starting a new project — how
@@ -149,13 +155,25 @@ What `bootstrap-project.sh` does:
    remote hook (`repo: …/agent-skills`, `rev: ahh-v1.1.0`), **not** a
    vendored `scripts/redact_secrets.py` — so `pre-commit autoupdate`
    keeps it current everywhere.
-2. Runs `pre-commit install` (or `uvx pre-commit@4 install` if
+2. Creates or merges `.specstory/.gitignore` with only these anchored rules:
+
+   ```gitignore
+   /.project.json
+   /statistics.json
+   ```
+
+   This keeps machine-local identity and generated statistics out of Git
+   without hiding `.specstory/history/`. If either state file is already
+   tracked, bootstrap warns because ignore rules do not affect tracked files;
+   re-run with `--untrack-specstory-state` to apply `git rm --cached` while
+   keeping the local files on disk. Use `--dry-run` to preview it.
+3. Runs `pre-commit install` (or `uvx pre-commit@4 install` if
    pre-commit isn't on `PATH`).
-3. Audits `.gitignore` / `.git/info/exclude` for patterns that would
+4. Audits `.gitignore` / `.git/info/exclude` for patterns that would
    silently hide an agent artifact dir — warns without editing.
-4. Checks `~/.claude/settings.json` for `plansDirectory`; prints the
+5. Checks `~/.claude/settings.json` for `plansDirectory`; prints the
    one-line patch if missing.
-5. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
+6. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
    `stage-agent-artifacts.sh --session-only --allow-empty` so every
    `git commit` auto-attaches the current session file. If `core.hooksPath` is
    configured, bootstrap fails before writing anything: `.git/hooks/` would be
@@ -187,6 +205,13 @@ committed / pushed a secret":
 
 ## Gotchas
 
+- **`.gitignore` does not retroactively untrack files.** SpecStory's own
+  nested ignore historically covered `.project.json` but not the later-added
+  `statistics.json`, and either file may already be committed. Adding the two
+  precise rules stops new files only. Run bootstrap with
+  `--untrack-specstory-state` to stage their removal from Git while preserving
+  both local files. Never compensate with `.specstory/` or
+  `.specstory/history/` in an ignore file; that discards the review trail.
 - **SpecStory >= 2.4.0 already redacts on write — plan around it, not
   against it.** Since
   [PR #235](https://github.com/specstoryai/getspecstory/pull/235) shipped in
@@ -307,13 +332,15 @@ committed / pushed a secret":
   `--no-redact-secrets`). Prints a coverage matrix and the residual set our
   layer must still handle. Exit 30 when specstory isn't installed.
 
-- **`scripts/bootstrap-project.sh [--from-chezmoi] [--migrate] [--install-hook] [--force] [--dry-run]`**
+- **`scripts/bootstrap-project.sh [--from-chezmoi] [--migrate] [--install-hook] [--untrack-specstory-state] [--force] [--dry-run]`**
   Install `.pre-commit-config.yaml` + `.gitleaks.toml` into the current
-  repo, wire the hook to the installed skill's redactor, then run
-  `pre-commit install`. Audits
+  repo, merge precise SpecStory state ignores, wire the hook to the installed
+  skill's redactor, then run `pre-commit install`. Audits
   `.gitignore` and `~/.claude/settings.json` for misconfigurations
-  (warns, never silently edits). `--install-hook` exits 6 when
-  `core.hooksPath` would make the repo-local hook inert.
+  without hiding transcript directories. Already-tracked state is only
+  untracked with the explicit flag; `--dry-run` previews that index change.
+  `--install-hook` exits 6 when `core.hooksPath` would make the repo-local
+  hook inert.
 
 ## Bundled assets
 
@@ -354,7 +381,7 @@ committed / pushed a secret":
 
 ## Tests
 
-The skill ships with a three-level test suite under
+The skill ships with a test suite under
 [`tests/`](tests/README.md). Run from repo root:
 
 ```bash
@@ -367,6 +394,8 @@ make test-skill
   allowlisted only inside configured artifact dirs.
 - `test_scan_staged.sh` — exit-code contract for
   `scripts/scan-staged.sh` (0 / 20 / 30 / 2).
+- `test_bootstrap_project.py` — exact SpecStory state ignores, idempotency,
+  dry-run, history visibility, and opt-in untracking behavior.
 - `test_specstory_coverage.py` — locks in that SpecStory still redacts by
   default and still writes `[REDACTED:<label>]`; skips without the CLI.
 - `test_agent_commit_metadata.sh` — staged transcript/model parsing, model
