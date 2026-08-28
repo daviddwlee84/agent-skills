@@ -50,6 +50,7 @@ and prevention guidance.
 | [`gitleaks-fires-on-checked-in-test-fixtures`](gitleaks-fires-on-checked-in-test-fixtures.md) | gitleaks fires on fixtures, `anthropic-api-key` / `private-key` test corpus, Socket 1 alert, downstream pre-commit hook blocks on shipped fixtures, `.gitleaksignore` fingerprint drift, `gitleaks:allow` marker | active |
 | [`rebase-continue-refuses-on-clean-index-live-transcript`](rebase-continue-refuses-on-clean-index-live-transcript.md) | `You must edit all merge conflicts`, `git rebase --continue` loops, `git ls-files -u` empty, `AM` file, `.specstory` live transcript rewritten mid-rebase, checkout "local changes would be overwritten", concurrent git in shared worktree | active |
 | [`skill-description-colon-breaks-yaml-frontmatter`](skill-description-colon-breaks-yaml-frontmatter.md) | `npx skills` prints `⚠ Skipped … YAML parse error`, `Nested mappings are not allowed in compact mappings`, `mapping values are not allowed in this context`, skill missing from picker, unquoted `description:` with `": "`, ` #` silently truncates description | active |
+| [`detect-private-key-blocks-commits-in-downstream-repos`](detect-private-key-blocks-commits-in-downstream-repos.md) | `detect private key.....Failed`, `Private key found: .agents/skills/...`, downstream repo cannot commit anything, hook honours no `gitleaks:allow` / `.github/secret_scanning.yml`, BLACKLIST plain-substring match, shipped skill tests inside consumer scan scope | active |
 
 ## Cross-referenced pitfalls
 

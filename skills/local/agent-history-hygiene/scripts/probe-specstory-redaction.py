@@ -54,6 +54,12 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 GITLEAKS_CONFIG = SKILL_ROOT / "assets" / "gitleaks.toml.template"
 
 ALNUM = string.ascii_letters + string.digits
+# Built at runtime, never written as one literal: a contiguous
+# `BEGIN RSA ...` key header in this file would fail pre-commit's
+# detect-private-key in every repo that installs the skill, and that hook
+# reads no allowlist marker. Adjacent literals are NOT enough -- CPython
+# folds those back together in the .pyc. See tests/test_shipped_file_hygiene.py.
+_PK = "PRIVATE" + " KEY"
 B64ISH = ALNUM + "_-"
 HEX = "0123456789abcdef"
 UPPER_NUM = string.ascii_uppercase + string.digits
@@ -107,11 +113,9 @@ def make_catalog(rng: random.Random) -> list[dict]:
         # --- shape cases that are not a single prefixed token ---
         entry(
             "private-key-pem",
-            "-----BEGIN RSA PRIVATE "
-            + "KEY-----\n"
+            f"-----BEGIN RSA {_PK}-----\n"
             + "\n".join(r(64, ALNUM + "+/") for _ in range(3))
-            + "\n-----END RSA PRIVATE "
-            + "KEY-----",
+            + f"\n-----END RSA {_PK}-----",
             note="multi-line PEM block",
         ),
         entry(

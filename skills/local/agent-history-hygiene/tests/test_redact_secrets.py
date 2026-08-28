@@ -8,6 +8,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# PEM headers are assembled at runtime, never written as literals -- a
+# contiguous `BEGIN <TYPE> PRIVATE KEY` in a file we ship fails
+# detect-private-key in every downstream repo that installs this skill,
+# and that hook honours no allowlist marker. See conftest for the detail.
+from conftest import (
+    OPENVPN_HEADER,
+    PUTTY_HEADER,
+    pem_block,
+    pem_header,
+)
+
 
 class TestRedactSecret:
     """`redact_secret` turns a long secret into `first3...last3`."""
@@ -67,11 +78,7 @@ class TestFindPrivateKeyFiles:
     def test_detects_pem_block(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.md"
         f.write_text(
-            "prose\n"
-            "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow
-            "fake material\n"
-            "-----END RSA PRIVATE KEY-----\n"
-            "more prose\n",
+            "prose\n" + pem_block() + "more prose\n",
             encoding="utf-8",
         )
         results = redact_secrets.find_private_key_files([f])
@@ -92,7 +99,7 @@ class TestFindPrivateKeyFiles:
         detect-private-key greps for, so it must be flagged."""
         f = tmp_path / "p.md"
         f.write_text(
-            "oops pasted -----BEGIN OPENSSH PRIVATE KEY----- then stopped\n",
+            f'oops pasted {pem_header("OPENSSH")} then stopped\n',
             encoding="utf-8",
         )
         results = redact_secrets.find_private_key_files([f])
@@ -105,8 +112,8 @@ class TestFindPrivateKeyFiles:
         string literals in the source; this guards that it still matches."""
         f = tmp_path / "p.md"
         f.write_text(
-            "PuTTY-User-Key-File-2: ssh-rsa\n"
-            "-----BEGIN OpenVPN Static key V1-----\n",
+            f"{PUTTY_HEADER}: ssh-rsa\n"
+            f"{OPENVPN_HEADER}\n",
             encoding="utf-8",
         )
         results = redact_secrets.find_private_key_files([f])
@@ -115,7 +122,7 @@ class TestFindPrivateKeyFiles:
 
     def test_ignores_non_md_suffix(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.txt"
-        f.write_text("-----BEGIN RSA PRIVATE KEY-----\n", encoding="utf-8")  # gitleaks:allow
+        f.write_text(pem_header() + "\n", encoding="utf-8")
         assert redact_secrets.find_private_key_files([f]) == {}
 
     def test_ignores_clean_file(self, redact_secrets, tmp_path: Path):
@@ -179,11 +186,7 @@ class TestRedactPrivateKeys:
     def test_replaces_pem_block_wholesale(self, redact_secrets, tmp_path: Path):
         f = tmp_path / "p.md"
         f.write_text(
-            "prose\n"
-            "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow
-            "fake material\n"
-            "-----END RSA PRIVATE KEY-----\n"
-            "more prose\n",
+            "prose\n" + pem_block() + "more prose\n",
             encoding="utf-8",
         )
         modified = redact_secrets.redact_private_keys(f)
@@ -195,7 +198,7 @@ class TestRedactPrivateKeys:
         assert "[REDACTED:private-key]" in content
         assert "fake material" not in content
         # The original PEM header must be gone (it contains "PRIVATE KEY").
-        assert "-----BEGIN RSA PRIVATE KEY-----" not in content
+        assert pem_header() not in content
 
     def test_legacy_writes_the_pre_2_4_0_sentinels(
         self, redact_secrets, tmp_path: Path
@@ -203,10 +206,8 @@ class TestRedactPrivateKeys:
         """--legacy changes only the bytes written, never what is detected."""
         f = tmp_path / "p.md"
         f.write_text(
-            "-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow
-            "fake material\n"
-            "-----END RSA PRIVATE KEY-----\n"
-            "log: -----BEGIN OPENSSH PRIVATE KEY----- truncated\n",
+            pem_block()
+            + f'log: {pem_header("OPENSSH")} truncated\n',
             encoding="utf-8",
         )
         assert redact_secrets.redact_private_keys(f, legacy=True) is True
@@ -230,12 +231,12 @@ class TestRedactPrivateKeys:
         detect-private-key, so it is scrubbed to a header-free sentinel."""
         f = tmp_path / "p.md"
         f.write_text(
-            "log: -----BEGIN OPENSSH PRIVATE KEY----- truncated\n", encoding="utf-8"
+            f'log: {pem_header("OPENSSH")} truncated\n', encoding="utf-8"
         )
         modified = redact_secrets.redact_private_keys(f)
         assert modified is True
         content = f.read_text(encoding="utf-8")
-        assert "BEGIN OPENSSH PRIVATE KEY" not in content
+        assert pem_header("OPENSSH") not in content
         assert "[REDACTED:private-key-header]" in content
 
     def test_leaves_clean_file_unchanged(self, redact_secrets, tmp_path: Path):

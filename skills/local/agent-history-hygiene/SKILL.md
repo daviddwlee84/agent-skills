@@ -39,6 +39,15 @@ Surfaces, separated by purpose:
    history back.
 4. **Provenance is derived from the staged snapshot.** Never point a commit
    trailer at an unstaged transcript/plan, and never guess an unknown model.
+5. **Nothing this skill ships may trip a downstream scanner.** `npx skills
+   add` installs this whole directory — `tests/` and `fixtures/` included —
+   into the consumer's repo under `.agents/skills/`, inside their own scan
+   scope. `detect-private-key` honours no allowlist marker, so a literal
+   `BEGIN … PRIVATE KEY` here fails *their* commit with nothing they can edit
+   to stop it. Build key headers at runtime (`pem_header()` in
+   `tests/conftest.py`) or use a `__SYNTHETIC_PEM_*__` placeholder; never
+   answer this with a wider `exclude:`. Enforced by
+   `tests/test_shipped_file_hygiene.py`.
 
 ## When to use this skill
 
@@ -400,6 +409,9 @@ make test-skill
   default and still writes `[REDACTED:<label>]`; skips without the CLI.
 - `test_agent_commit_metadata.sh` — staged transcript/model parsing, model
   deduplication, path handling, JSON output, and explicit-override failures.
+- `test_shipped_file_hygiene.py` — no shipped file carries a
+  `detect-private-key` BLACKLIST substring, and the redactor scrubs all ten
+  of them convergently. Runs everywhere; needs no external binary.
 
 The corpus + shell tests skip gracefully when `gitleaks` isn't on
 `PATH`. See [`tests/README.md`](tests/README.md) for what each

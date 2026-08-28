@@ -42,13 +42,27 @@ secret shapes plus an inline marker so a repo-root, downstream, or
 
 ```
 <SECRET> <!-- gitleaks:allow -->                      # markdown fixtures
-"-----BEGIN RSA PRIVATE KEY-----\n"  # gitleaks:allow  # test_redact_secrets.py
 ```
 
-The Stripe webhook fixture is stricter: GitHub's provider-level scanner does
-not honour gitleaks markers, so its source uses
-`__SYNTHETIC_STRIPE_WEBHOOK_SECRET__`. The corpus test expands that placeholder
-inside its throwaway repo. The other corpus + shell tests **strip the marker
+Two classes of secret need more than a marker, because the scanner that would
+flag them does not read markers at all:
+
+- **Stripe webhook secrets** — GitHub's provider-level scanner does not honour
+  gitleaks markers, so the fixture source uses
+  `__SYNTHETIC_STRIPE_WEBHOOK_SECRET__`.
+- **Private-key headers** — pre-commit's `detect-private-key` greps its
+  BLACKLIST as plain substrings and honours *no* allowlist mechanism. Since
+  `npx skills add` installs this whole directory into the consumer's repo at
+  `.agents/skills/agent-history-hygiene/`, a literal header here fails **their**
+  `git commit`, with nothing they can put in the file to stop it. So fixtures
+  use `__SYNTHETIC_PEM_BEGIN__` / `__SYNTHETIC_PEM_END__` /
+  `__SYNTHETIC_PEM_HEADER_OPENSSH__`, and Python tests build headers at runtime
+  via `pem_header()` / `pem_block()` from `conftest.py`.
+
+`FIXTURE_PLACEHOLDERS` (conftest.py) is the single source of truth for the
+expansions; `_stage_fixture_at` and the shell `stage_fixture` both apply them
+inside their throwaway repos. `test_shipped_file_hygiene.py` enforces that no
+shipped file regains a literal header. The other corpus + shell tests **strip the marker
 before staging** (`_GITLEAKS_MARKER_RE` in `test_gitleaks_corpus.py`; the `sed`
 in `stage_fixture` in `test_scan_staged.sh`), so the secret bytes have the exact
 shape the rules expect and the assertions still fire. Principle: **fake test

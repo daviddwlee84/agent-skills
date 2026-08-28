@@ -14,8 +14,7 @@ File:        skills/local/agent-history-hygiene/tests/fixtures/real_anthropic.md
 Variants of the same non-issue:
 
 - `gitleaks` at the repo root flags `real_anthropic.md`, `real_openai.md`,
-  `private_key.md` (`private-key`), `webhook_urls.md`, and the two
-  `-----BEGIN RSA PRIVATE KEY-----` lines in `tests/test_redact_secrets.py`.
+  `private_key.md` (`private-key`), and `webhook_urls.md`.
 - Socket / skills.sh reports "1 alert … Anthropic API key shape."
 - A downstream user who ran `bootstrap-project.sh` gets their **freshly-installed
   gitleaks pre-commit hook** blocking a commit, citing the shipped
@@ -44,8 +43,12 @@ Suppress with a marker that travels with the fixture, and let the tests opt back
 in when they need firing:
 
 - Append ` <!-- gitleaks:allow -->` (single leading space) after the secret on
-  each firing `.md` line — the **BEGIN** line for a PEM block. Use
-  `  # gitleaks:allow` on the `.py` PEM header literals.
+  each firing `.md` line.
+- **Private-key headers are the exception**: they must not appear as literals at
+  all, in fixtures or in `.py` tests, because `detect-private-key` reads no
+  marker. Build them at runtime (`pem_header()` in `tests/conftest.py`) or use a
+  `__SYNTHETIC_PEM_*__` placeholder. See
+  [detect-private-key blocks commits in every repo that installed the skill](detect-private-key-blocks-commits-in-downstream-repos.md).
 - The corpus + shell tests **strip the marker before staging** into their
   throwaway repo (`_GITLEAKS_MARKER_RE` in `test_gitleaks_corpus.py`; the `sed`
   in `stage_fixture` in `test_scan_staged.sh`), so the rules still fire and every

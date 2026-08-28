@@ -228,14 +228,16 @@ _PEM_BLOCK_RE = re.compile(
 # See the "Active SpecStory writer can defeat the redact loop" pitfall in
 # SKILL.md.
 #
-# NOTE: the OpenVPN token is split across two adjacent string literals on
-# purpose so THIS source file does not itself contain the contiguous BLACKLIST
-# string — otherwise detect-private-key would flag redact_secrets.py in every
-# repo that installs it. Do not join them back together.
+# NOTE: the version digits are written as `\d`, not as literal `1` / `2`, so
+# THIS source file never contains a contiguous BLACKLIST string — otherwise
+# detect-private-key would flag redact_secrets.py in every repo that installs
+# it, with no marker able to suppress it. (`\d` also future-proofs the match
+# against a `PuTTY-User-Key-File-3`.) Keep it that way; a split-literal trick
+# would not be enough, since CPython folds those back together in the .pyc.
 _PRIVATE_KEY_HEADER_RE = re.compile(
     r"BEGIN [A-Z0-9 ]*PRIVATE KEY"      # RSA/DSA/EC/OPENSSH/PGP/ENCRYPTED/SSH2/plain
     r"|PuTTY-User-Key-File-\d"
-    r"|BEGIN OpenVPN " r"Static key V1"
+    r"|BEGIN OpenVPN Static key V\d"
 )
 
 

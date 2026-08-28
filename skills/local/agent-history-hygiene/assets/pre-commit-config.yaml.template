@@ -35,11 +35,19 @@ repos:
     rev: v5.0.0
     hooks:
       - id: detect-private-key
-        # This hook honours neither `gitleaks:allow` markers nor
-        # .github/secret_scanning.yml -- it greps for `BEGIN ... PRIVATE KEY`
-        # as a plain substring. agent-history-hygiene's installed test suite
-        # carries those headers on purpose, so exclude that one directory.
-        exclude: ^\.(agents|claude)/skills/agent-history-hygiene/tests/
+        # NOTE: this hook honours no allowlist mechanism -- not
+        # `<!-- gitleaks:allow -->`, not .github/secret_scanning.yml. It greps
+        # its BLACKLIST (`BEGIN <TYPE> PRIVATE KEY`, `PuTTY-User-Key-File-N`,
+        # `BEGIN OpenVPN Static key V<N>`) as plain byte substrings, and it scans
+        # everything you stage -- including skills installed under
+        # `.agents/skills/` or `.claude/skills/`.
+        #
+        # agent-history-hygiene ships clean: its test suite builds those headers
+        # at runtime, so nothing it installs trips this hook. If you see
+        #   Private key found: .agents/skills/agent-history-hygiene/tests/...
+        # you are on a pre-2026-08-28 copy -- run `npx skills@latest update`
+        # rather than adding an exclude. As a stopgap only, uncomment:
+        # exclude: (^|/)agent-history-hygiene/tests/
       - id: check-added-large-files
         args: ['--maxkb=2048']
       - id: check-merge-conflict

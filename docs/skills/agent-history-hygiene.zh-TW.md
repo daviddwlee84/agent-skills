@@ -200,6 +200,16 @@ runbook 顯式禁止對共用 branch 做 `git push --force` —— 詳見
 
 - SpecStory ≥ 2.4.0 寫檔時就已經 redact —— 別讓 hook 再做一次，
   見上面的「SpecStory 原生 redaction」。
+- 純文字提到 "PRIVATE KEY" 不算洩漏；`detect-private-key` 只比對
+  `BEGIN … PRIVATE KEY` 標頭。改寫這種散文只會讓 transcript 白白 churn。
+- 同一個 hook **不吃任何 allowlist** —— `<!-- gitleaks:allow -->` 不行，
+  `.github/secret_scanning.yml` 也不行 —— 而 `npx skills add` 會把這個 skill
+  的測試裝進你的掃描範圍內。因此本 skill 不再出貨任何字面的 key header
+  （測試在 runtime 組出來，fixture 用 `__SYNTHETIC_PEM_*__` placeholder），
+  由 `tests/test_shipped_file_hygiene.py` 把關。若舊版安裝擋住你的 commit
+  （`Private key found: .agents/skills/agent-history-hygiene/tests/…`），
+  請跑 `npx skills@latest update`，不要去放寬 `exclude:` ——
+  [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/detect-private-key-blocks-commits-in-downstream-repos.md)。
 - Claude Code 的 project-level `plansDirectory` 有時會被忽略
   ([issue #19537](https://github.com/anthropics/claude-code/issues/19537))；
   把它設在 user-level (`~/.claude/settings.json`) 當預設。

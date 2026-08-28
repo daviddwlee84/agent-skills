@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import FIXTURE_PLACEHOLDERS
+
 pytestmark = pytest.mark.skipif(
     shutil.which("gitleaks") is None,
     reason="gitleaks binary not on PATH",
@@ -39,9 +41,9 @@ def _stage_fixture_at(repo: Path, fixture_path: Path, dest_rel: str) -> None:
     `gitleaks:allow` marker, and git-add it."""
     dest = repo / dest_rel
     dest.parent.mkdir(parents=True, exist_ok=True)
-    text = fixture_path.read_text(encoding="utf-8").replace(
-        "__SYNTHETIC_STRIPE_WEBHOOK_SECRET__", "whsec_" + "a" * 32
-    )
+    text = fixture_path.read_text(encoding="utf-8")
+    for placeholder, value in FIXTURE_PLACEHOLDERS.items():
+        text = text.replace(placeholder, value)
     dest.write_text(_GITLEAKS_MARKER_RE.sub("", text), encoding="utf-8")
     subprocess.run(["git", "add", "--", dest_rel], cwd=repo, check=True)
 
@@ -272,6 +274,26 @@ class TestLocalCredentials:
         assert not missing, (
             f"Local-credential leak in .specstory/history/ was incorrectly "
             f"allowlisted: {sorted(missing)}. Check condition=AND."
+        )
+
+
+class TestPrivateKeyFixture:
+    """The PEM fixture must fire once its `__SYNTHETIC_PEM_*__` placeholders
+    are expanded -- that expansion is what keeps the fixture ON DISK free of a
+    detect-private-key BLACKLIST substring, so this is the test that would
+    catch the placeholders silently failing to expand."""
+
+    def test_private_key_rule_fires(self, tmp_git_repo, fixtures_dir: Path):
+        _stage_fixture_at(
+            tmp_git_repo, fixtures_dir / "private_key.md", "src/leaks.md"
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        assert findings, (
+            "private_key.md produced no findings -- the __SYNTHETIC_PEM_*__ "
+            "placeholders probably did not expand"
+        )
+        assert any("private-key" in f["RuleID"] for f in findings), (
+            f"Expected a private-key rule; got {sorted({f['RuleID'] for f in findings})}"
         )
 
 

@@ -207,6 +207,15 @@ branches — see `references/remediation.md` §5.
   See [SpecStory native redaction](#specstory-native-redaction-v240) above.
 - A bare "PRIVATE KEY" mention is not a leak; `detect-private-key` matches
   `BEGIN … PRIVATE KEY` only. Redacting prose churned transcripts for nothing.
+- That same hook honours **no** allowlist — not `<!-- gitleaks:allow -->`, not
+  `.github/secret_scanning.yml` — and `npx skills add` installs this skill's
+  test suite inside your scan scope. The skill therefore ships no literal key
+  header at all (tests assemble them at runtime; fixtures use
+  `__SYNTHETIC_PEM_*__` placeholders), enforced by
+  `tests/test_shipped_file_hygiene.py`. If an older installed copy fails your
+  commit with `Private key found: .agents/skills/agent-history-hygiene/tests/…`,
+  run `npx skills@latest update` rather than widening `exclude:` —
+  [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/detect-private-key-blocks-commits-in-downstream-repos.md).
 - Claude Code `plansDirectory` project-level is sometimes ignored
   ([issue #19537](https://github.com/anthropics/claude-code/issues/19537));
   set at the user level (`~/.claude/settings.json`) as the default.
