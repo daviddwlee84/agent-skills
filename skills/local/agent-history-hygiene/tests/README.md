@@ -8,8 +8,17 @@ make test-skill
 
 # Or directly
 uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
-bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+/bin/bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+/bin/bash skills/local/agent-history-hygiene/tests/test_find_session.sh
+/bin/bash skills/local/agent-history-hygiene/tests/test_stage_agent_artifacts.sh
+/bin/bash skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
 ```
+
+`make test-skill` uses `SYSTEM_BASH ?= /bin/bash`. The new suites print
+`BASH_VERSION` and fail on Darwin unless the running shell is Bash 3.x, so a
+Homebrew Bash earlier on `PATH` cannot make the compatibility claim vacuous.
+The target also sets `GIT_CONFIG_GLOBAL=/dev/null` so host-global hooks cannot
+alter throwaway commits. Override these variables only for deliberate testing.
 
 ## Layout
 
@@ -29,6 +38,16 @@ bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
 - `test_scan_staged.sh` — exit-code contract for
   `scripts/scan-staged.sh`: `0` clean, `20` leak, `30` missing
   gitleaks, `2` not a git repo.
+- `test_find_session.sh` — real bounded prologues/local time, strict JSONL and
+  canonical roots, symlink/control/UTF-8 safety, conditional dependencies,
+  aliases, same-checkout leakage, subdirectory launches, and worktree isolation.
+- `test_stage_agent_artifacts.sh` — explicit policy, configured/trailing-slash
+  dirs, ignore/conflict/status parsing, real index-lock race and cleanup,
+  exact trailers, validation-only normal/`-a`/`--only` commits, and
+  primary/linked hook-path probes.
+- `test_agent_commit_metadata.sh` — staged transcript parsing, model
+  deduplication, spaced paths, JSON output, overrides, and bootstrap's global
+  `core.hooksPath` refusal.
 - `test_bootstrap_project.py` — verifies precise, idempotent nested SpecStory
   ignores; confirms `history/` stays visible; checks dry-run and the explicit
   `--untrack-specstory-state` migration contract.

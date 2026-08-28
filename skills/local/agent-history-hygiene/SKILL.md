@@ -105,8 +105,9 @@ What this skill **adds**:
 - Agent-facing discipline (this `SKILL.md` + `references/remediation.md`).
 - A single-command project bootstrap (`bootstrap-project.sh`) for repos
   without chezmoi or where the user wants the stack in one go.
-- Session-discovery heuristics (`find-session.sh`) for the "find my
-  current transcript among many" problem.
+- Exact checkout/session discovery (`find-session.sh`) with an explicit
+  `--newest` compatibility escape hatch for the "find my transcript among
+  many" problem.
 - An exit-code wrapper (`scan-staged.sh`) agents can branch on before
   committing.
 
@@ -116,15 +117,21 @@ Default flow when the agent is about to commit feature changes plus
 chat/plan artifacts.
 
 ```bash
-# 1. Make sure the agent knows which session is "ours" — mostly
-#    relevant when multiple Claude/SpecStory sessions run in the repo.
-bash skills/local/agent-history-hygiene/scripts/find-session.sh
+# 1. Take the UUID from Claude Code /status. If SpecStory produced more than
+#    one alias for it, name the rendered path too.
+SESSION_ID=01234567-89ab-4cde-8fab-0123456789ab
+TRANSCRIPT='.specstory/history/2026-08-28_08-00-00Z.md'
+PLAN='.claude/plans/exact-agent-history-selectors.md'
+bash skills/local/agent-history-hygiene/scripts/find-session.sh \
+  --session-id "$SESSION_ID" --specstory-path "$TRANSCRIPT"
 
-# 2. Stage code the usual way, then auto-add agent artifacts.
+# 2. Stage code, then exactly one validated transcript/plan set.
 git add path/to/feature/file.ts
-bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
-# Use --session-only if you want ONLY the current SpecStory + newest plan;
-# default stages every dirty *.md in every configured agent dir.
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh \
+  --session-only --session-id "$SESSION_ID" \
+  --specstory-path "$TRANSCRIPT" --plan "$PLAN"
+# Use --no-plan when no plan exists. Use --no-specstory with --session-id when
+# rendered history is intentionally absent. The script never chooses a plan.
 
 # 3. Generate the canonical FINAL trailer block from staged artifacts.
 bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
@@ -143,6 +150,10 @@ bash skills/local/git-workflow/scripts/check-commit-msg.sh \
 git commit -F /path/to/commit-message.txt
 ```
 
+The no-selector invocation remains **broad branch-wide compatibility mode**.
+It classifies one NUL porcelain snapshot (including deletion/rename pairs) under
+`assets/artifact-dirs.txt`; use it only when that broad set is intentional.
+
 ## Workflow B: bootstrap a new project
 
 For repos that don't yet have `.pre-commit-config.yaml` / `.gitleaks.toml`
@@ -151,7 +162,7 @@ installed. Runs once per repo.
 ```bash
 cd /path/to/new/project
 bash skills/local/agent-history-hygiene/scripts/bootstrap-project.sh \
-  --install-hook            # optional: auto-stage on every commit
+  --install-hook            # optional: validation-only exact commit gate
 
 # Verify: shake out any existing issues in the working tree.
 pre-commit run --all-files
@@ -182,12 +193,13 @@ What `bootstrap-project.sh` does:
    silently hide an agent artifact dir — warns without editing.
 5. Checks `~/.claude/settings.json` for `plansDirectory`; prints the
    one-line patch if missing.
-6. With `--install-hook`: writes a `prepare-commit-msg` hook that calls
-   `stage-agent-artifacts.sh --session-only --allow-empty` so every
-   `git commit` auto-attaches the current session file. If `core.hooksPath` is
-   configured, bootstrap fails before writing anything: `.git/hooks/` would be
-   inactive, so the user must integrate the hook into the configured directory
-   or unset that override for the repo.
+6. With `--install-hook`: writes a validation-only `prepare-commit-msg` gate.
+   Explicit `AGENT_HISTORY_*` selectors call `--check-staged` against the exact
+   commit `GIT_INDEX_FILE`; missing feature/artifact diffs abort with the exact
+   staging command, while missing identity visibly no-ops. It never mutates an
+   index, so `commit -a`/`--only` exclusions fail without loops. Automatic
+   install requires `core.hooksPath` genuinely unset—even empty or relative
+   `.git/hooks` is refused because linked worktrees break it.
 
 Migrating a repo off the **old vendored layout** (a committed
 `scripts/redact_secrets.py` + a `- repo: local` redact hook):
@@ -271,22 +283,25 @@ committed / pushed a secret":
   to avoid false positives, but a very long session can still overflow.
   If you hit the limit, rotate sessions (`specstory run claude`
   creates a fresh file) instead of raising the cap further.
-- **Session-UUID divergence between SpecStory CLI and VS Code
-  extension.** The extension autosaves into `.specstory/history/`
-  continuously; the CLI (`specstory run claude`) creates one file per
-  invocation. If both are active you can end up with two transcripts
-  for what feels like "one session" — mtime-newest wins in
-  `find-session.sh`.
+- **SpecStory 2.10 is checkout-path scoped, not branch scoped.** Both rendered
+  output discovery and raw Claude session discovery follow the checkout path;
+  switching branches in one checkout does not separate histories. Create the
+  worktree first, then start one SpecStory wrapper/session per change stream.
+  Use `specstory sync claude -s UUID` for an explicit raw session. One UUID can
+  produce multiple rendered aliases, so `find-session.sh --session-id UUID`
+  fails ambiguous until `--specstory-path` selects one. `EnterWorktree` does not
+  rebind a SpecStory watcher that was already running; restart the wrapper in
+  the target worktree.
 - **Global `core.hooksPath` means bare repos aren't protected.** The
   chezmoi setup's global hook runs `.pre-commit-config.yaml` IF it
   exists — so a repo without `.pre-commit-config.yaml` has no
   protection. Run `bootstrap-project.sh` before the first commit with
   agent artifacts, not after.
-- **`--install-hook` cannot bypass `core.hooksPath`.** Git reads hooks from the
-  configured directory instead of `.git/hooks/`; writing a repo-local
-  `prepare-commit-msg` there would silently do nothing. Bootstrap now exits 6
-  before creating files and prints the two valid remedies. It never edits a
-  user's global hook directory on their behalf.
+- **`--install-hook` requires an unset `core.hooksPath`.** Empty, relative
+  `.git/hooks`, and external/global values all exit 6 before writes. Relative
+  `.git/hooks` appears to work in a primary checkout but fails in linked
+  worktrees where `.git` is a file. Integrate the validation-only gate manually into a
+  configured hook directory or unset the key; bootstrap never edits it.
 - **Active SpecStory writer can defeat the redact loop.** The standard
   `git add → git commit → pre-commit auto-fixes → re-stage → re-commit`
   flow assumes the file is **quiescent** during the commit. SpecStory's
@@ -323,17 +338,20 @@ committed / pushed a secret":
 
 ## Available scripts
 
-- **`scripts/find-session.sh [--format=specstory|claude|both] [--json]`**
-  Discover the current agent session files for `$PWD`. TSV default,
-  `--json` for structured callers. Never exits non-zero (always 0,
-  empty fields signal absence).
+- **`scripts/find-session.sh (--session-id UUID | --specstory-path PATH | --newest) [--format specstory|claude|both] [--json]`**
+  Validate the byte-bounded real SpecStory prologue and exact lowercase UUID;
+  search Claude stores and prove canonical worktree roots from strict JSONL.
+  Unsafe/invalid explicit selectors are never reflected. TSV/JSON require
+  `iconv`; `python3` is conditional on Claude JSONL validation. Missing
+  dependencies return status/exit 6; `--newest` is the only heuristic path.
 
-- **`scripts/stage-agent-artifacts.sh [--session-only] [--include-all-plans] [--dry-run] [--allow-empty]`**
-  `git add` the right agent artifacts before the next commit.
-  `--session-only` stages only the current SpecStory + newest plan;
-  default stages every dirty `*.md` in every configured artifact dir.
-  Refuses to run if there are no code changes (prevents "commit just
-  transcript"); override with `--allow-empty`.
+- **`scripts/stage-agent-artifacts.sh [--session-only --check-staged --session-id UUID|--specstory-path PATH (--plan PATH|--no-plan)] [--no-specstory] [--dry-run] [--allow-empty]`**
+  `--check-staged` validates the current commit index without mutation. Staging
+  mode requires staged non-artifact code and rejects ignored/unaddable/unmerged artifacts,
+  and hold the real worktree index lock while one add runs against an alternate
+  index that is atomically published on success. Failures leave the real index
+  unchanged. Broad mode uses one paired-record porcelain snapshot; configured
+  artifact dirs (trailing slash normalized) are the exact-plan source of truth.
 
 - **`scripts/agent-commit-metadata.sh [--harness NAME --model NAME] [--format trailers|json]`**
   Read staged SpecStory/plan artifacts and emit deduplicated
@@ -359,8 +377,9 @@ committed / pushed a secret":
   `.gitignore` and `~/.claude/settings.json` for misconfigurations
   without hiding transcript directories. Already-tracked state is only
   untracked with the explicit flag; `--dry-run` previews that index change.
-  `--install-hook` exits 6 when `core.hooksPath` would make the repo-local
-  hook inert.
+  `--install-hook` generates the validation-only exact gate with a visible
+  identity-absent no-op. It exits 6 whenever `core.hooksPath` is configured;
+  manual integration is required for global/custom hook directories.
 
 ## Bundled assets
 
@@ -414,6 +433,10 @@ make test-skill
   allowlisted only inside configured artifact dirs.
 - `test_scan_staged.sh` — exit-code contract for
   `scripts/scan-staged.sh` (0 / 20 / 30 / 2).
+- `test_find_session.sh` — real prologue/JSONL/path safety, dependency output,
+  large-tail bounds, same-checkout leakage, aliases, and worktree roots.
+- `test_stage_agent_artifacts.sh` — exact/broad status parsing, conflicts,
+  ignored/custom paths, index-lock races, trailers, and temporary-index commits.
 - `test_bootstrap_project.py` — exact SpecStory state ignores, idempotency,
   dry-run, history visibility, and opt-in untracking behavior.
 - `test_specstory_coverage.py` — locks in that SpecStory still redacts by

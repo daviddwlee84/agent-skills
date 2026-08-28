@@ -93,20 +93,35 @@ depends on where `npx skills` happened to install the skill.
 `bootstrap-project.sh --migrate` converts a repo off the old vendored
 `scripts/redact_secrets.py` layout.
 
-`--install-hook` refuses to run when `core.hooksPath` redirects Git away from
-`.git/hooks/`. It exits before writing bootstrap files and tells the user to
-integrate the hook into the configured directory or unset the override for that
-repo; the skill never edits a global hook directory on the user's behalf.
+`--install-hook` requires `core.hooksPath` to be genuinely unset and exits 6
+before writes for empty, relative, or external values. Even `.git/hooks` is
+unsafe: it works in a primary checkout but is non-traversable in a linked
+worktree where `.git` is a file. Integrate manually into configured hook
+infrastructure or unset the key; the skill never edits global hooks.
+
+The generated hook never mutates an index. Explicit `AGENT_HISTORY_*` identity
+and plan policy run `--check-staged` against the commit's current
+`GIT_INDEX_FILE`; missing feature/artifact diffs abort with the exact staging
+command. This validates normal and temporary `commit -a`/`--only` indexes
+without loops. Missing identity visibly no-ops; invalid policy fails.
 
 ## Default workflow: commit feature + chat together
 
 ```bash
-# 1. Make sure the agent knows which session is "ours".
-bash skills/local/agent-history-hygiene/scripts/find-session.sh
+# 1. Get the UUID from Claude Code /status and name the rendered alias.
+SESSION_ID=01234567-89ab-4cde-8fab-0123456789ab
+TRANSCRIPT='.specstory/history/2026-08-28_08-00-00Z.md'
+PLAN='.claude/plans/exact-agent-history-selectors.md'
+bash skills/local/agent-history-hygiene/scripts/find-session.sh \
+  --session-id "$SESSION_ID" --specstory-path "$TRANSCRIPT"
 
-# 2. Stage code, then auto-add agent artifacts.
+# 2. Stage code, then exactly one validated transcript/plan set.
 git add path/to/feature.ts
-bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh \
+  --session-only --session-id "$SESSION_ID" \
+  --specstory-path "$TRANSCRIPT" --plan "$PLAN"
+# Use --no-plan when no plan exists. Use --no-specstory with --session-id only
+# when rendered output is intentionally absent. No plan is chosen by mtime.
 
 # 3. Generate the canonical final trailer block from staged artifacts.
 bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
@@ -124,6 +139,43 @@ The metadata helper reads staged blobs, not concurrently-changing working
 files. It emits deduplicated `AI-Assisted-By: Harness (model)`,
 `Agent-Transcript`, and conditional `Agent-Plan` trailers. Pass explicit
 `--harness` + `--model` only when a transcript cannot prove that identity.
+
+`find-session.sh` is exact by default. It validates the fixed-byte real
+SpecStory v2.1 prologue, nonsymlink direct-child paths, canonical lowercase
+UUIDs, strict JSONL, and canonical worktree roots—including sessions launched
+from subdirectories. Unsafe explicit selectors are never reflected. TSV/JSON
+require `iconv`; `python3` is required only for exact Claude JSONL validation,
+with missing dependencies reported as status/exit 6. `--newest` is the only
+heuristic mode.
+
+`stage-agent-artifacts.sh --session-only` requires a staged non-artifact feature
+diff. Staging mode holds the real worktree index lock while checks and one add
+run against an alternate index, publishing atomically only on success.
+`--check-staged` is mutation-free and verifies each exact artifact has a real
+diff in the current commit index. Failures and races leave the real index
+unchanged. Broad mode uses
+one NUL porcelain snapshot with deletion/rename/copy pairing; configured
+artifact directories—trailing slashes normalized—are the exact-plan source of
+truth.
+
+## SpecStory 2.10 checkout scoping
+
+Verified with SpecStory 2.10: rendered output discovery and raw Claude session
+discovery are scoped by **checkout path, not branch**. Switching branches in one
+checkout shares the same artifact pool; separate worktrees have separate
+`.specstory/history/` roots and Claude project slugs.
+
+Use **worktree first, wrapper/session second**, with one SpecStory wrapper and
+Claude session per change stream. Render a known raw session explicitly with:
+
+```bash
+specstory sync claude -s 01234567-89ab-4cde-8fab-0123456789ab
+```
+
+The same UUID can produce multiple rendered aliases. That is an ambiguity, not
+a newest-file tie-break: pass `--specstory-path`. `EnterWorktree` does not
+rebind a SpecStory watcher that is already running, so stop it and start a new
+wrapper in the target worktree.
 
 ## SpecStory native redaction (v2.4.0+)
 
@@ -196,9 +248,11 @@ branches — see `references/remediation.md` §5.
 
 ## Gotchas
 
-- A configured `core.hooksPath` makes `.git/hooks/prepare-commit-msg` inert.
-  `bootstrap-project.sh --install-hook` now exits 6 instead of installing a
-  hook that Git will never execute.
+- Branch names do not scope SpecStory 2.10 or Claude raw-session discovery;
+  checkout paths do. Never use `--newest` to infer a commit's exact session.
+- Any configured `core.hooksPath` makes automatic repo-hook installation
+  unsafe. Empty and relative `.git/hooks` values also exit 6; the latter fails
+  specifically in linked worktrees even if it appeared active in the primary.
 - Native Claude/Cursor attribution is additive. The portable minimum is the
   final `AI-Assisted-By` + transcript/plan block; do not invent an AI email or
   confuse message attribution with cryptographic signing.

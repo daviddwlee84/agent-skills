@@ -1,5 +1,8 @@
 .PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
+SYSTEM_BASH ?= /bin/bash
+TEST_GIT_CONFIG_GLOBAL ?= /dev/null
+
 sync:
 	./scripts/sync-vendor.sh
 
@@ -80,7 +83,9 @@ docs-deploy:
 # `gitleaks` on PATH for the corpus + shell tests (they skip gracefully
 # if missing).
 test-skill:
-	uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
-	bash skills/local/agent-history-hygiene/tests/test_scan_staged.sh
-	bash skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
-	bash skills/local/git-workflow/tests/test_check_commit_msg.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_find_session.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_stage_agent_artifacts.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/git-workflow/tests/test_check_commit_msg.sh

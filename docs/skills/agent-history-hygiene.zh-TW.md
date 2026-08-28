@@ -93,19 +93,34 @@ redactor **不會**被複製進 repo：產生的 `.pre-commit-config.yaml` 以 t
 舊的 vendored `scripts/redact_secrets.py` 佈局可用
 `bootstrap-project.sh --migrate` 轉換過來。
 
-若 `core.hooksPath` 把 Git hook 導向 `.git/hooks/` 以外的位置，
-`--install-hook` 會在寫入 bootstrap 檔案前拒絕執行，並提示把整合加入設定中的
-hook directory，或只對該 repo 取消 override。Skill 不會自行修改 global hook。
+`--install-hook` 要求 `core.hooksPath` **真的沒有設定**；空值、relative path
+或 external path 都會在寫檔前 exit 6。連 `.git/hooks` 也不安全：它在 primary
+checkout 看似可用，但 linked worktree 的 `.git` 是檔案，該 path 無法 traverse。
+請手動整合進既有 hook infrastructure，或 unset 這個 key；skill 不修改 global hook。
+
+產生的 hook 永遠不修改 index。明確的 `AGENT_HISTORY_*` identity 與 plan
+policy 會用 `--check-staged` 驗證 commit 目前的 `GIT_INDEX_FILE`；缺少 feature /
+artifact diff 時會 abort 並印出 exact staging command。這同時驗證一般 commit 與
+`commit -a` / `--only` 的 temporary index，不會形成 retry loop。沒有 identity
+時顯示 no-op，policy 無效則失敗。
 
 ## 預設工作流程：把功能跟對話一起 commit
 
 ```bash
-# 1. 確保 agent 知道哪一個 session 是「我們的」。
-bash skills/local/agent-history-hygiene/scripts/find-session.sh
+# 1. 從 Claude Code /status 取得 UUID，並指定 rendered alias。
+SESSION_ID=01234567-89ab-4cde-8fab-0123456789ab
+TRANSCRIPT='.specstory/history/2026-08-28_08-00-00Z.md'
+PLAN='.claude/plans/exact-agent-history-selectors.md'
+bash skills/local/agent-history-hygiene/scripts/find-session.sh \
+  --session-id "$SESSION_ID" --specstory-path "$TRANSCRIPT"
 
-# 2. Stage code，再自動 add agent artifact。
+# 2. Stage code，再 stage 一組通過驗證的精確 transcript/plan。
 git add path/to/feature.ts
-bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh
+bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh \
+  --session-only --session-id "$SESSION_ID" \
+  --specstory-path "$TRANSCRIPT" --plan "$PLAN"
+# 沒有 plan 時用 --no-plan。只有刻意沒有 rendered output 時，才把
+# --no-specstory 與 --session-id 一起用；不會依 mtime 選 plan。
 
 # 3. 從 staged artifacts 產生 canonical final trailer block。
 bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
@@ -123,6 +138,37 @@ Metadata helper 讀 staged blob，而不是仍可能被背景程序修改的 wor
 它輸出去重後的 `AI-Assisted-By: Harness (model)`、`Agent-Transcript` 與有 plan
 時的 `Agent-Plan`。只有 transcript 無法證明 identity 時，才同時傳入
 `--harness` 與 `--model`。
+
+`find-session.sh` 預設使用精確選擇：驗證固定 byte prefix 內真正的 SpecStory
+v2.1 prologue、非 symlink direct-child path、canonical lowercase UUID、嚴格 JSONL
+與 canonical worktree root，且支援從 subdirectory 啟動的 session。不安全的明確
+selector 不會被 echo。TSV/JSON 需要 `iconv`；只有 exact Claude JSONL validation
+需要 `python3`，缺少 dependency 時回傳 status/exit 6。只有 `--newest` 走 heuristic。
+
+`stage-agent-artifacts.sh --session-only` 要求 index 已有非 artifact 的 feature diff。
+Staging mode 持有真正的 worktree index lock，在 alternate index 上檢查並一次 add，
+成功後才 atomic publish；`--check-staged` 完全不修改 index，並要求每個 exact
+artifact 在目前 commit index 中真的有 diff。失敗或 race 不改真正的 index。
+Broad mode 用單一 NUL porcelain snapshot 配對 deletion/rename/copy；正規化 trailing
+slash 後的 configured artifact dirs 是 exact plan 唯一的 source of truth。
+
+## SpecStory 2.10 的 checkout scope
+
+SpecStory 2.10 的實測行為：rendered output discovery 與 Claude raw session
+discovery 都依 **checkout path，而不是 branch** 分隔。同一 checkout 切換 branch
+仍共用 artifact pool；不同 worktree 才有不同的 `.specstory/history/` root 與
+Claude project slug。
+
+採用 **先建 worktree，再啟動 wrapper/session** 的順序，每個 change stream 只跑
+一組 SpecStory wrapper 與 Claude session。要明確 render 已知的 raw session：
+
+```bash
+specstory sync claude -s 01234567-89ab-4cde-8fab-0123456789ab
+```
+
+同一 UUID 可能產生多個 rendered alias。這是 ambiguity，不應用 newest-file
+破除平手；請傳 `--specstory-path`。`EnterWorktree` 不會重新綁定已在運行的
+SpecStory watcher，所以要先停止它，再從目標 worktree 啟動新的 wrapper。
 
 ## SpecStory 原生 redaction（v2.4.0+）
 
@@ -192,8 +238,10 @@ runbook 顯式禁止對共用 branch 做 `git push --force` —— 詳見
 
 ## Gotchas
 
-- 設定 `core.hooksPath` 後，`.git/hooks/prepare-commit-msg` 不會執行。
-  `bootstrap-project.sh --install-hook` 現在會 exit 6，而不是安裝一個無效 hook。
+- Branch 名稱不會限制 SpecStory 2.10 或 Claude raw-session discovery；checkout
+  path 才會。不要用 `--newest` 推測某次 commit 的精確 session。
+- 只要設定 `core.hooksPath`，自動安裝 repo hook 就不安全。空值與 relative
+  `.git/hooks` 也會 exit 6；後者即使在 primary 可用，在 linked worktree 仍會失效。
 - Claude/Cursor 原生 attribution 可以保留。可攜 minimum 是最後的
   `AI-Assisted-By` + transcript/plan block；不要虛構 AI email，也不要把 message
   attribution 說成 cryptographic signing。

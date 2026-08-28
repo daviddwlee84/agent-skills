@@ -149,6 +149,8 @@ def tmp_git_repo(tmp_path: Path, assets_dir: Path):
         [
             "git",
             "-c",
+            "core.hooksPath=/dev/null",
+            "-c",
             "user.email=test@example.com",
             "-c",
             "user.name=test",

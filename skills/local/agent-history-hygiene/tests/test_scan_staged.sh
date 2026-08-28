@@ -41,7 +41,8 @@ make_repo() {
   local d
   d=$(mktemp -d /tmp/test-scan-staged.XXXXXX)
   git -C "$d" init -q -b main
-  git -C "$d" -c user.email=test@example.com -c user.name=test \
+  git -C "$d" -c core.hooksPath=/dev/null \
+      -c user.email=test@example.com -c user.name=test \
       commit -q --allow-empty -m init
   printf '%s' "$d"
 }

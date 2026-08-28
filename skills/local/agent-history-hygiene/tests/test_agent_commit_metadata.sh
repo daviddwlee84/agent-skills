@@ -16,7 +16,8 @@ make_repo() {
   local repo
   repo=$(mktemp -d /tmp/test-agent-metadata.XXXXXX)
   git -C "$repo" init -q -b main
-  git -C "$repo" -c user.name=test -c user.email=test@example.com commit -q --allow-empty -m init
+  git -C "$repo" -c core.hooksPath=/dev/null -c user.name=test -c user.email=test@example.com \
+    commit -q --allow-empty -m init
   printf '%s' "$repo"
 }
 
