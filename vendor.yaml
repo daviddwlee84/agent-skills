@@ -35,8 +35,8 @@ skills:
       path: skills/anywidget
       branch: main
     last_sync:
-      date: "2026-04-23T10:40:25Z"
-      commit: "0000000000000000000000000000000000000000"
+      date: "2026-08-28T08:36:37Z"
+      commit: "0add481fb753a3695ba3d0d0a91bdf72f5626506"
   - name: nextjs
     upstream:
       owner: vercel
