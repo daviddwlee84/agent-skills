@@ -52,6 +52,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       # Pin the same YAML parser `npx skills` uses, so CI agrees with the CLI
       # instead of with whatever yq the runner image happens to ship.
       - name: Install the js yaml parser
@@ -61,6 +65,9 @@ jobs:
         run: |
           npm install --global --no-audit --no-fund @anthropic-ai/claude-code@2.1.235
           npm install --global --no-audit --no-fund @openai/codex@0.147.0
+
+      - name: Test MkDocs bootstrap helpers
+        run: make test-mkdocs-skill
 
       - name: Lint SKILL.md frontmatter
         run: NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills

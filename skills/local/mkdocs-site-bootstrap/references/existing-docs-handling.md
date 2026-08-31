@@ -32,9 +32,9 @@ for an honest consent gate.
 
 - Scaffold `mkdocs.yml`, `pyproject.toml`, the workflow, but **leave
   `docs/` untouched**.
-- The generated `mkdocs.yml` will have `docs_dir: docs` pointing at their
-  files and an **empty** `nav:` so MkDocs auto-generates the nav from the
-  filesystem.
+- The generated `mkdocs.yml` omits `nav` so MkDocs auto-generates navigation
+  from the filesystem. (`nav: []` is not equivalent: it explicitly selects no
+  pages.)
 - Best for: user already organized their docs the way they want.
 - Risk: their existing files may not pass `--strict` build (relative-link
   rules, missing snippets dir). Run `uv run mkdocs build` (without
@@ -42,10 +42,12 @@ for an honest consent gate.
 
 ### (b) Wrap — add `mkdocs.yml` with my files explicitly in the nav
 
-- Same as (a), but **enumerate their existing markdown files into an
-  explicit `nav:` block** so the user can see/reorder them later.
-- Best for: user wants a starting nav structure but trusts the agent to
-  pick a reasonable initial order (alphabetical by default).
+- Same as (a), but **enumerate their existing Markdown paths into an explicit
+  path-only `nav:` list** so the user can see/reorder them later. Paths are
+  relative to `docs/`, safely YAML-quoted, and sorted alphabetically under the
+  C locale; non-Markdown files are not navigation pages.
+- Best for: user wants a starting nav structure but trusts the agent to use a
+  deterministic alphabetical order.
 - Don't add the standard `index.md` / `getting-started.md` skeleton — their
   content is already there.
 

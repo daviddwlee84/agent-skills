@@ -24,8 +24,8 @@ Options:
                              that skill to "never asked" state).
   --list                     Print the entire file (or "(empty)" if missing).
   --file PATH                Override file location (default: .skills/preferences.yaml
-                             in the current dir or the first ancestor that has
-                             a .git directory).
+                             at the current Git worktree root, or in the current
+                             directory when outside Git).
   --json                     Format --get / --list output as JSON.
   --dry-run                  Print actions but don't write.
   --help, -h                 Show this help and exit.
@@ -78,13 +78,11 @@ command -v yq >/dev/null 2>&1 || die "yq not found in PATH (install: brew instal
 
 # --- file resolution ---
 if [ -z "$FILE" ]; then
-  cur="$(pwd)"
-  ROOT=""
-  while [ "$cur" != "/" ]; do
-    if [ -d "$cur/.git" ]; then ROOT="$cur"; break; fi
-    cur="$(dirname "$cur")"
-  done
-  if [ -z "$ROOT" ]; then ROOT="$(pwd)"; fi
+  if ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+    :
+  else
+    ROOT="$(pwd)"
+  fi
   FILE="$ROOT/.skills/preferences.yaml"
 fi
 

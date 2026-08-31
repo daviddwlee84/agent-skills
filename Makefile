@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -82,10 +82,15 @@ docs-deploy:
 # `uv sync --extra dev` once, plus
 # `gitleaks` on PATH for the corpus + shell tests (they skip gracefully
 # if missing).
-test-skill:
+test-skill: test-mkdocs-skill
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_scan_staged.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_find_session.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_stage_agent_artifacts.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/git-workflow/tests/test_check_commit_msg.sh
+
+# MkDocs bootstrap behavior: linked worktrees, existing-doc navigation, and
+# generated-site strict builds. Uses the docs extra for PyYAML + MkDocs plugins.
+test-mkdocs-skill:
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/mkdocs-site-bootstrap/tests/test_init_docs_site.sh

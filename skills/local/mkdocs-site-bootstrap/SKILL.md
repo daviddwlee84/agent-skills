@@ -85,8 +85,10 @@ the short version:
 - If `mkdocs.yml` already exists → report "looks like an mkdocs site already
   exists at <path>; not overwriting" and stop.
 - If `docs/` exists and is non-empty → list the files, ask the user one of:
-  (a) skip — leave my docs alone, just create `mkdocs.yml` pointing at them;
-  (b) wrap — create `mkdocs.yml` with my files included as-is in the nav;
+  (a) skip — leave my docs alone, just create `mkdocs.yml` pointing at them
+  with `nav` omitted for filesystem auto-navigation;
+  (b) wrap — create `mkdocs.yml` with my Markdown paths included as-is in an
+  explicit, alphabetical nav;
   (c) manual — let me reorganize first, then re-run.
 - If neither exists → safe to scaffold from scratch.
 

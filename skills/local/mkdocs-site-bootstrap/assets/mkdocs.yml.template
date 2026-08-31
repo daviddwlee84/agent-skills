@@ -41,10 +41,12 @@ plugins:
       full_output: llms-full.txt
       markdown_description: >
         {{SITE_DESCRIPTION}}
+      # __STARTER_LLMSTXT_BEGIN__
       sections:
         Guides:
           - index.md
           - getting-started.md
+      # __STARTER_LLMSTXT_END__
   - copy-to-llm:
       repo_url: "{{SITE_URL}}"
       button_hover_color: "var(--md-primary-fg-color)"
@@ -73,9 +75,11 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
 
+# __STARTER_NAV_BEGIN__
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+# __STARTER_NAV_END__
 
 extra:
   social:
