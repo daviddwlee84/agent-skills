@@ -97,6 +97,16 @@ fi
 if [ -z "$SLUG" ]; then
   SLUG=$(printf '%s' "$TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-//; s/-$//')
 fi
+case "$SLUG" in
+  ''|'.'|'..'|*/*|*\\*|*[!A-Za-z0-9._-]*)
+    die "--slug must be one safe filename segment (letters, digits, dot, underscore, hyphen)" 1
+    ;;
+esac
+if [ "$SECTION" != "_root" ]; then
+  case "$SECTION" in
+    '.'|'..'|*/*|*\\*) die "--section must be a nav heading, not a path" 1 ;;
+  esac
+fi
 
 # Compute paths.
 if [ "$SECTION" = "_root" ]; then
@@ -107,17 +117,40 @@ else
   REL_PATH="${SECTION_DIR}/${SLUG}.md"
 fi
 ABS_PATH="$TARGET/docs/$REL_PATH"
+PAGE_DIR="$(dirname "$ABS_PATH")"
+if [ -L "$TARGET/docs" ]; then
+  die "refusing symlinked docs directory: $TARGET/docs" 3
+elif [ -e "$TARGET/docs" ] && [ ! -d "$TARGET/docs" ]; then
+  die "docs path is not a directory: $TARGET/docs" 3
+elif [ -L "$PAGE_DIR" ]; then
+  die "refusing symlinked page directory: $PAGE_DIR" 3
+elif [ -e "$PAGE_DIR" ] && [ ! -d "$PAGE_DIR" ]; then
+  die "page directory path is not a directory: $PAGE_DIR" 3
+elif [ -L "$ABS_PATH" ]; then
+  die "refusing symlinked page: $ABS_PATH" 3
+fi
 
 [ -n "$TEMPLATE" ] || TEMPLATE="$ASSETS/page.md.template"
 [ -f "$TEMPLATE" ] || die "template not found: $TEMPLATE" 4
 
 STUB_TEMPLATE="$ASSETS/translation-stub.md.template"
 MKDOCS="$TARGET/mkdocs.yml"
+MKDOCS_TMP=""
+
+cleanup() {
+  [ -z "$MKDOCS_TMP" ] || rm -f "$MKDOCS_TMP"
+}
+trap cleanup EXIT HUP INT TERM
 
 # Helper: write a stub for a non-default language at <base>.<LANG>.md.
 write_lang_stub() {
   local base_path="$1" lang="$2"
-  local stub_path="${base_path%.md}.${lang}.md"
+  local stub_path
+  case "$lang" in
+    ''|*[!A-Za-z0-9_-]*) die "unsafe language code: $lang" 1 ;;
+  esac
+  stub_path="${base_path%.md}.${lang}.md"
+  [ ! -L "$stub_path" ] || die "refusing symlinked language stub: $stub_path" 3
   if [ -e "$stub_path" ] && [ "$FORCE" = "0" ]; then
     log "Stub already exists: $stub_path (use --force to overwrite)"
     return 0
@@ -135,11 +168,92 @@ write_lang_stub() {
 }
 
 # --- --lang shortcut: only create the language stub, skip default + nav ---
+if [ -n "$LANG_ONLY" ] && [ "$SECTION" != "_root" ]; then
+  LANG_SECTION_INDEX=$(SEC="$SECTION" yq 'env(SEC) as $s | (.nav | to_entries | map(select(.value | tag == "!!map") | select(.value | has($s))) | .[0].key)' \
+    "$MKDOCS" 2>/dev/null || echo "null")
+  if [ "$LANG_SECTION_INDEX" = "null" ] || [ -z "$LANG_SECTION_INDEX" ]; then
+    die "section '$SECTION' not found at top of nav: in $MKDOCS" 4
+  fi
+fi
 if [ -n "$LANG_ONLY" ]; then
   write_lang_stub "$ABS_PATH" "$LANG_ONLY"
   printf '{"page":"%s","lang":"%s","status":"stub_created"}\n' \
     "${REL_PATH%.md}.${LANG_ONLY}.md" "$LANG_ONLY"
   exit 0
+fi
+
+# Read and preflight configured language stubs before changing either the page
+# or mkdocs.yml, so a bad preference or symlink cannot leave partial state.
+PREFS_FILE="$TARGET/.skills/preferences.yaml"
+STUBS_CREATED=0
+LANGUAGES_LIST=""
+if [ -f "$PREFS_FILE" ]; then
+  LANGUAGES_LIST=$(yq -r '.mkdocs_site_bootstrap.languages[]?' "$PREFS_FILE" 2>/dev/null | tr '\n' ' ' || true)
+fi
+if [ -n "$LANGUAGES_LIST" ]; then
+  DEFAULT_LANG=""
+  for loc in $LANGUAGES_LIST; do
+    [ -z "$loc" ] && continue
+    if [ -z "$DEFAULT_LANG" ]; then DEFAULT_LANG="$loc"; continue; fi
+    case "$loc" in ''|*[!A-Za-z0-9_-]*) die "unsafe language code: $loc" 1 ;; esac
+    STUB_PATH="${ABS_PATH%.md}.${loc}.md"
+    [ ! -L "$STUB_PATH" ] || die "refusing symlinked language stub: $STUB_PATH" 3
+    [ -f "$STUB_TEMPLATE" ] || die "stub template missing: $STUB_TEMPLATE" 4
+  done
+fi
+
+# Resolve and validate the config update before writing a page. Existing-docs
+# skip mode intentionally omits nav; a root page remains auto-discovered rather
+# than creating a one-entry explicit nav that hides every existing page.
+NAV_HAS_PATH=$(REL_PATH="$REL_PATH" yq -r \
+  '[.nav[] | .. | select(tag == "!!str")] | any_c(. == strenv(REL_PATH))' \
+  "$MKDOCS" 2>/dev/null || echo "false")
+NAV_EXPR=""
+if [ "$NAV_HAS_PATH" = "true" ]; then
+  NAV_STATUS="already_exists"
+elif [ "$SECTION" = "_root" ]; then
+  NAV_TYPE=$(yq -r '.nav | type' "$MKDOCS" 2>/dev/null || echo "invalid")
+  case "$NAV_TYPE" in
+    '!!null') NAV_STATUS="auto_discovered" ;;
+    '!!seq')
+      NAV_STATUS="created"
+      NAV_EXPR='(.nav += [{strenv(TITLE): strenv(REL_PATH)}])'
+      ;;
+    *) die "nav must be omitted or a list in $MKDOCS" 4 ;;
+  esac
+else
+  IDX=$(SEC="$SECTION" yq 'env(SEC) as $s | (.nav | to_entries | map(select(.value | tag == "!!map") | select(.value | has($s))) | .[0].key)' \
+    "$MKDOCS" 2>/dev/null || echo "null")
+  if [ "$IDX" = "null" ] || [ -z "$IDX" ]; then
+    EXISTING_SECTIONS=$(yq '[.nav[] | select(tag == "!!map") | keys | .[0]] | join(",")' \
+      "$MKDOCS" 2>/dev/null || echo "?")
+    die "section '$SECTION' not found at top of nav: in $MKDOCS (existing: $EXISTING_SECTIONS)" 4
+  fi
+  NAV_STATUS="created"
+  NAV_EXPR='(.nav[env(IDX)][] += [{strenv(TITLE): strenv(REL_PATH)}])'
+fi
+
+HAS_LLMSTXT=$(yq -r '[.plugins[]? | select(tag == "!!map") | select(has("llmstxt"))] | length > 0' \
+  "$MKDOCS" 2>/dev/null || echo "false")
+if [ "$HAS_LLMSTXT" = "true" ]; then
+  LLMSTXT_EXPR='with(.plugins[] | select(has("llmstxt")); .llmstxt.sections.Guides += [strenv(REL_PATH)] | .llmstxt.sections.Guides |= unique)'
+else
+  LLMSTXT_EXPR='.'
+fi
+if [ -n "$NAV_EXPR" ]; then
+  CONFIG_EXPR="$NAV_EXPR | $LLMSTXT_EXPR"
+else
+  CONFIG_EXPR="$LLMSTXT_EXPR"
+fi
+
+if [ "$DRY_RUN" = "0" ]; then
+  MKDOCS_TMP="${MKDOCS}.tmp.$$"
+  IDX="${IDX:-}" TITLE="$TITLE" REL_PATH="$REL_PATH" \
+    yq "$CONFIG_EXPR" "$MKDOCS" > "$MKDOCS_TMP" || {
+      rm -f "$MKDOCS_TMP"
+      MKDOCS_TMP=""
+      die "yq failed to prepare nav and llmstxt update" 4
+    }
 fi
 
 # --- 1. Create the default-language page ---
@@ -160,46 +274,16 @@ else
   fi
 fi
 
-# --- 2. Insert into mkdocs.yml nav ---
-
-# Idempotency check: does the nav already mention this path?
-if grep -qF "$REL_PATH" "$MKDOCS"; then
-  log "Nav already references $REL_PATH — checking language stubs only."
-  NAV_STATUS="already_exists"
+# --- 2. Commit the prevalidated nav + llmstxt update ---
+if [ "$DRY_RUN" = "1" ]; then
+  log "[dry-run] update nav/llmstxt in $MKDOCS (nav status: $NAV_STATUS)"
 else
-  if [ "$SECTION" = "_root" ]; then
-    EXPR=".nav += [{\"$TITLE\": \"$REL_PATH\"}]"
-  else
-    # Find the index of the section in nav (top-level dict whose only key is $SECTION).
-    IDX=$(SEC="$SECTION" yq 'env(SEC) as $s | [.nav[] | keys | .[0]] | to_entries | map(select(.value == $s)) | .[0].key' \
-      "$MKDOCS" 2>/dev/null || echo "null")
-    if [ "$IDX" = "null" ] || [ -z "$IDX" ]; then
-      EXISTING_SECTIONS=$(yq '[.nav[] | keys | .[0]] | join(",")' "$MKDOCS" 2>/dev/null || echo "?")
-      die "section '$SECTION' not found at top of nav: in $MKDOCS (existing: $EXISTING_SECTIONS)" 4
-    fi
-    EXPR=".nav[$IDX].\"$SECTION\" += [{\"$TITLE\": \"$REL_PATH\"}]"
-  fi
-  if [ "$DRY_RUN" = "1" ]; then
-    log "[dry-run] yq -i '$EXPR' $MKDOCS"
-  else
-    TMP="${MKDOCS}.tmp.$$"
-    yq "$EXPR" "$MKDOCS" > "$TMP" || { rm -f "$TMP"; die "yq failed: $EXPR" 4; }
-    mv "$TMP" "$MKDOCS"
-    log "Updated nav in: $MKDOCS"
-  fi
-  NAV_STATUS="created"
+  mv "$MKDOCS_TMP" "$MKDOCS"
+  MKDOCS_TMP=""
+  log "Updated nav/llmstxt in: $MKDOCS (nav status: $NAV_STATUS)"
 fi
 
 # --- 3. Create *.<LANG>.md stubs for every non-default language ---
-# Read the languages list directly from preferences.yaml (check-preferences.sh
-# --get returns nested YAML for list values, which is awkward to parse in shell).
-PREFS_FILE="$TARGET/.skills/preferences.yaml"
-STUBS_CREATED=0
-LANGUAGES_LIST=""
-if [ -f "$PREFS_FILE" ]; then
-  LANGUAGES_LIST=$(yq -r '.mkdocs_site_bootstrap.languages[]?' "$PREFS_FILE" 2>/dev/null | tr '\n' ' ' || true)
-fi
-
 if [ -n "$LANGUAGES_LIST" ]; then
   DEFAULT_LANG=""
   for loc in $LANGUAGES_LIST; do

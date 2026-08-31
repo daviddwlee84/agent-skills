@@ -66,6 +66,17 @@ jobs:
           npm install --global --no-audit --no-fund @anthropic-ai/claude-code@2.1.235
           npm install --global --no-audit --no-fund @openai/codex@0.147.0
 
+      - name: Install pinned yq for MkDocs helper tests
+        env:
+          YQ_VERSION: v4.47.2
+          YQ_SHA256: 1bb99e1019e23de33c7e6afc23e93dad72aad6cf2cb03c797f068ea79814ddb0
+        run: |
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o "$RUNNER_TEMP/yq"
+          printf '%s  %s\n' "$YQ_SHA256" "$RUNNER_TEMP/yq" | sha256sum --check --strict
+          chmod +x "$RUNNER_TEMP/yq"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 

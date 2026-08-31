@@ -42,10 +42,11 @@ for an honest consent gate.
 
 ### (b) Wrap — add `mkdocs.yml` with my files explicitly in the nav
 
-- Same as (a), but **enumerate their existing Markdown paths into an explicit
-  path-only `nav:` list** so the user can see/reorder them later. Paths are
-  relative to `docs/`, safely YAML-quoted, and sorted alphabetically under the
-  C locale; non-Markdown files are not navigation pages.
+- Same as (a), but **enumerate their existing `.md` and `.markdown` page paths
+  into an explicit path-only `nav:` list** so the user can see/reorder them
+  later. Paths are relative to `docs/`, safely YAML-quoted, and sorted
+  alphabetically under the C locale; non-Markdown files and `_snippets/`
+  include fragments are not navigation pages.
 - Best for: user wants a starting nav structure but trusts the agent to use a
   deterministic alphabetical order.
 - Don't add the standard `index.md` / `getting-started.md` skeleton — their
@@ -80,6 +81,12 @@ find docs -type f \
 
 ## Things this skill must NOT do
 
+- **Don't follow symlinks under `docs/`.** Refuse the bootstrap before writing;
+  `--force` must never turn a linked page into an overwrite outside the target
+  repository.
+- **Don't enable build plugins that mutate existing docs implicitly.** The
+  generated `skip`/`wrap` configuration omits `copy-to-llm` because its build
+  hook writes `docs/assets/copy-to-llm/`; adding it later is a separate opt-in.
 - **Don't rename existing files.** Even "obvious" cleanups like
   `README.md → index.md` change git history and break user muscle memory.
 - **Don't move files into subdirectories.** Users sometimes deliberately

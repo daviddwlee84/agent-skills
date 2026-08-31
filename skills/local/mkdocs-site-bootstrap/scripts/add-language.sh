@@ -98,6 +98,8 @@ while [ $# -gt 0 ]; do
 done
 
 [ -n "$LOCALE" ] || die "--lang is required (try --help)" 1
+case "$LOCALE" in *[!A-Za-z0-9_-]*) die "--lang must be a safe language code" 1 ;; esac
+case "$DEFAULT_LANG" in ''|*[!A-Za-z0-9_-]*) die "--default-lang must be a safe language code" 1 ;; esac
 command -v yq >/dev/null 2>&1 || die "yq not found in PATH (install: brew install yq)" 4
 
 # --- Locate mkdocs.yml ---
@@ -299,14 +301,17 @@ elif [ ! -f "$STUB_TEMPLATE" ]; then
   die "stub template missing: $STUB_TEMPLATE" 4
 else
   TMP_LIST="$(mktemp)"
-  find "$DOCS_DIR" -type f -name '*.md' \
-    -not -path "$DOCS_DIR/_snippets/*" \
-    -not -path "$DOCS_DIR/assets/*" \
+  find "$DOCS_DIR" -type f \( -name '*.md' -o -name '*.markdown' \) \
+    -not -path '*/_snippets/*' \
+    -not -path '*/assets/*' \
     > "$TMP_LIST" 2>/dev/null || true
 
   while IFS= read -r src; do
     [ -z "$src" ] && continue
-    base="${src%.md}"
+    case "$src" in
+      *.markdown) extension=".markdown"; base="${src%.markdown}" ;;
+      *) extension=".md"; base="${src%.md}" ;;
+    esac
     # Skip if this file is itself a locale-suffixed sibling.
     is_locale=0
     for loc in $ALL_LOCALES; do
@@ -316,7 +321,7 @@ else
     done
     [ "$is_locale" = "1" ] && { STUBS_SKIPPED=$((STUBS_SKIPPED + 1)); continue; }
 
-    target="${base}.${LOCALE}.md"
+    target="${base}.${LOCALE}${extension}"
     if [ -e "$target" ] && [ "$FORCE" = "0" ]; then
       STUBS_EXISTING=$((STUBS_EXISTING + 1))
       continue
@@ -324,7 +329,7 @@ else
 
     # Extract title from source (first '# ' heading), fallback to filename.
     src_title=$(grep -m1 '^# ' "$src" 2>/dev/null | sed 's/^# *//' || true)
-    [ -n "$src_title" ] || src_title="$(basename "$src" .md)"
+    [ -n "$src_title" ] || src_title="$(basename "$src" "$extension")"
 
     if [ "$DRY_RUN" = "1" ]; then
       log "[dry-run] create $target  (title: $src_title)"
@@ -342,6 +347,7 @@ log "Stubs: $STUBS_CREATED created, $STUBS_EXISTING already existed, $STUBS_SKIP
 
 # --- Step 5: update preferences ---
 PREFS="$SKILL_DIR/scripts/check-preferences.sh"
+PREFS_FILE="$TARGET/.skills/preferences.yaml"
 ALL_LOCALES_LITERAL="["
 first=1
 for loc in $ALL_LOCALES; do
@@ -356,11 +362,11 @@ done
 ALL_LOCALES_LITERAL="${ALL_LOCALES_LITERAL}]"
 
 if [ "$DRY_RUN" = "1" ]; then
-  log "[dry-run] check-preferences.sh --set mkdocs_site_bootstrap.languages=$ALL_LOCALES_LITERAL"
+  log "[dry-run] check-preferences.sh --file $PREFS_FILE --set mkdocs_site_bootstrap.languages=$ALL_LOCALES_LITERAL"
   log "[dry-run] check-preferences.sh --set mkdocs_site_bootstrap.keep_english_terms=true"
   log "[dry-run] check-preferences.sh --set mkdocs_site_bootstrap.i18n_structure=suffix"
 else
-  bash "$PREFS" \
+  bash "$PREFS" --file "$PREFS_FILE" \
     --set "mkdocs_site_bootstrap.languages=$ALL_LOCALES_LITERAL" \
     --set "mkdocs_site_bootstrap.keep_english_terms=true" \
     --set "mkdocs_site_bootstrap.i18n_structure=suffix" \

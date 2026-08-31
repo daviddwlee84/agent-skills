@@ -47,10 +47,12 @@ plugins:
           - index.md
           - getting-started.md
       # __STARTER_LLMSTXT_END__
+  # __STARTER_COPY_TO_LLM_BEGIN__
   - copy-to-llm:
       repo_url: "{{SITE_URL}}"
       button_hover_color: "var(--md-primary-fg-color)"
       toast_bg_color: "var(--md-primary-fg-color)"
+  # __STARTER_COPY_TO_LLM_END__
 
 markdown_extensions:
   - admonition
@@ -86,7 +88,7 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/{{REPO_SLUG}}
 
-# `_snippets/` are meant to be included via pymdownx.snippets, never
-# rendered as their own page. `not_in_nav` suppresses the INFO warning.
-not_in_nav: |
+# `_snippets/` are included via pymdownx.snippets but never published as pages.
+exclude_docs: |
   /_snippets/
+  **/_snippets/**

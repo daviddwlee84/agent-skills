@@ -111,7 +111,11 @@ bash skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
 ```
 
 Use `--dry-run` first to preview. The script always preserves any existing
-files unless `--force` is passed.
+files unless `--force` is passed, and refuses symlinks anywhere in an existing
+`docs/` tree rather than risking writes outside the repository. In `skip` and
+`wrap` modes it omits `copy-to-llm`, whose build hook writes generated assets
+under `docs/`; users can opt into that plugin separately after choosing where
+those generated files belong.
 
 Add `--social` to enable OG/Twitter preview cards (see Gotchas → "Social cards
 are opt-in"). Leave it off unless the user wants rich link unfurls and can take
@@ -247,9 +251,12 @@ user may want one without the other.
 - **`scripts/enable-pages.sh`** — Enable Pages and trigger first deploy via
   `gh api`. Requires `gh auth status` to pass first.
   - Flags: `--repo OWNER/REPO`, `--no-trigger`, `--dry-run`.
-- **`scripts/add-docs-page.sh`** — Create a new page and insert it into
-  `mkdocs.yml`'s nav. If multiple languages are configured, also writes
-  `*.<LANG>.md` stubs for every non-default language.
+- **`scripts/add-docs-page.sh`** — Create a new page, update explicit nav when
+  present, and keep `llmstxt.sections` synchronized. With auto-navigation
+  (`nav` omitted), `_root` pages remain filesystem-discovered instead of
+  creating a partial explicit nav. A named `--section` must already exist and
+  is validated before any page is written. If multiple languages are
+  configured, also writes `*.<LANG>.md` stubs for every non-default language.
   - Flags: `--section`, `--title`, `--slug`, `--template PATH`, `--lang LANG`
     (single-language stub only), `--dry-run`, `--force`.
 - **`scripts/add-language.sh`** — Retrofit a non-default language into an
@@ -351,8 +358,9 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
   Outside `docs/` for directories or non-`.md` (`backlog/`, `pyproject.toml`)
   → relative is downgraded to INFO and tolerated. Templates already do this
   right; don't "fix" the absolute URLs.
-- **`pymdownx.snippets` requires `_snippets/` in `not_in_nav:`** or strict
-  mode complains about pages-not-in-nav. Template handles it.
+- **`pymdownx.snippets` include fragments belong in recursive `exclude_docs`.**
+  `not_in_nav` only suppresses warnings and still publishes standalone HTML;
+  the template excludes root and nested `_snippets/` directories.
 - **`gh api -X POST .../pages` is idempotent for `build_type=workflow`** but
   errors on `404 Not Found` if the repo isn't pushed to GitHub yet. Check
   `gh repo view` succeeds before running `enable-pages.sh`.

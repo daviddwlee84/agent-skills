@@ -179,47 +179,98 @@ expand_marker() {
   fi
 }
 
-has_existing_docs() {
-  local first
-  [ -d "$TARGET/docs" ] || return 1
-  first="$(find "$TARGET/docs" -type f \
-    -not -path '*/.*' \
-    -not -name '.DS_Store' \
-    -not -name '.gitkeep' \
-    -not -path '*/__pycache__/*' \
-    -not -path '*/node_modules/*' \
-    -print -quit)"
-  [ -n "$first" ]
-}
-
-list_markdown_paths() {
+list_docs_files() {
   [ -d "$TARGET/docs" ] || return 0
   (
     cd "$TARGET/docs"
-    find . -type f -name '*.md' \
-      -not -path '*/.*' \
-      -not -path '*/__pycache__/*' \
-      -not -path '*/node_modules/*' \
-      -print | sed 's|^\./||' | LC_ALL=C sort
+    find . \
+      \( -type d \( -path './.*' -o -path '*/.*' -o -name '__pycache__' -o -name 'node_modules' \) -prune \) -o \
+      \( -type f -not -name '.*' -print \) |
+      sed 's|^\./||' | LC_ALL=C sort
   )
 }
 
-replace_marked_block() {
-  local file="$1" begin="$2" end="$3" replacement="$4" tmp rc
+find_docs_symlink() {
+  [ -d "$TARGET/docs" ] || return 0
+  (
+    cd "$TARGET/docs"
+    find . \
+      \( -type d \( -path './.*' -o -path '*/.*' -o -name '__pycache__' -o -name 'node_modules' \) -prune \) -o \
+      \( -type l -print -quit \)
+  )
+}
+
+list_markdown_paths() {
+  local path
+  [ -n "$DOCS_FILES" ] || return 0
+  printf '%s\n' "$DOCS_FILES" | while IFS= read -r path; do
+    case "$path" in
+      _snippets/*|*/_snippets/*) ;;
+      *.md|*.markdown) printf '%s\n' "$path" ;;
+    esac
+  done
+}
+
+render_starter_blocks() {
+  local file="$1" mode="$2" nav="$3" llmstxt="$4" copy_to_llm="$5" tmp rc
   tmp="${file}.tmp.$$"
-  if awk -v begin="$begin" -v end="$end" -v replacement="$replacement" '
-    BEGIN { inside = 0; begin_count = 0; end_count = 0 }
-    index($0, begin) {
-      begin_count++
-      inside = 1
-      while ((getline line < replacement) > 0) print line
-      close(replacement)
+  if awk -v mode="$mode" -v nav="$nav" -v llmstxt="$llmstxt" -v copy_to_llm="$copy_to_llm" '
+    function emit(path, line) {
+      while ((getline line < path) > 0) print line
+      close(path)
+    }
+    BEGIN {
+      block = ""
+      nav_begin = nav_end = 0
+      llmstxt_begin = llmstxt_end = 0
+      copy_begin = copy_end = 0
+      invalid = 0
+    }
+    /^[[:space:]]*# __STARTER_NAV_BEGIN__[[:space:]]*$/ {
+      if (block != "") invalid = 1
+      nav_begin++
+      block = "nav"
+      if (mode == "replace") emit(nav)
       next
     }
-    index($0, end) { end_count++; inside = 0; next }
-    !inside { print }
+    /^[[:space:]]*# __STARTER_NAV_END__[[:space:]]*$/ {
+      if (block != "nav") invalid = 1
+      nav_end++
+      block = ""
+      next
+    }
+    /^[[:space:]]*# __STARTER_LLMSTXT_BEGIN__[[:space:]]*$/ {
+      if (block != "") invalid = 1
+      llmstxt_begin++
+      block = "llmstxt"
+      if (mode == "replace") emit(llmstxt)
+      next
+    }
+    /^[[:space:]]*# __STARTER_LLMSTXT_END__[[:space:]]*$/ {
+      if (block != "llmstxt") invalid = 1
+      llmstxt_end++
+      block = ""
+      next
+    }
+    /^[[:space:]]*# __STARTER_COPY_TO_LLM_BEGIN__[[:space:]]*$/ {
+      if (block != "") invalid = 1
+      copy_begin++
+      block = "copy"
+      if (mode == "replace") emit(copy_to_llm)
+      next
+    }
+    /^[[:space:]]*# __STARTER_COPY_TO_LLM_END__[[:space:]]*$/ {
+      if (block != "copy") invalid = 1
+      copy_end++
+      block = ""
+      next
+    }
+    block == "" || mode == "keep" { print }
     END {
-      if (inside || begin_count != 1 || end_count != 1) exit 2
+      if (invalid || block != "" ||
+          nav_begin != 1 || nav_end != 1 ||
+          llmstxt_begin != 1 || llmstxt_end != 1 ||
+          copy_begin != 1 || copy_end != 1) exit 2
     }
   ' "$file" > "$tmp"; then
     mv "$tmp" "$file"
@@ -230,87 +281,101 @@ replace_marked_block() {
   fi
 }
 
-strip_starter_markers() {
-  local file="$1" tmp="${1}.tmp.$$" rc
-  if awk '!/__STARTER_(NAV|LLMSTXT)_(BEGIN|END)__/' "$file" > "$tmp"; then
-    mv "$tmp" "$file"
-  else
-    rc=$?
-    rm -f "$tmp"
-    return "$rc"
-  fi
-}
-
 configure_existing_docs() {
-  local file="$1" mode="$2" paths nav llmstxt path escaped rc
+  local file="$1" mode="$2" paths nav llmstxt copy_to_llm path escaped rc
   paths="$(mktemp "$TARGET/.mkdocs-paths.XXXXXX")"
   nav="$(mktemp "$TARGET/.mkdocs-nav.XXXXXX")"
   llmstxt="$(mktemp "$TARGET/.mkdocs-llmstxt.XXXXXX")"
+  copy_to_llm="$(mktemp "$TARGET/.mkdocs-copy-to-llm.XXXXXX")"
 
   if list_markdown_paths > "$paths"; then
     :
   else
     rc=$?
-    rm -f "$paths" "$nav" "$llmstxt"
+    rm -f "$paths" "$nav" "$llmstxt" "$copy_to_llm"
     return "$rc"
   fi
 
   : > "$nav"
   if [ "$mode" = "wrap" ]; then
-    if [ -s "$paths" ]; then
-      printf 'nav:\n' >> "$nav"
-      while IFS= read -r path; do
-        escaped="$(printf '%s' "$path" | sed "s/'/''/g")"
-        printf "  - '%s'\n" "$escaped" >> "$nav"
-      done < "$paths"
-    else
-      printf 'nav: []\n' >> "$nav"
-    fi
+    if [ -s "$paths" ]; then printf 'nav:\n' >> "$nav"; else printf 'nav: []\n' >> "$nav"; fi
   fi
 
-  : > "$llmstxt"
+  printf '      sections:\n' > "$llmstxt"
   if [ -s "$paths" ]; then
-    printf '      sections:\n        Guides:\n' >> "$llmstxt"
-    while IFS= read -r path; do
-      escaped="$(printf '%s' "$path" | sed "s/'/''/g")"
-      printf "          - '%s'\n" "$escaped" >> "$llmstxt"
-    done < "$paths"
+    printf '        Guides:\n' >> "$llmstxt"
+  else
+    printf '        Guides: []\n' >> "$llmstxt"
   fi
+  : > "$copy_to_llm"
 
-  if replace_marked_block "$file" '__STARTER_NAV_BEGIN__' '__STARTER_NAV_END__' "$nav" &&
-     replace_marked_block "$file" '__STARTER_LLMSTXT_BEGIN__' '__STARTER_LLMSTXT_END__' "$llmstxt"; then
-    rm -f "$paths" "$nav" "$llmstxt"
+  while IFS= read -r path; do
+    escaped="$(printf '%s' "$path" | sed "s/'/''/g")"
+    if [ "$mode" = "wrap" ]; then printf "  - '%s'\n" "$escaped" >> "$nav"; fi
+    printf "          - '%s'\n" "$escaped" >> "$llmstxt"
+  done < "$paths"
+
+  if render_starter_blocks "$file" replace "$nav" "$llmstxt" "$copy_to_llm"; then
+    rm -f "$paths" "$nav" "$llmstxt" "$copy_to_llm"
   else
     rc=$?
-    rm -f "$paths" "$nav" "$llmstxt"
+    rm -f "$paths" "$nav" "$llmstxt" "$copy_to_llm"
     return "$rc"
   fi
 }
 
-HAS_EXISTING_DOCS=0
-if has_existing_docs; then HAS_EXISTING_DOCS=1; fi
+DOCS_FILES=""
+DOCS_SYMLINK=""
+if [ -L "$TARGET/docs" ]; then
+  die "refusing symlinked docs directory: $TARGET/docs" 3
+elif [ -e "$TARGET/docs" ] && [ ! -d "$TARGET/docs" ]; then
+  die "docs path is not a directory: $TARGET/docs" 3
+elif [ -d "$TARGET/docs" ]; then
+  if DOCS_SYMLINK="$(find_docs_symlink)"; then
+    [ -z "$DOCS_SYMLINK" ] || die "refusing symlink inside docs/: $DOCS_SYMLINK" 3
+  else
+    die "could not inspect docs/ for symlinks" 3
+  fi
+  if DOCS_FILES="$(list_docs_files)"; then
+    :
+  else
+    die "could not inspect existing docs/ content" 3
+  fi
+fi
+
+if [ -n "$DOCS_FILES" ]; then
+  DOCS_MODE="$EXISTING"
+elif [ "$NO_SKELETON" = "1" ]; then
+  DOCS_MODE="no-skeleton"
+else
+  DOCS_MODE="fresh"
+fi
 
 # --- 1. mkdocs.yml ---
 copy_template "$ASSETS/mkdocs.yml.template" "$TARGET/mkdocs.yml"
 substitute "$TARGET/mkdocs.yml"
 expand_marker "$TARGET/mkdocs.yml" "__SOCIAL_PLUGIN__" "$ASSETS/social/mkdocs-plugin.yml"
 if [ "$DRY_RUN" = "1" ]; then
-  if [ "$HAS_EXISTING_DOCS" = "1" ]; then
-    log "[dry-run] would configure existing docs with --existing=$EXISTING"
-  elif [ "$NO_SKELETON" = "1" ]; then
-    log "[dry-run] would remove starter page references because --no-skeleton is set"
-  else
-    log "[dry-run] would keep starter nav and llmstxt page references"
-  fi
-elif [ "$HAS_EXISTING_DOCS" = "1" ]; then
-  configure_existing_docs "$TARGET/mkdocs.yml" "$EXISTING" || \
-    die "failed to configure existing docs in $TARGET/mkdocs.yml" 4
-elif [ "$NO_SKELETON" = "1" ]; then
-  configure_existing_docs "$TARGET/mkdocs.yml" skip || \
-    die "failed to remove starter page references from $TARGET/mkdocs.yml" 4
+  case "$DOCS_MODE" in
+    skip|wrap) log "[dry-run] would configure existing docs with --existing=$DOCS_MODE" ;;
+    no-skeleton) log "[dry-run] would remove starter integrations because --no-skeleton is set" ;;
+    fresh) log "[dry-run] would keep starter nav, llmstxt, and copy-to-llm integrations" ;;
+  esac
 else
-  strip_starter_markers "$TARGET/mkdocs.yml" || \
-    die "failed to finalize starter configuration in $TARGET/mkdocs.yml" 4
+  case "$DOCS_MODE" in
+    skip|wrap)
+      configure_existing_docs "$TARGET/mkdocs.yml" "$DOCS_MODE" || \
+        die "failed to configure existing docs in $TARGET/mkdocs.yml" 4
+      ;;
+    no-skeleton)
+      configure_existing_docs "$TARGET/mkdocs.yml" skip || \
+        die "failed to remove starter integrations from $TARGET/mkdocs.yml" 4
+      ;;
+    fresh)
+      render_starter_blocks "$TARGET/mkdocs.yml" keep /dev/null /dev/null /dev/null || \
+        die "failed to finalize starter configuration in $TARGET/mkdocs.yml" 4
+      ;;
+  esac
 fi
 
 # --- 2. pyproject.toml ---
@@ -348,31 +413,34 @@ if [ "$SOCIAL" = "1" ]; then
 fi
 
 # --- 4. docs/ skeleton ---
-if [ "$HAS_EXISTING_DOCS" = "1" ]; then
-  log "Note: docs/ already has content. Honoring --existing=$EXISTING:"
-  case "$EXISTING" in
-    skip)
-      log "  Skipping skeleton creation (existing files left alone)."
-      log "  mkdocs.yml omits nav so MkDocs auto-generates it from the filesystem."
-      ;;
-    wrap)
-      log "  Skipping skeleton creation (existing files left alone)."
-      log "  mkdocs.yml lists existing Markdown paths alphabetically."
-      ;;
-  esac
-elif [ "$NO_SKELETON" = "1" ]; then
-  log "Skipping docs skeleton and starter page references (--no-skeleton)."
-elif [ "$DRY_RUN" = "1" ]; then
-  log "[dry-run] would copy docs-skeleton/* → $TARGET/docs/"
-else
-  mkdir -p "$TARGET/docs/_snippets" "$TARGET/docs/assets/copy-to-llm"
-  copy_template "$ASSETS/docs-skeleton/index.md" "$TARGET/docs/index.md"
-  substitute "$TARGET/docs/index.md"
-  copy_template "$ASSETS/docs-skeleton/getting-started.md" "$TARGET/docs/getting-started.md"
-  substitute "$TARGET/docs/getting-started.md"
-  copy_template "$ASSETS/docs-skeleton/_snippets/README.md" "$TARGET/docs/_snippets/README.md"
-  cp "$ASSETS/docs-skeleton/assets/copy-to-llm/"* "$TARGET/docs/assets/copy-to-llm/"
-fi
+case "$DOCS_MODE" in
+  skip)
+    log "Note: docs/ already has content. Honoring --existing=skip:"
+    log "  Skipping skeleton creation (existing files left alone)."
+    log "  mkdocs.yml omits nav and copy-to-llm so files remain untouched."
+    ;;
+  wrap)
+    log "Note: docs/ already has content. Honoring --existing=wrap:"
+    log "  Skipping skeleton creation (existing files left alone)."
+    log "  mkdocs.yml lists page paths alphabetically and omits copy-to-llm."
+    ;;
+  no-skeleton)
+    log "Skipping docs skeleton and starter integrations (--no-skeleton)."
+    ;;
+  fresh)
+    if [ "$DRY_RUN" = "1" ]; then
+      log "[dry-run] would copy docs-skeleton/* → $TARGET/docs/"
+    else
+      mkdir -p "$TARGET/docs/_snippets" "$TARGET/docs/assets/copy-to-llm"
+      copy_template "$ASSETS/docs-skeleton/index.md" "$TARGET/docs/index.md"
+      substitute "$TARGET/docs/index.md"
+      copy_template "$ASSETS/docs-skeleton/getting-started.md" "$TARGET/docs/getting-started.md"
+      substitute "$TARGET/docs/getting-started.md"
+      copy_template "$ASSETS/docs-skeleton/_snippets/README.md" "$TARGET/docs/_snippets/README.md"
+      cp "$ASSETS/docs-skeleton/assets/copy-to-llm/"* "$TARGET/docs/assets/copy-to-llm/"
+    fi
+    ;;
+esac
 
 if [ "$DRY_RUN" = "1" ]; then
   log "Dry run complete."
