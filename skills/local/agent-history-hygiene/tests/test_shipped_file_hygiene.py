@@ -26,9 +26,26 @@ assemble headers at runtime (see `pem_header` in conftest), fixtures carry
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
+
+
+def _safe_assert(condition: bool, message: str) -> None:
+    if not condition:
+        pytest.fail(message, pytrace=False)
+
+
+def _assert_bytes_equal(actual: bytes, expected: bytes, message: str) -> None:
+    _safe_assert(
+        hashlib.sha256(actual).digest() == hashlib.sha256(expected).digest(),
+        message,
+    )
+
+
+def _assert_sensitive_absent(output: str, sensitive: str) -> None:
+    _safe_assert(sensitive not in output, "runtime header remained after redaction")
 
 from conftest import OPENVPN_HEADER, PUTTY_HEADER, SKILL_ROOT
 
@@ -61,6 +78,23 @@ def _shipped_files() -> list[Path]:
     )
 
 
+def _complete_private_key_record(token: str) -> str:
+    """Build one bounded record without storing any blacklist literal here."""
+    if token == PUTTY_HEADER:
+        return (
+            f"{token}: ssh-rsa\n"
+            "Encryption: none\n"
+            "Comment: shipped-hygiene fixture\n"
+            "Public-Lines: 1\n"
+            "QUJDRA==\n"
+            "Private-Lines: 1\n"
+            "RUZHSA==\n"
+            f"Private-MAC: {'a' * 40}\n"
+        )
+    footer_token = token.replace("BEGIN", "END", 1)
+    return f"-----{token}-----\nsynthetic-material\n-----{footer_token}-----\n"
+
+
 class TestNoBlacklistedHeadersOnDisk:
     """Every shipped file must survive `detect-private-key` unmodified."""
 
@@ -69,7 +103,7 @@ class TestNoBlacklistedHeadersOnDisk:
         assert len(_shipped_files()) > 10
 
     def test_no_shipped_file_contains_a_blacklisted_header(self):
-        offenders: dict[str, list[str]] = {}
+        offenders: dict[str, int] = {}
         for path in _shipped_files():
             try:
                 content = path.read_bytes()
@@ -81,7 +115,7 @@ class TestNoBlacklistedHeadersOnDisk:
                 if token.encode() in content
             ]
             if hits:
-                offenders[str(path.relative_to(SKILL_ROOT))] = hits
+                offenders[str(path.relative_to(SKILL_ROOT))] = len(hits)
         assert not offenders, (
             "These shipped files carry a detect-private-key BLACKLIST substring "
             "and will fail `git commit` in every downstream repo that installs "
@@ -108,7 +142,7 @@ class TestCompiledBytecodeIsClean:
     def test_no_compiled_module_contains_a_blacklisted_header(self, tmp_path: Path):
         import py_compile
 
-        offenders: dict[str, list[str]] = {}
+        offenders: dict[str, int] = {}
         for source in SKILL_ROOT.rglob("*.py"):
             if "__pycache__" in source.parts:
                 continue
@@ -120,7 +154,7 @@ class TestCompiledBytecodeIsClean:
             blob = out.read_bytes()
             hits = [t for t in DETECT_PRIVATE_KEY_BLACKLIST if t.encode() in blob]
             if hits:
-                offenders[str(source.relative_to(SKILL_ROOT))] = hits
+                offenders[str(source.relative_to(SKILL_ROOT))] = len(hits)
         assert not offenders, (
             "Compiling these modules produces a .pyc containing a "
             f"detect-private-key BLACKLIST substring: {offenders}. Adjacent "
@@ -137,27 +171,68 @@ class TestRedactorCoversTheWholeBlacklist:
     left for the user to fix.
     """
 
-    @pytest.mark.parametrize("token", DETECT_PRIVATE_KEY_BLACKLIST)
-    def test_header_is_detected_and_scrubbed(
+    @pytest.mark.parametrize(
+        "token",
+        DETECT_PRIVATE_KEY_BLACKLIST,
+        ids=[f"header-case-{index}" for index, _ in enumerate(DETECT_PRIVATE_KEY_BLACKLIST)],
+    )
+    def test_isolated_header_redaction_converges(
         self, redact_secrets, tmp_path: Path, token: str
     ):
         f = tmp_path / "p.md"
-        f.write_text(f"pasted -----{token}----- oops\n", encoding="utf-8")
+        f.write_text(f"captured output: -----{token}----- only\n", encoding="utf-8")
 
-        assert redact_secrets.find_private_key_files([f]), (
-            f"find_private_key_files missed BLACKLIST entry {token!r}"
+        _safe_assert(
+            bool(redact_secrets.find_private_key_files([f])),
+            "redactor missed a runtime blacklist header",
         )
-        assert redact_secrets.redact_private_keys(f) is True
-        content = f.read_text(encoding="utf-8")
-        assert token not in content, (
-            f"redact_private_keys left BLACKLIST entry {token!r} in place"
+        _safe_assert(
+            redact_secrets.redact_private_keys(f) is True,
+            "isolated runtime header was not redacted",
+        )
+        _assert_sensitive_absent(f.read_text(encoding="utf-8"), token)
+        _safe_assert(
+            redact_secrets.redact_private_keys(f) is False,
+            "isolated runtime header redaction did not converge",
         )
 
-    @pytest.mark.parametrize("token", DETECT_PRIVATE_KEY_BLACKLIST)
-    def test_redaction_converges(self, redact_secrets, tmp_path: Path, token: str):
-        """The sentinel must not itself re-match -- otherwise the hook rewrites
-        the file on every run and the commit never converges."""
+    @pytest.mark.parametrize(
+        "token",
+        DETECT_PRIVATE_KEY_BLACKLIST,
+        ids=[f"truncated-case-{index}" for index, _ in enumerate(DETECT_PRIVATE_KEY_BLACKLIST)],
+    )
+    def test_plausible_truncated_record_fails_closed(
+        self, redact_secrets, tmp_path: Path, token: str
+    ):
         f = tmp_path / "p.md"
-        f.write_text(f"pasted -----{token}----- oops\n", encoding="utf-8")
-        assert redact_secrets.redact_private_keys(f) is True
-        assert redact_secrets.redact_private_keys(f) is False
+        original = f"-----{token}-----\n{'QUJD' * 16}\n".encode()
+        f.write_bytes(original)
+
+        with pytest.raises(redact_secrets.IncompletePrivateKeyError):
+            redact_secrets.redact_private_keys(f)
+        _assert_bytes_equal(
+            f.read_bytes(),
+            original,
+            "plausibly truncated runtime record changed",
+        )
+
+    @pytest.mark.parametrize(
+        "token",
+        DETECT_PRIVATE_KEY_BLACKLIST,
+        ids=[f"complete-case-{index}" for index, _ in enumerate(DETECT_PRIVATE_KEY_BLACKLIST)],
+    )
+    def test_complete_record_redaction_converges(
+        self, redact_secrets, tmp_path: Path, token: str
+    ):
+        """A bounded record is wholly removed and the sentinel stays inert."""
+        f = tmp_path / "p.md"
+        f.write_text(_complete_private_key_record(token), encoding="utf-8")
+        _safe_assert(
+            redact_secrets.redact_private_keys(f) is True,
+            "complete runtime key record was not redacted",
+        )
+        _assert_sensitive_absent(f.read_text(encoding="utf-8"), token)
+        _safe_assert(
+            redact_secrets.redact_private_keys(f) is False,
+            "complete runtime key record redaction did not converge",
+        )

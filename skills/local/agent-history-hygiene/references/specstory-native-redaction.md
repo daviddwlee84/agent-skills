@@ -1,8 +1,9 @@
 # SpecStory's native redaction (v2.4.0+) and what it leaves us
 
-SpecStory redacts secrets on write, so this skill's pre-commit layer is no
-longer the first line of defense for `.specstory/history/`. This page records
-what upstream covers, what it misses, and why our layer still exists.
+SpecStory redacts secrets on write, before this skill's post-session sanitizer
+and validation-only commit hooks inspect `.specstory/history/`. This page
+records what upstream covers, what it misses, and why the finalizer check is
+still required.
 
 Regenerate everything below with:
 
@@ -106,22 +107,24 @@ redactor now writes for PEM blocks.
 and `OPENAI_API_KEY=REDACTED` all survive both layers. Transcripts can still
 discuss key shapes in prose.
 
-## What this means for our layer
+## What this means for our finalizer and hooks
 
-1. **Keep it.** 15 of 54 class/context pairs are ours alone, including every
-   webhook URL rule and every prose-context custom key.
-2. **Stop duplicating.** Our redactor writes SpecStory's placeholder shape and
-   allowlists it, so a transcript SpecStory already cleaned is not rewritten —
-   no "files were modified by this hook", no re-`git add`, no second commit.
-3. **`--legacy` changes bytes, not detection.** It writes the pre-2.4.0
-   placeholders (`sk-abc...xyz`, `[REDACTED PEM PRIVKEY BLOCK]`) for repos
-   whose transcripts are full of the old sentinels and that would rather not
-   mix the two shapes. Detection, scope, and exit codes are identical, so
-   there is no reason to reach for it on a SpecStory older than 2.4.0 — our
-   layer scans the same way regardless of what SpecStory did or didn't do.
-4. **Below 2.4.0 our layer is the only layer.** Nothing changes in how it
-   runs; there is simply no Layer 0 in front of it, so expect it to actually
-   rewrite files instead of finding everything already clean.
+1. **Keep the residual check.** 15 of 54 class/context pairs are ours alone,
+   including every webhook URL rule and every prose-context custom key.
+2. **Do not mutate during recording or pre-commit.** The supported flow waits
+   for recorder exit and exact sync, then sanitizes exact staged blobs inside a
+   locked alternate index. Pre-commit only validates the effective index.
+3. **Keep placeholders stable.** The sanitizer writes SpecStory's sentinel
+   shape, so content already cleaned by Layer 0 remains byte-stable. There is no
+   mutating-hook, re-`git add`, or `SKIP` loop.
+4. **`--legacy` changes bytes, not detection.** It writes pre-2.4.0
+   placeholders for repositories that intentionally retain that older style.
+   Detection and scope are unchanged; SpecStory version alone is not a reason
+   to select it.
+5. **Below 2.4.0 the finalizer is the only redacting layer.** Expect sanitation
+   to return `rotation_required` when it replaces a real credential. Rotate
+   before confirmed recovery; local raw objects created before replacement may
+   remain unreachable until Git garbage collection.
 
 ## Re-running the probe
 
@@ -147,7 +150,9 @@ on — that redaction is still on by default, and that the placeholder is still
 
 ## Cross-reference
 
+- [`post-session-finalization.md`](./post-session-finalization.md) — the
+  recorder-exit, rotation, and recovery boundary.
 - [`pre-commit-redaction-stack.md`](./pre-commit-redaction-stack.md) — where
-  this sits in the layered defense.
-- [`../assets/redact_secrets.py`](../assets/redact_secrets.py) — the redactor
-  and its `--legacy` flag.
+  native redaction sits in the layered defense.
+- [`../assets/redact_secrets.py`](../assets/redact_secrets.py) — index/worktree
+  modes and the `--legacy` flag.

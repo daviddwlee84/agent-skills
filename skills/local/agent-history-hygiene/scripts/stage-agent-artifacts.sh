@@ -10,6 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_DIRS_FILE="$SKILL_DIR/assets/artifact-dirs.txt"
+REDACTOR="$SKILL_DIR/assets/redact_secrets.py"
 
 usage() {
   cat <<'EOF'
@@ -31,6 +32,23 @@ Exact session-only options:
                           --session-id so the raw Claude JSONL can still be proved.
   --plan PATH             Stage this exact in-repo Markdown plan.
   --no-plan               Explicitly state that this session has no plan.
+  --sanitize-index        Sanitize only the exact selected blobs inside the
+                          locked alternate index, then require a clean check.
+                          Direct use is finalizer/quiescence-only: an advisory
+                          hash cannot stop an arbitrary live writer.
+  --materialize-sanitized Verify every selected live generation even when no
+                          bytes change; when bytes do change, materialize with
+                          old-inode backups and post-checks. Finalizer/
+                          quiescence-only. Requires --sanitize-index.
+  --gitleaks-config PATH  Trusted scanner policy used by whichever scanning pass
+                          the selected exact mode runs, instead of the worktree
+                          .gitleaks.toml. The finalizer pins this to the
+                          request's own HEAD so a live session cannot weaken
+                          the policy mid-run. Requires --session-only.
+  --expect-index-tree OID Refuse to touch the index unless it currently writes
+                          exactly this tree. Proves the queued staged tree is
+                          still the one being finalized. Requires
+                          --session-only.
 
 Broad-mode options:
   --include-all-plans     Re-add already-staged modified artifact files instead
@@ -45,12 +63,14 @@ Common options:
   --help, -h              Show this help and exit.
 
 Exit codes:
-  0  staging success, or --check-staged verification success
+  0  staging/check success; sanitizer made no replacements
+  10 exact blobs were sanitized and credential rotation is required
   1  invalid arguments
   2  not inside a git repository
   3  no code changes and no dirty artifacts
   4  artifacts are dirty but code is clean (use --allow-empty)
   5  exact selector/path validation failed; index is unchanged
+  6  --expect-index-tree mismatch: the staged tree moved since queueing
 EOF
 }
 
@@ -80,6 +100,12 @@ NO_SPECSTORY=0
 PLAN_INPUT=""
 PLAN_SET=0
 NO_PLAN=0
+SANITIZE_INDEX=0
+MATERIALIZE_SANITIZED=0
+GITLEAKS_CONFIG=""
+GITLEAKS_CONFIG_SET=0
+EXPECT_INDEX_TREE=""
+EXPECT_INDEX_TREE_SET=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -111,6 +137,24 @@ while [ $# -gt 0 ]; do
       [ -n "$PLAN_INPUT" ] || die "--plan cannot be empty" 1
       shift ;;
     --no-plan) NO_PLAN=1; shift ;;
+    --sanitize-index) SANITIZE_INDEX=1; shift ;;
+    --materialize-sanitized) MATERIALIZE_SANITIZED=1; shift ;;
+    --gitleaks-config)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || die "--gitleaks-config needs a non-empty path (value not shown)" 1
+      GITLEAKS_CONFIG_SET=1; GITLEAKS_CONFIG="$1"; shift ;;
+    --gitleaks-config=*)
+      GITLEAKS_CONFIG_SET=1; GITLEAKS_CONFIG="${1#--gitleaks-config=}"
+      [ -n "$GITLEAKS_CONFIG" ] || die "--gitleaks-config cannot be empty" 1
+      shift ;;
+    --expect-index-tree)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || die "--expect-index-tree needs a non-empty object id" 1
+      EXPECT_INDEX_TREE_SET=1; EXPECT_INDEX_TREE="$1"; shift ;;
+    --expect-index-tree=*)
+      EXPECT_INDEX_TREE_SET=1; EXPECT_INDEX_TREE="${1#--expect-index-tree=}"
+      [ -n "$EXPECT_INDEX_TREE" ] || die "--expect-index-tree cannot be empty" 1
+      shift ;;
     --include-all-plans) INCLUDE_ALL_PLANS=1; shift ;;
     --dirs-file)
       shift
@@ -143,6 +187,45 @@ if [ "$PLAN_SET" = "1" ] && \
 fi
 if has_control_bytes "$DIRS_FILE" || ! is_valid_utf8 "$DIRS_FILE"; then
   die "--dirs-file is not safe UTF-8 text (value not shown)" 1
+fi
+if [ "$GITLEAKS_CONFIG_SET" = "1" ]; then
+  if has_control_bytes "$GITLEAKS_CONFIG" || ! is_valid_utf8 "$GITLEAKS_CONFIG"; then
+    die "--gitleaks-config is not safe UTF-8 text (value not shown)" 1
+  fi
+  case "$GITLEAKS_CONFIG" in
+    /*) ;;
+    *) die "--gitleaks-config must be an absolute path" 1 ;;
+  esac
+  [ -f "$GITLEAKS_CONFIG" ] || die "--gitleaks-config must name an existing regular file" 1
+  # -f follows symlinks, so reject the link itself only after proving a regular
+  # target. An `if` rather than `[ ... ] && die` so the false branch can never
+  # become a nonzero statement result under `set -e`.
+  if [ -L "$GITLEAKS_CONFIG" ]; then
+    die "--gitleaks-config must not be a symlink" 1
+  fi
+fi
+if [ "$EXPECT_INDEX_TREE_SET" = "1" ]; then
+  case "${#EXPECT_INDEX_TREE}" in 40|64) ;;
+    *) die "--expect-index-tree must be a full-length object id" 1 ;;
+  esac
+  case "$EXPECT_INDEX_TREE" in
+    *[!0-9a-f]*) die "--expect-index-tree must be lowercase hexadecimal" 1 ;;
+  esac
+fi
+
+[ "$MATERIALIZE_SANITIZED" = "0" ] || [ "$SANITIZE_INDEX" = "1" ] || \
+  die "--materialize-sanitized requires --sanitize-index" 1
+[ "$GITLEAKS_CONFIG_SET" = "0" ] || [ "$SESSION_ONLY" = "1" ] || \
+  die "--gitleaks-config requires exact --session-only mode" 1
+[ "$EXPECT_INDEX_TREE_SET" = "0" ] || [ "$SESSION_ONLY" = "1" ] || \
+  die "--expect-index-tree requires exact --session-only mode" 1
+if [ "$SANITIZE_INDEX" = "1" ]; then
+  [ "$SESSION_ONLY" = "1" ] || die "--sanitize-index requires exact --session-only mode" 1
+  [ "$CHECK_STAGED" = "0" ] || die "--sanitize-index cannot be combined with --check-staged" 1
+  [ "$DRY_RUN" = "0" ] || die "--sanitize-index cannot be combined with --dry-run" 1
+  [ "$INCLUDE_ALL_PLANS" = "0" ] || die "--sanitize-index cannot be combined with --include-all-plans" 1
+  command -v python3 >/dev/null 2>&1 || die "python3 is required for index sanitation" 5
+  [ -f "$REDACTOR" ] || die "the staged artifact sanitizer is unavailable" 5
 fi
 
 if [ "$CHECK_STAGED" = "1" ]; then
@@ -338,6 +421,11 @@ INDEX_TRANSACTION_ACTIVE=0
 INDEX_PATH=""
 INDEX_LOCK_PATH=""
 TEMP_INDEX_PATH=""
+MATERIALIZATION_STARTED=0
+MATERIALIZE_BACKUPS=()
+MATERIALIZE_BACKUP_IDS=()
+MATERIALIZE_BACKUP_ACTIVE=()
+MATERIALIZE_RECOVERY_LEFT=0
 
 cleanup_index_transaction() {
   if [ "$INDEX_TRANSACTION_ACTIVE" = "1" ]; then
@@ -346,8 +434,6 @@ cleanup_index_transaction() {
     INDEX_TRANSACTION_ACTIVE=0
   fi
 }
-trap 'cleanup_index_transaction' EXIT
-trap 'exit 130' HUP INT TERM
 
 absolute_git_path() {
   case "$1" in
@@ -447,6 +533,468 @@ preflight_candidates() {
     die "one or more selected artifacts are not addable; index unchanged" 5
 }
 
+PRE_SANITIZE_MODES=()
+PRE_SANITIZE_OIDS=()
+SANITIZED_OIDS=()
+PRE_SANITIZE_TREE=""
+SANITIZED_TREE=""
+SANITIZER_CHANGED=0
+
+capture_pre_sanitize_entries() {
+  local path record metadata entry_path mode oid stage extra old_ifs
+  PRE_SANITIZE_MODES=()
+  PRE_SANITIZE_OIDS=()
+  for path in "${CANDIDATES[@]}"; do
+    record="$(GIT_LITERAL_PATHSPECS=1 git -c core.quotePath=false ls-files --stage -- "$path" 2>/dev/null)" || \
+      die "could not read an exact candidate entry; real index unchanged" 5
+    [ -n "$record" ] || die "an exact candidate is absent from the alternate index; real index unchanged" 5
+    case "$record" in *$'\n'*) die "an exact candidate did not resolve to one stage-0 entry; real index unchanged" 5 ;; esac
+    case "$record" in *$'\t'*) ;;
+      *) die "Git returned a malformed exact candidate entry; real index unchanged" 5 ;;
+    esac
+    metadata="${record%%$'\t'*}"
+    entry_path="${record#*$'\t'}"
+    [ "$entry_path" = "$path" ] || die "Git returned a mismatched exact candidate path; real index unchanged" 5
+    old_ifs="$IFS"
+    IFS=' '
+    set -- $metadata
+    IFS="$old_ifs"
+    [ "$#" = "3" ] || die "Git returned malformed exact candidate metadata; real index unchanged" 5
+    mode="$1"; oid="$2"; stage="$3"; extra="${4:-}"
+    [ -z "$extra" ] || die "Git returned malformed exact candidate metadata; real index unchanged" 5
+    case "$mode" in 100644|100755) ;;
+      *) die "exact candidates must be regular index blobs; real index unchanged" 5 ;;
+    esac
+    [ "$stage" = "0" ] || die "exact candidates must be stage-0 entries; real index unchanged" 5
+    case "${#oid}" in 40|64) ;;
+      *) die "Git returned an invalid exact candidate object id; real index unchanged" 5 ;;
+    esac
+    case "$oid" in *[!0-9a-f]*) die "Git returned an invalid exact candidate object id; real index unchanged" 5 ;; esac
+    PRE_SANITIZE_MODES+=("$mode")
+    PRE_SANITIZE_OIDS+=("$oid")
+  done
+  PRE_SANITIZE_TREE="$(git write-tree 2>/dev/null)" || \
+    die "could not snapshot the pre-sanitize candidate tree; real index unchanged" 5
+}
+
+verify_post_sanitize_entries() {
+  local index path record metadata entry_path mode oid stage old_ifs
+  index=0
+  SANITIZED_OIDS=()
+  for path in "${CANDIDATES[@]}"; do
+    record="$(GIT_LITERAL_PATHSPECS=1 git -c core.quotePath=false ls-files --stage -- "$path" 2>/dev/null)" || \
+      die "could not verify an exact sanitized entry; real index unchanged" 5
+    [ -n "$record" ] || die "an exact sanitized entry is absent; real index unchanged" 5
+    case "$record" in *$'\n'*) die "an exact sanitized entry is not stage 0; real index unchanged" 5 ;; esac
+    case "$record" in *$'\t'*) ;;
+      *) die "Git returned a malformed sanitized entry; real index unchanged" 5 ;;
+    esac
+    metadata="${record%%$'\t'*}"
+    entry_path="${record#*$'\t'}"
+    [ "$entry_path" = "$path" ] || die "Git returned a mismatched sanitized path; real index unchanged" 5
+    old_ifs="$IFS"
+    IFS=' '
+    set -- $metadata
+    IFS="$old_ifs"
+    [ "$#" = "3" ] || die "Git returned malformed sanitized metadata; real index unchanged" 5
+    mode="$1"; oid="$2"; stage="$3"
+    [ "$stage" = "0" ] || die "an exact sanitized entry is not stage 0; real index unchanged" 5
+    [ "$mode" = "${PRE_SANITIZE_MODES[$index]}" ] || \
+      die "sanitation changed an exact candidate mode; real index unchanged" 5
+    case "${#oid}" in 40|64) ;;
+      *) die "Git returned an invalid sanitized object id; real index unchanged" 5 ;;
+    esac
+    case "$oid" in *[!0-9a-f]*) die "Git returned an invalid sanitized object id; real index unchanged" 5 ;; esac
+    SANITIZED_OIDS+=("$oid")
+    index=$((index + 1))
+  done
+}
+
+run_redactor_index_mode() {
+  local mode="$1" rc=0
+  # A pinned policy must reach both passes. Sanitizing under the request's
+  # policy but verifying under the worktree's would let a mid-run edit hide a
+  # finding from the very check that gates the commit. Bash 3.2 expands an empty
+  # array under `set -u` to one empty word, so branch instead of splicing.
+  case "$mode" in
+    fix)
+      if [ "$GITLEAKS_CONFIG_SET" = "1" ]; then
+        set -- python3 "$REDACTOR" --config "$GITLEAKS_CONFIG" --fix-index \
+          --paths "${ARTIFACT_DIRS[@]}" --files "${CANDIDATES[@]}"
+      else
+        set -- python3 "$REDACTOR" --fix-index \
+          --paths "${ARTIFACT_DIRS[@]}" --files "${CANDIDATES[@]}"
+      fi ;;
+    check)
+      if [ "$GITLEAKS_CONFIG_SET" = "1" ]; then
+        set -- python3 "$REDACTOR" --config "$GITLEAKS_CONFIG" --check-index \
+          --paths "${ARTIFACT_DIRS[@]}"
+      else
+        set -- python3 "$REDACTOR" --check-index --paths "${ARTIFACT_DIRS[@]}"
+      fi ;;
+    *) return 2 ;;
+  esac
+  "$@" >/dev/null 2>&1 || rc=$?
+  return "$rc"
+}
+
+sanitize_candidate_index() {
+  local sanitize_rc=0 check_rc=0
+  capture_pre_sanitize_entries
+  run_redactor_index_mode fix || sanitize_rc=$?
+  [ "$sanitize_rc" = "0" ] || \
+    die "exact artifact sanitation failed; scanner details were suppressed and the real index is unchanged" 5
+  verify_post_sanitize_entries
+  run_redactor_index_mode check || check_rc=$?
+  [ "$check_rc" = "0" ] || \
+    die "sanitized candidate index did not pass a clean verification; real index unchanged" 5
+  SANITIZED_TREE="$(git write-tree 2>/dev/null)" || \
+    die "could not snapshot the sanitized candidate tree; real index unchanged" 5
+  if [ "$SANITIZED_TREE" != "$PRE_SANITIZE_TREE" ]; then
+    SANITIZER_CHANGED=1
+  fi
+}
+
+regular_file_identity() {
+  python3 - "$1" <<'PY'
+import os
+import stat
+import sys
+
+try:
+    info = os.lstat(sys.argv[1])
+except OSError:
+    raise SystemExit(1)
+if not stat.S_ISREG(info.st_mode):
+    raise SystemExit(1)
+print(f"{info.st_dev}:{info.st_ino}")
+PY
+}
+
+owned_backup_action() {
+  local action="$1" backup="$2" identity="$3" target="${4:-}"
+  python3 - "$action" "$backup" "$identity" "$target" <<'PY'
+import os
+import stat
+import sys
+
+action, backup, expected, target = sys.argv[1:]
+try:
+    info = os.lstat(backup)
+except FileNotFoundError:
+    raise SystemExit(0 if action == "remove" else 1)
+except OSError:
+    raise SystemExit(1)
+identity = f"{info.st_dev}:{info.st_ino}"
+if identity != expected or not stat.S_ISREG(info.st_mode):
+    raise SystemExit(1)
+if action == "check":
+    raise SystemExit(0)
+if action == "remove":
+    try:
+        os.unlink(backup)
+    except OSError:
+        raise SystemExit(1)
+    raise SystemExit(0)
+if action == "restore":
+    if not target or os.path.dirname(backup) != os.path.dirname(target):
+        raise SystemExit(1)
+    try:
+        os.replace(backup, target)
+        restored = os.lstat(target)
+    except OSError:
+        raise SystemExit(1)
+    if f"{restored.st_dev}:{restored.st_ino}" != expected:
+        raise SystemExit(1)
+    raise SystemExit(0)
+raise SystemExit(1)
+PY
+}
+
+same_owned_inode() {
+  local path="$1" backup="$2" identity="$3"
+  python3 - "$path" "$backup" "$identity" <<'PY'
+import os
+import stat
+import sys
+
+path, backup, expected = sys.argv[1:]
+try:
+    current = os.lstat(path)
+    saved = os.lstat(backup)
+except OSError:
+    raise SystemExit(1)
+if not stat.S_ISREG(current.st_mode) or not stat.S_ISREG(saved.st_mode):
+    raise SystemExit(1)
+actual = f"{saved.st_dev}:{saved.st_ino}"
+if actual != expected:
+    raise SystemExit(1)
+raise SystemExit(0 if (current.st_dev, current.st_ino) == (saved.st_dev, saved.st_ino) else 1)
+PY
+}
+
+stable_clean_hash() {
+  local source="$1" attribute_path="$2" expected_identity="${3:-}"
+  local before after oid
+  before="$(regular_file_identity "$source")" || return 1
+  [ -z "$expected_identity" ] || [ "$before" = "$expected_identity" ] || return 1
+  oid="$(git hash-object --path="$attribute_path" -- "$source" 2>/dev/null)" || return 1
+  after="$(regular_file_identity "$source")" || return 1
+  [ "$before" = "$after" ] || return 1
+  case "${#oid}" in 40|64) ;;
+    *) return 1 ;;
+  esac
+  case "$oid" in *[!0-9a-f]*) return 1 ;; esac
+  printf '%s' "$oid"
+}
+
+create_materialization_backups() {
+  local index path source_id slot slot_id linked_id
+  MATERIALIZE_BACKUPS=()
+  MATERIALIZE_BACKUP_IDS=()
+  MATERIALIZE_BACKUP_ACTIVE=()
+  index=0
+  for path in "${CANDIDATES[@]}"; do
+    source_id="$(regular_file_identity "$path")" || \
+      die "a selected live artifact is no longer a nonsymlink regular file; the real index is unchanged" 5
+    slot="$(mktemp "$(dirname "$path")/.agent-history-backup.XXXXXX")" || \
+      die "could not reserve a same-directory materialization backup; the real index is unchanged" 5
+    slot_id="$(regular_file_identity "$slot")" || \
+      die "could not validate a materialization backup reservation; the real index is unchanged" 5
+    MATERIALIZE_BACKUPS+=("$slot")
+    MATERIALIZE_BACKUP_IDS+=("$slot_id")
+    MATERIALIZE_BACKUP_ACTIVE+=("1")
+    owned_backup_action remove "$slot" "$slot_id" || \
+      die "could not release a materialization backup reservation; the real index is unchanged" 5
+    MATERIALIZE_BACKUP_IDS[index]="$source_id"
+    ln "$path" "$slot" >/dev/null 2>&1 || \
+      die "could not hard-link a selected live artifact for lossless materialization; the real index is unchanged" 5
+    linked_id="$(regular_file_identity "$slot")" || \
+      die "a materialization backup was replaced unexpectedly; the real index is unchanged" 5
+    if [ "$linked_id" != "$source_id" ] || \
+       ! same_owned_inode "$path" "$slot" "$source_id"; then
+      die "a selected live artifact changed while its backup was created; the real index is unchanged" 5
+    fi
+    index=$((index + 1))
+  done
+}
+
+materialization_backups_remaining() {
+  local active
+  for active in "${MATERIALIZE_BACKUP_ACTIVE[@]:-}"; do
+    [ "$active" = "1" ] && return 0
+  done
+  return 1
+}
+
+discard_materialization_backups() {
+  local index backup identity
+  index=0
+  # Validate every name before removing any, so a replaced sibling is never
+  # unlinked just because it reused an owned backup pathname.
+  for backup in "${MATERIALIZE_BACKUPS[@]:-}"; do
+    if [ "${MATERIALIZE_BACKUP_ACTIVE[index]:-0}" = "1" ]; then
+      identity="${MATERIALIZE_BACKUP_IDS[index]}"
+      owned_backup_action check "$backup" "$identity" || return 1
+    fi
+    index=$((index + 1))
+  done
+  index=0
+  for backup in "${MATERIALIZE_BACKUPS[@]:-}"; do
+    if [ "${MATERIALIZE_BACKUP_ACTIVE[index]:-0}" = "1" ]; then
+      identity="${MATERIALIZE_BACKUP_IDS[index]}"
+      owned_backup_action remove "$backup" "$identity" || return 1
+      MATERIALIZE_BACKUP_ACTIVE[index]=0
+    fi
+    index=$((index + 1))
+  done
+  return 0
+}
+
+verify_materialization_sources() {
+  local index path backup identity expected backup_before path_oid backup_after
+  index=0
+  for path in "${CANDIDATES[@]}"; do
+    backup="${MATERIALIZE_BACKUPS[$index]}"
+    identity="${MATERIALIZE_BACKUP_IDS[index]}"
+    expected="${PRE_SANITIZE_OIDS[$index]}"
+    same_owned_inode "$path" "$backup" "$identity" || return 1
+    backup_before="$(stable_clean_hash "$backup" "$path" "$identity")" || return 1
+    path_oid="$(stable_clean_hash "$path" "$path" "$identity")" || return 1
+    backup_after="$(stable_clean_hash "$backup" "$path" "$identity")" || return 1
+    [ "$backup_before" = "$expected" ] && [ "$path_oid" = "$expected" ] && \
+      [ "$backup_after" = "$expected" ] || return 1
+    index=$((index + 1))
+  done
+  return 0
+}
+
+preserve_replacement_generation() {
+  local path="$1" source_id slot slot_id linked_id
+  source_id="$(regular_file_identity "$path")" || return 1
+  slot="$(mktemp "$(dirname "$path")/.agent-history-recovery.XXXXXX")" || return 1
+  slot_id="$(regular_file_identity "$slot")" || return 1
+  owned_backup_action remove "$slot" "$slot_id" || return 1
+  if ! ln "$path" "$slot" >/dev/null 2>&1; then
+    # The reserved file is already gone; never remove an unknown replacement.
+    return 1
+  fi
+  linked_id="$(regular_file_identity "$slot")" || return 1
+  if [ "$linked_id" != "$source_id" ] || \
+     ! same_owned_inode "$path" "$slot" "$source_id"; then
+    # The pathname no longer names the inode we linked; preserve it rather than
+    # deleting a replacement that we do not own.
+    return 1
+  fi
+  MATERIALIZE_RECOVERY_LEFT=1
+  return 0
+}
+
+rollback_materialization() {
+  local index path backup identity old_oid new_oid old_changed new_changed
+  local rollback_failed=0
+  index=0
+  for path in "${CANDIDATES[@]}"; do
+    if [ "${MATERIALIZE_BACKUP_ACTIVE[index]:-0}" != "1" ]; then
+      index=$((index + 1))
+      continue
+    fi
+    backup="${MATERIALIZE_BACKUPS[$index]}"
+    identity="${MATERIALIZE_BACKUP_IDS[index]}"
+
+    # checkout-index did not replace this pathname. Removing our extra link is
+    # the only rollback needed, and leaves the live generation untouched.
+    if same_owned_inode "$path" "$backup" "$identity"; then
+      if owned_backup_action remove "$backup" "$identity"; then
+        MATERIALIZE_BACKUP_ACTIVE[index]=0
+      else
+        rollback_failed=1
+      fi
+      index=$((index + 1))
+      continue
+    fi
+
+    old_oid="$(stable_clean_hash "$backup" "$path" "$identity")" || old_oid=""
+    new_oid="$(stable_clean_hash "$path" "$path")" || new_oid=""
+    old_changed=1
+    new_changed=1
+    [ "$old_oid" = "${PRE_SANITIZE_OIDS[$index]}" ] && old_changed=0
+    [ "$new_oid" = "${SANITIZED_OIDS[$index]}" ] && new_changed=0
+
+    if [ "$new_changed" = "0" ]; then
+      # The replacement is exactly ours. Atomically put the old inode back,
+      # including any append made through a writer's pre-checkout descriptor.
+      if owned_backup_action restore "$backup" "$identity" "$path"; then
+        MATERIALIZE_BACKUP_ACTIVE[index]=0
+      else
+        rollback_failed=1
+      fi
+    elif [ "$old_changed" = "0" ]; then
+      # A writer changed/replaced the new path. Preserve that path verbatim and
+      # drop only our unchanged old-inode link.
+      if owned_backup_action remove "$backup" "$identity"; then
+        MATERIALIZE_BACKUP_ACTIVE[index]=0
+      else
+        rollback_failed=1
+      fi
+    else
+      # Both generations changed. Preserve the replacement under an owned
+      # sibling recovery name before restoring the changed old inode. If that
+      # cannot be proven, leave both existing names untouched for inspection.
+      if preserve_replacement_generation "$path" && \
+         owned_backup_action restore "$backup" "$identity" "$path"; then
+        MATERIALIZE_BACKUP_ACTIVE[index]=0
+      else
+        rollback_failed=1
+        MATERIALIZE_RECOVERY_LEFT=1
+      fi
+    fi
+    index=$((index + 1))
+  done
+  [ "$rollback_failed" = "0" ]
+}
+
+cleanup_materialization() {
+  materialization_backups_remaining || return 0
+  if [ "$MATERIALIZATION_STARTED" = "1" ]; then
+    rollback_materialization >/dev/null 2>&1 || \
+      warn "materialization cleanup preserved an unresolved concurrent generation for inspection"
+  else
+    discard_materialization_backups >/dev/null 2>&1 || \
+      warn "an owned materialization backup could not be safely removed"
+  fi
+}
+
+materialize_candidate_index() {
+  local index path backup identity old_before old_after new_before new_after
+  local after_checkout_tree checkout_rc=0 old_changed=0 new_changed=0 index_changed=0
+
+  create_materialization_backups
+  if ! verify_materialization_sources; then
+    die "a selected live artifact changed during sanitation; nothing was materialized and the real index is unchanged" 5
+  fi
+
+  # Even a zero-byte sanitation pass reaches the generation proof above. There
+  # is no checkout to perform, but publication still depends on this late check.
+  if [ "$SANITIZER_CHANGED" = "0" ]; then
+    discard_materialization_backups || \
+      die "a materialization backup changed unexpectedly; the real index is unchanged" 5
+    return 0
+  fi
+
+  MATERIALIZATION_STARTED=1
+  GIT_LITERAL_PATHSPECS=1 git checkout-index --force -- "${CANDIDATES[@]}" \
+    >/dev/null 2>&1 || checkout_rc=$?
+
+  after_checkout_tree="$(git write-tree 2>/dev/null)" || index_changed=1
+  [ "$after_checkout_tree" = "$SANITIZED_TREE" ] || index_changed=1
+
+  index=0
+  for path in "${CANDIDATES[@]}"; do
+    backup="${MATERIALIZE_BACKUPS[$index]}"
+    identity="${MATERIALIZE_BACKUP_IDS[index]}"
+    old_before="$(stable_clean_hash "$backup" "$path" "$identity")" || old_before=""
+    new_before="$(stable_clean_hash "$path" "$path")" || new_before=""
+    old_after="$(stable_clean_hash "$backup" "$path" "$identity")" || old_after=""
+    new_after="$(stable_clean_hash "$path" "$path")" || new_after=""
+    if [ "$old_before" != "${PRE_SANITIZE_OIDS[$index]}" ] || \
+       [ "$old_after" != "${PRE_SANITIZE_OIDS[$index]}" ]; then
+      old_changed=1
+    fi
+    if [ "$new_before" != "${SANITIZED_OIDS[$index]}" ] || \
+       [ "$new_after" != "${SANITIZED_OIDS[$index]}" ]; then
+      new_changed=1
+    fi
+    index=$((index + 1))
+  done
+
+  if [ "$checkout_rc" != "0" ] || [ "$index_changed" = "1" ] || \
+     [ "$old_changed" = "1" ] || [ "$new_changed" = "1" ]; then
+    rollback_materialization || true
+    materialization_backups_remaining || MATERIALIZATION_STARTED=0
+    if [ "$MATERIALIZE_RECOVERY_LEFT" = "1" ]; then
+      warn "concurrent materialization generations were preserved for manual inspection"
+    fi
+    if [ "$old_changed" = "1" ]; then
+      die "a pre-materialization artifact inode changed concurrently; its generation was restored or preserved and the real index is unchanged" 5
+    fi
+    if [ "$new_changed" = "1" ]; then
+      die "a materialized artifact path changed concurrently; writer data was preserved and the real index is unchanged" 5
+    fi
+    die "sanitized worktree materialization failed; paths were rolled back conservatively and the real index is unchanged" 5
+  fi
+
+  if ! discard_materialization_backups; then
+    rollback_materialization || true
+    materialization_backups_remaining || MATERIALIZATION_STARTED=0
+    die "a materialization backup changed unexpectedly; the real index is unchanged" 5
+  fi
+  MATERIALIZATION_STARTED=0
+}
+
+trap 'cleanup_materialization; cleanup_index_transaction' EXIT
+trap 'exit 130' HUP INT TERM
+
 run_exact_selector() {
   local selector_output selector_rc=0
   set -- "$SCRIPT_DIR/find-session.sh" --quiet --format "$1"
@@ -501,7 +1049,18 @@ for artifact in "${CANDIDATES[@]:-}"; do
   validate_candidate_path "$artifact"
 done
 
+# Prove the queued staged tree is still the one being finalized.
+assert_expected_index_tree() {
+  local current
+  [ "$EXPECT_INDEX_TREE_SET" = "1" ] || return 0
+  current="$(git write-tree 2>/dev/null)" || \
+    die "could not snapshot the current staged tree; real index unchanged" 5
+  [ "$current" = "$EXPECT_INDEX_TREE" ] || \
+    die "the staged tree changed since the request was queued; real index unchanged" 6
+}
+
 if [ "$CHECK_STAGED" = "1" ]; then
+  assert_expected_index_tree
   verify_selected_staged
   exit 0
 fi
@@ -519,6 +1078,10 @@ begin_index_transaction
 reject_unmerged_candidates
 preflight_candidates
 
+# Inside the transaction the alternate index is a copy of the real one and its
+# lock is held, so the tree cannot change between this check and the add below.
+assert_expected_index_tree
+
 if [ "$ALLOW_EMPTY" = "0" ] && ! has_staged_code_changes; then
   log "Refusing: artifacts are dirty but no non-artifact code changes are staged."
   log "         Unstaged working-tree code will not be part of the next commit."
@@ -535,10 +1098,22 @@ if [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
-# One git process mutates only the alternate index while the real index lock is
-# held. Publishing the validated result is a final atomic rename.
+# One git process adds the exact candidates to the alternate index while the
+# real index lock is held. Sanitization, optional filtered materialization, and
+# final publication never re-add a live path.
 GIT_LITERAL_PATHSPECS=1 git add -- "${CANDIDATES[@]}"
+if [ "$SANITIZE_INDEX" = "1" ]; then
+  sanitize_candidate_index
+  if [ "$MATERIALIZE_SANITIZED" = "1" ]; then
+    materialize_candidate_index
+  fi
+fi
 commit_index_transaction
+
+if [ "$SANITIZER_CHANGED" = "1" ]; then
+  log "Exact artifact content was sanitized atomically; credential rotation is required before commit."
+  exit 10
+fi
 for artifact in "${CANDIDATES[@]}"; do
   printf 'staged: %s\n' "$artifact"
 done

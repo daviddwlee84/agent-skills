@@ -80,20 +80,63 @@ else
 fi
 rm -rf "$repo"
 
+# Exercise the helper itself with the stock interpreter and a PATH that cannot
+# resolve a newer Homebrew Bash. This covers Bash 3.2's empty-array + `set -u`
+# behavior in both trailer and JSON output.
 repo=$(make_repo)
-mkdir -p "$repo/.cursor/plans"
-printf '# Plan\n' > "$repo/.cursor/plans/p.md"
-git -C "$repo" add .cursor/plans/p.md
-(cd "$repo" && bash "$SCRIPT" >/dev/null 2>&1)
+write_codex_transcript "$repo/.specstory/history/transcript-only.md"
+git -C "$repo" add .specstory/history/transcript-only.md
+metadata_err="$repo/metadata.err"
+out=$(cd "$repo" && PATH=/usr/bin:/bin /bin/bash "$SCRIPT" 2>"$metadata_err")
+rc=$?
+json=$(cd "$repo" && PATH=/usr/bin:/bin /bin/bash "$SCRIPT" --format json 2>>"$metadata_err")
+json_rc=$?
+expected_trailers=$(printf '%s\n' \
+  'AI-Assisted-By: Codex CLI (gpt-5.6-sol)' \
+  'Agent-Transcript: .specstory/history/transcript-only.md')
+expected_json='{"assistants":["Codex CLI (gpt-5.6-sol)"],"transcripts":[".specstory/history/transcript-only.md"],"plans":[]}'
+if [ "$rc" = "0" ] && [ "$json_rc" = "0" ] && \
+   [ "$out" = "$expected_trailers" ] && [ "$json" = "$expected_json" ]; then
+  pass "stock Bash transcript-only metadata omits an empty plan collection"
+else
+  fail "stock Bash transcript-only metadata (trailers rc=$rc, JSON rc=$json_rc)"
+fi
+rm -rf "$repo"
+
+repo=$(make_repo)
+for plan in \
+  .claude/plans/claude.md \
+  .cursor/plans/cursor.md \
+  .opencode/plans/opencode.md \
+  .specify/specify.md \
+  .codex/codex.md; do
+  mkdir -p "$(dirname "$repo/$plan")"
+  printf '# Plan\n' > "$repo/$plan"
+done
+mkdir -p "$repo/.cursor/rules"
+printf '# Rule\n' > "$repo/.cursor/rules/not-a-plan.mdc"
+git -C "$repo" add .claude/plans/claude.md .cursor/plans/cursor.md \
+  .opencode/plans/opencode.md .specify/specify.md .codex/codex.md \
+  .cursor/rules/not-a-plan.mdc
+(cd "$repo" && PATH=/usr/bin:/bin /bin/bash "$SCRIPT" >/dev/null 2>&1)
 rc=$?
 if [ "$rc" = "4" ]; then pass "require explicit identity without transcript"
 else fail "require explicit identity without transcript (got $rc)"; fi
 
-out=$(cd "$repo" && bash "$SCRIPT" --harness Cursor --model claude-4.6 2>/dev/null)
-if printf '%s\n' "$out" | grep -Fxq 'AI-Assisted-By: Cursor (claude-4.6)'; then
-  pass "explicit Cursor override"
+out=$(cd "$repo" && PATH=/usr/bin:/bin /bin/bash "$SCRIPT" \
+  --harness Cursor --model claude-4.6 2>/dev/null)
+rc=$?
+expected_trailers=$(printf '%s\n' \
+  'AI-Assisted-By: Cursor (claude-4.6)' \
+  'Agent-Plan: .claude/plans/claude.md' \
+  'Agent-Plan: .codex/codex.md' \
+  'Agent-Plan: .cursor/plans/cursor.md' \
+  'Agent-Plan: .opencode/plans/opencode.md' \
+  'Agent-Plan: .specify/specify.md')
+if [ "$rc" = "0" ] && [ "$out" = "$expected_trailers" ]; then
+  pass "classify only declared plan roots; Cursor rules remain non-plan artifacts"
 else
-  fail "explicit Cursor override"
+  fail "classify declared plan roots without Cursor rules (got $rc)"
 fi
 rm -rf "$repo"
 

@@ -4,28 +4,40 @@
 # Consume from any repo's .pre-commit-config.yaml:
 #
 #   - repo: https://github.com/daviddwlee84/agent-skills
-#     rev: ahh-v1.1.0            # bump with `pre-commit autoupdate`
+#     rev: ahh-v2.0.0            # immutable agent-history-hygiene major tag
 #     hooks:
-#       - id: redact-agent-secrets
+#       - id: check-agent-artifact-secrets
 #
-# `pre-commit autoupdate` tracks the newest tag on this repo. Because this is a
-# multi-skill monorepo, keep this hook's releases on the `ahh-v*` tag series
-# (or pin a commit SHA in `rev:`) so an unrelated skill's tag can't silently
-# bump this hook.
+# Both published hooks are validation-only. They read staged blobs from Git's
+# effective index and never rewrite the index or working tree. Sanctioned
+# redaction belongs to the post-session finalizer after the recorder exits.
 #
 # language: script -> pre-commit runs the file directly (its `#!/usr/bin/env
-# python3` shebang picks the interpreter); the redactor is stdlib-only, so no
-# env is built and no uv/pip install is needed. It scans staged files itself
-# (pass_filenames: false) and rewrites any leak in place, so pre-commit reports
-# "files were modified by this hook" and you re-stage + recommit.
-- id: redact-agent-secrets
-  name: Auto-redact secrets in agent artifacts
+# python3` shebang picks the interpreter); the checker is stdlib-only, so no
+# env is built and no uv/pip install is needed. The checker enumerates the
+# effective staged index itself; it must be invoked without pre-commit filename
+# or type gates so symlinks, gitlinks, and future artifact roots cannot skip it.
+- id: check-agent-artifact-secrets
+  name: Check agent artifacts for secrets
   description: >-
-    Redact leaked secrets in agent transcript/plan artifacts (SpecStory,
-    Claude/Cursor/OpenCode plans, spec-kit, Codex) before they are committed.
-  entry: skills/local/agent-history-hygiene/assets/redact_secrets.py --fix
+    Validate staged agent transcript/plan artifacts (SpecStory,
+    Claude/Cursor/OpenCode plans, spec-kit, Codex) without modifying them.
+  entry: skills/local/agent-history-hygiene/assets/redact_secrets.py --check-index
   language: script
   pass_filenames: false
-  # Default artifact-dir scope (mirror of assets/artifact-dirs.txt). A consuming
-  # repo may override `files:` in its own .pre-commit-config.yaml to widen it.
-  files: ^(\.specstory/history|\.claude/plans|\.cursor/plans|\.cursor/rules|\.opencode/plans|\.specify|\.codex)/.*\.md$
+  always_run: true
+  types: []
+
+# Deprecated compatibility alias. Existing ahh-v1.x consumers can update
+# without retaining the historical worktree-mutating behavior; new configs
+# should use check-agent-artifact-secrets.
+- id: redact-agent-secrets
+  name: Check agent artifacts for secrets (deprecated alias)
+  description: >-
+    Deprecated validation-only alias for check-agent-artifact-secrets; it does
+    not redact or otherwise modify staged or working-tree files.
+  entry: skills/local/agent-history-hygiene/assets/redact_secrets.py --check-index
+  language: script
+  pass_filenames: false
+  always_run: true
+  types: []

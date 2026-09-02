@@ -152,35 +152,61 @@ hiding structured stdout.
 | 5 | Path, prologue, JSONL, symlink, or identity mismatch |
 | 6 | Required runtime dependency missing |
 
-## Exact staging handoff
+## Exact post-session handoff
 
-`stage-agent-artifacts.sh --session-only` requires exact identity plus exactly
-one of `--plan PATH` or `--no-plan`; use `--no-specstory` only with
-`--session-id`. Selector/dependency failures map to staging exit 5.
+The default lifecycle does **not** stage a live transcript. While the recorder
+runs, stage only feature paths. After explicit user commit authorization,
+`queue-agent-commit.sh` records the exact UUID, direct-child SpecStory path, and
+exactly one of `--plan PATH` / `--no-plan`; it neither reads nor stages the
+artifact. Read
+[`post-session-finalization.md`](./post-session-finalization.md) before queueing.
+
+After child exit 0 and one exact sync, the finalizer repeats discovery with both
+UUID and path, fingerprints the transcript around validation, rejects an open
+writer when `lsof` can prove one, and then calls
+`stage-agent-artifacts.sh --session-only` with the queued plan policy.
 
 Before adding artifacts, staging acquires the real per-worktree index lock,
 copies the current index to an alternate index, rejects unmerged candidates,
-proves a staged non-artifact feature diff, batch-checks ignores/addability, and
-runs one `git add` against the alternate index. It atomically publishes that
-index only on success. Failure/signal cleanup removes the owned lock/temp file
-without restoring over another writer or changing the real index.
+proves the queued staged feature tree, batch-checks ignores/addability, and runs
+one exact `git add` against the alternate index. With `--sanitize-index`, it:
+
+1. captures exact stage-0 modes/object ids and the pre-sanitize tree;
+2. runs `redact_secrets.py --fix-index --files ...` only in that explicit
+   noncanonical index;
+3. runs `--check-index` as a clean postcondition; and
+4. returns exit 10 when bytes changed so rotation can occur before commit.
+
+With `--materialize-sanitized`, the script clean-hashes each live artifact
+through Git's filters and requires it to match the pre-sanitize staged blob
+before `checkout-index` writes the exact sanitized version. A changed live
+generation aborts before worktree materialization or real-index publication.
+The alternate index is atomically published only after success.
 
 `--check-staged` is validation-only: it never acquires or mutates an index. It
 requires the selected feature and every selected exact artifact to have a real
-diff in the current `GIT_INDEX_FILE`. The generated commit hook uses this mode,
-so normal and temporary `commit -a`/`--only` indexes are checked as prepared;
-missing artifacts abort with an explicit exact-staging command instead of a
-staging/retry loop.
+diff in the effective `GIT_INDEX_FILE`. The generated commit hook uses this mode,
+so normal and temporary `commit -a`/`--only` indexes are validated as-is.
 
 The no-selector invocation remains broad branch-wide compatibility mode. It
 classifies one NUL porcelain snapshot, including unstaged deletions and paired
 rename/copy records, and never treats an origin record or code conflict as a
-feature diff.
+feature diff. Broad mode is not valid for post-session finalization.
+
+## History boundary
+
+Discovery/staging proof binds one checkout, attached branch, parent, and index
+tree. While its recorder is active—and until the finalizer proves the ordinary
+commit—do not commit, rebase/update-base, integrate, or retire that worktree.
+Actual rebase state is `rebase-merge` or `rebase-apply`; a stale `REBASE_HEAD`
+file alone is not an active rebase.
 
 ## Cross-reference
 
-- [`pre-commit-redaction-stack.md`](./pre-commit-redaction-stack.md) — scanning
-  and redaction at commit time.
+- [`post-session-finalization.md`](./post-session-finalization.md) — lifecycle,
+  states, authorization, recovery, and rebase boundary.
+- [`pre-commit-redaction-stack.md`](./pre-commit-redaction-stack.md) —
+  alternate-index sanitation and validation-only hooks.
 - [`../scripts/find-session.sh`](../scripts/find-session.sh) — exact resolver.
 - [`../scripts/stage-agent-artifacts.sh`](../scripts/stage-agent-artifacts.sh) —
   locked alternate-index transaction.

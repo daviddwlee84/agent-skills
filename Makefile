@@ -88,6 +88,7 @@ test-skill: test-mkdocs-skill
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_find_session.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_stage_agent_artifacts.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_post_session_finalize.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/git-workflow/tests/test_check_commit_msg.sh
 
 # MkDocs bootstrap behavior: linked worktrees, existing-doc navigation, and

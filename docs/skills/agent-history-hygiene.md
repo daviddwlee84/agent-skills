@@ -1,295 +1,264 @@
 # agent-history-hygiene
 
-Keep coding-agent chat transcripts and plan files committed alongside
-the feature diff they produced, without leaking `.env` contents or API
-keys into git history.
+Keep coding-agent chat transcripts and plan files in the same commit as the
+feature diff they produced, without leaking `.env` contents or API keys into
+Git history.
 
 | Surface | Question it answers |
 |---|---|
+| `run-specstory-session.sh` | "How do I give the recorder a provable end-of-session boundary?" |
+| `queue-agent-commit.sh` | "How does the live agent request one later commit without touching its transcript?" |
+| `finalize-agent-commit.sh` | "How is that exact request sanitized, attributed, and committed after the writer exits?" |
 | `find-session.sh` | "Which transcript / plan file is *my* current session?" |
-| `stage-agent-artifacts.sh` | "Which agent files belong in the next commit?" |
+| `stage-agent-artifacts.sh` | "Which exact agent files belong in the prepared commit?" |
 | `agent-commit-metadata.sh` | "Which harness/model and artifact trailers belong in it?" |
-| `bootstrap-project.sh` | "How do I get pre-commit + gitleaks + redactor into a new repo?" |
-| `scan-staged.sh` | "Is there a leaked secret in what I'm about to commit?" |
-| `probe-specstory-redaction.py` | "What does SpecStory already redact, so we don't redo it?" |
+| `bootstrap-project.sh` | "How do I install validation-only artifact hooks and secret scanners?" |
+| `scan-staged.sh` | "Is there a leaked secret in what I am about to commit?" |
+| `probe-specstory-redaction.py` | "What does SpecStory already redact, so we do not redo it?" |
 | `references/remediation.md` | "I already pushed a secret — now what?" |
 
-The skill exists to stop three common failure modes:
+The skill prevents four common failure modes:
 
-1. Agents silently **dropping** `.specstory/history/*.md` and
-   `.claude/plans/*.md` from commits because they look like generated
-   artifacts.
-2. Accidental `.env` echoes inside chat transcripts that then get
-   committed and pushed.
-3. Reflexive `git push --force` after a leak — which doesn't actually
-   revoke the credential and often destroys teammate work.
+1. Agents silently **drop** `.specstory/history/*.md` and plan files because
+   they look generated.
+2. A transcript captures a credential and sends it into Git history.
+3. Pre-commit or a formatter rewrites a transcript while SpecStory is still
+   writing it, then restores or checks out stale bytes over newer history.
+4. A failed commit is retried through LazyGit or the CLI even though the first
+   attempt may already have succeeded.
 
-## When the skill triggers
+## Lifecycle invariant
 
-- "Commit my chat" / "save the specstory session" / "stage the plan
-  file" / "把 plan 跟 specstory 一起 commit 進去".
-- Untracked `.specstory/history/*.md` or `.claude/plans/*.md` during a
-  `git status`.
-- "Scrub this transcript" / "redact my key" / "gitleaks flagged my
-  chat history".
-- "Set up pre-commit for this repo" / "bootstrap secret scanning".
-- "I pushed a `.env`" / "a secret went to main" — the skill steers to
-  the rotate-first runbook instead of a history rewrite.
+A live transcript is not a normal source file. The safe boundary is:
+
+1. **Record:** start one foreground SpecStory/Claude session in the target
+   worktree. Stage only the intended feature snapshot while that session runs.
+2. **Queue:** the agent records an inert request naming the exact session,
+   rendered transcript, optional plan, staged tree, and base commit message.
+   Queueing never reads, stages, sanitizes, or commits the live transcript.
+3. **Exit:** after the request is accepted, the agent performs no more
+   repository or index operations and exits. A signal or nonzero child exit
+   retains the request but grants no finalization authority.
+4. **Synchronize:** only after a normal child exit does the outer runner render
+   the exact session and prove that synchronization completed.
+5. **Finalize:** a parent-authorized finalizer revalidates the worktree, branch,
+   HEAD, staged tree, selectors, absence of a writer, and absence of an active
+   Git operation. It then stages and sanitizes the exact artifacts atomically,
+   derives provenance from the prepared index, validates the message, and
+   invokes one ordinary commit.
+6. **Continue:** rebase, pull, switch, worktree removal, or a manual handoff may
+   begin only after the finalizer proves `committed` or `already_committed`.
+
+This preserves feature-plus-transcript same-commit semantics without asking a
+hook to mutate files at the least stable point in their lifecycle.
 
 ## Structure
 
-```
+```text
 skills/local/agent-history-hygiene/
-├── SKILL.md                                  # agent-facing workflow and invariants
+├── SKILL.md
 ├── scripts/
-│   ├── find-session.sh                       # locate current SpecStory + Claude session
-│   ├── stage-agent-artifacts.sh              # git-add the right artifacts
-│   ├── agent-commit-metadata.sh               # derive staged provenance trailers
-│   ├── bootstrap-project.sh                  # install pre-commit + gitleaks, wire the redactor
-│   ├── probe-specstory-redaction.py          # measure SpecStory's own redaction coverage
-│   └── scan-staged.sh                        # gitleaks wrapper with agent-friendly exit codes
+│   ├── run-specstory-session.sh              # foreground lifecycle owner
+│   ├── queue-agent-commit.sh                 # inert exact commit request
+│   ├── finalize-agent-commit.sh              # quiescent one-shot finalizer
+│   ├── find-session.sh                       # exact session discovery
+│   ├── stage-agent-artifacts.sh              # atomic exact artifact preparation
+│   ├── agent-commit-metadata.sh              # staged provenance trailers
+│   ├── bootstrap-project.sh                  # validation/scanner bootstrap
+│   ├── probe-specstory-redaction.py          # native coverage measurement
+│   └── scan-staged.sh                        # staged gitleaks wrapper
 ├── references/
-│   ├── transcript-session-discovery.md       # SpecStory / Claude session layouts
-│   ├── pre-commit-redaction-stack.md         # layered defense design
-│   ├── specstory-native-redaction.md         # what upstream redacts, measured
-│   └── remediation.md                        # rotate-first leak runbook
+│   ├── transcript-session-discovery.md
+│   ├── pre-commit-redaction-stack.md
+│   ├── specstory-native-redaction.md
+│   └── remediation.md
 └── assets/
-    ├── artifact-dirs.txt                     # configurable list of agent artifact dirs
+    ├── artifact-dirs.txt
     ├── pre-commit-config.yaml.template
     ├── gitleaks.toml.template
-    └── redact_secrets.py                     # run in place from the installed skill
+    └── redact_secrets.py                     # finalizer-only mutator
 ```
 
-## Integration with chezmoi
+## Default workflow: finalize after the session
 
-The skill sits on top of the user's existing chezmoi infrastructure
-(if present):
-
-- `~/.config/git/hooks/pre-commit` (global `core.hooksPath`) runs the
-  repo-level `.pre-commit-config.yaml` this skill installs.
-- `~/.local/share/chezmoi/scripts/redact_secrets.py` was the original
-  upstream. `assets/redact_secrets.py` is now the source of truth and reaches
-  consuming repos as a **pinned pre-commit hook** published from this repo's
-  root `.pre-commit-hooks.yaml` — no vendored copy to drift.
-  `bootstrap-project.sh --from-chezmoi` still symlinks the chezmoi
-  `.pre-commit-config.yaml` / `.gitleaks.toml` for repos that prefer it.
-- `~/.local/share/chezmoi/.gitleaks.toml` shares rule IDs with the
-  skill's `gitleaks.toml.template` so `.gitleaksignore` / allowlist
-  tweaks stay portable across repos.
-
-For repos without chezmoi, `bootstrap-project.sh` produces a
-self-contained stack. The redactor is **not** copied into the repo: the
-generated `.pre-commit-config.yaml` references the hook by tag, so
-`pre-commit autoupdate` ships fixes everywhere and the script path never
-depends on where `npx skills` happened to install the skill.
-
-```yaml
-- repo: https://github.com/daviddwlee84/agent-skills
-  rev: ahh-v1.1.0
-  hooks:
-    - id: redact-agent-secrets
-```
-
-`bootstrap-project.sh --migrate` converts a repo off the old vendored
-`scripts/redact_secrets.py` layout.
-
-`--install-hook` requires `core.hooksPath` to be genuinely unset and exits 6
-before writes for empty, relative, or external values. Even `.git/hooks` is
-unsafe: it works in a primary checkout but is non-traversable in a linked
-worktree where `.git` is a file. Integrate manually into configured hook
-infrastructure or unset the key; the skill never edits global hooks.
-
-The generated hook never mutates an index. Explicit `AGENT_HISTORY_*` identity
-and plan policy run `--check-staged` against the commit's current
-`GIT_INDEX_FILE`; missing feature/artifact diffs abort with the exact staging
-command. This validates normal and temporary `commit -a`/`--only` indexes
-without loops. Missing identity visibly no-ops; invalid policy fails.
-
-## Default workflow: commit feature + chat together
+Launch the session from the target worktree. Parent authorization can permit
+one automatic finalizer call after a successful exit; without it, the runner
+still performs the exact post-exit sync and retains the request for explicit
+recovery.
 
 ```bash
-# 1. Get the UUID from Claude Code /status and name the rendered alias.
-SESSION_ID=01234567-89ab-4cde-8fab-0123456789ab
-TRANSCRIPT='.specstory/history/2026-08-28_08-00-00Z.md'
-PLAN='.claude/plans/exact-agent-history-selectors.md'
-bash skills/local/agent-history-hygiene/scripts/find-session.sh \
-  --session-id "$SESSION_ID" --specstory-path "$TRANSCRIPT"
-
-# 2. Stage code, then exactly one validated transcript/plan set.
-git add path/to/feature.ts
-bash skills/local/agent-history-hygiene/scripts/stage-agent-artifacts.sh \
-  --session-only --session-id "$SESSION_ID" \
-  --specstory-path "$TRANSCRIPT" --plan "$PLAN"
-# Use --no-plan when no plan exists. Use --no-specstory with --session-id only
-# when rendered output is intentionally absent. No plan is chosen by mtime.
-
-# 3. Generate the canonical final trailer block from staged artifacts.
-bash skills/local/agent-history-hygiene/scripts/agent-commit-metadata.sh
-
-# 4. Scan secrets and validate the complete English message.
-bash skills/local/agent-history-hygiene/scripts/scan-staged.sh
-bash skills/local/git-workflow/scripts/check-commit-msg.sh \
-  --agentic --staged --file /path/to/commit-message.txt
-
-# 5. Commit. Pre-commit re-runs redact + gitleaks as a catch-all.
-git commit -F /path/to/commit-message.txt
+# Parent shell: foreground recorder and lifecycle owner.
+bash skills/local/agent-history-hygiene/scripts/run-specstory-session.sh \
+  --allow-commit claude
 ```
 
-The metadata helper reads staged blobs, not concurrently-changing working
-files. It emits deduplicated `AI-Assisted-By: Harness (model)`,
-`Agent-Transcript`, and conditional `Agent-Plan` trailers. Pass explicit
-`--harness` + `--model` only when a transcript cannot prove that identity.
+Inside that agent session:
 
-`find-session.sh` is exact by default. It validates the fixed-byte real
-SpecStory v2.1 prologue, nonsymlink direct-child paths, canonical lowercase
-UUIDs, strict JSONL, and canonical worktree roots—including sessions launched
-from subdirectories. Unsafe explicit selectors are never reflected. TSV/JSON
-require `iconv`; `python3` is required only for exact Claude JSONL validation,
-with missing dependencies reported as status/exit 6. `--newest` is the only
-heuristic mode.
+1. Stage the feature paths that belong in the commit.
+2. Obtain the canonical session UUID and exact rendered transcript path; name
+   the exact plan, or explicitly state that no plan exists.
+3. Write the base subject/body to a message file. Do not pre-populate the
+   lifecycle-managed provenance trailers.
+4. Queue the commit request with `queue-agent-commit.sh` using those exact
+   selectors and message.
+5. Report `finalization queued` and exit immediately. Do not run `git add`,
+   `git commit`, rebase, or another diagnostic that writes the repository.
 
-`stage-agent-artifacts.sh --session-only` requires a staged non-artifact feature
-diff. Staging mode holds the real worktree index lock while checks and one add
-run against an alternate index, publishing atomically only on success.
-`--check-staged` is mutation-free and verifies each exact artifact has a real
-diff in the current commit index. Failures and races leave the real index
-unchanged. Broad mode uses
-one NUL porcelain snapshot with deletion/rename/copy pairing; configured
-artifact directories—trailing slashes normalized—are the exact-plan source of
-truth.
+Use each command's `--help` for its full selector and recovery flags. The
+important public contract is the boundary, not memorizing every low-level
+option.
+
+The finalizer verifies that the staged feature tree is still the queued tree.
+It refuses stale HEAD/ref/index state, an active transcript writer, unrelated
+commit-message drafts, and active merge, cherry-pick, revert, bisect, rebase,
+sequencer, or index-lock state. A stale `REBASE_HEAD` file alone is not proof of
+an active rebase; `rebase-merge`, `rebase-apply`, and `sequencer` are active
+state.
+
+### Commit before rebase
+
+Finish and prove the feature-plus-history commit **before** rebasing it. Both a
+normal commit and a rebase can execute checkout/restore behavior in hooks or in
+Git itself, so neither is safe while a recorder can append to a tracked
+transcript. The ordering is:
+
+```text
+stage feature → queue → exit recorder → exact sync → finalize and prove commit
+→ rebase/pull/merge if needed → push or retire
+```
+
+Do not rebase a staged-but-unfinalized change, and do not treat a one-shot
+normal commit as safe merely because it snapshots the index once. A mutating
+pre-commit hook can still restore older working-tree bytes over a live write.
+
+### LazyGit and CLI drafts are not retry authority
+
+After preparing the exact tree and complete message, the finalizer writes
+matching private drafts for LazyGit and Git's CLI message location, then makes
+one ordinary commit attempt itself. It refuses to overwrite an unrelated or
+user-edited draft and avoids partial handoff.
+
+Those drafts provide visibility and recovery context; they do **not** authorize
+a second commit path. Follow the bounded finalizer status:
+
+- `committed` / `already_committed`: the exact parent, tree, and lifecycle
+  trailer were proven; later Git operations may proceed.
+- `commit_failed` with the exact prepared snapshot retained: fix the hook or
+  dependency, then invoke the finalizer again with fresh explicit
+  authorization. Do not click Commit in LazyGit or run a separate `git commit`.
+- uncertain outcome, changed snapshot, or `commit_recovery_required`: reconcile
+  HEAD and the private journal only. Never retry through LazyGit, raw Git, or
+  the finalizer until the prior outcome is proven.
+- `rotation_required`: rotate the exposed credential first, then use the
+  explicit confirmed recovery path; prepared recovery does not restage.
+
+## Validation-only hooks and mutator scope
+
+`bootstrap-project.sh` installs a pinned validation-only agent-artifact check,
+gitleaks, and standard repository hygiene. The artifact check and scanners may
+inspect the staged snapshot but must never rewrite the index or working tree.
+Redaction is owned by the quiescent post-session finalizer.
+
+Generic mutators—formatters, linter autofixes, codemods,
+`end-of-file-fixer`, and `trailing-whitespace`—must exclude every archival and
+skill-install root:
+
+```text
+.agents  .claude  .codex  .cursor  .opencode  .specify  .specstory
+```
+
+Detection remains enabled for those roots. `.claude` must be excluded even
+when `.agents` is excluded because `.claude/skills/<name>` can symlink into the
+same installed tree. After the recorder itself, the finalizer is the sole
+sanctioned component that materializes sanitized transcript bytes, and it does
+so only after lifecycle quiescence.
+
+The optional `prepare-commit-msg` integration is also validation-only. It
+checks explicit session identity against the commit's actual index, including
+temporary indexes used by normal Git modes, but never stages or repairs files.
+If `core.hooksPath` is configured—even to an empty, relative, or external
+value—bootstrap refuses automatic installation; integrate the check into the
+configured hook directory deliberately.
+
+## Exact discovery and staging
+
+`find-session.sh` is exact by default. It validates the SpecStory prologue,
+canonical lowercase UUID, direct non-symlink transcript path, strict Claude
+JSONL, and canonical worktree root. The same UUID can render more than one
+alias, so ambiguity requires an explicit transcript path; `--newest` is only a
+compatibility escape hatch.
+
+`stage-agent-artifacts.sh` requires a non-artifact feature diff for the
+same-commit workflow. Preparation uses an alternate index under the real
+worktree index lock and publishes it atomically only on success. Validation mode
+never mutates an index. The finalizer uses the exact selector path; broad
+branch-wide staging remains compatibility mode, not the lifecycle default.
 
 ## SpecStory 2.10 checkout scoping
 
-Verified with SpecStory 2.10: rendered output discovery and raw Claude session
-discovery are scoped by **checkout path, not branch**. Switching branches in one
-checkout shares the same artifact pool; separate worktrees have separate
-`.specstory/history/` roots and Claude project slugs.
+Rendered output and raw Claude-session discovery are scoped by **checkout
+path, not branch**. Switching branches in one checkout shares an artifact pool;
+separate worktrees have separate `.specstory/history/` roots and Claude project
+slugs.
 
-Use **worktree first, wrapper/session second**, with one SpecStory wrapper and
-Claude session per change stream. Render a known raw session explicitly with:
-
-```bash
-specstory sync claude -s 01234567-89ab-4cde-8fab-0123456789ab
-```
-
-The same UUID can produce multiple rendered aliases. That is an ambiguity, not
-a newest-file tie-break: pass `--specstory-path`. `EnterWorktree` does not
-rebind a SpecStory watcher that is already running, so stop it and start a new
-wrapper in the target worktree.
+Use **worktree first, recorder/session second**, with one SpecStory wrapper and
+Claude session per change stream. `EnterWorktree` does not rebind an existing
+watcher. Stop it and start the foreground runner in the target worktree.
 
 ## SpecStory native redaction (v2.4.0+)
 
-SpecStory ships its own secret redaction now, so this skill is no longer the
-first line of defense for `.specstory/history/`.
+SpecStory redacts on write by default using Betterleaks, covering local
+Markdown and cloud sync. The repository layer is still required because
+measured coverage is incomplete, especially for custom keys and webhook shapes
+in prose.
 
-| Ref | What |
-|---|---|
-| [PR #235](https://github.com/specstoryai/getspecstory/pull/235) | `feat(redaction): automatically redact secrets from saved markdown history` — community PR by [@warnes](https://github.com/warnes), merged 2026-07-20 |
-| [PR #253](https://github.com/specstoryai/getspecstory/pull/253) | A `gofmt` CI-fix fork of #235; closed in favor of #235 |
-| **v2.4.0** (2026-07-20) | Shipped **on by default**, via the [Betterleaks](https://github.com/betterleaks/betterleaks) ruleset, covering local markdown **and** cloud sync |
-| [#274](https://github.com/specstoryai/getspecstory/issues/274) (open) | Adjacent leak vector — `specstory watch` exposes the cloud auth token in its process command line |
-
-The merged code is not the PR's: the maintainer swapped its 11 inline regexes
-for Betterleaks, and the PR's `extra_patterns` (custom regexes) did not survive
-that rewrite. `[redaction] enabled` in `.specstory/cli/config.toml` — or
-`--no-redact-secrets` — is the only knob.
-
-### Measured coverage
-
-`scripts/probe-specstory-redaction.py` synthesizes a Claude Code session,
-renders it twice through `specstory sync --print` (with and without
-`--no-redact-secrets`), and diffs per secret class. Against specstory 2.9.0,
-over 54 class/context pairs:
-
-| Caught by | Pairs | Examples |
+| Caught by | Pairs (measured on 2.9.0) | Examples |
 |---|---:|---|
-| SpecStory | 36 | Anthropic, OpenAI, GitHub PAT/OAuth/Actions, GitLab, Google, Groq, Slack, Stripe, Supabase, Linear, PEM blocks, `.env` dumps |
-| **Ours only** | 15 | Cursor, Tailscale, Discord/Zapier/Make webhooks — plus HuggingFace, Notion, WakaTime, OpenAI project keys **in prose** |
-| Nobody | 3 | `AKIA…` access key IDs; Telegram bot tokens in prose |
+| SpecStory | 36 / 54 | Major provider keys, PEM blocks, `.env` dumps |
+| Repository layer only | 15 / 54 | Cursor, Tailscale, webhook and custom-key shapes in prose |
+| Neither | 3 / 54 | Access-key IDs and a bot-token prose case |
 
-The structural finding: Betterleaks catches several classes only in
-`KEY=value` form, via an entropy-based `generic-api-key` rule. The same token
-in a sentence — which is how a tool transcript actually prints one — sails
-through. Our prefix-anchored rules don't care about surrounding syntax.
-
-### How the two layers stay out of each other's way
-
-Both write the same sentinel, `[REDACTED:<rule-id>]` (SpecStory's binary
-carries the format string `[REDACTED:%s]`), and `.gitleaks.toml` allowlists
-that shape. A transcript SpecStory already cleaned passes through the hook
-untouched — no "files were modified by this hook", no re-`git add`, no second
-commit.
-
-The redactor writes `[REDACTED:<rule-id>]` instead of `sk-abc...xyz`
-truncations, and PEM blocks become `[REDACTED:private-key]` — the exact label
-SpecStory uses. The truncated form still appears in the console report, where a
-fingerprint helps identify which credential to rotate. `--legacy` writes the
-pre-2.4.0 placeholders instead; it changes only the bytes written, never what
-is detected.
-
-(The related rule that a bare `PRIVATE KEY` *mention* is not key material —
-`detect-private-key` greps for `BEGIN … PRIVATE KEY` headers — is enforced
-separately by the redactor's header-scoped matching.)
+Both layers use `[REDACTED:<rule-id>]`, and gitleaks allowlists that sentinel.
+The finalizer leaves bytes already sanitized by SpecStory unchanged. It never
+prints transcript, diff, scanner, or credential content to its bounded public
+output.
 
 ## Post-leak discipline
 
-`scan-staged.sh` exit codes branch on leak state (0 clean, 10 redacted,
-20 leaks, 30 no gitleaks). When a leak slips through:
+When any layer finds a real credential:
 
-1. **Rotate at the provider.** The only act that revokes the
-   credential. Links in `references/remediation.md` §1.
-2. **Assess blast radius.** Local/unpushed? Feature branch? Main?
-3. **Scrub only if cheap.** Amend or `reset --soft` on unpushed commits;
-   `git filter-repo` + force-with-lease on feature branches; **never**
-   rewrite `main`.
+1. **Rotate it at the provider.** This is the only revocation action.
+2. Assess whether it was staged, committed locally, pushed to a feature branch,
+   or reached a shared branch.
+3. Scrub history only when the rotate-first runbook says it is appropriate.
+   Never use plain force-push on a shared branch.
 
-The runbook explicitly forbids `git push --force` against shared
-branches — see `references/remediation.md` §5.
+See `references/remediation.md` before any history rewrite.
 
 ## Gotchas
 
-- Branch names do not scope SpecStory 2.10 or Claude raw-session discovery;
-  checkout paths do. Never use `--newest` to infer a commit's exact session.
-- Any configured `core.hooksPath` makes automatic repo-hook installation
-  unsafe. Empty and relative `.git/hooks` values also exit 6; the latter fails
-  specifically in linked worktrees even if it appeared active in the primary.
+- Never ignore `.specstory/` or `.specstory/history/` wholesale. Only
+  machine-local identity and generated statistics are excluded precisely.
+- A normal child exit and exact completed sync are lifecycle proof; possession
+  of a request file is not commit authority.
+- A live writer blocks artifact staging and commit preparation. Do not work
+  around the guard with an ordinary commit or a pre-commit mutator.
+- Branch names do not scope SpecStory discovery; checkout paths do.
 - Native Claude/Cursor attribution is additive. The portable minimum is the
-  final `AI-Assisted-By` + transcript/plan block; do not invent an AI email or
-  confuse message attribution with cryptographic signing.
-
-- SpecStory ≥ 2.4.0 already redacts on write — don't let the hook redo it.
-  See [SpecStory native redaction](#specstory-native-redaction-v240) above.
-- A bare "PRIVATE KEY" mention is not a leak; `detect-private-key` matches
-  `BEGIN … PRIVATE KEY` only. Redacting prose churned transcripts for nothing.
-- That same hook honours **no** allowlist — not `<!-- gitleaks:allow -->`, not
-  `.github/secret_scanning.yml` — and `npx skills add` installs this skill's
-  test suite inside your scan scope. The skill therefore ships no literal key
-  header at all (tests assemble them at runtime; fixtures use
-  `__SYNTHETIC_PEM_*__` placeholders), enforced by
-  `tests/test_shipped_file_hygiene.py`. If an older installed copy fails your
-  commit with `Private key found: .agents/skills/agent-history-hygiene/tests/…`,
-  run `npx skills@latest update` rather than widening `exclude:` —
-  [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/detect-private-key-blocks-commits-in-downstream-repos.md).
-- Formatters and linters need the same scoping as scanners. Ruff 0.16 formats
-  Python inside Markdown code blocks, so it rewrites committed transcripts;
-  installed skills under `.agents/skills/` are vendored code. Exclude
-  `.agents`, `.claude`, `.codex`, `.cursor`, `.opencode`, `.specify`,
-  `.specstory` — `.claude` separately, since `.claude/skills/<name>` symlinks
-  into `.agents` — [pitfall](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/formatter-rewrites-committed-agent-transcripts.md).
-- Claude Code `plansDirectory` project-level is sometimes ignored
-  ([issue #19537](https://github.com/anthropics/claude-code/issues/19537));
-  set at the user level (`~/.claude/settings.json`) as the default.
-- `gitleaks protect` is deprecated since v8.19.0 — use `gitleaks git
-  --staged`. The skill uses the modern syntax everywhere.
-- `pre-commit install` is per-clone — each teammate (and CI) must run
-  it for hooks to fire.
-- Global `core.hooksPath` runs the repo's `.pre-commit-config.yaml`
-  only if it exists; a bare repo is unprotected until bootstrap.
+  final staged `AI-Assisted-By` plus transcript/plan block; message attribution
+  is not cryptographic signing.
+- A bare phrase discussing private keys is not key material. Shipped fixtures
+  build scanner-sensitive headers at runtime rather than weakening scanner
+  coverage.
+- `pre-commit install` is per clone, and global `core.hooksPath` protects only
+  repositories that actually carry the expected configuration.
 
 ## See also
 
 - [Source](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/agent-history-hygiene)
-- [`project-knowledge-harness`](project-knowledge-harness.md) —
-  complementary memory harness that references `.claude/plans/` as
-  ephemeral scratchpads. This skill closes the loop by making sure
-  those scratchpads actually land in git.
+- [Formatter rewrites committed agent transcripts](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/formatter-rewrites-committed-agent-transcripts.md)
+- [Pre-commit restores over live SpecStory writes](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/pre-commit-restores-over-live-specstory-writes.md)
+- [Rebase continue refuses on a clean index with a live transcript](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/rebase-continue-refuses-on-clean-index-live-transcript.md)
+- [`project-knowledge-harness`](project-knowledge-harness.md) — complementary
+  durable project memory; this skill supplies the Git lifecycle for agent
+  review artifacts.

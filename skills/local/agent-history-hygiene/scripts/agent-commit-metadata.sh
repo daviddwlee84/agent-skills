@@ -156,7 +156,8 @@ fi
 
 if [ -n "$HARNESS" ]; then
   append_unique assistant "$(normalize_harness "$HARNESS") ($MODEL)"
-else
+elif [ "${#TRANSCRIPTS[@]}" -gt 0 ]; then
+  # Bash 3.2 with `set -u` rejects an unguarded expansion of an empty array.
   for transcript in "${TRANSCRIPTS[@]}"; do
     parse_transcript "$transcript"
   done
@@ -174,9 +175,12 @@ json_array() {
   local kind="$1" first=1 item
   printf '['
   case "$kind" in
-    assistant) set -- "${ASSISTANTS[@]}" ;;
-    transcript) set -- "${TRANSCRIPTS[@]}" ;;
-    plan) set -- "${PLANS[@]}" ;;
+    assistant)
+      if [ "${#ASSISTANTS[@]}" -gt 0 ]; then set -- "${ASSISTANTS[@]}"; else set --; fi ;;
+    transcript)
+      if [ "${#TRANSCRIPTS[@]}" -gt 0 ]; then set -- "${TRANSCRIPTS[@]}"; else set --; fi ;;
+    plan)
+      if [ "${#PLANS[@]}" -gt 0 ]; then set -- "${PLANS[@]}"; else set --; fi ;;
   esac
   for item in "$@"; do
     [ "$first" = "1" ] || printf ','
@@ -195,15 +199,21 @@ if [ "$FORMAT" = "json" ]; then
   json_array plan
   printf '}\n'
 else
-  for assistant in "${ASSISTANTS[@]}"; do
-    printf 'AI-Assisted-By: %s\n' "$assistant"
-  done
-  for transcript in "${TRANSCRIPTS[@]}"; do
-    printf 'Agent-Transcript: %s\n' "$transcript"
-  done
-  for plan in "${PLANS[@]}"; do
-    printf 'Agent-Plan: %s\n' "$plan"
-  done
+  if [ "${#ASSISTANTS[@]}" -gt 0 ]; then
+    for assistant in "${ASSISTANTS[@]}"; do
+      printf 'AI-Assisted-By: %s\n' "$assistant"
+    done
+  fi
+  if [ "${#TRANSCRIPTS[@]}" -gt 0 ]; then
+    for transcript in "${TRANSCRIPTS[@]}"; do
+      printf 'Agent-Transcript: %s\n' "$transcript"
+    done
+  fi
+  if [ "${#PLANS[@]}" -gt 0 ]; then
+    for plan in "${PLANS[@]}"; do
+      printf 'Agent-Plan: %s\n' "$plan"
+    done
+  fi
 fi
 
 log "metadata: ${#ASSISTANTS[@]} assistant(s), ${#TRANSCRIPTS[@]} transcript(s), ${#PLANS[@]} plan(s)"

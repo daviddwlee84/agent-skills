@@ -2,10 +2,10 @@
 
 ## Symptom
 
-A repo that follows `agent-history-hygiene` (commit `.specstory/history/*.md`
-alongside the diff) starts failing its lint job on files nobody edited:
+A repository that keeps `.specstory/history/*.md` with the feature diff starts
+failing lint on files nobody intentionally edited:
 
-```
+```text
 --- .specstory/history/2026-08-28_04-26-10Z.md
 +++ .specstory/history/2026-08-28_04-26-10Z.md
 @@ -53,7 +53,7 @@
@@ -17,68 +17,94 @@ alongside the diff) starts failing its lint job on files nobody edited:
 3 files would be reformatted, 75 files already formatted
 ```
 
-The earlier variant of the same class points at the *installed skill* instead:
+An earlier variant points at an installed skill instead:
 
-```
+```text
 6 files would be reformatted
   .agents/skills/agent-history-hygiene/...
 ```
 
+Repeated commit attempts may alternate between a formatter modifying the
+transcript and SpecStory appending the live session again. The diff never
+stabilizes.
+
 ## Root cause
 
-Two separate leaks of "not our source" into the formatter's scope.
+Two kinds of records leaked into a generic mutator's source scope.
 
-**Installed skills.** `npx skills add` materialises whole skill directories
-into `.agents/skills/` (with `.claude/skills/<name>` symlinked to them). That is
-vendored third-party code; a formatter has no business owning its style, and no
-skill can be format-clean under every downstream `line-length` and rule set.
+**Installed skills are archival dependencies.** `npx skills add` materializes
+whole skill directories under `.agents/skills/`, and other harness roots may
+contain the same installed content or symlinks to it. This is vendored code, not
+source owned by the consuming repository's formatter. No skill can satisfy
+every downstream line length and autofix policy.
 
-**Agent transcripts.** Since **ruff 0.16**, `ruff format` formats Python inside
-Markdown fenced code blocks. A chat transcript is full of Python — pasted
-snippets, deliberately-wrong examples, marimo cells, output that was never valid
-source. Formatting it:
+**Agent artifacts are review records.** Since **ruff 0.16**, `ruff format`
+formats Python inside Markdown fenced code blocks. Transcripts and plans contain
+pasted snippets, intentionally broken examples, output, and historical model
+responses. Reformatting them:
 
-- **falsifies the record.** The transcript is evidence of what was said. A
-  transcript whose code no longer matches what the model actually emitted is
-  worse than no transcript.
-- **never converges.** SpecStory rewrites the same file as the session
-  continues, so the formatter re-fires on every commit — the same
-  non-converging loop as the redactor's old bare-`PRIVATE KEY` match.
+- **falsifies the record:** the committed bytes no longer represent what the
+  model and tools emitted;
+- **races the recorder:** a live SpecStory writer can append while the formatter
+  rewrites or while pre-commit restores its temporary patch;
+- **does not converge:** each actor can replace the other's working-tree bytes.
 
-Note the failure is version-gated and therefore ambushes you on upgrade: a repo
-pinned to `ruff>=0.15,<0.16` is clean, and goes red the day someone widens that
-constraint. Nothing about the version bump hints at markdown.
+This is version-gated: a repository clean on ruff 0.15 can begin rewriting
+Markdown as soon as its constraint admits 0.16.
 
 ## Workaround
 
-Exclude agent artifact dirs *and* installed skills from formatters and linters,
-not just from secret scanners:
+Exclude **all** archival and install roots from every generic formatter, linter
+autofix, codemod, and generic pre-commit file fixer:
 
 ```toml
 [tool.ruff]
 extend-exclude = [
-    ".agents", ".claude", ".codex", ".cursor", ".opencode", ".specify", ".specstory",
+    ".agents",
+    ".claude",
+    ".codex",
+    ".cursor",
+    ".opencode",
+    ".specify",
+    ".specstory",
 ]
 ```
 
-`.claude` matters even when `.agents` is already listed: the same files are
-reachable through the `.claude/skills/<name>` symlink, and an exclude that names
-only `.agents` misses that path. Keep the list mirroring
-`assets/artifact-dirs.txt`, plus the two skill-install roots.
+Apply the same root set to other mutators, including
+`end-of-file-fixer` and `trailing-whitespace`. `.claude` remains necessary when
+`.agents` is listed because `.claude/skills/<name>` may symlink into the same
+installed tree; path-based tools can otherwise reach it through the second
+root.
+
+Keep scanners and validation hooks enabled for these files. Exclusion from
+mutation is not exclusion from secret detection.
+
+If a live session is already involved, stop retrying the commit. Exit through
+the foreground recorder, let the exact post-session sync finish, and use the
+parent-authorized finalizer after the writer is quiescent.
 
 ## Prevention
 
-Invariant: **agent artifacts are records, not source.** Anything that rewrites
-files in place — formatter, linter autofix, codemod, end-of-file-fixer,
-trailing-whitespace — must be scoped past the artifact dirs. The skill's own
-`.pre-commit-config.yaml.template` already excludes `^\.specstory/` from
-`end-of-file-fixer` and `trailing-whitespace` for exactly this reason; ruff is
-the same rule applied to a tool the template does not install.
+Invariant: **agent artifacts and installed skills are records, not generic
+source-mutation targets.** Every mutator must exclude:
 
-The one deliberate exception is `redact-agent-secrets`, which rewrites
-transcripts on purpose — and only ever replaces a secret with a sentinel that
-cannot re-match, so it converges in one pass.
+```text
+.agents  .claude  .codex  .cursor  .opencode  .specify  .specstory
+```
 
-Related: [detect-private-key blocks commits in every repo that installed the
-skill](detect-private-key-blocks-commits-in-downstream-repos.md) — same shape
-(we ship files into the consumer's tool scope), different tool.
+The sole sanctioned post-recording mutator is the quiescent post-session
+finalizer. It atomically prepares the exact selected artifacts, materializes
+sanitized bytes, and then validates the prepared index. It never runs while the
+recorder is live.
+
+Pre-commit is **validation-only for agent artifacts**. It may inspect the staged
+snapshot and fail closed, but it must never redact, format, restore, or otherwise
+rewrite an agent artifact. The older exception for a mutating
+`redact-agent-secrets` pre-commit hook is obsolete; redaction belongs only to the
+post-session finalizer.
+
+Related:
+
+- [Pre-commit restores over live SpecStory writes](pre-commit-restores-over-live-specstory-writes.md)
+- [Rebase continue refuses on a clean index with a live transcript](rebase-continue-refuses-on-clean-index-live-transcript.md)
+- [detect-private-key blocks commits in every repo that installed the skill](detect-private-key-blocks-commits-in-downstream-repos.md)

@@ -7,6 +7,7 @@ set -u
 TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL_DIR="$(cd "$TESTS_DIR/.." && pwd)"
 STAGE="$SKILL_DIR/scripts/stage-agent-artifacts.sh"
+REDACTOR="$SKILL_DIR/assets/redact_secrets.py"
 METADATA="$SKILL_DIR/scripts/agent-commit-metadata.sh"
 BOOTSTRAP="$SKILL_DIR/scripts/bootstrap-project.sh"
 BASE="$(mktemp -d /tmp/test-stage-agent.XXXXXX)"
@@ -17,6 +18,7 @@ PASS_COUNT=0
 FAIL_COUNT=0
 LAST_RC=0
 LAST_ERR=""
+STAGE_PATH=""
 
 trap 'rm -rf "$BASE"' EXIT
 
@@ -87,13 +89,70 @@ run_stage() {
   local cwd="$1"
   shift
   local out="$BASE/stage-out" err="$BASE/stage-err"
-  (cd "$cwd" && HOME="$FAKE_HOME" "$BASH" "$STAGE" "$@") >"$out" 2>"$err"
+  (cd "$cwd" && HOME="$FAKE_HOME" PATH="${STAGE_PATH:-$PATH}" \
+    "$BASH" "$STAGE" "$@") >"$out" 2>"$err"
   LAST_RC=$?
   LAST_ERR="$(<"$err")"
 }
 
 staged_names() { git -C "$1" diff --cached --name-only; }
 staged_count() { staged_names "$1" | grep -c .; }
+
+SANITIZE_BIN="$BASE/sanitize-bin"
+mkdir -p "$SANITIZE_BIN"
+cat > "$SANITIZE_BIN/gitleaks" <<'PY'
+#!/usr/bin/env python3
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+args = sys.argv[1:]
+report = Path(args[args.index("--report-path") + 1])
+state_path = os.environ.get("FAKE_GITLEAKS_STATE")
+call_number = 1
+if state_path:
+    state = Path(state_path)
+    if state.exists():
+        call_number = int(state.read_text(encoding="ascii")) + 1
+    state.write_text(str(call_number), encoding="ascii")
+
+relative = os.environ.get("FAKE_GITLEAKS_FILE", "")
+secret = os.environ.get("FAKE_GITLEAKS_SECRET", "")
+index_data = b""
+if relative:
+    process = subprocess.run(
+        [os.environ.get("REAL_GIT", "git"), "show", ":" + relative],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if process.returncode == 0:
+        index_data = process.stdout
+
+if (
+    os.environ.get("FAKE_GITLEAKS_MUTATE_ON_CALL") == str(call_number)
+    and relative
+):
+    with open(relative, "ab") as stream:
+        stream.write(b"writer-generation-changed\n")
+
+findings = []
+secret_bytes = secret.encode("utf-8")
+if relative and secret_bytes and secret_bytes in index_data:
+    findings.append(
+        {
+            "File": relative,
+            "Secret": secret,
+            "Match": secret,
+            "RuleID": "fixture-rule",
+            "StartLine": 7,
+        }
+    )
+report.write_text(json.dumps(findings), encoding="utf-8")
+PY
+chmod +x "$SANITIZE_BIN/gitleaks"
 
 UUID_A="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 UUID_B="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
@@ -296,6 +355,393 @@ else
   fail "trailing-slash custom dirs-file authorizes an exact plan"
 fi
 
+printf '\n== exact index sanitation and materialization ==\n'
+
+# Mutation mode is never allowed to target the canonical index or an alias of
+# it. Check mode remains valid for both the canonical index and a Git-style
+# temporary index.
+repo_index_guard="$(make_repo 'redactor alternate index guard')"
+write_plan "$repo_index_guard" 'guard.md' >/dev/null
+git -C "$repo_index_guard" add .claude/plans/guard.md
+index_guard_tree="$(git -C "$repo_index_guard" write-tree)"
+(
+  cd "$repo_index_guard" || exit 90
+  PATH="$SANITIZE_BIN:$SYSTEM_PATH" python3 "$REDACTOR" \
+    --fix-index --files .claude/plans/guard.md
+) >"$BASE/index-guard-out" 2>"$BASE/index-guard-err"
+canonical_fix_rc=$?
+(
+  cd "$repo_index_guard" || exit 90
+  PATH="$SANITIZE_BIN:$SYSTEM_PATH" python3 "$REDACTOR" --check-index
+) >/dev/null 2>&1
+canonical_check_rc=$?
+alternate_guard="$BASE/guard-index"
+cp "$repo_index_guard/.git/index" "$alternate_guard"
+(
+  cd "$repo_index_guard" || exit 90
+  PATH="$SANITIZE_BIN:$SYSTEM_PATH" GIT_INDEX_FILE="$alternate_guard" \
+    python3 "$REDACTOR" --check-index
+) >/dev/null 2>&1
+alternate_check_rc=$?
+hardlink_guard="$BASE/guard-index-hardlink"
+ln "$repo_index_guard/.git/index" "$hardlink_guard"
+(
+  cd "$repo_index_guard" || exit 90
+  PATH="$SANITIZE_BIN:$SYSTEM_PATH" GIT_INDEX_FILE="$hardlink_guard" \
+    python3 "$REDACTOR" --fix-index --files .claude/plans/guard.md
+) >/dev/null 2>&1
+hardlink_fix_rc=$?
+if [ "$canonical_fix_rc" = "2" ] && [ "$canonical_check_rc" = "0" ] && \
+   [ "$alternate_check_rc" = "0" ] && [ "$hardlink_fix_rc" = "2" ] && \
+   [ "$(git -C "$repo_index_guard" write-tree)" = "$index_guard_tree" ]; then
+  pass "fix-index requires a noncanonical regular alternate index"
+else
+  fail "fix-index requires a noncanonical regular alternate index"
+fi
+
+# Security flags are exact-session-only and cannot be smuggled into check or
+# dry-run modes. Materialization never stands alone.
+flag_tree="$(git -C "$repo_index_guard" write-tree)"
+run_stage "$repo_index_guard" --sanitize-index
+sanitize_broad_rc=$LAST_RC
+run_stage "$repo_index_guard" --session-only --session-id "$UUID_A" --no-plan \
+  --sanitize-index --dry-run
+sanitize_dry_rc=$LAST_RC
+run_stage "$repo_index_guard" --session-only --session-id "$UUID_A" --no-plan \
+  --sanitize-index --check-staged
+sanitize_check_rc=$LAST_RC
+run_stage "$repo_index_guard" --session-only --session-id "$UUID_A" --no-plan \
+  --materialize-sanitized
+materialize_alone_rc=$LAST_RC
+if [ "$sanitize_broad_rc" = "1" ] && [ "$sanitize_dry_rc" = "1" ] && \
+   [ "$sanitize_check_rc" = "1" ] && [ "$materialize_alone_rc" = "1" ] && \
+   [ "$(git -C "$repo_index_guard" write-tree)" = "$flag_tree" ]; then
+  pass "sanitize and materialize flags reject incompatible modes"
+else
+  fail "sanitize and materialize flags reject incompatible modes"
+fi
+"$BASH" "$STAGE" --help > "$BASE/stage-help" 2>/dev/null
+stage_help_rc=$?
+stage_help="$(tr '\n' ' ' < "$BASE/stage-help")"
+if [ "$stage_help_rc" = "0" ] && contains "$stage_help" 'finalizer/quiescence-only' && \
+   contains "$stage_help" 'cannot stop an arbitrary live writer'; then
+  pass "sanitize help requires a proven-quiescent finalizer boundary"
+else
+  fail "sanitize help requires a proven-quiescent finalizer boundary"
+fi
+
+# A clean exact set publishes normally and leaves the selected worktree bytes
+# equal to the staged blob.
+repo_sanitize_clean="$(make_repo 'sanitize clean exact set')"
+printf '%s\n' changed >> "$repo_sanitize_clean/feature.txt"
+git -C "$repo_sanitize_clean" add feature.txt
+write_transcript "$repo_sanitize_clean" 'session.md' "$UUID_A" >/dev/null
+write_jsonl "$repo_sanitize_clean" "$UUID_A"
+STAGE_PATH="$SANITIZE_BIN:$SYSTEM_PATH"
+unset FAKE_GITLEAKS_FILE FAKE_GITLEAKS_SECRET FAKE_GITLEAKS_STATE \
+  FAKE_GITLEAKS_MUTATE_ON_CALL
+run_stage "$repo_sanitize_clean" --session-only --session-id "$UUID_A" --no-plan \
+  --sanitize-index --materialize-sanitized
+git -C "$repo_sanitize_clean" show :.specstory/history/session.md > "$BASE/clean-index.md"
+if [ "$LAST_RC" = "0" ] && \
+   cmp -s "$repo_sanitize_clean/.specstory/history/session.md" "$BASE/clean-index.md"; then
+  pass "clean exact sanitation publishes without replacement status"
+else
+  fail "clean exact sanitation publishes without replacement status"
+fi
+
+# A writer append during an otherwise clean sanitizer pass must still fail the
+# late live-generation proof. Zero replacement bytes are not permission to skip
+# materialization-mode validation or publish the alternate index.
+repo_clean_generation="$(make_repo 'clean scan generation change')"
+printf '%s\n' changed >> "$repo_clean_generation/feature.txt"
+git -C "$repo_clean_generation" add feature.txt
+write_transcript "$repo_clean_generation" 'session.md' "$UUID_A" >/dev/null
+write_jsonl "$repo_clean_generation" "$UUID_A"
+clean_generation_tree="$(git -C "$repo_clean_generation" write-tree)"
+export FAKE_GITLEAKS_FILE='.specstory/history/session.md'
+unset FAKE_GITLEAKS_SECRET
+export FAKE_GITLEAKS_STATE="$BASE/clean-generation-scanner-state"
+export FAKE_GITLEAKS_MUTATE_ON_CALL=2
+STAGE_PATH="$SANITIZE_BIN:$SYSTEM_PATH"
+run_stage "$repo_clean_generation" --session-only --session-id "$UUID_A" --no-plan \
+  --sanitize-index --materialize-sanitized
+clean_generation_content="$(<"$repo_clean_generation/.specstory/history/session.md")"
+clean_generation_backups="$(find "$repo_clean_generation/.specstory/history" -maxdepth 1 \
+  -name '.agent-history-backup.*' -print -quit)"
+if [ "$LAST_RC" = "5" ] && \
+   [ "$(git -C "$repo_clean_generation" write-tree)" = "$clean_generation_tree" ] && \
+   ! git -C "$repo_clean_generation" ls-files --error-unmatch -- \
+     .specstory/history/session.md >/dev/null 2>&1 && \
+   contains "$clean_generation_content" 'writer-generation-changed' && \
+   [ -z "$clean_generation_backups" ]; then
+  pass "clean sanitizer pass still rejects a changed live generation"
+else
+  fail "clean sanitizer pass still rejects a changed live generation"
+fi
+unset FAKE_GITLEAKS_FILE FAKE_GITLEAKS_STATE FAKE_GITLEAKS_MUTATE_ON_CALL
+
+# One actual add seeds the alternate index. The sanitizer updates blobs and
+# checkout-index materializes them; no second add may read the live path.
+repo_sanitize="$(make_repo 'sanitize exact secret')"
+printf '%s\n' changed >> "$repo_sanitize/feature.txt"
+git -C "$repo_sanitize" add feature.txt
+write_transcript "$repo_sanitize" 'session.md' "$UUID_B" >/dev/null
+write_jsonl "$repo_sanitize" "$UUID_B"
+sanitize_secret='fixture-sensitive-value-for-index-redaction'
+printf 'TOKEN=%s\n' "$sanitize_secret" >> "$repo_sanitize/.specstory/history/session.md"
+count_bin="$BASE/count-add-bin"
+mkdir -p "$count_bin"
+cat > "$count_bin/git" <<'SH'
+#!/usr/bin/env bash
+if [ "${1:-}" = add ]; then
+  dry=0
+  for argument in "$@"; do [ "$argument" = --dry-run ] && dry=1; done
+  [ "$dry" = "1" ] || printf '%s\n' add >> "$GIT_ADD_LOG"
+fi
+exec "$REAL_GIT" "$@"
+SH
+chmod +x "$count_bin/git"
+: > "$BASE/git-add-log"
+REAL_GIT="$(command -v git)"
+export REAL_GIT
+export GIT_ADD_LOG="$BASE/git-add-log"
+export FAKE_GITLEAKS_FILE='.specstory/history/session.md'
+export FAKE_GITLEAKS_SECRET="$sanitize_secret"
+unset FAKE_GITLEAKS_STATE FAKE_GITLEAKS_MUTATE_ON_CALL
+STAGE_PATH="$count_bin:$SANITIZE_BIN:$SYSTEM_PATH"
+run_stage "$repo_sanitize" --session-only --session-id "$UUID_B" --no-plan \
+  --sanitize-index --materialize-sanitized
+sanitize_names="$(staged_names "$repo_sanitize")"
+sanitize_index="$(git -C "$repo_sanitize" show :.specstory/history/session.md)"
+sanitize_worktree="$(<"$repo_sanitize/.specstory/history/session.md")"
+add_count="$(wc -l < "$BASE/git-add-log" | tr -d ' ')"
+if [ "$LAST_RC" = "10" ] && [ "$add_count" = "1" ] && \
+   contains "$sanitize_names" 'feature.txt' && \
+   contains "$sanitize_names" '.specstory/history/session.md' && \
+   contains "$sanitize_index" '[REDACTED:fixture-rule]' && \
+   contains "$sanitize_worktree" '[REDACTED:fixture-rule]' && \
+   ! contains "$sanitize_index" "$sanitize_secret" && \
+   ! contains "$sanitize_worktree" "$sanitize_secret" && \
+   ! contains "$LAST_ERR" "$sanitize_secret"; then
+  pass "sanitizer publishes and materializes after exactly one candidate add"
+else
+  fail "sanitizer publishes and materializes after exactly one candidate add"
+fi
+
+# A writer generation change after the one add is detected against the
+# filter-aware pre-sanitize OID before any checkout. The candidate is discarded
+# and the real feature-only index remains byte-identical.
+repo_generation="$(make_repo 'generation changes during sanitize')"
+printf '%s\n' changed >> "$repo_generation/feature.txt"
+git -C "$repo_generation" add feature.txt
+write_transcript "$repo_generation" 'session.md' "$UUID_C" >/dev/null
+write_jsonl "$repo_generation" "$UUID_C"
+printf 'TOKEN=%s\n' "$sanitize_secret" >> "$repo_generation/.specstory/history/session.md"
+generation_tree_before="$(git -C "$repo_generation" write-tree)"
+generation_index="$(git -C "$repo_generation" rev-parse --git-path index)"
+case "$generation_index" in /*) ;; *) generation_index="$repo_generation/$generation_index" ;; esac
+export FAKE_GITLEAKS_STATE="$BASE/generation-scanner-state"
+export FAKE_GITLEAKS_MUTATE_ON_CALL=1
+STAGE_PATH="$SANITIZE_BIN:$SYSTEM_PATH"
+run_stage "$repo_generation" --session-only --session-id "$UUID_C" --no-plan \
+  --sanitize-index --materialize-sanitized
+generation_worktree="$(<"$repo_generation/.specstory/history/session.md")"
+generation_temp="$(find "$(dirname "$generation_index")" -maxdepth 1 \
+  -name "$(basename "$generation_index").agent-history.*" -print -quit)"
+if [ "$LAST_RC" = "5" ] && \
+   [ "$(git -C "$repo_generation" write-tree)" = "$generation_tree_before" ] && \
+   ! git -C "$repo_generation" ls-files --error-unmatch -- \
+     .specstory/history/session.md >/dev/null 2>&1 && \
+   contains "$generation_worktree" "$sanitize_secret" && \
+   contains "$generation_worktree" 'writer-generation-changed' && \
+   ! contains "$generation_worktree" '[REDACTED:fixture-rule]' && \
+   [ ! -e "$generation_index.lock" ] && [ -z "$generation_temp" ]; then
+  pass "changed live generation aborts before materialization or index publication"
+else
+  fail "changed live generation aborts before materialization or index publication"
+fi
+unset FAKE_GITLEAKS_STATE FAKE_GITLEAKS_MUTATE_ON_CALL
+
+# Deterministic checkout barriers exercise both sides of the inode handoff.
+# The wrapper never prints command arguments or file content.
+materialize_barrier_bin="$BASE/materialize-barrier-bin"
+mkdir -p "$materialize_barrier_bin"
+cat > "$materialize_barrier_bin/git" <<'SH'
+#!/usr/bin/env bash
+if [ "${1:-}" = checkout-index ]; then
+  case "${MATERIALIZE_BARRIER_MODE:-}" in
+    before)
+      : > "$MATERIALIZE_SYNC/ready"
+      while [ ! -e "$MATERIALIZE_SYNC/release" ]; do sleep 0.02; done
+      ;;
+    after)
+      "$REAL_GIT" "$@"
+      checkout_rc=$?
+      : > "$MATERIALIZE_SYNC/ready"
+      while [ ! -e "$MATERIALIZE_SYNC/release" ]; do sleep 0.02; done
+      exit "$checkout_rc"
+      ;;
+  esac
+fi
+exec "$REAL_GIT" "$@"
+SH
+chmod +x "$materialize_barrier_bin/git"
+real_git="$(command -v git)"
+
+# Append after every pre-checkout hash. The hard-link backup follows the old
+# inode, so the append is detected after checkout and atomically restored. A
+# second selected path proves unaffected siblings roll back too.
+repo_before_checkout="$(make_repo 'append after proven hash')"
+printf '%s\n' changed >> "$repo_before_checkout/feature.txt"
+git -C "$repo_before_checkout" add feature.txt
+before_transcript="$(write_transcript "$repo_before_checkout" 'session.md' "$UUID_B")"
+before_plan="$(write_plan "$repo_before_checkout" 'plan.md')"
+cp "$before_plan" "$BASE/before-plan-copy"
+write_jsonl "$repo_before_checkout" "$UUID_B"
+printf 'TOKEN=%s\n' "$sanitize_secret" >> "$before_transcript"
+before_checkout_tree="$(git -C "$repo_before_checkout" write-tree)"
+before_sync="$BASE/materialize-before-sync"
+mkdir -p "$before_sync"
+(
+  cd "$repo_before_checkout" || exit 90
+  HOME="$FAKE_HOME" PATH="$materialize_barrier_bin:$SANITIZE_BIN:$SYSTEM_PATH" \
+    REAL_GIT="$real_git" MATERIALIZE_SYNC="$before_sync" \
+    MATERIALIZE_BARRIER_MODE=before \
+    FAKE_GITLEAKS_FILE='.specstory/history/session.md' \
+    FAKE_GITLEAKS_SECRET="$sanitize_secret" \
+    "$BASH" "$STAGE" --session-only --session-id "$UUID_B" \
+      --plan '.claude/plans/plan.md' --sanitize-index --materialize-sanitized
+) >"$BASE/materialize-before-out" 2>"$BASE/materialize-before-err" &
+before_pid=$!
+before_wait=0
+while [ ! -e "$before_sync/ready" ] && [ "$before_wait" -lt 3000 ]; do
+  sleep 0.02
+  before_wait=$((before_wait + 1))
+done
+before_reached=0
+[ -e "$before_sync/ready" ] && before_reached=1
+printf '%s\n' 'writer-after-proven-hash' >> "$before_transcript"
+: > "$before_sync/release"
+wait "$before_pid"
+before_rc=$?
+before_content="$(<"$before_transcript")"
+before_backups="$(find "$repo_before_checkout" -name '.agent-history-backup.*' -print -quit)"
+before_recoveries="$(find "$repo_before_checkout" -name '.agent-history-recovery.*' -print -quit)"
+if [ "$before_reached" = "1" ] && [ "$before_rc" = "5" ] && \
+   [ "$(git -C "$repo_before_checkout" write-tree)" = "$before_checkout_tree" ] && \
+   ! git -C "$repo_before_checkout" ls-files --error-unmatch -- \
+     .specstory/history/session.md >/dev/null 2>&1 && \
+   contains "$before_content" "$sanitize_secret" && \
+   contains "$before_content" 'writer-after-proven-hash' && \
+   ! contains "$before_content" '[REDACTED:fixture-rule]' && \
+   cmp -s "$before_plan" "$BASE/before-plan-copy" && \
+   [ -z "$before_backups" ] && [ -z "$before_recoveries" ]; then
+  pass "append after pre-checkout hash is restored without sibling loss"
+else
+  fail "append after pre-checkout hash is restored without sibling loss"
+fi
+
+# Append to the replacement pathname after checkout. The old backup remains
+# clean, so rollback preserves the writer-modified new path and removes only the
+# owned backup; the candidate index is still discarded.
+repo_after_checkout="$(make_repo 'append to replaced path')"
+printf '%s\n' changed >> "$repo_after_checkout/feature.txt"
+git -C "$repo_after_checkout" add feature.txt
+after_transcript="$(write_transcript "$repo_after_checkout" 'session.md' "$UUID_C")"
+write_jsonl "$repo_after_checkout" "$UUID_C"
+printf 'TOKEN=%s\n' "$sanitize_secret" >> "$after_transcript"
+after_checkout_tree="$(git -C "$repo_after_checkout" write-tree)"
+after_sync="$BASE/materialize-after-sync"
+mkdir -p "$after_sync"
+(
+  cd "$repo_after_checkout" || exit 90
+  HOME="$FAKE_HOME" PATH="$materialize_barrier_bin:$SANITIZE_BIN:$SYSTEM_PATH" \
+    REAL_GIT="$real_git" MATERIALIZE_SYNC="$after_sync" \
+    MATERIALIZE_BARRIER_MODE=after \
+    FAKE_GITLEAKS_FILE='.specstory/history/session.md' \
+    FAKE_GITLEAKS_SECRET="$sanitize_secret" \
+    "$BASH" "$STAGE" --session-only --session-id "$UUID_C" --no-plan \
+      --sanitize-index --materialize-sanitized
+) >"$BASE/materialize-after-out" 2>"$BASE/materialize-after-err" &
+after_pid=$!
+after_wait=0
+while [ ! -e "$after_sync/ready" ] && [ "$after_wait" -lt 3000 ]; do
+  sleep 0.02
+  after_wait=$((after_wait + 1))
+done
+after_reached=0
+[ -e "$after_sync/ready" ] && after_reached=1
+printf '%s\n' 'writer-on-replaced-path' >> "$after_transcript"
+: > "$after_sync/release"
+wait "$after_pid"
+after_rc=$?
+after_content="$(<"$after_transcript")"
+after_backups="$(find "$repo_after_checkout" -name '.agent-history-backup.*' -print -quit)"
+after_recoveries="$(find "$repo_after_checkout" -name '.agent-history-recovery.*' -print -quit)"
+if [ "$after_reached" = "1" ] && [ "$after_rc" = "5" ] && \
+   [ "$(git -C "$repo_after_checkout" write-tree)" = "$after_checkout_tree" ] && \
+   ! git -C "$repo_after_checkout" ls-files --error-unmatch -- \
+     .specstory/history/session.md >/dev/null 2>&1 && \
+   contains "$after_content" '[REDACTED:fixture-rule]' && \
+   contains "$after_content" 'writer-on-replaced-path' && \
+   ! contains "$after_content" "$sanitize_secret" && \
+   [ -z "$after_backups" ] && [ -z "$after_recoveries" ]; then
+  pass "append to replaced path is preserved and index publication aborts"
+else
+  fail "append to replaced path is preserved and index publication aborts"
+fi
+
+# Materialization goes through Git's smudge filter, while the safety comparison
+# hashes the live file through the corresponding clean filter.
+repo_filter="$(make_repo 'sanitize with git filters')"
+clean_filter="$BASE/clean-filter.py"
+smudge_filter="$BASE/smudge-filter.py"
+cat > "$clean_filter" <<'PY'
+import sys
+value = sys.stdin.buffer.read()
+sys.stdout.buffer.write(value.replace(b"WORKTREE-MARKER", b"INDEX-MARKER"))
+PY
+cat > "$smudge_filter" <<'PY'
+import sys
+value = sys.stdin.buffer.read()
+sys.stdout.buffer.write(value.replace(b"INDEX-MARKER", b"WORKTREE-MARKER"))
+PY
+git -C "$repo_filter" config filter.fixture.clean "python3 $clean_filter"
+git -C "$repo_filter" config filter.fixture.smudge "python3 $smudge_filter"
+git -C "$repo_filter" config filter.fixture.required true
+printf '%s\n' '.specstory/history/*.md filter=fixture' > "$repo_filter/.gitattributes"
+git -C "$repo_filter" add .gitattributes
+git -C "$repo_filter" -c core.hooksPath=/dev/null -c user.name=test \
+  -c user.email=test@example.com commit -q -m attributes
+printf '%s\n' changed >> "$repo_filter/feature.txt"
+git -C "$repo_filter" add feature.txt
+write_transcript "$repo_filter" 'session.md' "$UUID_A" >/dev/null
+write_jsonl "$repo_filter" "$UUID_A"
+printf 'WORKTREE-MARKER=%s\n' "$sanitize_secret" >> \
+  "$repo_filter/.specstory/history/session.md"
+unset FAKE_GITLEAKS_STATE FAKE_GITLEAKS_MUTATE_ON_CALL
+STAGE_PATH="$SANITIZE_BIN:$SYSTEM_PATH"
+run_stage "$repo_filter" --session-only --session-id "$UUID_A" --no-plan \
+  --sanitize-index --materialize-sanitized
+filter_index="$(git -C "$repo_filter" show :.specstory/history/session.md)"
+filter_worktree="$(<"$repo_filter/.specstory/history/session.md")"
+filter_live_oid="$(cd "$repo_filter" && git hash-object \
+  --path=.specstory/history/session.md -- .specstory/history/session.md)"
+filter_index_oid="$(git -C "$repo_filter" ls-files -s -- \
+  .specstory/history/session.md | cut -d' ' -f2)"
+if [ "$LAST_RC" = "10" ] && contains "$filter_index" 'INDEX-MARKER=' && \
+   contains "$filter_worktree" 'WORKTREE-MARKER=' && \
+   contains "$filter_index" '[REDACTED:fixture-rule]' && \
+   contains "$filter_worktree" '[REDACTED:fixture-rule]' && \
+   [ "$filter_live_oid" = "$filter_index_oid" ]; then
+  pass "sanitized materialization honors clean and smudge filter semantics"
+else
+  fail "sanitized materialization honors clean and smudge filter semantics"
+fi
+unset FAKE_GITLEAKS_FILE FAKE_GITLEAKS_SECRET REAL_GIT GIT_ADD_LOG
+STAGE_PATH=""
+
 # Hold the real index lock while the alternate index is validated and updated.
 # A concurrent normal Git writer must fail rather than removing staged code
 # between the feature guard and artifact publication.
@@ -346,6 +792,7 @@ if [ "$race_stage_rc" = "0" ] && [ "$concurrent_rc" != "0" ] && \
 else
   fail "index lock prevents concurrent writer across staged guard and exact add"
 fi
+
 
 # Broad mode must stage unstaged deletion and rename pairs from one porcelain
 # snapshot, including the rename origin needed to remove the old path.

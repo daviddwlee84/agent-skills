@@ -15,6 +15,7 @@ workflow that agents should follow.
 
 ## P2
 - [ ] **[S] Bump GitHub Actions to next majors before Node 20 deprecation** — actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4, astral-sh/setup-uv@v5 will deprecate June 2026. Bump checkout/upload-artifact to @v5, setup-python to @v6, setup-uv to @v6 in .github/workflows/docs.yml and any other workflows. Verify deploy still passes.
+- [ ] **[L] Publish finalization readiness contract for dev-cli** — Expose stable read-only agent-history readiness JSON plus a Git-common mutation lease, then have dev-cli gate pull-rebase/fetch/done/fleet/retire at the service layer without parsing private journals or duplicating sanitization. Migrate away from dev's transcript-only second-commit semantics. → [research](backlog/publish-finalization-readiness-contract-for-dev-cli.md)
 
 ## P3
 - [ ] **[S] Document 'prefer relative links' as docs convention** — Add an explicit rule in docs/conventions.md and CLAUDE.md: inside docs/, default to relative links (not absolute https URLs) so docs are portable across deploys. Absolute URLs only when (a) linking to files outside docs/ in the GitHub repo, or (b) absolutely necessary. See pitfalls/mkdocs-strict-rejects-build-time-generated-links.md for the validation.links.not_found:info workaround that makes this work with strict mode.
