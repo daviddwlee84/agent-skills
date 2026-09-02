@@ -41,12 +41,24 @@ useDefault = true
   ]
 
 # Path-scoped allowlist: inside agent artifact dirs, tolerate explicit
-# example/demo markers without unlocking real leaks. Both the path AND a
-# regex must match, so a real `sk-ant-api03-<95 chars>AA` still fires.
+# example/demo markers without unlocking real leaks.
+#
+# regexTarget = "match" is load-bearing, NOT cosmetic. At "line" scope a single
+# line holding BOTH a placeholder and a live credential -- e.g. a partially
+# redacted env dump like
+#   ANTHROPIC_API_KEY=[REDACTED:anthropic-api-key] GITHUB_TOKEN=ghp_<live>
+# -- was allowlisted wholesale, so the live token never fired. Transcripts
+# produce exactly that shape whenever a tool echoes a multi-value line.
+# Matching the finding's OWN bytes means only an inert placeholder is ever
+# suppressed; a real credential beside one still fires.
+#
+# `condition = "AND"` stays required: it is what keeps `paths` from
+# allowlisting these directories wholesale (gitleaks v8 allowlists default to
+# OR between path and regex). Match-scoping and AND are both load-bearing --
+# AND keeps the directory from being blanket-trusted, match-scoping keeps a
+# tolerated placeholder from covering the rest of its line.
 [[allowlists]]
   description = "Example/demo keys inside agent transcripts and plan files"
-  # Both path and regex must match, otherwise any .md under these dirs
-  # gets allowlisted wholesale (gitleaks v8 defaults to OR semantics).
   condition   = "AND"
   paths = [
     '''\.specstory/history/.*\.md$''',
@@ -56,7 +68,7 @@ useDefault = true
     '''\.specify/.*\.md$''',
     '''\.codex/.*\.md$''',
   ]
-  regexTarget = "line"
+  regexTarget = "match"
   regexes = [
     '''example[-_]?(key|token|secret)''',
     '''\bREDACTED\b''',

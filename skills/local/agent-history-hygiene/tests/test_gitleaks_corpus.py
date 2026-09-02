@@ -132,6 +132,39 @@ class TestRealAnthropicFixture:
         assert rule_ids & {"anthropic-api-key", "anthropic-api-key-strict"}
 
 
+class TestSentinelBesideLiveKey:
+    """A redaction sentinel must not shield a live key sharing its line.
+
+    Regression guard for the path-scoped allowlist. At `regexTarget = "line"`
+    the tolerated `[REDACTED:...]`/`REDACTED` text allowlisted the WHOLE line,
+    so a live credential printed beside a redacted one was silently accepted
+    inside every agent-artifact directory. `regexTarget = "match"` compares the
+    finding's own bytes instead, so only the inert placeholder is suppressed.
+    """
+
+    @pytest.mark.parametrize(
+        "dest",
+        [
+            ".specstory/history/2026-09-02_00-00-00Z-session.md",
+            ".claude/plans/mixed.md",
+        ],
+    )
+    def test_live_key_still_fires_next_to_a_sentinel(
+        self, tmp_git_repo, fixtures_dir: Path, dest: str
+    ):
+        _stage_fixture_at(
+            tmp_git_repo, fixtures_dir / "sentinel_beside_live_key.md", dest
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        rule_ids = {f["RuleID"] for f in findings}
+        assert "openai-project-key" in rule_ids, (
+            f"A live key sharing a line with a [REDACTED:...] sentinel in {dest} "
+            "was allowlisted. The path-scoped allowlist must stay "
+            'regexTarget = "match"; at "line" scope the sentinel covers its '
+            "line-mates."
+        )
+
+
 class TestExampleShapesFixture:
     """Truncated/placeholder shapes must be allowlisted inside artifact dirs."""
 
