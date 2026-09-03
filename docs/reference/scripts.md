@@ -5,8 +5,9 @@ directory is also bundled inside the skill that owns it (so the package
 shipped via `npx skills` stays self-contained). The pair must stay
 byte-identical — see [Conventions](../conventions.md).
 
-Scripts are written in **Bash 3.2** so they run on stock macOS without
-homebrew bash.
+Shell scripts are written in **Bash 3.2** so they run on stock macOS without
+homebrew bash. The MkDocs build helper is Python and runs inside the project's
+uv-managed docs environment.
 
 ## Vendor system
 
@@ -166,6 +167,56 @@ One-shot setup of `TODO.md` + `backlog/` + `pitfalls/` + agent guidance
 snippet + README snippet for any target repo. Idempotent. See
 [`project-knowledge-harness`](../skills/project-knowledge-harness.md) for
 the full flag list.
+
+## Documentation sites
+
+These ship with
+[`mkdocs-site-bootstrap`](../skills/mkdocs-site-bootstrap.md). They are not
+mirrored into the repo-wide `scripts/` directory: the build helper is copied
+into each scaffolded project, while migration runs from the installed skill.
+
+### `build-docs-site.py`
+
+```bash
+uv run python scripts/build-docs-site.py
+uv run python scripts/build-docs-site.py --dry-run
+uv run python scripts/build-docs-site.py --site-dir public --keep-temp
+```
+
+Canonical strict production build for scaffolded docs sites. Monolingual sites
+use one pass. Multilingual sites with llmstxt build default-language output
+separately from the full locale HTML site, validate and merge the artifacts, then replace
+the target site directory only after both passes succeed. Root `llms.txt`,
+`llms-full.txt`, and raw `.md` sidecars are default-language-only.
+
+Flags: `--target-dir DIR`, `--config-file FILE`, `--site-dir DIR`, `--dry-run`,
+`--keep-temp`. Stdout is JSON; MkDocs logs and diagnostics go to stderr. Exits:
+`0` success, `2` invalid/missing input, `3` MkDocs failed, `4` output validation
+failed. There is no non-strict mode. Direct `mkdocs build --strict` remains an HTML-only
+preview because llmstxt is disabled by default in the scaffolded config.
+
+### `migrate-i18n-llmstxt.sh`
+
+```bash
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --json
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --apply --dry-run --json
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --apply --verify --json
+```
+
+Audits by default and only writes with `--apply`. It patches recognizable
+older scaffold shapes, installs/refreshes only a marker-owned build helper, and
+leaves custom config/CI/Makefile shapes in `manual_actions[]`. Candidate files
+are staged and validated before replacement, and the migration is idempotent.
+Updating the skill merely downloads this tool; it never runs automatically.
+
+Flags: `--target-dir DIR`, `--apply`, `--dry-run`, `--verify`, `--json`.
+Important exits: `0` safe/migrated, `10` affected legacy config found during
+audit/dry-run, `11` manual work remains, `12` strict verification failed. See the
+canonical
+[`migration guide`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md).
 
 ## Skill authoring
 

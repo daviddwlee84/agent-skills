@@ -48,10 +48,13 @@ validator / promoter / inbox 工具組。
 
 這個站點依照 [llmstxt.org](https://llmstxt.org/) 規範提供 LLM-friendly endpoint：
 
-- [`llms.txt`](llms.txt) —— 所有頁面的精簡索引 (index)
-- [`llms-full.txt`](llms-full.txt) —— 所有頁面串接成的單一檔案
+- [`llms.txt`](https://daviddwlee84.github.io/agent-skills/llms.txt) ——
+  預設語言頁面的精簡索引 (index)
+- [`llms-full.txt`](https://daviddwlee84.github.io/agent-skills/llms-full.txt) ——
+  預設語言頁面串接成的單一檔案
 - 任何頁面在 URL 後面加上 `/index.md` 就能取得 raw Markdown
-  （例如 [`getting-started/index.md`](getting-started/index.md)）。
+  （例如
+  [`getting-started/index.md`](https://daviddwlee84.github.io/agent-skills/getting-started/index.md)）。
 
 如果你是讀這頁的 agent，建議用 `llms-full.txt` 一次拿到完整 context，
 或是抓特定頁面的 `*/index.md` 路徑。

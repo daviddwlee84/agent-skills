@@ -34,54 +34,51 @@ to errors → build fails.
 
 ## Workaround
 
-Two options. **Prefer relative links + `validation.links.not_found:
-info`** so future agent-readable URLs stay portable:
-
-```yaml
-# mkdocs.yml
-validation:
-  links:
-    not_found: info
-```
+Keep strict link validation and use the final deployed URL for generated
+artifacts that have no source file:
 
 ```markdown
-- [`llms.txt`](llms.txt)
-- [`llms-full.txt`](llms-full.txt)
-- [`getting-started/index.md`](getting-started/index.md)
+- [`llms.txt`](https://owner.github.io/project/llms.txt)
+- [`llms-full.txt`](https://owner.github.io/project/llms-full.txt)
+- [`getting-started/index.md`](https://owner.github.io/project/getting-started/index.md)
 ```
 
-Strict mode now passes; the link still works in the deployed site.
+Derive the prefix from `site_url`. On GitHub project Pages, do **not** use
+`/llms.txt`: the leading slash resolves at `https://owner.github.io/` and drops
+the `/project/` subpath.
 
-The fallback is to use absolute `https://...` URLs, but those couple
-the docs source to a specific deploy URL and break local preview from
-a different `site_url`. Avoid unless there's no alternative.
+Do not set `validation.links.not_found: info` for this. That setting demotes
+every missing source-link warning, including real typos, and makes strict mode
+unable to protect the rest of the docs. `validation.links.unrecognized_links`
+also does not apply: build-output links are classified as `not_found`, not as
+already-INFO unrecognized links.
 
-`validation.links.unrecognized_links` (the obvious-looking config key)
-**does not work for this case** — it only demotes already-INFO-level
-"unrecognized relative link" messages (like links to `../scripts/`
-outside `docs/`). The build-output-link case is `not_found` severity.
+If the site is multilingual, produce the deployable artifact with the managed
+two-pass helper rather than a direct MkDocs build:
+
+```bash
+uv run python scripts/build-docs-site.py
+```
+
+That solves the separate `mkdocs-static-i18n` / `mkdocs-llmstxt` overwrite bug;
+it does not change MkDocs' source-link validation rule.
 
 ## Prevention
 
-- **Default to relative links** in `docs/` so the source can move
-  between sites without rewriting URLs.
-- When linking to a build-time-generated file (anything from
-  `mkdocs-llmstxt`, `mkdocs-gen-files`, `mkdocstrings`, etc.), also
-  set `validation.links.not_found: info` in `mkdocs.yml`.
-- Keep `--strict` enabled in the deploy workflow — `info`-level
-  messages don't fail the build, but real broken `*.md → *.md` links
-  still do (because those would be `not_found` for a *different*
-  reason: the source file truly doesn't exist).
-- The `mkdocs-site-bootstrap` skill's
-  `assets/mkdocs.yml.template` should ship with this validation
-  override pre-set so downstream sites don't rediscover this.
+- Use relative links for real source files inside `docs/`.
+- Use full `site_url`-based URLs only for build-time-generated artifacts that
+  cannot have a source counterpart.
+- Keep `--strict` enabled and do not broadly demote `not_found`; a broken
+  `*.md → *.md` link must still fail the build.
+- For i18n sites, keep llmstxt disabled in direct builds and use
+  `scripts/build-docs-site.py` for the complete strict artifact.
 
 ## Where this was hit
 
 Commit `14a57a2` added a "For AI assistants" section to
-`docs/index.md` linking to `/llms.txt`, `/llms-full.txt`, and
-`/getting-started/index.md`. Tried `validation.links.unrecognized_links:
-info` first — wrong key (still failed). Then used absolute URLs as a
-quick fix. Final commit (this one) reverted to relative URLs with
-`validation.links.not_found: info`, matching the
-"prefer relative links" repo convention.
+`docs/index.md` linking to generated `/llms.txt`, `/llms-full.txt`, and raw
+Markdown endpoints. The first attempted workaround demoted `not_found`, which
+made the build green at the cost of masking unrelated broken links. The durable
+fix is a full `site_url`-based link plus strict validation; the later i18n issue
+also requires the separate two-pass build documented in
+`mkdocs-i18n-llms-files-are-empty.md`.

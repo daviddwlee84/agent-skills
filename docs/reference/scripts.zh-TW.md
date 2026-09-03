@@ -11,7 +11,9 @@
 `npx skills` 出貨的 package 才能維持自包含 (self-contained)）。
 這對副本必須保持 byte-identical —— 詳見 [Conventions](../conventions.md)。
 
-Script 用 **Bash 3.2** 寫（這樣才能在沒裝 homebrew bash 的原生 macOS 上跑）。
+Shell script 用 **Bash 3.2** 寫（這樣才能在沒裝 homebrew bash 的原生
+macOS 上跑）。MkDocs build helper 是 Python，會在 project 由 uv 管理的 docs
+environment 裡執行。
 
 ## Vendor 系統
 
@@ -166,6 +168,53 @@ skills/local/project-knowledge-harness/scripts/init.sh \
 對任何目標 repo 一次設置 `TODO.md` + `backlog/` + `pitfalls/` +
 agent 指引片段 + README 片段。Idempotent。完整 flag 列表見
 [`project-knowledge-harness`](../skills/project-knowledge-harness.md)。
+
+## Documentation 站點
+
+這兩支跟著
+[`mkdocs-site-bootstrap`](../skills/mkdocs-site-bootstrap.md) 出貨，沒有鏡射到
+repo 範圍的 `scripts/`：build helper 會被複製進每個 scaffold project，
+migration 則從已安裝的 skill 執行。
+
+### `build-docs-site.py`
+
+```bash
+uv run python scripts/build-docs-site.py
+uv run python scripts/build-docs-site.py --dry-run
+uv run python scripts/build-docs-site.py --site-dir public --keep-temp
+```
+
+Scaffold docs 站的 canonical strict production build。單語站跑一個 pass；
+保留 llmstxt 的多語站把預設語言輸出與完整 locale HTML 分開 build，驗證並合併
+artifact，兩個 pass 都成功後才替換目標 site 目錄。Root `llms.txt`、
+`llms-full.txt` 與 raw `.md` sidecar 只包含預設語言。
+
+Flags：`--target-dir DIR`、`--config-file FILE`、`--site-dir DIR`、
+`--dry-run`、`--keep-temp`。Stdout 是 JSON；MkDocs log 與 diagnostics 走
+stderr。Exit：`0` 成功、`2` input 無效／缺失、`3` MkDocs 失敗、`4` 輸出
+驗證失敗。沒有 non-strict 模式。直接 `mkdocs build --strict` 仍是 HTML-only
+preview，因為 scaffold config 預設停用 llmstxt。
+
+### `migrate-i18n-llmstxt.sh`
+
+```bash
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --json
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --apply --dry-run --json
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --apply --verify --json
+```
+
+預設只 audit，只有 `--apply` 才寫入。它只 patch 可辨識的舊 scaffold 形狀，
+只安裝／更新帶 managed marker 的 build helper，並把自訂 config、CI、
+Makefile 形狀留在 `manual_actions[]`。候選檔案會先 staged 並驗證，再進行
+替換；migration 可 idempotent 重跑。更新 skill 只會下載工具，不會自動執行。
+
+Flags：`--target-dir DIR`、`--apply`、`--dry-run`、`--verify`、`--json`。
+重要 exit：`0` 安全／已遷移、`10` audit／dry-run 找到受影響的 legacy
+config、`11` 仍有人工工作、`12` strict verification 失敗。完整契約見 canonical
+[`migration guide`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md)。
 
 ## Skill authoring
 

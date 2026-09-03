@@ -49,9 +49,15 @@ slug 是 **症狀 (symptom)**，不是 root cause。你以你看到的錯誤來�
 | `gh-api-404-on-tree-endpoint.md` | `vendor-yaml-branch-handling.md` |
 | `npx-skills-empty-after-install.md` | `skills-discovery-depth-fallback.md` |
 | `mkdocs-strict-fails-on-relative-md.md` | `mkdocs-link-validation-rules.md` |
+| `mkdocs-i18n-llms-files-are-empty.md` | `mkdocs-plugin-lifecycle-collision.md` |
 
 讀 pitfall 的 agent 在問的問題是：「我剛碰到的就是這個嗎？」 ——
 標題要符合那個問題，不是答案。
+
+目前 repo 裡的例子是
+[`mkdocs-i18n-llms-files-are-empty.md`](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/mkdocs-i18n-llms-files-are-empty.md)：
+看得見的症狀是 llms 輸出幾乎為空或語言錯誤；底層的 plugin lifecycle
+collision 應寫在文件裡，不應放進 slug。
 
 ## 不要使用 `pitfalls/` 的時機
 

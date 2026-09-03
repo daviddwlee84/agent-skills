@@ -92,6 +92,12 @@ match 的」與「外洩的真 credential」，所以會在這個 fixture 上 fi
 - `/llms.txt` 與 `/llms-full.txt` — 給 LLM 吃的全內容 dump
 - 每頁的 "copy as markdown for LLM" 按鈕
 
+多語站會由 managed `scripts/build-docs-site.py` 隔離 `mkdocs-llmstxt` 與
+`mkdocs-static-i18n`：root llms 檔與 raw `.md` sidecar 只包含預設語言，
+翻譯 HTML 則在另一個 strict pass 建立。直接 `mkdocs build --strict` 是
+HTML-only preview。這修正空檔／語言錯誤的輸出，但**不是**信任邊界，也不會
+清理 (sanitize) 預設語言 docs 裡的內容。
+
 任何吃這些端點的 LLM agent 等於在讀 `docs/` 裡有什麼。如果 `docs/` 收外部貢獻（例如
 open-source PR），攻擊者可以在某個 doc 頁面埋 prompt injection payload，然後讓那段內容
 流進下游 agent 的 context。Snyk 的 W0xx ruleset 標的就是這個 agent-facing 表面。
@@ -112,6 +118,8 @@ open-source PR），攻擊者可以在某個 doc 頁面埋 prompt injection payl
 - [`reference/mkdocs-2-and-zensical.md`](mkdocs-2-and-zensical.md) — 為什麼 pin
   `mkdocs<2`（不同理由，同個 skill）。
 - [`reference/docs-stack-recipe.md`](docs-stack-recipe.md) — bootstrap 實際裝了什麼。
+- [i18n + llmstxt migration guide](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md)
+  — 為什麼既有下游站點在更新 skill 後，仍需顯式 audit／migration。
 
 ## 為什麼還沒上 README badge
 

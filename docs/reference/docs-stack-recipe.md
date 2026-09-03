@@ -30,10 +30,26 @@ bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/enable-pa
   --repo owner/repo
 ```
 
+Build the deployable artifact with the scaffolded strict helper:
+
+```bash
+uv sync --extra docs
+uv run python scripts/build-docs-site.py
+```
+
+For multilingual sites with llmstxt this keeps the root files
+default-language-only and builds locale HTML in a separate strict pass. Direct `mkdocs build
+--strict` remains an HTML-only preview.
+
 For details on what the stack actually includes (Material theme +
 mkdocs-llmstxt + mkdocs-copy-to-llm + pymdownx.snippets), the linking rules
 that strict mode enforces, and how the GitHub Actions workflow is wired,
 read the canonical reference linked above.
+
+Existing users should note that updating the installed skill does not migrate
+their project. If an older i18n site has empty or wrong-locale llms output, use
+the audit-first
+[`migration guide`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md).
 
 ## See also
 

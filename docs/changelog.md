@@ -9,6 +9,11 @@ file curates the milestones.
 - Bootstrapped a [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
   documentation site with `mkdocs-llmstxt` and `mkdocs-copy-to-llm`,
   deployable to GitHub Pages.
+- Fixed `mkdocs-static-i18n` + `mkdocs-llmstxt` builds that could silently
+  overwrite root llms files with an empty or wrong-locale final pass. New
+  scaffolds use a strict two-pass `scripts/build-docs-site.py`; existing sites
+  get an audit-first, idempotent migration tool. Updating the skill alone does
+  not modify downstream projects.
 - Added `scripts/add-todo.sh` for structured TODO inserts and
   `scripts/sweep-inbox.sh` for triaging loose captures from
   `backlog/inbox.md`. See [Project memory workflow](workflows/project-memory.md).

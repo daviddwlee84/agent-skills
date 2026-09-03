@@ -71,11 +71,11 @@ docs-serve:
 	uv run mkdocs serve
 
 docs-build:
-	uv run mkdocs build
+	uv run python scripts/build-docs-site.py
 
 # Manual one-shot deploy (CI handles this on push to main).
-docs-deploy:
-	uv run mkdocs gh-deploy --force
+docs-deploy: docs-build
+	uv run mkdocs gh-deploy --dirty --force
 
 # Test agent-history-hygiene plus git-workflow's commit contract: pytest
 # (unit + corpus) + bash exit-code/metadata/message contracts. Requires
@@ -95,3 +95,4 @@ test-skill: test-mkdocs-skill
 # generated-site strict builds. Uses the docs extra for PyYAML + MkDocs plugins.
 test-mkdocs-skill:
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/mkdocs-site-bootstrap/tests/test_init_docs_site.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/mkdocs-site-bootstrap/tests/test_i18n_llmstxt.sh

@@ -85,6 +85,15 @@ from pathlib import Path
 
 import yaml
 
+
+def construct_env(loader, node):
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    return loader.construct_scalar(node)
+
+
+yaml.SafeLoader.add_constructor("!ENV", construct_env)
+
 config = Path(sys.argv[1])
 mode = sys.argv[2]
 expected = sys.argv[3:]
@@ -356,6 +365,13 @@ import sys
 from pathlib import Path
 
 import yaml
+
+def construct_env(loader, node):
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    return loader.construct_scalar(node)
+
+yaml.SafeLoader.add_constructor("!ENV", construct_env)
 
 data = yaml.safe_load(Path(sys.argv[1]).read_text(encoding="utf-8"))
 assert data["nav"][-1] == {"New Root": "new-root.md"}

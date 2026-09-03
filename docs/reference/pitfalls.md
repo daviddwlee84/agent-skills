@@ -46,9 +46,15 @@ Write the title the way the search query would look:
 | `gh-api-404-on-tree-endpoint.md` | `vendor-yaml-branch-handling.md` |
 | `npx-skills-empty-after-install.md` | `skills-discovery-depth-fallback.md` |
 | `mkdocs-strict-fails-on-relative-md.md` | `mkdocs-link-validation-rules.md` |
+| `mkdocs-i18n-llms-files-are-empty.md` | `mkdocs-plugin-lifecycle-collision.md` |
 
 The agent reading the pitfall is asking *"is this what just happened to
 me?"* — the title needs to match the question, not the answer.
+
+A current repository example is
+[`mkdocs-i18n-llms-files-are-empty.md`](https://github.com/daviddwlee84/agent-skills/blob/main/pitfalls/mkdocs-i18n-llms-files-are-empty.md):
+the visible symptom is nearly empty or wrong-locale llms output; the underlying
+plugin lifecycle collision belongs inside the document, not in its slug.
 
 ## When NOT to use `pitfalls/`
 

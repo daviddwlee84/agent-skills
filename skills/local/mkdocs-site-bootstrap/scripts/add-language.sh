@@ -12,6 +12,8 @@
 #      page, with the terminology-rule admonition pre-injected.
 #   4. Records the choice in .skills/preferences.yaml.
 #   5. Un-comments mkdocs-static-i18n in pyproject.toml if it's commented out.
+#   6. When llmstxt is present, installs/configures the managed strict
+#      two-pass build so the final locale cannot overwrite llms.txt.
 
 set -euo pipefail
 
@@ -37,17 +39,13 @@ Options:
   --target-dir DIR     Repo root (default: walk up from CWD looking for mkdocs.yml).
   --no-stubs           Skip creating *.<LANG>.md sibling stubs.
   --remove-llmstxt     Remove the mkdocs-llmstxt plugin entry from mkdocs.yml.
-                       Default behaviour KEEPS llmstxt because /llms.txt is the
-                       LLM-friendly feature most users wanted in the first place.
-                       Trade-off: llmstxt's source-path lookups break under
-                       mkdocs-static-i18n's reconfigure_material, so 'mkdocs
-                       build --strict' aborts with "Page URI not found" warnings.
-                       Pair --remove-llmstxt with keeping --strict; OR keep
-                       llmstxt (default) and pass --drop-strict to patch your
-                       CI/Makefile so the build doesn't fail on warnings.
-  --drop-strict        Patch .github/workflows/docs.yml and Makefile to remove
-                       '--strict' from any 'mkdocs build --strict' invocation.
-                       Use when keeping llmstxt with i18n. Idempotent.
+                       Default: keep llmstxt and install the managed strict
+                       two-pass build. Use this opt-out if llms.txt is unwanted.
+  --keep-llmstxt       Deprecated compatibility alias; keeping llmstxt is now
+                       the default and uses the managed two-pass build.
+  --drop-strict        Deprecated no-op retained for compatibility. Strict
+                       builds are no longer dropped; the two-pass helper fixes
+                       the i18n/llmstxt conflict instead.
   --dry-run            Print actions without writing.
   --force              Overwrite existing *.<LANG>.md stubs (default: skip).
   --help, -h           Show this help and exit.
@@ -64,6 +62,7 @@ Exit codes:
   2  mkdocs.yml not found
   3  refusing to overwrite (use --force)
   4  yq error
+  11 language added, but custom downstream files need manual migration
 EOF
 }
 
@@ -77,8 +76,11 @@ TARGET=""
 NO_STUBS=0
 REMOVE_LLMSTXT=0
 DROP_STRICT=0
+KEEP_LLMSTXT_ALIAS=0
 DRY_RUN=0
 FORCE=0
+MIGRATION_MANUAL=0
+MIGRATION_STATUS="not_needed"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -88,6 +90,7 @@ while [ $# -gt 0 ]; do
     --target-dir)      TARGET="${2:-}"; shift 2 ;;
     --no-stubs)        NO_STUBS=1; shift ;;
     --remove-llmstxt)  REMOVE_LLMSTXT=1; shift ;;
+    --keep-llmstxt)    KEEP_LLMSTXT_ALIAS=1; shift ;;
     --drop-strict)     DROP_STRICT=1; shift ;;
     --dry-run)         DRY_RUN=1; shift ;;
     --force)           FORCE=1; shift ;;
@@ -100,7 +103,17 @@ done
 [ -n "$LOCALE" ] || die "--lang is required (try --help)" 1
 case "$LOCALE" in *[!A-Za-z0-9_-]*) die "--lang must be a safe language code" 1 ;; esac
 case "$DEFAULT_LANG" in ''|*[!A-Za-z0-9_-]*) die "--default-lang must be a safe language code" 1 ;; esac
+[ "$REMOVE_LLMSTXT" = "0" ] || [ "$KEEP_LLMSTXT_ALIAS" = "0" ] || \
+  die "--remove-llmstxt and --keep-llmstxt are mutually exclusive" 1
 command -v yq >/dev/null 2>&1 || die "yq not found in PATH (install: brew install yq)" 4
+
+if [ "$KEEP_LLMSTXT_ALIAS" = "1" ]; then
+  log "Deprecated: --keep-llmstxt is no longer needed; keeping llmstxt is the default."
+fi
+if [ "$DROP_STRICT" = "1" ]; then
+  log "Deprecated: --drop-strict is now a no-op. Strict remains enabled;"
+  log "  the managed two-pass build prevents the i18n/llmstxt overwrite instead."
+fi
 
 # --- Locate mkdocs.yml ---
 if [ -z "$TARGET" ]; then
@@ -168,6 +181,7 @@ if [ "$HAS_I18N" = "false" ]; then
     .plugins = (
       [{
         \"i18n\": {
+          \"enabled\": [\"MKDOCS_SITE_BOOTSTRAP_I18N_ENABLED\", true],
           \"docs_structure\": \"suffix\",
           \"fallback_to_default\": true,
           \"reconfigure_material\": true,
@@ -179,6 +193,8 @@ if [ "$HAS_I18N" = "false" ]; then
         }
       }] + (.plugins // [])
     )
+    | (.plugins[] | select(has(\"i18n\")) | .i18n.enabled) tag = \"!ENV\"
+    | (.plugins[] | select(has(\"i18n\")) | .i18n.enabled) style = \"flow\"
   "
 elif [ "$HAS_LOCALE" = "false" ]; then
   log "Appending $LOCALE to existing plugins.i18n.languages..."
@@ -188,6 +204,21 @@ elif [ "$HAS_LOCALE" = "false" ]; then
   "
 else
   log "Locale $LOCALE already in plugins.i18n.languages — no plugin change."
+fi
+
+# Existing i18n configs created by older releases lack the build-pass guard.
+# Add it only when `enabled` is absent; a custom value is user-owned.
+if [ "$HAS_I18N" = "true" ]; then
+  HAS_I18N_ENABLED=$(yq '[.plugins[]? | select(has("i18n")) | .i18n | has("enabled")] | any' "$MKDOCS" 2>/dev/null || echo "false")
+  if [ "$HAS_I18N_ENABLED" = "false" ]; then
+    log "Adding the managed i18n build-pass guard..."
+    yq_inplace '
+      (.plugins[] | select(has("i18n")) | .i18n.enabled)
+        = ["MKDOCS_SITE_BOOTSTRAP_I18N_ENABLED", true]
+      | (.plugins[] | select(has("i18n")) | .i18n.enabled) tag = "!ENV"
+      | (.plugins[] | select(has("i18n")) | .i18n.enabled) style = "flow"
+    '
+  fi
 fi
 
 # --- Step 2: set theme.language if missing ---
@@ -237,42 +268,48 @@ if [ "$HAS_INSTANT" = "true" ]; then
   yq_inplace '.theme.features |= ((. // []) - ["navigation.instant", "navigation.instant.progress"])'
 fi
 
-# --- Step 2c: handle mkdocs-llmstxt incompatibility ---
-# mkdocs-llmstxt resolves source URIs against the page index, which
-# mkdocs-static-i18n's reconfigure_material remaps. Result: every entry in
-# llmstxt.sections triggers a "Page URI not found" warning, which aborts
-# `mkdocs build --strict`. Auto-discovery isn't an option (sections: is
-# required by the llmstxt schema).
-# Default: KEEP llmstxt — most users opted into this skill BECAUSE of the
-# /llms.txt feature. Pair with --drop-strict to neutralise the warnings in
-# CI. --remove-llmstxt is the opt-out for users who'd rather keep --strict.
+# --- Step 2c: handle mkdocs-llmstxt with a strict two-pass build ---
+# mkdocs-static-i18n rebuilds once per locale while mkdocs-llmstxt always
+# writes the same root outputs. The last locale can therefore replace valid
+# default-language output with an empty/incorrect file. The migration helper
+# gives each plugin an environment guard and makes CI run the managed strict
+# two-pass builder. --remove-llmstxt remains an explicit opt-out.
 HAS_LLMSTXT=$(yq '[.plugins[]? | select(has("llmstxt"))] | length > 0' "$MKDOCS" 2>/dev/null || echo "false")
 if [ "$HAS_LLMSTXT" = "true" ]; then
   if [ "$REMOVE_LLMSTXT" = "1" ]; then
     log "Removing mkdocs-llmstxt plugin entry (--remove-llmstxt)..."
     yq_inplace 'del(.plugins[] | select(has("llmstxt")))'
   else
-    log "Keeping mkdocs-llmstxt (default). 'mkdocs build --strict' will fail"
-    log "  with 'Page URI not found' warnings — pair with --drop-strict, or"
-    log "  drop --strict from your CI manually."
-  fi
-fi
-
-# --- Step 2d: optionally drop --strict from CI files ---
-if [ "$DROP_STRICT" = "1" ]; then
-  for ci_file in "$TARGET/.github/workflows/docs.yml" "$TARGET/Makefile"; do
-    [ -f "$ci_file" ] || continue
-    if ! grep -q 'mkdocs build --strict' "$ci_file" 2>/dev/null; then
-      continue
-    fi
+    MIGRATION="$SCRIPT_DIR/migrate-i18n-llmstxt.sh"
+    [ -f "$MIGRATION" ] || die "migration helper missing: $MIGRATION" 4
     if [ "$DRY_RUN" = "1" ]; then
-      log "[dry-run] drop --strict in $ci_file"
+      log "[dry-run] run migrate-i18n-llmstxt.sh --target-dir $TARGET --apply"
+      MIGRATION_STATUS="dry_run"
     else
-      sed -i.bak -E 's|mkdocs build --strict|mkdocs build|g' "$ci_file"
-      rm -f "${ci_file}.bak"
-      log "Dropped --strict from $ci_file"
+      MIGRATION_JSON=""
+      MIGRATION_RC=0
+      if MIGRATION_JSON=$(bash "$MIGRATION" --target-dir "$TARGET" --apply --json); then
+        MIGRATION_RC=0
+      else
+        MIGRATION_RC=$?
+      fi
+      case "$MIGRATION_RC" in
+        0)
+          MIGRATION_STATUS="migrated"
+          log "Configured the managed strict two-pass build."
+          ;;
+        11)
+          MIGRATION_STATUS="manual_required"
+          MIGRATION_MANUAL=1
+          log "Managed migration applied the safe subset, but manual actions remain:"
+          log "  $MIGRATION_JSON"
+          ;;
+        *)
+          die "two-pass migration failed (exit $MIGRATION_RC): $MIGRATION_JSON" 4
+          ;;
+      esac
     fi
-  done
+  fi
 fi
 
 # --- Step 3: collect all configured locales for stub-skipping ---
@@ -410,8 +447,8 @@ for loc in $ALL_LOCALES; do
   fi
 done
 
-printf '{"lang":"%s","stubs_created":%d,"stubs_existing":%d,"languages":[%s]}\n' \
-  "$LOCALE" "$STUBS_CREATED" "$STUBS_EXISTING" "$LANGUAGES_JSON"
+printf '{"lang":"%s","stubs_created":%d,"stubs_existing":%d,"languages":[%s],"migration":"%s"}\n' \
+  "$LOCALE" "$STUBS_CREATED" "$STUBS_EXISTING" "$LANGUAGES_JSON" "$MIGRATION_STATUS"
 
 # --- Post-run tips (stderr, agent-readable) ---
 # These nudge the next step without taking action. The script's job is the
@@ -430,4 +467,8 @@ if [ "$STUBS_CREATED" -gt 0 ] || [ "$STUBS_EXISTING" -gt 0 ]; then
   log "     To translate them (e.g. 'Reference' -> '參考資料'), add a"
   log "     nav_translations: block under the $LOCALE entry in mkdocs.yml."
   log "     See references/i18n-guide.md §nav_translations."
+fi
+
+if [ "$MIGRATION_MANUAL" = "1" ]; then
+  exit 11
 fi

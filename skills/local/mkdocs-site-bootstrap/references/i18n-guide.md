@@ -9,28 +9,18 @@ introduce ambiguity.
 
 ```bash
 bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh --lang zh-TW
-```
-
-That single command:
-
-1. Inserts a `plugins.i18n` block into `mkdocs.yml` (using
-   `mkdocs-static-i18n` with `docs_structure: suffix`).
-2. Sets `theme.language: en` (or whatever the default is) so Material's
-   built-in UI strings have a baseline.
-3. Creates `*.zh-TW.md` sibling stubs for every existing markdown file under
-   `docs/` (with the terminology-rule admonition pre-injected).
-4. Records the choice in `.skills/preferences.yaml`.
-5. Un-comments `mkdocs-static-i18n>=1.2` in `pyproject.toml`.
-
-After it finishes, run:
-
-```bash
 uv sync --extra docs
-uv run mkdocs build --strict
+uv run python scripts/build-docs-site.py
 ```
 
-The Material header will gain a language switcher. Translate the stub bodies
-when ready.
+The Material header gains a language switcher. The managed build helper keeps
+both passes strict, publishes all locale HTML, and produces root `llms.txt`,
+`llms-full.txt`, and `.md` sidecars from the default language only. Translate
+the stub bodies when ready.
+
+For local HTML preview, `uv run mkdocs serve` and direct `uv run mkdocs build
+--strict` remain safe: the config disables `llmstxt` unless the helper enables
+it. Use the helper for every artifact that will be deployed.
 
 ## Why `mkdocs-static-i18n` + suffix structure
 
@@ -92,13 +82,11 @@ For users who want to apply pieces by hand or audit what the script touched:
 5. **Removes `navigation.instant` / `navigation.instant.progress`** from
    `theme.features` (the language switcher's contextual link can't be
    rewritten by instant navigation).
-6. **Keeps `mkdocs-llmstxt` by default** (the `/llms.txt` feature is the
-   reason most users adopt this stack). Use `--remove-llmstxt` to drop it
-   instead. With `--drop-strict`, also patches `.github/workflows/docs.yml`
-   and `Makefile` to remove `--strict` from `mkdocs build` invocations,
-   which is necessary for builds to pass while llmstxt is kept (the plugin
-   is structurally incompatible with `reconfigure_material` under
-   `--strict` — see "Interaction with `llmstxt` and `copy-to-llm`" below).
+6. **Keeps default-language `mkdocs-llmstxt` output by default.** It adds the
+   environment guards and managed `scripts/build-docs-site.py` required to
+   isolate llmstxt from the multilingual build. Use `--remove-llmstxt` for an
+   explicit opt-out. Legacy `--drop-strict` is a deprecated no-op;
+   `--keep-llmstxt` is a deprecated alias for the default behavior.
 7. **Walks `docs/`** for `*.md` files (excluding `_snippets/` and `assets/`),
    and for each non-locale-suffixed source page, creates a sibling
    `*.<LANG>.md` from `assets/translation-stub.md.template`.
@@ -108,7 +96,10 @@ For users who want to apply pieces by hand or audit what the script touched:
 9. **Un-comments `mkdocs-static-i18n>=1.2`** in `pyproject.toml`. If the
    line isn't there at all, prints a hint asking you to add it manually.
 
-The script is idempotent: re-running with the same `--lang` is a no-op.
+The script is idempotent: re-running with the same `--lang` is a no-op. Exit
+`11` means the locale/stubs were added and the safe migration subset was
+applied, but custom downstream files still need the manual actions reported by
+`migrate-i18n-llmstxt.sh --json`.
 
 ## `theme.language` vs plugin `languages`
 
@@ -176,35 +167,92 @@ authorial choice. Add them by hand once you have section titles to translate.
 
 ## Interaction with `llmstxt` and `copy-to-llm`
 
-- **`mkdocs-llmstxt` is incompatible with `mkdocs-static-i18n` under
-  `--strict`.** The llmstxt plugin resolves source URIs against the page
-  index, but `reconfigure_material: true` in static-i18n remaps that index,
-  so every entry in `llmstxt.sections` triggers `Page URI 'X' not found`
-  warnings — which abort `--strict` builds. `sections:` is a required field
-  on the llmstxt plugin, so you can't just empty it out.
+### Why one multilingual build is unsafe
 
-  **`add-language.sh` keeps `mkdocs-llmstxt` by default** because most users
-  opted into this skill specifically to get `/llms.txt`. To make CI happy,
-  pair the run with `--drop-strict`, which patches
-  `.github/workflows/docs.yml` and `Makefile` to remove `--strict` from any
-  `mkdocs build --strict` invocation:
+This is not merely a strict-mode compatibility warning, and
+`reconfigure_material` is not the root cause:
 
-  ```bash
-  bash scripts/add-language.sh --lang zh-TW --drop-strict
-  ```
+1. `mkdocs-static-i18n` performs a full MkDocs build for each locale.
+2. `mkdocs-llmstxt` resets its collected page state for each build.
+3. Every locale writes the same root `llms.txt` and `llms-full.txt` paths.
 
-  If you'd rather lose `/llms.txt` than lose `--strict`, flip the trade-off
-  with `--remove-llmstxt` (the dep stays in `pyproject.toml` either way, so
-  re-adding later is one yaml edit):
+The last locale therefore overwrites the valid default-language output. With
+explicit `sections:` paths, translated source URIs no longer match and the
+last files may contain only a heading. With globs, the files may look large but
+contain the wrong locale. Strict mode exposes `Page URI ... not found`
+warnings; a non-strict build silently ships the corrupted files. Removing
+`--strict`, changing plugin order, toggling `reconfigure_material`, or using
+globs does not solve the lifecycle collision.
 
-  ```bash
-  bash scripts/add-language.sh --lang zh-TW --remove-llmstxt
-  ```
+### Canonical two-pass build
 
-- **`mkdocs-copy-to-llm` button text is English-only.** The "Copy to LLM" /
-  "Open in ChatGPT" / "Open in Claude" labels stay in English on
-  non-English pages. Customising them requires forking the plugin's CSS/JS —
-  out of scope for this skill. Cosmetic only; doesn't break the build.
+Run:
+
+```bash
+uv run python scripts/build-docs-site.py
+```
+
+For a multilingual site with llmstxt enabled, the helper:
+
+1. Builds a temporary default-language-only source tree with i18n,
+   copy-to-llm, and social disabled and llmstxt enabled.
+2. Verifies `llms.txt`, the configured full output, every expected section,
+   and generated `.md` sidecars.
+3. Builds the full multilingual source tree with i18n/copy/social enabled and
+   llmstxt disabled.
+4. Merges the verified default-language LLM artifacts, rejects non-default
+   locale paths, and only then replaces the final `site/` directory.
+
+Both passes are strict. The helper has no non-strict escape hatch. A failed
+pass leaves the previous `site/` untouched; use `--keep-temp` only when you
+need to inspect the staged trees.
+
+The corresponding `mkdocs.yml` guards are:
+
+```yaml
+docs_dir: !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
+
+plugins:
+  - i18n:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_I18N_ENABLED, true]
+      # ...
+  - llmstxt:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_LLMSTXT_ENABLED, false]
+      # ...
+  - copy-to-llm:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_COPY_TO_LLM_ENABLED, true]
+      # ...
+  - social:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_SOCIAL_ENABLED, true]
+      # ... only when social cards were enabled
+```
+
+The default `false` for llmstxt is deliberate: direct `mkdocs serve` and
+`mkdocs build --strict` are HTML-only and cannot accidentally overwrite the
+canonical LLM artifact. CI and deploy workflows must invoke the helper.
+
+### Output and copy-to-LLM contract
+
+- Root `/llms.txt`, `/llms-full.txt`, and raw `.md` sidecars represent the
+  **default language only**. This skill does not generate per-locale llms files.
+- Keep Material's `content.action.edit` feature and a valid `repo_url` /
+  `edit_uri`. The copy-to-LLM assets use the page's GitHub edit URL to derive
+  the correct raw source, including a translated `*.zh-TW.md` sibling, instead
+  of guessing from the locale site URL.
+- `mkdocs-copy-to-llm` button labels remain English-only on non-English pages.
+  This is cosmetic and does not affect the source selected by the button.
+
+To opt out of LLM artifacts entirely:
+
+```bash
+bash scripts/add-language.sh --lang zh-TW --remove-llmstxt
+```
+
+Do not use `validation.links.not_found: info` or remove strict merely to make a
+red build green. Fix source links and use a full deployed URL derived from
+`site_url`, such as `https://owner.github.io/project/llms.txt`. A leading
+`/llms.txt` is wrong for GitHub project Pages because it drops the repository
+subpath.
 
 - **The translation-stub admonition is zh-TW-specific.** The terminology
   rule it injects is written for Traditional Chinese and uses the

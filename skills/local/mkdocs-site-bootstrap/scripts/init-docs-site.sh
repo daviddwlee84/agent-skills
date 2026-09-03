@@ -14,8 +14,9 @@ usage() {
   cat <<'EOF'
 Usage: init-docs-site.sh [OPTIONS]
 
-Scaffold mkdocs.yml, pyproject.toml (docs extras), .github/workflows/docs.yml,
-and a starter docs/ tree in the current repo (or --target-dir).
+Scaffold mkdocs.yml, pyproject.toml (docs extras), scripts/build-docs-site.py,
+.github/workflows/docs.yml, and a starter docs/ tree in the current repo (or
+--target-dir).
 
 Options:
   --site-name NAME         Display name for the site (required).
@@ -351,6 +352,17 @@ else
   DOCS_MODE="fresh"
 fi
 
+# Fail before writing any scaffold files if the new project-local helper would
+# collide with an existing user-owned path. `copy_template` checks again at the
+# write step; this early guard prevents a partially-created scaffold.
+if [ -L "$TARGET/scripts" ] || [ -L "$TARGET/scripts/build-docs-site.py" ]; then
+  die "refusing symlinked managed-helper path under $TARGET/scripts" 3
+elif [ -e "$TARGET/scripts" ] && [ ! -d "$TARGET/scripts" ]; then
+  die "scripts path is not a directory: $TARGET/scripts" 3
+elif [ -e "$TARGET/scripts/build-docs-site.py" ] && [ "$FORCE" = "0" ]; then
+  die "exists, refusing to overwrite: $TARGET/scripts/build-docs-site.py (use --force)" 3
+fi
+
 # --- 1. mkdocs.yml ---
 copy_template "$ASSETS/mkdocs.yml.template" "$TARGET/mkdocs.yml"
 substitute "$TARGET/mkdocs.yml"
@@ -404,7 +416,13 @@ if [ "$NO_WORKFLOW" = "0" ]; then
   expand_marker "$TARGET/.github/workflows/docs.yml" "__SOCIAL_CI__" "$ASSETS/social/ci-steps.yml"
 fi
 
-# --- 3b. .gitignore: build output (always) + social plugin cache (--social) ---
+# --- 3b. managed strict build helper ---
+copy_template "$ASSETS/build-docs-site.py" "$TARGET/scripts/build-docs-site.py"
+if [ "$DRY_RUN" = "0" ]; then
+  chmod 755 "$TARGET/scripts/build-docs-site.py"
+fi
+
+# --- 3c. .gitignore: build output (always) + social plugin cache (--social) ---
 # `mkdocs build` writes the rendered site to ./site/ (default site_dir) every
 # run — a generated artifact that must never be committed.
 ensure_gitignore '/site/' 'mkdocs build output (regenerated every build)'
@@ -451,6 +469,6 @@ fi
 printf '{"target":"%s","site_name":"%s","site_url":"%s","social":%s,"next_steps":[' \
   "$TARGET" "$SITE_NAME" "$SITE_URL" "$([ "$SOCIAL" = "1" ] && echo true || echo false)"
 printf '"uv sync --extra docs",'
-printf '"uv run mkdocs build --strict",'
+printf '"uv run python scripts/build-docs-site.py",'
 printf '"git add and commit the new files",'
 printf '"Run enable-pages.sh to deploy to GitHub Pages"]}\n'

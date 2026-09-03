@@ -1,6 +1,6 @@
 ---
 name: mkdocs-site-bootstrap
-description: Bootstrap MkDocs Material docs sites with optional GitHub Pages deploy, uv-pinned tooling, llms.txt/copy-to-LLM support, page/nav helpers, and mkdocs-static-i18n languages such as zh-TW. Use when the user asks to set up docs, publish docs to GitHub Pages, create an MkDocs site, turn README or markdown notes into a site, add bilingual/multilingual docs, add zh-TW/Traditional Chinese, i18n, or translate docs. Consent-gated; records repo preferences and never auto-migrates existing docs.
+description: 'Bootstrap or maintain MkDocs Material docs sites with GitHub Pages, strict two-pass i18n plus default-language llms.txt, copy-to-LLM, page/nav helpers, and zh-TW translation. Use when setting up or publishing docs, adding bilingual or multilingual docs, repairing nearly empty llms.txt or i18n strict-build failures, or migrating an older mkdocs-site-bootstrap site. Consent-gated; never rewrites existing docs without approval.'
 ---
 
 # mkdocs-site-bootstrap
@@ -9,10 +9,11 @@ Bootstrap and (optionally) deploy a MkDocs Material documentation site for a
 repository, then keep helping the user add pages over time.
 
 This skill is **consent-gated**. It records the user's preferences in
-`.skills/preferences.yaml` and never repeats destructive actions without
-asking. If the user changes their mind, `scripts/check-preferences.sh --reset
-mkdocs_site_bootstrap` clears the recorded decision so the next invocation
-starts fresh.
+`.skills/preferences.yaml` and never migrates existing content or configuration
+without an explicit request. Its migration command audits by default and only
+writes with `--apply`. If the user changes their mind,
+`scripts/check-preferences.sh --reset mkdocs_site_bootstrap` clears the recorded
+decision so the next invocation starts fresh.
 
 ## When to trigger
 
@@ -25,6 +26,8 @@ starts fresh.
 - User asks for "bilingual docs", "雙語 docs", "i18n", "multilingual",
   "add Traditional Chinese", "add zh-TW", "translate the docs", or to add
   any non-English language to an existing site → jump to step 7
+- User reports that `llms.txt` / `llms-full.txt` became empty, only contains
+  one locale, or that adding i18n broke a strict build → jump to step 8
 
 ## When NOT to trigger
 
@@ -98,10 +101,10 @@ Record the decision under `mkdocs_site_bootstrap.existing_docs_decision`.
 
 Run `init-docs-site.sh`. It writes (or refuses to overwrite) `mkdocs.yml`,
 `pyproject.toml` (with `[project.optional-dependencies] docs = […]`), the
-`docs/` skeleton, `.github/workflows/docs.yml`, and stub assets for
-copy-to-llm. It also appends `/site/` (the `mkdocs build` output dir) to
-`.gitignore` so the generated site is never committed — plus `/.cache/` when
-`--social` is on.
+`docs/` skeleton, `.github/workflows/docs.yml`, the managed
+`scripts/build-docs-site.py` helper, and stub assets for copy-to-llm. It also
+appends `/site/` (the build output dir) to `.gitignore` so the generated site is
+never committed — plus `/.cache/` when `--social` is on.
 
 ```bash
 bash skills/local/mkdocs-site-bootstrap/scripts/init-docs-site.sh \
@@ -121,12 +124,18 @@ Add `--social` to enable OG/Twitter preview cards (see Gotchas → "Social cards
 are opt-in"). Leave it off unless the user wants rich link unfurls and can take
 the Cairo/Pango system dependency; a plain scaffold builds dependency-free.
 
-After scaffolding, run a local strict build to catch obvious issues:
+After scaffolding, build the complete strict artifact:
 
 ```bash
 uv sync --extra docs
-uv run mkdocs build --strict
+uv run python scripts/build-docs-site.py
 ```
+
+For multilingual sites that keep llmstxt, this runs two isolated strict passes:
+default-language LLM output, then the full multilingual HTML site. A direct
+`uv run mkdocs build --strict` remains a safe HTML-only preview because
+`llmstxt` is disabled by default in `mkdocs.yml`; do not deploy that preview
+when `/llms.txt` is part of the site's contract.
 
 ### 5. Enable Pages and trigger first deploy (consent gate)
 
@@ -182,31 +191,29 @@ Read `references/i18n-guide.md` first — it covers the **terminology
 preservation rule** ("中文 (English original)" format on first mention; no
 invented translations) which authors must follow on non-English pages.
 
-Then run (with `--drop-strict` if your CI uses `mkdocs build --strict` —
-keeping `llmstxt` will fail strict-mode builds with "Page URI not found"
-warnings, so the script offers to patch `.github/workflows/docs.yml` and
-`Makefile` for you):
+Then run:
 
 ```bash
 bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
-  --lang zh-TW --drop-strict
+  --lang zh-TW
 ```
 
 This inserts the i18n plugin into `mkdocs.yml`, creates `*.zh-TW.md` stub
 siblings of every existing page (with the terminology admonition
-pre-injected), uncomments `mkdocs-static-i18n` in `pyproject.toml`, drops
-`--strict` from CI/Makefile, and records the choice in
-`.skills/preferences.yaml`. Idempotent — re-running with the same `--lang`
-is a no-op.
+pre-injected), installs/configures the managed strict build helper, enables the
+plugin guards required by the two-pass build, uncomments `mkdocs-static-i18n`
+in `pyproject.toml`, and records the choice in `.skills/preferences.yaml`.
+Idempotent — re-running with the same `--lang` is a no-op.
 
-If you'd rather lose `/llms.txt` than `--strict`, use `--remove-llmstxt`
-instead (and skip `--drop-strict`).
+`--remove-llmstxt` remains an explicit opt-out. The old `--drop-strict` flag is
+a deprecated no-op because removing strict never fixed the corrupted output;
+`--keep-llmstxt` is accepted as a deprecated alias for today's default.
 
 After it runs, re-sync deps and rebuild:
 
 ```bash
 uv sync --extra docs
-uv run mkdocs build      # --strict only if you went the --remove-llmstxt route
+uv run python scripts/build-docs-site.py
 ```
 
 #### After the script finishes — translation is a separate step
@@ -234,6 +241,26 @@ for top-level section headings (see `references/i18n-guide.md`
 §nav_translations). This is independent from page-body translation and the
 user may want one without the other.
 
+### 8. Repair an older i18n + llmstxt scaffold
+
+Updating the installed skill only downloads the new tooling; it does **not**
+rewrite the downstream project. Read `references/i18n-llmstxt-migration.md`
+before migrating an existing site, then audit first:
+
+```bash
+npx skills@latest update mkdocs-site-bootstrap --project --yes
+bash .agents/skills/mkdocs-site-bootstrap/scripts/migrate-i18n-llmstxt.sh \
+  --target-dir . --json
+```
+
+Exit `10` means the legacy affected shape was detected (including a dry-run
+preview). Preview the conservative patch with `--apply --dry-run`, then run
+`--apply --verify`. The migration only patches recognizable scaffold-owned
+shapes; custom `docs_dir`, plugin guards, CI, Makefiles, or a foreign build
+helper become explicit manual actions instead of being overwritten. Unsafe
+relative llms/sidecar links in localized sources are also reported individually
+for manual replacement with `site_url`-based URLs.
+
 ## Available scripts
 
 - **`scripts/check-preferences.sh`** — Read, set, or reset
@@ -248,6 +275,16 @@ user may want one without the other.
   - `--social` opts into OG/Twitter cards: expands the `__SOCIAL_*__` markers in
     the templates with the blocks in `assets/social/`, and adds `/.cache/` to
     `.gitignore`. Off by default (keeps the scaffold Cairo/Pango-free).
+- **Project-local `scripts/build-docs-site.py`** — Canonical strict production
+  build helper, copied from `assets/build-docs-site.py` into each scaffold.
+  Monolingual sites use one pass; multilingual sites with llmstxt isolate
+  default-language LLM output from the full HTML build, validate the merged
+  artifact, then replace `site/` only after all checks pass. JSON goes to
+  stdout; build diagnostics go to stderr.
+  - Flags: `--target-dir DIR`, `--config-file FILE`, `--site-dir DIR`,
+    `--dry-run`, `--keep-temp`.
+  - Exit codes: `0` success; `2` invalid/missing input; `3` MkDocs failed;
+    `4` generated output failed validation.
 - **`scripts/enable-pages.sh`** — Enable Pages and trigger first deploy via
   `gh api`. Requires `gh auth status` to pass first.
   - Flags: `--repo OWNER/REPO`, `--no-trigger`, `--dry-run`.
@@ -262,11 +299,21 @@ user may want one without the other.
 - **`scripts/add-language.sh`** — Retrofit a non-default language into an
   existing site. Inserts `plugins.i18n`, creates `*.<LANG>.md` stubs with
   the terminology admonition, updates preferences, uncomments the static-i18n
-  dep. Keeps `mkdocs-llmstxt` by default; auto-patches CI to drop `--strict`
-  with `--drop-strict`. Idempotent.
+  dep, and configures the managed strict build path. Keeps default-language
+  `mkdocs-llmstxt` output by default. Idempotent.
   - Flags: `--lang LANG` (required), `--name NAME`, `--default-lang LANG`,
-    `--target-dir DIR`, `--no-stubs`, `--remove-llmstxt`, `--drop-strict`,
-    `--dry-run`, `--force`.
+    `--target-dir DIR`, `--no-stubs`, `--remove-llmstxt`, deprecated
+    `--drop-strict` / `--keep-llmstxt`, `--dry-run`, `--force`.
+  - Exit `11` means the language was added but custom downstream shapes still
+    require the migration guide's manual actions.
+- **`scripts/migrate-i18n-llmstxt.sh`** — Audit or conservatively migrate a
+  downstream site created by an older version of this skill. Audit is the
+  default; writes require `--apply`. JSON goes to stdout and diagnostics to
+  stderr. It stages and validates candidates before replacement, is
+  idempotent, and never overwrites a foreign build helper.
+  - Flags: `--target-dir DIR`, `--apply`, `--dry-run`, `--verify`, `--json`.
+  - Exit codes: `0` safe/migrated; `10` affected legacy config found during
+    audit/dry-run; `11` manual actions remain; `12` strict verification failed.
 
 ## Reference files
 
@@ -282,6 +329,9 @@ user may want one without the other.
 - `references/i18n-guide.md` — Bilingual / multi-language docs setup using
   `mkdocs-static-i18n`. Read this **before** running `add-language.sh`. Includes
   the verbatim "preserve English originals" terminology rule for zh-TW pages.
+- `references/i18n-llmstxt-migration.md` — Audit/apply/verify migration guide,
+  exit-code contract, automatic patch boundary, and manual fallback. Read this
+  **before repairing or upgrading an existing i18n + llmstxt site**.
 - `references/mkdocs-2-and-zensical.md` — Why the stack pins `mkdocs<2` and
   `mkdocs-material<10`. Captures the MkDocs 2.0 plugin-removal situation,
   Material team's Zensical replacement, and the criteria for lifting the
@@ -292,15 +342,18 @@ user may want one without the other.
 
 Templates the scripts copy from. Edit them here, not in the user's repo.
 
-- `assets/mkdocs.yml.template` — Material theme + llmstxt + copy-to-llm
-  plugins + pymdownx.snippets, parameterized with `{{SITE_NAME}}`,
-  `{{REPO_SLUG}}`, `{{SITE_URL}}`. Carries `__SOCIAL_*__` marker lines that
-  `init-docs-site.sh` expands (with `--social`) or deletes.
+- `assets/mkdocs.yml.template` — Material theme + environment-guarded llmstxt,
+  copy-to-llm, i18n-ready `docs_dir`, and pymdownx.snippets; parameterized with
+  `{{SITE_NAME}}`, `{{REPO_SLUG}}`, `{{SITE_URL}}`. Carries `__SOCIAL_*__`
+  marker lines that `init-docs-site.sh` expands (with `--social`) or deletes.
 - `assets/pyproject.toml.template` — Minimal `[project]` block + the docs
   optional-deps group. Has a `__SOCIAL_IMAGING__` marker.
+- `assets/build-docs-site.py` — Managed two-pass helper copied to the downstream
+  project's `scripts/build-docs-site.py`. Keep its managed marker intact so the
+  migration tool can distinguish it from a user-owned script.
 - `assets/docs-workflow.yml.template` — `.github/workflows/docs.yml` with
-  paths filter, uv setup, strict build, Pages deploy. Has a `__SOCIAL_CI__`
-  marker for the Cairo/Pango + card-cache steps.
+  paths filter, uv setup, the managed strict build helper, and Pages deploy.
+  Has a `__SOCIAL_CI__` marker for the Cairo/Pango + card-cache steps.
 - `assets/social/` — snippets injected at the `__SOCIAL_*__` markers when
   `init-docs-site.sh --social` is passed: `mkdocs-plugin.yml` (the `social`
   plugin block), `pyproject-dep.txt` (`mkdocs-material[imaging]`), and
@@ -381,14 +434,14 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
   layout (`index.md` + `index.zh-TW.md` siblings); the `i18n_structure: folder`
   preference key is reserved but not implemented. Don't paste a `folder`
   config into `mkdocs.yml` and expect the script to keep it consistent.
-- **`mkdocs-llmstxt` is incompatible with `mkdocs-static-i18n` under
-  `--strict`.** llmstxt's `sections:` source-path lookups break after
-  `reconfigure_material` remaps the page index. `add-language.sh` **keeps
-  llmstxt by default** (most users want `/llms.txt` more than they want
-  `--strict`'s safety net) and offers `--drop-strict` to auto-patch
-  `.github/workflows/docs.yml` and `Makefile` so the build doesn't fail
-  on the resulting warnings. Use `--remove-llmstxt` to flip the trade-off
-  and keep `--strict`. The dep stays in `pyproject.toml` either way.
+- **A single multilingual build silently corrupts `mkdocs-llmstxt` output.**
+  `mkdocs-static-i18n` performs a full build per locale, while llmstxt clears
+  its page state and overwrites the same root `llms.txt` / `llms-full.txt` on
+  every pass. The final locale can therefore leave nearly empty or wrong-locale
+  output. Removing `--strict` only hides warnings; it does not repair the files.
+  Always use `scripts/build-docs-site.py` for the deployable artifact. Root
+  `/llms.txt`, `/llms-full.txt`, and `.md` sidecars intentionally contain only
+  the default language.
 - **`add-language.sh` removes `navigation.instant`** from `theme.features`
   because the language switcher's contextual link is incompatible with
   instant navigation. Material's plugin emits the warning itself; the script
@@ -400,7 +453,7 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 
 ## Updating an existing site (not bootstrapping)
 
-If `mkdocs.yml` already exists, this skill mostly defers — only
-`add-docs-page.sh` and `check-preferences.sh` are useful. Don't try to
-"upgrade" the user's mkdocs.yml without an explicit ask; their config may
-have customizations the templates don't know about.
+If `mkdocs.yml` already exists, don't silently "upgrade" it; customizations may
+not match the template. For an explicit i18n/llmstxt repair request, use
+`migrate-i18n-llmstxt.sh` audit-first. Apply only after showing its planned
+changes and preserve every shape it reports as a manual action.

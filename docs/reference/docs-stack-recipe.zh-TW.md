@@ -35,10 +35,24 @@ bash <path-to-agent-skills>/skills/local/mkdocs-site-bootstrap/scripts/enable-pa
   --repo owner/repo
 ```
 
+用 scaffold 產生的 strict helper 建立要部署的 artifact：
+
+```bash
+uv sync --extra docs
+uv run python scripts/build-docs-site.py
+```
+
+保留 llmstxt 的多語站會把 root llms 檔限制在預設語言，並在另一個 strict
+pass 建立各 locale HTML。直接 `mkdocs build --strict` 仍是 HTML-only preview。
+
 關於這個技術組合實際包含什麼 (Material theme + mkdocs-llmstxt +
 mkdocs-copy-to-llm + pymdownx.snippets)、strict mode 強制的連結規則、
 以及 GitHub Actions workflow 的接線方式，請讀上面連結的 canonical
 reference。
+
+既有使用者要注意：更新已安裝的 skill 不會自動遷移 project。若舊版 i18n
+站點的 llms 輸出為空或語言錯誤，請使用 audit-first 的
+[`migration guide`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md)。
 
 ## 另見 (See also)
 

@@ -14,6 +14,10 @@
 - 用 `mkdocs-llmstxt` 跟 `mkdocs-copy-to-llm` 啟動了一個
   [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) docs 站，
   可部署到 GitHub Pages。
+- 修正 `mkdocs-static-i18n` + `mkdocs-llmstxt` 可能在最後一個 locale pass
+  靜默覆寫 root llms 檔，造成內容為空或語言錯誤的問題。新 scaffold 使用
+  strict two-pass 的 `scripts/build-docs-site.py`；既有站點提供 audit-first、
+  idempotent migration 工具。只更新 skill 不會修改下游 project。
 - 新增 `scripts/add-todo.sh` 用來結構化插入 TODO，以及
   `scripts/sweep-inbox.sh` 把 `backlog/inbox.md` 的零散捕獲做分流
   (triage)。詳見 [Project memory workflow](workflows/project-memory.md)。

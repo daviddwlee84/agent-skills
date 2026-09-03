@@ -4,6 +4,7 @@ site_url: https://daviddwlee84.github.io/agent-skills/
 repo_url: https://github.com/daviddwlee84/agent-skills
 repo_name: daviddwlee84/agent-skills
 edit_uri: edit/main/docs/
+docs_dir: !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
 theme:
   name: material
   palette:
@@ -29,10 +30,12 @@ theme:
     - search.share
     - content.code.copy
     - content.code.annotate
+    - content.action.edit
     - toc.follow
   language: en
 plugins:
   - i18n:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_I18N_ENABLED, true]
       docs_structure: suffix
       fallback_to_default: true
       reconfigure_material: true
@@ -45,6 +48,7 @@ plugins:
           name: 繁體中文 (zh-TW)
   - search
   - llmstxt:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_LLMSTXT_ENABLED, false]
       full_output: llms-full.txt
       markdown_description: >
         Personal collection of agent skills — local custom-authored skills under skills/local/ and 3rd-party skills cherry-picked into skills/vendor/ via the vendor.yaml manifest. Includes project-knowledge-harness (a TODO/backlog/pitfalls memory harness with bundled init/kanban/promote scripts) and quantatitive-factor-researcher (a Python quant-research persona). Installable via `npx skills@latest add daviddwlee84/agent-skills/skills`.
@@ -67,6 +71,7 @@ plugins:
         Changelog:
           - changelog.md
   - copy-to-llm:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_COPY_TO_LLM_ENABLED, true]
       repo_url: "https://daviddwlee84.github.io/agent-skills"
       button_hover_color: "var(--md-primary-fg-color)"
       toast_bg_color: "var(--md-primary-fg-color)"
@@ -91,8 +96,7 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path:
         - .
-        - docs
-        - docs/_snippets
+        - !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
       check_paths: true
   - pymdownx.tabbed:
       alternate_style: true
@@ -183,19 +187,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/daviddwlee84/agent-skills
-# `_snippets/` are meant to be included via pymdownx.snippets, never
-# rendered as their own page. `not_in_nav` suppresses the INFO warning.
-# `_snippets/domain-hub-template.md` lives there so it's not picked up
-# by the `catalog/domains/*.md` llmstxt glob.
-not_in_nav: |
+# `_snippets/` are included via pymdownx.snippets, never rendered as pages.
+# `_snippets/domain-hub-template.md` also stays out of llmstxt section globs.
+exclude_docs: |
   /_snippets/
-# Validation: keep strict mode useful but don't fail on links to files
-# that exist in the *built* site/ but not in docs/ source (e.g.
-# llms.txt and llms-full.txt produced by mkdocs-llmstxt at build time,
-# and per-page <page>/index.md raw-markdown URLs which are directory
-# URLs that only exist post-build).
-# Demote 'not_found' from warn -> info so --strict still passes; keep
-# everything else at defaults (anchors/absolute_links stay warn-able).
-validation:
-  links:
-    not_found: info
+  **/_snippets/**

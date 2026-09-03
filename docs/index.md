@@ -43,10 +43,13 @@ validator/promoter/inbox toolkit.
 
 This site exposes LLM-friendly endpoints (per the [llmstxt.org](https://llmstxt.org/) spec):
 
-- [`llms.txt`](llms.txt) — compact index of all pages
-- [`llms-full.txt`](llms-full.txt) — every page concatenated into one file
+- [`llms.txt`](https://daviddwlee84.github.io/agent-skills/llms.txt) — compact
+  index of all default-language pages
+- [`llms-full.txt`](https://daviddwlee84.github.io/agent-skills/llms-full.txt) —
+  default-language pages concatenated into one file
 - Every page is also available as raw Markdown by appending `/index.md` to its
-  URL (e.g. [`getting-started/index.md`](getting-started/index.md)).
+  URL (e.g.
+  [`getting-started/index.md`](https://daviddwlee84.github.io/agent-skills/getting-started/index.md)).
 
 If you're an agent reading this, prefer `llms-full.txt` for a single-shot
 context dump, or fetch individual `*/index.md` paths for the page you need.

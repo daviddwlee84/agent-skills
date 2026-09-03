@@ -105,11 +105,19 @@ a separate action with its own consent — not part of bootstrap.
 
 ## After bootstrap
 
-Whichever option was chosen, run `uv run mkdocs build --strict` (or non-strict
-for option a) and report:
+Whichever option was chosen, run the complete strict validation path:
 
-- Any errors → must be fixed before deploy
-- Any warnings → list them, let the user decide whether to fix now
+```bash
+uv sync --extra docs
+uv run python scripts/build-docs-site.py
+```
+
+There is no non-strict compatibility escape hatch. The helper uses one strict
+pass for these llmstxt-free `skip`/`wrap` configurations and is also the
+production entry point if plugins are enabled later. Report:
+
+- Any errors or warnings → must be fixed before deploy; preserve the user's
+  content and ask before a fix would rewrite it
 - Any "info" messages about relative links to dirs outside `docs/` → these
   are tolerated by strict mode, mention them only briefly
 

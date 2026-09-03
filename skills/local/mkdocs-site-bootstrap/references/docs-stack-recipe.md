@@ -30,6 +30,9 @@ uv sync --extra docs
 uv run mkdocs serve
 
 # Build static site
+uv run python scripts/build-docs-site.py
+
+# Safe HTML-only preview (llmstxt stays disabled)
 uv run mkdocs build --strict
 ```
 
@@ -43,11 +46,16 @@ uv run mkdocs build --strict
   if your project has a Python API; skip it otherwise.
 - **`mkdocs-llmstxt`** — generates `/llms.txt` and `/llms-full.txt` so
   AI agents can discover and consume your docs without scraping HTML.
-  Upstream is in maintenance mode but works fine; if it ever stops,
-  swap in a hand-rolled post-build script.
+  Upstream is in maintenance mode and must be isolated from a multilingual
+  `mkdocs-static-i18n` build; the managed helper does that. If it stops working
+  even in the default-language pass, replace it with a post-build generator.
 - **`mkdocs-copy-to-llm`** — adds "Copy to LLM / Open in ChatGPT / Open
   in Claude" buttons on every page. Pure UX sugar; harmless if your
   audience doesn't use it.
+- **Managed strict build helper** — keeps `mkdocs-static-i18n` and
+  `mkdocs-llmstxt` out of the same plugin lifecycle. Multilingual HTML is built
+  separately from default-language LLM artifacts, validated, and merged before
+  `site/` is replaced.
 
 ## Why not these?
 
@@ -76,6 +84,7 @@ site_description: One sentence about your project.
 site_url: https://yourname.github.io/your-project/
 repo_url: https://github.com/yourname/your-project
 edit_uri: edit/main/docs/
+docs_dir: !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
 
 theme:
   name: material
@@ -85,6 +94,7 @@ theme:
     - navigation.indexes
     - search.suggest
     - content.code.copy
+    - content.action.edit
     - toc.follow
 
 plugins:
@@ -93,6 +103,7 @@ plugins:
   # cards. Needs system cairo/pango + mkdocs-material[imaging]. Omit for a
   # dependency-free build.
   # - social:
+  #     enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_SOCIAL_ENABLED, true]
   #     cards_layout_options:
   #       background_color: "#3f51b5"
   #       # font_family: Noto Sans TC   # set a CJK font if titles are CJK
@@ -107,11 +118,13 @@ plugins:
             docstring_style: google
             merge_init_into_class: true
   - llmstxt:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_LLMSTXT_ENABLED, false]
       full_output: llms-full.txt
       sections:
         Guides: [index.md, getting-started.md]
         API Reference: [reference/*.md]
   - copy-to-llm:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_COPY_TO_LLM_ENABLED, true]
       repo_url: "https://yourname.github.io/your-project"
 
 markdown_extensions:
@@ -122,7 +135,9 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.highlight
   - pymdownx.snippets:
-      base_path: [., docs, docs/_snippets]
+      base_path:
+        - .
+        - !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
       check_paths: true
 
 nav:
@@ -146,6 +161,7 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'pyproject.toml'
+      - 'scripts/build-docs-site.py'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -186,7 +202,7 @@ jobs:
             social-${{ hashFiles('mkdocs.yml') }}-
             social-
       - run: uv sync --extra docs
-      - run: uv run mkdocs build --strict
+      - run: uv run python scripts/build-docs-site.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
@@ -205,6 +221,48 @@ jobs:
 You also need to enable Pages in your repo settings: **Settings → Pages
 → Build and deployment → Source: GitHub Actions**. One-time setup.
 
+## Multilingual build contract
+
+When `mkdocs-static-i18n` is enabled, add the same `enabled: !ENV [...]`
+guard to its plugin block (and to `social` when present):
+
+```yaml
+plugins:
+  - i18n:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_I18N_ENABLED, true]
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+        - locale: zh-TW
+          name: 繁體中文
+          build: true
+  - social:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_SOCIAL_ENABLED, true]
+      # ... only when social cards are enabled
+```
+
+Do not deploy a multilingual site with a single direct `mkdocs build`:
+`mkdocs-static-i18n` runs the build once per locale, while `mkdocs-llmstxt`
+resets its page index and overwrites the same root files each time. The result
+can be nearly empty or contain the wrong locale even when a non-strict build
+exits successfully.
+
+The scaffolded `scripts/build-docs-site.py` is the production entry point:
+
+- monolingual: one strict pass with llmstxt enabled;
+- multilingual with llmstxt: one strict default-language LLM pass plus one
+  strict full HTML pass, followed by validation and an atomic replacement of
+  `site/`;
+- multilingual without llmstxt: one strict HTML pass;
+- root `/llms.txt`, `/llms-full.txt`, and `.md` sidecars: default language only;
+- direct `mkdocs serve` / `mkdocs build --strict`: safe HTML-only preview.
+
+If an older scaffold still invokes `mkdocs build --strict` in CI, follow
+[`i18n-llmstxt-migration.md`](i18n-llmstxt-migration.md). Updating the skill
+downloads the migration tool but does not modify the project.
+
 ## Linking rules inside `docs/`
 
 `mkdocs build --strict` enforces these rules. Knowing them up front
@@ -218,6 +276,11 @@ saves an afternoon:
   `--strict`.
 - Links to **directories or non-`.md` files outside `docs/`** → relative
   paths are tolerated (downgraded to INFO).
+- Links to root build artifacts such as `llms.txt` → use full URLs based on
+  `site_url` (for example,
+  `https://yourname.github.io/your-project/llms.txt`). They are not source
+  Markdown files and should not be used as relative source links. Do not use
+  `/llms.txt` for GitHub project Pages; that drops the repository subpath.
 
 If you want stricter validation (catch broken anchors too):
 

@@ -4,6 +4,7 @@ site_url: {{SITE_URL}}
 repo_url: https://github.com/{{REPO_SLUG}}
 repo_name: {{REPO_SLUG}}
 edit_uri: edit/main/docs/
+docs_dir: !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
 
 theme:
   name: material
@@ -32,12 +33,16 @@ theme:
     - search.share
     - content.code.copy
     - content.code.annotate
+    - content.action.edit
     - toc.follow
 
 plugins:
   # __SOCIAL_PLUGIN__  (init-docs-site.sh --social expands this to the social plugin)
   - search
   - llmstxt:
+      # Direct `mkdocs build` is an HTML-only preview. The managed helper
+      # enables llmstxt in an isolated default-language pass.
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_LLMSTXT_ENABLED, false]
       full_output: llms-full.txt
       markdown_description: >
         {{SITE_DESCRIPTION}}
@@ -49,6 +54,7 @@ plugins:
       # __STARTER_LLMSTXT_END__
   # __STARTER_COPY_TO_LLM_BEGIN__
   - copy-to-llm:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_COPY_TO_LLM_ENABLED, true]
       repo_url: "{{SITE_URL}}"
       button_hover_color: "var(--md-primary-fg-color)"
       toast_bg_color: "var(--md-primary-fg-color)"
@@ -71,8 +77,7 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path:
         - .
-        - docs
-        - docs/_snippets
+        - !ENV [MKDOCS_SITE_BOOTSTRAP_DOCS_DIR, docs]
       check_paths: true
   - pymdownx.tabbed:
       alternate_style: true

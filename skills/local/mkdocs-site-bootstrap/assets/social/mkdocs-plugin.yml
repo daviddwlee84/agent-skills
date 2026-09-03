@@ -5,5 +5,6 @@
   # renders titles as tofu boxes; add-language.sh sets a CJK font_family when
   # you add zh-TW/zh-CN/ja/ko.
   - social:
+      enabled: !ENV [MKDOCS_SITE_BOOTSTRAP_SOCIAL_ENABLED, true]
       cards_layout_options:
         background_color: "#3f51b5" # Material indigo 500, matches theme.palette

@@ -97,6 +97,13 @@ by default, which produce:
 - `/llms.txt` and `/llms-full.txt` — full-content dumps intended for LLM ingestion
 - Per-page "copy as markdown for LLM" buttons
 
+On multilingual sites, the managed `scripts/build-docs-site.py` isolates
+`mkdocs-llmstxt` from `mkdocs-static-i18n`: root llms files and raw `.md`
+sidecars contain the default language only, while translated HTML is built in
+a separate strict pass. Direct `mkdocs build --strict` is an HTML-only preview.
+This fixes empty/wrong-locale output; it is **not** a trust boundary and does
+not sanitize the default-language docs.
+
 Any LLM-driven agent that consumes those endpoints is reading whatever ended
 up in `docs/`. If `docs/` accepts external contributions (e.g. open-source
 PRs), an attacker can plant prompt-injection payloads in a doc page and have
@@ -123,6 +130,9 @@ landed pre-emptively.
   pin `mkdocs<2` (different rationale, same skill).
 - [`reference/docs-stack-recipe.md`](docs-stack-recipe.md) — what the
   bootstrap actually installs.
+- [i18n + llmstxt migration guide](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/mkdocs-site-bootstrap/references/i18n-llmstxt-migration.md)
+  — why existing downstream sites need an explicit audit/migration after
+  updating the skill.
 
 ## Why we don't ship README badges yet
 
