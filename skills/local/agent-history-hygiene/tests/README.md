@@ -101,7 +101,9 @@ throwaway commits.
   non-list, unsafe-path, oversized, and empty reports are handled explicitly.
 - `test_gitleaks_corpus.py` stages expanded fixtures in throwaway repos and
   proves real shapes fire, examples are scoped correctly, custom webhook/key
-  rules survive inside artifact roots, and the gitleaks config parses.
+  rules survive inside artifact roots, and the gitleaks config parses. Its
+  Sourcegraph three-way guard proves a bare Git OID is clean only inside agent
+  artifacts, the same OID still fires outside, and `sgp_...` still fires inside.
 - `test_specstory_coverage.py` locks native-redaction defaults, private-key
   handling, placeholder shape, ours-only residual classes, and negative
   controls. It skips when SpecStory is unavailable.

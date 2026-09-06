@@ -4,7 +4,7 @@
 # Consume from any repo's .pre-commit-config.yaml:
 #
 #   - repo: https://github.com/daviddwlee84/agent-skills
-#     rev: ahh-v2.0.0            # immutable agent-history-hygiene major tag
+#     rev: ahh-v2.0.1            # immutable agent-history-hygiene release tag
 #     hooks:
 #       - id: check-agent-artifact-secrets
 #

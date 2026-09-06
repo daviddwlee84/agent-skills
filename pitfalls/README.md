@@ -58,6 +58,7 @@ and prevention guidance.
 | [`skill-trigger-eval-reports-zero-recall-with-claude-code-2-1-250`](skill-trigger-eval-reports-zero-recall-with-claude-code-2-1-250.md) | `precision=100% recall=0%`, `rate=0/3 expected=True`, skill-creator `run_eval.py`, `.claude/commands/` temp files, API timeout counted as non-trigger | active |
 | [`pre-commit-restores-over-live-specstory-writes`](pre-commit-restores-over-live-specstory-writes.md) | `files were modified by this hook`, `Stashed changes conflicted with hook auto-fixes... Rolling back fixes...`, `Restored changes from`, a `.specstory/history/*.md` append disappears or returns after a failed commit | active |
 | [`gitleaks-line-scoped-allowlist-shields-live-key`](gitleaks-line-scoped-allowlist-shields-live-key.md) | live key in `.specstory/history` never reported, `no leaks found` on a line holding `[REDACTED:...]` plus a real token, same bytes fire under `src/`, gitleaks `regexTarget` line-vs-match, allowlist `condition = "AND"` | active |
+| [`sourcegraph-access-token-flags-git-commit-shas`](sourcegraph-access-token-flags-git-commit-shas.md) | `rule=sourcegraph-access-token` on 40-hex Git commit OIDs, hundreds of `.specstory/history` findings, no `sgp_` prefix, scanner-output recursion | fixed in `ahh-v2.0.1` |
 
 ## Cross-referenced pitfalls
 

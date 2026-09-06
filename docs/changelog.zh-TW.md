@@ -11,6 +11,10 @@
 
 ## Unreleased
 
+- 發布 `agent-history-hygiene` hook v2.0.1：把 upstream
+  `sourcegraph-access-token` 的 bare-40-hex false positive 僅限縮於 agent
+  artifacts，同時保留真實 `sgp_...` 的偵測；fresh bootstrap 改用 gitleaks
+  v8.30.1，確保 global `[[allowlists]]` / `targetRules` 確實生效。
 - 用 `mkdocs-llmstxt` 跟 `mkdocs-copy-to-llm` 啟動了一個
   [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) docs 站，
   可部署到 GitHub Pages。

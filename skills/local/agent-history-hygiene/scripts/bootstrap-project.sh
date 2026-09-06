@@ -17,7 +17,7 @@ CHEZMOI_SRC="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
 # assets/pre-commit-config.yaml.template and the repo's .pre-commit-hooks.yaml.
 HOOK_REPO_URL="https://github.com/daviddwlee84/agent-skills"
 OLD_HOOK_REV="ahh-v1.1.0"
-HOOK_REV="ahh-v2.0.0"
+HOOK_REV="ahh-v2.0.1"
 HOOK_ID="check-agent-artifact-secrets"
 LEGACY_HOOK_ID="redact-agent-secrets"
 # Derived from assets/artifact-dirs.txt after repository discovery. `.agents` is
@@ -50,9 +50,11 @@ Options:
                       propagate. Fails if chezmoi source is missing.
   --migrate           Transactionally migrate the exact ahh-v1.1.0 remote hook
                       or the exact old repo: local vendored redactor layout to
-                      check-agent-artifact-secrets@ahh-v2.0.0. Preserves sibling
+                      check-agent-artifact-secrets@ahh-v2.0.1. Preserves sibling
                       hooks and only non-scoping compatible options; refuses
-                      ambiguous commands and consumer scanner overrides.
+                      ambiguous commands and consumer scanner overrides. It does
+                      not rewrite an existing gitleaks pin/config; merge the
+                      v8.30.1 targeted allowlist separately.
   --install-hook      Install a validation-only prepare-commit-msg hook. Explicit
                       AGENT_HISTORY_* identity/plan must already have staged diffs
                       in the commit index; the hook never mutates any index.

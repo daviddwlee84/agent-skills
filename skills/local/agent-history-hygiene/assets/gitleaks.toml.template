@@ -40,6 +40,31 @@ useDefault = true
     '''\[REDACTED:[A-Za-z0-9._-]+\]''',
   ]
 
+# The upstream sourcegraph-access-token rule deliberately accepts any bare
+# 40-hex value when a `sourcegraph` keyword appears in the scanned fragment.
+# Agent transcripts routinely contain both the rule name (from scanner output)
+# and full Git commit OIDs, so archival history otherwise produces hundreds of
+# false positives. Scope the exception to this one rule AND artifact paths AND
+# the finding's exact Secret bytes. A real `sgp_...` token does not match the
+# bare-hex regex and still fires; the same 40-hex value outside artifacts also
+# still fires. Omitting regexTarget uses gitleaks' Secret target, which excludes
+# the rule's trailing delimiter from Match.
+[[allowlists]]
+  description = "Bare Git commit OIDs in agent artifacts are not Sourcegraph tokens"
+  targetRules = ["sourcegraph-access-token"]
+  condition   = "AND"
+  paths = [
+    '''\.specstory/history/.*\.md$''',
+    '''\.claude/plans/.*\.md$''',
+    '''\.cursor/(plans|rules)/.*\.md$''',
+    '''\.opencode/plans/.*\.md$''',
+    '''\.specify/.*\.md$''',
+    '''\.codex/.*\.md$''',
+  ]
+  regexes = [
+    '''(?i)^[a-f0-9]{40}$''',
+  ]
+
 # Path-scoped allowlist: inside agent artifact dirs, tolerate explicit
 # example/demo markers without unlocking real leaks.
 #

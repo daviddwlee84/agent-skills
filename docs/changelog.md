@@ -6,6 +6,10 @@ file curates the milestones.
 
 ## Unreleased
 
+- Released `agent-history-hygiene` hook v2.0.1: scoped the upstream
+  `sourcegraph-access-token` bare-40-hex false positive to agent artifacts while
+  preserving real `sgp_...` detection, and advanced fresh bootstrap to gitleaks
+  v8.30.1 so global `[[allowlists]]` / `targetRules` are actually applied.
 - Bootstrapped a [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
   documentation site with `mkdocs-llmstxt` and `mkdocs-copy-to-llm`,
   deployable to GitHub Pages.

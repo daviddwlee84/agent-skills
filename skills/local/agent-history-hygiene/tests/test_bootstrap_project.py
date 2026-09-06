@@ -19,7 +19,7 @@ TEMPLATE = SKILL_DIR / "assets" / "pre-commit-config.yaml.template"
 MANIFEST = REPO_ROOT / ".pre-commit-hooks.yaml"
 HOOK_REPO = "https://github.com/daviddwlee84/agent-skills"
 OLD_REV = "ahh-v1.1.0"
-NEW_REV = "ahh-v2.0.0"
+NEW_REV = "ahh-v2.0.1"
 OLD_HOOK = "redact-agent-secrets"
 NEW_HOOK = "check-agent-artifact-secrets"
 ARCHIVE_EXCLUDE = (
@@ -168,6 +168,7 @@ def test_fresh_bootstrap_installs_validation_only_template(tmp_path: Path) -> No
     assert "--fix" not in config
     assert "post-session finalizer" in config
     assert config.count(ARCHIVE_EXCLUDE) == 2
+    assert "- repo: https://github.com/gitleaks/gitleaks\n    rev: v8.30.1" in config
     assert "- id: gitleaks-system\n        pass_filenames: false" in config
     assert "- id: detect-private-key" in config
 

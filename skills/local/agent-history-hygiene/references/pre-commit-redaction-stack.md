@@ -206,6 +206,12 @@ The template runs `gitleaks-system` after the staged artifact checker. It sees
 the exact sanitized index prepared by the finalizer and blocks any residual
 finding. `.gitleaks.toml` supplies custom rules and scoped allowlists.
 
+Fresh bootstrap pins gitleaks v8.30.1. That minimum is semantic, not cosmetic:
+v8.22.1 silently accepts but ignores the newer global `[[allowlists]]` array,
+including `targetRules`. Existing repositories keep their current scanner block
+during `--migrate`; update gitleaks explicitly before relying on these scoped
+allowlists.
+
 ### Allowlist design
 
 - **Shared sentinel:** `[REDACTED:<rule-id>]`, scoped to the match rather than
@@ -216,6 +222,11 @@ finding. `.gitleaks.toml` supplies custom rules and scoped allowlists.
   so literal headers are absent from shipped bytes instead.
 - **Artifact examples:** both path and regex must match. A real key inside a
   transcript still fires.
+- **Sourcegraph vs Git OIDs:** only `sourcegraph-access-token` findings whose
+  Secret is exactly bare 40-hex are allowed, and only inside artifact roots.
+  Upstream's `sgp_...` forms still fire there; bare 40-hex outside artifacts
+  still fires. This prevents scanner output plus full commit OIDs in an
+  archival transcript from producing hundreds of false positives.
 
 Use inline `#gitleaks:allow` only for a reviewed false positive. Never widen an
 artifact-root allowlist to make a real leak pass.
@@ -270,24 +281,29 @@ mutator exclusion, validates a same-directory candidate, publishes atomically,
 and removes a proven legacy script only after validation. Ambiguous/custom
 commands fail without writes; `--force` does not weaken that rule.
 
-## Release status: `ahh-v2.0.0` is unpublished
+## Release status: `ahh-v2.0.1` is published
 
-The checked-in template and migration target use
-`check-agent-artifact-secrets@ahh-v2.0.0`, but **the tag is UNPUBLISHED** at the
-time of this documentation update. The source tree is ready for the future
-immutable major pin; downstream repositories cannot fetch it yet.
+The checked-in template and migration target use the immutable published
+`check-agent-artifact-secrets@ahh-v2.0.1` pin. v2.0.1 keeps the v2 lifecycle and
+validation-only hook contract while narrowing one upstream false positive:
+full Git commit OIDs quoted in agent artifacts no longer impersonate legacy
+bare-hex Sourcegraph tokens.
 
-Treat publication as a release blocker:
+Fresh bootstrap installs the complete corrected stack: ahh-v2.0.1, gitleaks
+v8.30.1, and the targeted allowlist in `.gitleaks.toml`.
 
-1. finish implementation/docs/tests and run the full validation suite;
-2. publish the exact reviewed commit on `main`;
-3. create and push immutable tag `ahh-v2.0.0`;
-4. verify a clean downstream pre-commit environment can fetch/run the hook; and
-5. only then recommend fresh bootstrap or `--migrate` to consumers.
+Updating only the ahh hook tag does **not** rewrite a consumer's root
+`.gitleaks.toml`; `--migrate` also preserves existing scanner blocks by design.
+Existing v2.0.0 (and v1 migration) consumers must deliberately do all three:
 
-Until step 4 succeeds, do not claim the v2 hook is available and do not migrate
-a downstream repository to the future pin. Existing consumers remain on their
-published v1.x pin.
+1. update the agent-skills hook pin to `ahh-v2.0.1`;
+2. update the gitleaks hook pin to `v8.30.1` or newer; and
+3. merge the `sourcegraph-access-token` targeted allowlist from
+   `assets/gitleaks.toml.template` into their reviewed root config.
+
+Do not overwrite a customized scanner config wholesale. Verify the merged
+config with the three-way corpus test: artifact Git OID clean, the same OID
+outside artifacts blocked, and `sgp_...` inside artifacts blocked.
 
 Future updates must deliberately advance the `ahh-v*` pin. Do not use broad
 `pre-commit autoupdate` in a multi-skill monorepo where an unrelated tag could

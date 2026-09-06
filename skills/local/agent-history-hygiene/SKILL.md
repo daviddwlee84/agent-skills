@@ -188,12 +188,11 @@ Read
 [`references/pre-commit-redaction-stack.md`](references/pre-commit-redaction-stack.md)
 before bootstrap or migration.
 
-> **Release blocker:** `ahh-v2.0.0` is an **UNPUBLISHED** future pin in the
-> checked-in template. Downstream repos cannot fetch it yet. Publish the
-> immutable tag before recommending fresh bootstrap, `--migrate`, or downstream
-> use of `check-agent-artifact-secrets@ahh-v2.0.0`.
-
-After that release exists:
+> **Current hook release:** `ahh-v2.0.1` is the immutable published pin used by
+> the checked-in template and hook migration target. Fresh bootstrap also pins
+> gitleaks v8.30.1 and installs the scoped Sourcegraph/Git-OID false-positive
+> fix. Updating only the ahh tag does not rewrite an existing root
+> `.gitleaks.toml`; follow the rollout steps in the reference for existing repos.
 
 ```bash
 bash skills/local/agent-history-hygiene/scripts/bootstrap-project.sh \

@@ -48,6 +48,14 @@ def _stage_fixture_at(repo: Path, fixture_path: Path, dest_rel: str) -> None:
     subprocess.run(["git", "add", "--", dest_rel], cwd=repo, check=True)
 
 
+def _stage_text_at(repo: Path, dest_rel: str, text: str) -> None:
+    """Write synthetic runtime-only content and stage it at one exact path."""
+    dest = repo / dest_rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(text, encoding="utf-8")
+    subprocess.run(["git", "add", "--", dest_rel], cwd=repo, check=True)
+
+
 def _run_gitleaks_staged(repo: Path) -> list[dict]:
     """Run `gitleaks git --staged` and return the JSON findings array."""
     report = repo / "_report.json"
@@ -163,6 +171,44 @@ class TestSentinelBesideLiveKey:
             'regexTarget = "match"; at "line" scope the sentinel covers its '
             "line-mates."
         )
+
+
+class TestSourcegraphCommitOidAllowlist:
+    """A Sourcegraph keyword must not turn transcript Git OIDs into secrets."""
+
+    # High-entropy 40-hex, built at runtime so this shipped test file does not
+    # itself trip the upstream sourcegraph-access-token rule.
+    COMMIT_OID = "0123456789abcdef" * 2 + "01234567"
+
+    def test_bare_commit_oid_is_allowed_inside_agent_artifacts(self, tmp_git_repo):
+        _stage_text_at(
+            tmp_git_repo,
+            ".specstory/history/sourcegraph-scan.md",
+            f"# Session\n\nsourcegraph scanner output for commit {self.COMMIT_OID}\n",
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        assert "sourcegraph-access-token" not in {f["RuleID"] for f in findings}
+
+    def test_bare_commit_oid_still_fires_outside_agent_artifacts(self, tmp_git_repo):
+        _stage_text_at(
+            tmp_git_repo,
+            "src/sourcegraph-scan.md",
+            f"sourcegraph candidate {self.COMMIT_OID}\n",
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        assert "sourcegraph-access-token" in {f["RuleID"] for f in findings}
+
+    def test_real_sourcegraph_shape_still_fires_inside_agent_artifacts(
+        self, tmp_git_repo
+    ):
+        token = "sgp_" + self.COMMIT_OID
+        _stage_text_at(
+            tmp_git_repo,
+            ".claude/plans/sourcegraph-token.md",
+            f"sourcegraph token {token}\n",
+        )
+        findings = _run_gitleaks_staged(tmp_git_repo)
+        assert "sourcegraph-access-token" in {f["RuleID"] for f in findings}
 
 
 class TestExampleShapesFixture:
