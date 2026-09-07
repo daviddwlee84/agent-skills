@@ -34,6 +34,8 @@ import json
 import os
 import platform
 import shutil
+import ssl
+import stat
 import subprocess
 import sys
 import urllib.error
@@ -46,6 +48,9 @@ DEFAULT_DELAY_URL = "http://www.gstatic.com/generate_204"
 DEFAULT_EGRESS_URL = "https://ipinfo.io/json"
 DEFAULT_PORTS = (9090, 9097)  # 9090 classic clash/mihomo, 9097 Clash Verge Rev
 TV_SOURCE = Path.home() / ".config" / "television" / "clash-source.sh"
+CA_CERT: str | None = None
+READ_ONLY = False
+MAX_RESPONSE = 8 * 1024 * 1024
 
 
 # --------------------------------------------------------------------------- #
@@ -76,10 +81,78 @@ def log(msg: str) -> None:
 # HTTP core
 # --------------------------------------------------------------------------- #
 def strip_scheme(value: str) -> str:
-    parsed = urllib.parse.urlparse(value)
-    if parsed.scheme and parsed.netloc:
-        return parsed.netloc
-    return value.removeprefix("http://").removeprefix("https://").rstrip("/")
+    """Legacy name; preserve the scheme and accept only a controller origin."""
+    value = value.strip()
+    parsed = urllib.parse.urlsplit(value if "://" in value else "http://" + value)
+    try:
+        valid = parsed.port is not None and 1 <= parsed.port <= 65535
+    except ValueError:
+        valid = False
+    if (parsed.scheme not in {"http", "https"} or not parsed.hostname or not valid
+            or parsed.username is not None or parsed.password is not None
+            or parsed.path not in {"", "/"} or parsed.query or parsed.fragment
+            or any(c.isspace() or ord(c) < 32 for c in value)):
+        raise ClashError("controller must be an http(s)://host:port origin without credentials, path, query or fragment")
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def configure_transport(args: argparse.Namespace) -> None:
+    global CA_CERT, READ_ONLY
+    CA_CERT = getattr(args, "ca_cert", None) or os.environ.get("CLASH_CA_CERT")
+    READ_ONLY = bool(getattr(args, "read_only", False))
+    if CA_CERT:
+        try:
+            ssl.create_default_context(cafile=CA_CERT)
+        except (OSError, ssl.SSLError) as exc:
+            raise ClashError("cannot load CA certificate; supply a readable PEM CA file") from exc
+
+
+def controller_open(host: str, secret: str, method: str, endpoint: str,
+                    *, payload=None, timeout: float = 5):
+    if READ_ONLY and method != "GET":
+        raise OpRejected("read-only mode rejects controller mutations")
+    if any(c in secret for c in "\r\n\0"):
+        raise ClashError("controller secret must be a single token")
+    if not endpoint or endpoint.startswith(("/", "http:", "https:")):
+        raise ClashError("controller endpoint must be relative")
+    headers = {"Accept": "application/json"}
+    if secret:
+        headers["Authorization"] = f"Bearer {secret}"
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode()
+        headers["Content-Type"] = "application/json"
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoRedirect(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=CA_CERT)),
+    )
+    req = urllib.request.Request(f"{strip_scheme(host)}/{endpoint}", data=data,
+                                 headers=headers, method=method)
+    return opener.open(req, timeout=timeout)
+
+
+def read_secret_file(path: str) -> str:
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd, "rb") as stream:
+            before = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+                    or stat.S_IMODE(before.st_mode) != 0o600 or before.st_size > 8192):
+                raise ClashError("secret file must be a single-link mode-0600 regular file, at most 8192 bytes")
+            value = stream.read(8193).decode("utf-8").strip()
+            after = os.fstat(stream.fileno())
+            if (before.st_ino, before.st_size, before.st_mtime_ns) != (after.st_ino, after.st_size, after.st_mtime_ns):
+                raise ClashError("secret file changed during reading")
+            if not value or any(c in value for c in "\r\n\0"):
+                raise ClashError("secret file must contain one non-empty token")
+            return value
+    except (OSError, UnicodeError) as exc:
+        raise ClashError("cannot safely read secret file; check its path, ownership and mode") from exc
 
 
 def decode_json(body: bytes) -> Any:
@@ -101,21 +174,16 @@ def request_json(
     payload: dict[str, Any] | None = None,
     timeout: float = 5,
 ) -> tuple[int, Any]:
-    url = f"http://{host}/{endpoint.lstrip('/')}"
-    data = None
-    headers = {"Accept": "application/json"}
-    if secret:
-        headers["Authorization"] = f"Bearer {secret}"
-    if payload is not None:
-        data = json.dumps(payload).encode()
-        headers["Content-Type"] = "application/json"
-
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, decode_json(resp.read())
+        with controller_open(host, secret, method, endpoint, payload=payload, timeout=timeout) as resp:
+            body = resp.read(MAX_RESPONSE + 1)
+            if len(body) > MAX_RESPONSE:
+                raise ClashError("controller response exceeds 8 MiB")
+            return resp.status, decode_json(body)
     except urllib.error.HTTPError as exc:
-        return exc.code, decode_json(exc.read())
+        # Error bodies can echo credentials or subscription URLs.
+        exc.close()
+        return exc.code, None
     except urllib.error.URLError as exc:
         raise ControllerUnreachable(f"controller {host} unreachable: {exc.reason}") from exc
     except (TimeoutError, OSError) as exc:
@@ -261,6 +329,9 @@ def discover(args: argparse.Namespace) -> tuple[str, str, str]:
     """Return (host, secret, source). Raises ControllerUnreachable with the
     list of things tried if nothing answers."""
     override = getattr(args, "secret", None)  # --secret always wins when given
+    secret_file = getattr(args, "secret_file", None) or os.environ.get("CLASH_SECRET_FILE")
+    if override is None and secret_file:
+        override = read_secret_file(secret_file)
 
     if getattr(args, "controller", None):
         host = strip_scheme(args.controller)
@@ -366,13 +437,16 @@ def _ports(configs: dict[str, Any]) -> dict[str, int]:
 
 
 def _default_proxy(host: str, secret: str) -> str:
-    """Best HTTP/mixed proxy URL from the live config; fall back to 7890."""
+    """A remote controller does not imply a reachable local mixed port."""
+    hostname = urllib.parse.urlsplit(strip_scheme(host)).hostname
+    if hostname not in {"127.0.0.1", "localhost", "::1"}:
+        raise ClashError("remote controller: supply --proxy explicitly, or use the device's proxy-health command")
     configs = get_configs(host, secret)
     for key in ("mixed-port", "port"):
         val = configs.get(key)
         if isinstance(val, int) and val > 0:
             return f"http://127.0.0.1:{val}"
-    return "http://127.0.0.1:7890"
+    raise ClashError("no HTTP/mixed port advertised; supply --proxy explicitly")
 
 
 # --------------------------------------------------------------------------- #
@@ -851,7 +925,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--controller", help="Controller host:port or URL. Default: discovery.")
-    parser.add_argument("--secret", help="Controller secret. Overrides discovered/env secret when given.")
+    credentials = parser.add_mutually_exclusive_group()
+    credentials.add_argument("--secret", help="Controller secret (prefer --secret-file to avoid process-argument exposure).")
+    credentials.add_argument("--secret-file", help="Mode-0600 file containing the controller secret. Env: CLASH_SECRET_FILE.")
+    parser.add_argument("--ca-cert", help="PEM CA for HTTPS; certificate and hostname verification stay enabled. Env: CLASH_CA_CERT.")
+    parser.add_argument("--read-only", action="store_true", help="Reject mutations and unredacted config output.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     dc = sub.add_parser("doctor", help="Diagnose discovery + reachability; guide enabling the API.")
@@ -935,7 +1013,21 @@ def build_parser() -> argparse.ArgumentParser:
     eg.add_argument("--timeout", type=float, default=10)
     eg.set_defaults(func=cmd_egress)
 
+    ob = sub.add_parser("observe", help="Observe one hostname's routing for a bounded window; reproduce the request during capture.")
+    ob.add_argument("domain")
+    ob.add_argument("--client", help="Filter by source IP (recommended for shared controllers).")
+    ob.add_argument("--duration", type=float, default=15, help="Observation seconds (1-60).")
+    ob.set_defaults(func=cmd_observe)
+
     return parser
+
+
+def cmd_observe(args: argparse.Namespace) -> int:
+    from clash_observe import observe
+    host, secret, _ = discover(args)
+    emit_json(observe(sys.modules[__name__], host, secret, args.domain,
+                      client=args.client, duration=args.duration))
+    return 0
 
 
 def main() -> int:
@@ -944,6 +1036,10 @@ def main() -> int:
     if getattr(args, "close", None) == "close":
         args.close = True
     try:
+        configure_transport(args)
+        if READ_ONLY and (args.command in {"switch", "mode", "tun", "allow-lan", "reload"}
+                          or getattr(args, "close", False) or getattr(args, "show_secrets", False)):
+            raise OpRejected("read-only mode rejects this command")
         return args.func(args)
     except NotFound as exc:
         log(f"error: {exc}")

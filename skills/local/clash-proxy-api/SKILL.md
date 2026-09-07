@@ -1,6 +1,6 @@
 ---
 name: clash-proxy-api
-description: Discover and drive a running Clash/mihomo proxy through its external-controller API — show the current node/mode/latency, switch proxy groups, set mode (rule/global/direct), toggle TUN, reload config, close connections, and toggle the OS system proxy. Use when the user asks to check or change their Clash/mihomo/Clash Verge (Rev)/ClashX proxy, switch nodes, test node latency, enable TUN, set up Service Mode or Mixin, toggle the system proxy on macOS/Linux, or fix an unreachable Clash API.
+description: Use when diagnosing an unreachable website through Clash/mihomo, observing matched rules and proxy chains, checking node/mode/latency, or controlling Clash Verge, ClashX, TUN, Mixin and the system proxy. Supports explicit HTTPS controllers, private CA verification and bounded read-only routing observations; respects managed-router transaction workflows.
 ---
 
 # Clash Proxy API
@@ -11,9 +11,9 @@ TUN", "reload my config", "the proxy isn't working", "there's no system-proxy
 toggle on my Ubuntu box" — without re-discovering controller details or
 hand-writing `curl`.
 
-The reliable core is the **external-controller REST API**. Two bundled scripts wrap
-it and the OS system-proxy; two references cover enabling the API per client and
-the raw endpoint surface.
+The reliable core is the **external-controller REST API**. Bundled scripts wrap
+it, bounded routing observation and the OS system proxy. On a managed router,
+read its project contract before choosing a command.
 
 > Invocations below are relative to this skill's directory. Run `python3
 > scripts/clash_api.py …` from here, or use the absolute path your agent resolves
@@ -32,7 +32,7 @@ the raw endpoint surface.
 
 ## When NOT to use
 
-- **Editing subscription/YAML by hand or writing rules** — the API reloads and toggles; it doesn't author config. Edit the file, then `reload`.
+- **Authoring subscriptions or publishing rules** — use the policy repository's review/build workflow. Managed routers deploy through their own transactions.
 - **Mixin / Merge config** — a client-side config-file feature (Clash Verge / CFW), not a runtime API. Guide the user to the client; don't script it.
 - **Picking/buying nodes, subscription management** — out of scope.
 - **A one-off `curl` the user already wrote** — just run it.
@@ -151,7 +151,7 @@ alternative that needs no system proxy at all.
 - **`scripts/clash_api.py`** — Controller API client. Stdlib-only Python 3. Discovers the controller, speaks `Authorization: Bearer`, URL-encodes names.
   - Read: `doctor`, `status`, `config`, `groups [--members]`, `proxies [--filter]`, `rules [--filter]`, `delay <proxy>`, `group-delay <group>`, `connections`, `egress`. Add `--json` to read commands for structured stdout.
   - Write (all support `--dry-run`): `switch <group> <proxy>`, `mode <rule|global|direct>`, `tun <on|off> [--restart]`, `allow-lan <on|off>`, `reload [--path P]`, `connections close [--id X | --all --yes]`.
-  - Global: `--controller host:port`, `--secret S` (overrides env/discovered secret).
+  - Global: `--controller http[s]://host:port`, `--ca-cert PATH` / `CLASH_CA_CERT`, `--secret-file PATH` / `CLASH_SECRET_FILE`, `--read-only`. Keep secrets out of command arguments; the legacy `--secret` flag remains compatible.
   - Exit: `0` ok, `1` usage, `2` group/proxy not found (message lists real members), `3` controller unreachable, `4` op rejected (HTTP ≥300 on a write).
 - **`scripts/clash_sysproxy.sh`** — OS system-proxy toggle (bash 3.2). macOS `networksetup` / GNOME `gsettings`; always prints shell `export`/`unset` lines to stdout.
   - `detect` | `on <host:port> [--socks H:P]` | `off`. Flags: `--yes` (apply; else preview), `--dry-run`, `--service NAME` (macOS), `-h`.
@@ -159,11 +159,17 @@ alternative that needs no system proxy at all.
 
 ## Reference files
 
+- `references/managed-router-diagnosis.md` — Read **first** for single-site diagnosis, a remote TLS controller, Nikki/ImmortalWrt, missing routing evidence, or rule candidates. Includes the report contract and links to the reusable policy knowledge base.
 - `references/enable-api-by-client.md` — Read **when** `doctor` can't reach a controller, or the user asks about System Proxy / TUN / Service Mode / Mixin. Per-client × OS matrix (mihomo CLI, Clash Verge Rev, ClashX, mihomo-party/FlClash, legacy CFW, OpenClash/Docker) for turning the API on and where the OS-level toggles live.
 - `references/api-endpoints.md` — Read **when** you need an operation the script doesn't wrap (streaming `/traffic` `/logs` `/memory`, `/providers`, rule-providers, `/dns/query`, `/storage`) and want raw `curl`. Full endpoint catalog with a "wrapped by clash_api.py" column.
 
 ## Gotchas
 
+- **Managed Pi commands take precedence.** Use its `just diagnose-site` wrapper and verified private CA. Do not use API writes, reload, mode/TUN changes or system-proxy toggles to bypass `proxy-test` / `proxy-enable` transactions. Its policy uses TPROXY with TUN off and fail-open behavior.
+- **Explicit HTTPS targets never fall back to another controller.** Certificate/hostname errors are failures; do not switch to HTTP or disable verification. Requests ignore environment proxy settings and reject redirects before forwarding credentials.
+- **A remote controller is not an egress proxy.** `egress` requires an explicit `--proxy` for remote controllers. A management API port is never a proxy data port.
+- **`observe` needs traffic during its 1–60 second window.** It filters exact domain and optional source IP, combines connection snapshots and bounded log lines, and can still miss short connections. Empty evidence cannot prove bypass; a matching rule cannot prove application access.
+- **Reports are private browsing metadata.** Domain, source IP, node names, controller and timestamps may identify usage. Persist below ignored private storage with mode 0600; share a reviewed conclusion, not raw reports/configs.
 - **The controller is not always `127.0.0.1:9090`.** Clash Verge Rev defaults to `9097`; GUIs pick random ports; routers are on the LAN. Discovery probes 9090+9097 and scans config files — but when it fails, read the address from the client and set `CLASH_CONTROLLER`. Never assume 9090.
 - **The proxy port is not always `7890`.** Derive it from live config: `status` prints `ports` (Clash Verge uses mixed-port `7897`). `egress` and `clash_sysproxy.sh` should use the reported mixed/http port, not a guess.
 - **Enabling TUN via the API needs an elevated core.** `PATCH /configs {"tun":{"enable":true}}` returns 204 but TUN won't route without Service Mode / root, and usually a `POST /restart` (`tun on --restart`). If it "succeeds" but nothing changes, that's why.
