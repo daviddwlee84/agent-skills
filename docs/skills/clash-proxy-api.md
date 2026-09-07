@@ -3,8 +3,8 @@
 Discover and drive a running **Clash / mihomo** proxy through its
 external-controller REST API — from natural-language requests like "what's my
 node?", "switch to the JP node", "go global mode", "turn on TUN", "reload my
-config", or "the proxy API isn't reachable". Two bundled scripts wrap the
-controller API and the OS system proxy; two references cover enabling the API
+config", or "the proxy API isn't reachable". Bundled scripts wrap the
+controller API and the OS system proxy; references cover enabling the API
 per client and the raw endpoint surface.
 
 | Surface | Question it answers |
@@ -34,7 +34,7 @@ config, not assumed to be `7890`.
 
 ## When it doesn't
 
-- Hand-editing subscription/rule YAML — the API reloads and toggles, it doesn't author config. Edit the file, then `reload`.
+- Hand-editing subscription/rule YAML — the API reloads and toggles, it doesn't author config. Use the policy repository and the client deployment workflow.
 - **Mixin / Merge** config — a client-side config-file feature (Clash Verge / CFW), not a runtime API. The skill guides; it doesn't script it.
 - Buying/choosing nodes or managing subscriptions.
 
@@ -42,7 +42,7 @@ config, not assumed to be `7890`.
 
 ```
 skills/local/clash-proxy-api/
-├── SKILL.md                        # ~177 lines; intent→command map + gotchas
+├── SKILL.md                        # intent→command map + gotchas
 ├── scripts/
 │   ├── clash_api.py                # stdlib-only Python 3; controller API client
 │   └── clash_sysproxy.sh           # bash 3.2; OS system-proxy toggle
@@ -76,7 +76,7 @@ skills/local/clash-proxy-api/
 ## Verification
 
 ```bash
-bash skills/local/skill-author/scripts/lint-skill.sh skills/local/clash-proxy-api   # 0 errors, 0 warnings
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/clash-proxy-api
 python3 skills/local/clash-proxy-api/scripts/clash_api.py doctor                     # discover + diagnose
 python3 skills/local/clash-proxy-api/scripts/clash_api.py status                     # against a live controller
 bash   skills/local/clash-proxy-api/scripts/clash_sysproxy.sh detect                 # read-only OS proxy state
@@ -84,3 +84,25 @@ bash   skills/local/clash-proxy-api/scripts/clash_sysproxy.sh detect            
 
 Read commands are safe against a live controller; write commands (`switch`, `mode`,
 `tun`, `reload`, `connections close`) preview with `--dry-run`.
+
+## Bounded diagnosis and managed routers
+
+Use `--controller https://HOST:PORT --ca-cert PATH --secret-file PATH --read-only`
+for an explicit TLS target. Certificate and hostname validation remain enabled;
+redirects and environment proxies are disabled for controller requests. An explicit
+target never falls back to a local controller. Remote `egress` needs `--proxy`.
+
+`observe DOMAIN --client IP --duration 20` combines filtered connection snapshots
+with routing logs. JSON includes core version, timestamps, matched rule, original
+chain order, collection warnings and an evidence state. It does not open the site,
+prove application success, or reconstruct past traffic; reports are private metadata.
+
+For Nikki on the managed Pi, use the project `just diagnose-site` wrapper, which
+also checks client routes and binds the observation to the confirmed profile.
+Use device transactions for changes. See the skill's
+`references/managed-router-diagnosis.md` and the
+[policy knowledge base](https://github.com/daviddwlee84/clash-rules/blob/main/docs/diagnosis.md).
+
+Transport and observation regression tests:
+
+    python3 -m unittest discover -s skills/local/clash-proxy-api/tests -v

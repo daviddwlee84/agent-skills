@@ -2,7 +2,7 @@
 
 透過 **Clash / mihomo** 執行中的 external-controller REST API，用自然語言操作代理
 ——例如「我現在走哪個節點？」「切到日本節點」「切成 global 模式」「開 TUN」「重載設定」
-或「Clash API 連不上」。技能內建兩支腳本包裝 controller API 與作業系統系統代理，並附兩份
+或「Clash API 連不上」。技能內建腳本包裝 controller API 與作業系統系統代理，並附
 參考文件說明如何依用戶端啟用 API、以及原始端點清單。
 
 | 介面 | 回答的問題 |
@@ -31,7 +31,7 @@
 
 ## 何時不適用
 
-- 手改訂閱／規則 YAML——API 只做重載與切換，不負責撰寫設定；請改檔案後 `reload`。
+- 手改訂閱／規則 YAML——API 只做重載與切換，不負責撰寫設定；請走政策 repo 與用戶端部署流程。
 - **Mixin / Merge** 設定——那是用戶端的設定檔功能（Clash Verge / CFW），不是執行期 API。技能會引導，但不代寫。
 - 購買／挑選節點、管理訂閱。
 
@@ -39,7 +39,7 @@
 
 ```
 skills/local/clash-proxy-api/
-├── SKILL.md                        # 約 177 行；intent→command 對照表 + 陷阱清單
+├── SKILL.md                        #intent→command 對照表 + 陷阱清單
 ├── scripts/
 │   ├── clash_api.py                # 純標準函式庫 Python 3；controller API 客戶端
 │   └── clash_sysproxy.sh           # bash 3.2；作業系統系統代理開關
@@ -67,7 +67,7 @@ skills/local/clash-proxy-api/
 ## 驗證
 
 ```bash
-bash skills/local/skill-author/scripts/lint-skill.sh skills/local/clash-proxy-api   # 0 錯誤、0 警告
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/clash-proxy-api
 python3 skills/local/clash-proxy-api/scripts/clash_api.py doctor                     # 探索 + 診斷
 python3 skills/local/clash-proxy-api/scripts/clash_api.py status                     # 對著真實 controller
 bash   skills/local/clash-proxy-api/scripts/clash_sysproxy.sh detect                 # 唯讀查看系統代理狀態
@@ -75,3 +75,22 @@ bash   skills/local/clash-proxy-api/scripts/clash_sysproxy.sh detect            
 
 讀取指令對真實 controller 是安全的；寫入指令（`switch`、`mode`、`tun`、`reload`、
 `connections close`）可用 `--dry-run` 預覽。
+
+## 有時間上限的診斷與 managed router
+
+以 `--controller https://HOST:PORT --ca-cert PATH --secret-file PATH --read-only`
+指定 TLS 目標。憑證與 hostname 仍須驗證；controller request 不使用環境代理且拒絕
+redirect。明確指定的目標失敗時不會轉向本機 controller。遠端 `egress` 必須提供 `--proxy`。
+
+`observe DOMAIN --client IP --duration 20` 合併篩選後的 connection snapshots 與 routing
+logs。JSON 包含核心版本、時間、matched rule、原始 chain 次序、收集警告與證據狀態。
+它不主動開網站、不證明應用成功，也不回推過去流量；報告屬於私密瀏覽 metadata。
+
+Managed Pi 的 Nikki 使用專案 `just diagnose-site` wrapper，同時檢查 client route
+並綁定 confirmed profile。設定變更走裝置 transaction。詳見 skill 內的
+`references/managed-router-diagnosis.md` 與
+[政策知識庫](https://github.com/daviddwlee84/clash-rules/blob/main/docs/diagnosis.md)。
+
+Transport 與觀測回歸測試：
+
+    python3 -m unittest discover -s skills/local/clash-proxy-api/tests -v

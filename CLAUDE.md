@@ -94,8 +94,8 @@ Handle the two cases explicitly in `vendor.yaml`:
   values, `git mv` the vendored dir, fix that skill's `skills[]` path in
   `marketplace.json`, and add a `renamed_from: <old-name>` field so the
   history stays greppable. Renaming changes the *downstream* install id:
-  the `npx skills` CLI has no lockfile, so users who installed the old
-  name won't auto-map on `npx skills update`.
+  `skills@1.5.24` writes `skills-lock.json`, but a renamed skill is still a
+  different install ID; review the lock and explicitly reinstall the new name.
 - **Removed upstream** — freeze it with a `frozen:` block (`reason:` +
   `since:`). `sync-vendor.sh` then skips the entry in both `make sync`
   and `make sync-check` while keeping the last-synced copy and its
