@@ -12,6 +12,12 @@ Vercel / Postgres / browser automation / GitHub workflow / web 品質
 
 ## 此 repo 內的 skill
 
+### Owned
+
+| Skill | Canonical 專案 | 備註 |
+|---|---|---|
+| [userscript-development](../../skills/userscript-development.md) | [Tampermonkey-Scripts](https://github.com/daviddwlee84/Tampermonkey-Scripts) | SPA／GM lifecycle、Chromium／Firefox fixture、真實 manager 與 reference extension 測試 |
+
 ### Local
 
 | Skill | 一句話 | 備註 |
@@ -48,6 +54,9 @@ GitHub workflow + web quality（Warp Oz，見
 
 | Skill / Plugin | Upstream | Status | 為何此狀態 | 安裝提示 |
 |---|---|---|---|---|
+| `tampermonkey` | [henkisdabro/wookstar-claude-plugins](https://github.com/henkisdabro/wookstar-claude-plugins/tree/main/plugins/tampermonkey) | `skipped` | 內容偏 API；owned skill 整理本專案 lifecycle／native 測試工作流。見 [評估](../../skills/userscript-development.md)。 | `npx skills@1.5.25 add henkisdabro/wookstar-claude-plugins --skill tampermonkey` |
+| `develop-userscripts` | [xixu-me 目錄頁](https://skills.sh/xixu-me/skills/develop-userscripts) | `evaluated` | 僅檢視 listing；2026-09-09 upstream API 回傳 404。 | 原始碼／可安裝性未確認 |
+| `userscript-creator` | [andradeatdev 目錄頁](https://skills.sh/andradeatdev/skills/userscript-creator) | `wishlist` | 僅搜尋結果；2026-09-09 upstream API 回傳 404。 | 原始碼／可安裝性未確認 |
 | `vercel/vercel-plugin` 的其他 skill | [`vercel/vercel-plugin`](https://github.com/vercel/vercel-plugin) | `evaluated` | 已從中 vendor 4 個進 `fullstack-nextjs`。其餘（如 `tailwind`、`vercel-ai-sdk` 等）有需要時再加。 | `npx skills@latest add vercel/vercel-plugin -s <skill>` |
 | `vercel-labs/agent-skills` 的剩餘 skill | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) | `evaluated` | 已 vendor `web-design-guidelines`。其餘是類似的 audit 風格 skill。 | `npx skills@latest add vercel-labs/agent-skills -s <skill>` |
 | `warpdotdev/oz-skills` 跳過的 9 個 | [`warpdotdev/oz-skills`](https://github.com/warpdotdev/oz-skills) | `skipped` | 跳過理由見 [`docs/reference/warp-oz-skills.md`](../../reference/warp-oz-skills.md)：`mcp-builder`（重複）、`webapp-testing`（重複）、`scheduler`（太窄）、依賴 Slack / BigQuery 的條目等。 | （未 vendor） |

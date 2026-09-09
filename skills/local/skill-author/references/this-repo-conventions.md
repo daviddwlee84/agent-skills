@@ -19,7 +19,11 @@ skills/
         └── ...        # synced via scripts/sync-vendor.sh
 ```
 
-- **New skills authored here go in `skills/local/`.** Always.
+- **Skills maintained in this repo go in `skills/local/`.** For a skill maintained
+  alongside another first-party project, scaffold with `--project --root <project>`
+  there and import its distribution copy into `skills/owned/` using the shared
+  `vendor.yaml` manifest (`collection: owned`). See `docs/workflows/adding-owned-skills.md`
+  in this repo. Do not maintain two canonical copies.
 - **Don't manually edit anything in `skills/vendor/`** — it gets overwritten by
   the next `make sync`. Upstream changes go through `vendor.yaml` + `make sync`.
 - **`.agents/skills/` and `.claude/skills/` at the repo root are active

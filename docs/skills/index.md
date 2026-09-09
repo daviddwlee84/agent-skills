@@ -3,6 +3,7 @@
 This page indexes the skills bundled in this repo.
 
 - **Local skills** (`skills/local/`) are authored and maintained here.
+- **Owned skills** (`skills/owned/`) are first-party skills maintained in another project and synced here for distribution; see [the workflow](../workflows/adding-owned-skills.md).
 - **Vendored skills** (`skills/vendor/`) are cherry-picked from upstream
   repos and synced via the
   [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
@@ -39,6 +40,12 @@ Custom-authored, curated to this repo's conventions (see
 | [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 self-written FastAPI/AI interview Q&A across 10 topics + a `quiz.py` mock-interview CLI | [docs](fastapi-ai-interview-prep.md) |
 | [`raycast-extension-dev`](raycast-extension-dev.md) | Build/verify/ship Raycast extensions — the launchd PATH trap, the typecheck `ray build` skips, `MenuBarExtra` constraints, and the store checks `ray lint` never runs; ships a scaffolder + readiness checker | [docs](raycast-extension-dev.md) |
 | [`python-project-best-practice`](python-project-best-practice.md) | Modern Python project conventions — uv + src layout, Tyro CLIs, loguru, ruff/type/pytest behind a Justfile, an AGENTS.md docs-drift gate; ships a six-profile scaffolder and a 26-check read-only legacy audit | [docs](python-project-best-practice.md) |
+
+## Owned skills
+
+| Skill | Canonical project | Detailed page |
+|---|---|---|
+| `userscript-development` | [Tampermonkey-Scripts](https://github.com/daviddwlee84/Tampermonkey-Scripts) | [docs](userscript-development.md) |
 
 ## Vendored skills
 

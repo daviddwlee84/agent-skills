@@ -33,6 +33,13 @@ the skill so the package shipped via `npx skills` stays self-contained.
 The pair must stay byte-identical. The repo doesn't (yet) enforce this in
 CI; if you edit one, edit the other in the same commit.
 
+## Owned skill layout
+
+`skills/owned/<skill>/` contains first-party skills maintained in a separate source
+project. Edit that project's canonical skill, then sync here. The same upstream
+manifest and machinery serve owned and third-party sources; see [owned workflow](workflows/adding-owned-skills.md).
+The distribution directory contains real files, not cross-repository symlinks.
+
 ## Vendor skill layout
 
 `skills/vendor/<skill>/` mirrors the upstream layout exactly. Don't edit

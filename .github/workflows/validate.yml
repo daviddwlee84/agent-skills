@@ -77,6 +77,9 @@ jobs:
           chmod +x "$RUNNER_TEMP/yq"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
+      - name: Test vendor and owned source sync
+        run: make test-source-sync
+
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 

@@ -223,6 +223,17 @@
       ]
     },
     {
+      "name": "browser-userscripts",
+      "description": "Userscript development, Chromium/Firefox fixtures, real-manager installation, and reference-extension comparison",
+      "category": "Engineering",
+      "tags": ["userscript", "tampermonkey", "violentmonkey", "playwright", "browser"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./owned/userscript-development"
+      ]
+    },
+    {
       "name": "desktop-extensions",
       "description": "Build, verify, and publish extensions for desktop launchers: the Raycast toolchain and its launchd runtime, menu-bar constraints, transport-seam design for CLI wrappers, and the store checks ray lint never runs",
       "category": "Engineering",

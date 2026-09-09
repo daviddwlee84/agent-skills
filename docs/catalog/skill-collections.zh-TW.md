@@ -73,6 +73,9 @@ vendored（特定 skill 精選 (cherry-picked) 進
 
 | 候選 | Upstream | Status | 備註 |
 |---|---|---|---|
+| Wookstar Tampermonkey plugin | [henkisdabro/wookstar-claude-plugins](https://github.com/henkisdabro/wookstar-claude-plugins/tree/main/plugins/tampermonkey) | `skipped` | 採 owned [userscript-development](../skills/userscript-development.md) 整理跨 manager lifecycle、fixture 與真實 extension 對照；已讀的 API 參考仍可作替代選項。 |
+| xixu-me userscript skill | [skills.sh listing](https://skills.sh/xixu-me/skills/develop-userscripts) | `evaluated` | 僅檢視 listing；2026-09-09 canonical repo API 回傳 404，可安裝性未確認。 |
+| andradeatdev userscript creator | [skills.sh listing](https://skills.sh/andradeatdev/skills/userscript-creator) | `wishlist` | 未讀到內容；2026-09-09 canonical repo API 回傳 404。 |
 | 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `skipped` | Canonical methodology，不是可安裝 skill，因此不 vendor；它是 local [`12-factor-agent-design-review`](../skills/12-factor-agent-design-review.md) 的 CC BY-SA attribution source。 |
 | `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence gate 有價值，但 rubric 綁定 Python/Pydantic/Jinja/REST implementation choice。Local skill 只引用 framework-neutral 的 evidence pattern。 |
 | 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | Design/review/debug decomposition 可借鏡，但單獨安裝 skill 可能缺少 cross-skill reference，heuristic scanner 也可能把自身 source 當成證據；只作 extension reference，不 vendor。 |

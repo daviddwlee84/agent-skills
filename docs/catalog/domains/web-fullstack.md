@@ -7,6 +7,12 @@ audits. This is the most-populated domain in this repo, anchored by the
 
 ## Skills in this repo
 
+### Owned
+
+| Skill | Canonical project | Notes |
+|---|---|---|
+| [userscript-development](../../skills/userscript-development.md) | [Tampermonkey-Scripts](https://github.com/daviddwlee84/Tampermonkey-Scripts) | SPA/GM lifecycle, Chromium/Firefox fixtures, real-manager and reference-extension tests |
+
 ### Local
 
 | Skill | One-line | Notes |
@@ -42,6 +48,9 @@ GitHub workflow + web quality (Warp Oz, see [`docs/reference/warp-oz-skills.md`]
 
 | Skill / Plugin | Upstream | Status | Why this status | Install hint |
 |---|---|---|---|---|
+| `tampermonkey` | [henkisdabro/wookstar-claude-plugins](https://github.com/henkisdabro/wookstar-claude-plugins/tree/main/plugins/tampermonkey) | `skipped` | API-focused; the owned skill captures our lifecycle/native-testing workflow. [Review](../../skills/userscript-development.md#existing-skills-considered). | `npx skills@1.5.25 add henkisdabro/wookstar-claude-plugins --skill tampermonkey` |
+| `develop-userscripts` | [xixu-me directory listing](https://skills.sh/xixu-me/skills/develop-userscripts) | `evaluated` | Listing reviewed; upstream API returned 404 on 2026-09-09. | Source/installability unverified |
+| `userscript-creator` | [andradeatdev directory listing](https://skills.sh/andradeatdev/skills/userscript-creator) | `wishlist` | Search result only; upstream API returned 404 on 2026-09-09. | Source/installability unverified |
 | Other `vercel/vercel-plugin` skills | [`vercel/vercel-plugin`](https://github.com/vercel/vercel-plugin) | `evaluated` | We already vendored 4 of them into `fullstack-nextjs`. Remaining ones (e.g. `tailwind`, `vercel-ai-sdk`, etc.) are candidates if needed. | `npx skills@latest add vercel/vercel-plugin -s <skill>` |
 | Remaining `vercel-labs/agent-skills` | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) | `evaluated` | We vendored `web-design-guidelines`. Others are similar audit-style skills. | `npx skills@latest add vercel-labs/agent-skills -s <skill>` |
 | Other `warpdotdev/oz-skills` (9 skipped) | [`warpdotdev/oz-skills`](https://github.com/warpdotdev/oz-skills) | `skipped` | Skipped per [`docs/reference/warp-oz-skills.md`](../../reference/warp-oz-skills.md): `mcp-builder` (duplicate), `webapp-testing` (duplicate), `scheduler` (too narrow), Slack-/BigQuery-specific ones. | (not vendored) |

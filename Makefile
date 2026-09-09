@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -8,6 +8,10 @@ sync:
 
 sync-check:
 	./scripts/sync-vendor.sh --check
+
+# Offline fixtures with a fake GitHub CLI; requires Python 3 and mikefarah/yq.
+test-source-sync:
+	python3 -m unittest discover -s scripts/tests -p test_source_sync.py -v
 
 # Usage: make add-vendor SOURCE=owner/repo/path/to/skill
 add-vendor:

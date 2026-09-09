@@ -1,6 +1,16 @@
-# Upstream skill sources for vendoring into skills/vendor/
+# Upstream skill sources for skills/vendor/ and first-party skills/owned/
 # Managed by scripts/sync-vendor.sh
 skills:
+  - name: userscript-development
+    collection: owned
+    upstream:
+      owner: daviddwlee84
+      repo: Tampermonkey-Scripts
+      path: .agents/skills/userscript-development
+      branch: main
+    last_sync:
+      date: "2026-09-09T07:39:12Z"
+      commit: "56c3abea3f229347feb4e7acacce2868a8bf3537"
   - name: marimo-notebook
     upstream:
       owner: marimo-team

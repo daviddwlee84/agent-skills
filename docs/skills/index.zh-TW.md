@@ -44,6 +44,14 @@
 | [`raycast-extension-dev`](raycast-extension-dev.md) | 開發／驗證／上架 Raycast 擴充 —— launchd 的 PATH 陷阱、`ray build` 跳過的型別檢查、`MenuBarExtra` 限制，以及 `ray lint` 從不執行的 store 檢查；附 scaffolder 與上架就緒檢查器 | [docs](raycast-extension-dev.md) |
 | [`python-project-best-practice`](python-project-best-practice.md) | 現代 Python 專案慣例 —— uv + src layout、Tyro CLI、loguru、Justfile 後面的 ruff/型別/pytest gate、AGENTS.md docs-drift 檢查；附六種 profile 的 scaffolder 與 26 項唯讀 legacy 盤點 | [docs](python-project-best-practice.md) |
 
+## Owned skills
+
+由自己的其他專案維護 canonical，這裡只同步分發；見 [owned 工作流程](../workflows/adding-owned-skills.md)。
+
+| Skill | Canonical 專案 | 詳細頁面 |
+|---|---|---|
+| `userscript-development` | [Tampermonkey-Scripts](https://github.com/daviddwlee84/Tampermonkey-Scripts) | [docs](userscript-development.md) |
+
 ## Vendored skills
 
 第三方 skill 之所以被精選進來，是因為它們填補 local skill 沒涵蓋的

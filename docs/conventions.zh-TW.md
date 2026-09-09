@@ -37,6 +37,12 @@
 這對副本必須維持 byte-identical。repo 目前還沒在 CI 強制檢查；
 你改一邊，要在同一個 commit 內改另一邊。
 
+## Owned skill 佈局
+
+`skills/owned/<skill>/` 收錄由自己另一個專案維護的 skill。在來源專案修改 canonical，
+再同步到這裡；沿用既有 upstream manifest 與同步工具，見 [owned 工作流程](workflows/adding-owned-skills.md)。
+分發目錄必須是實際檔案，不使用跨 repository symlink。
+
 ## Vendor skill 佈局
 
 `skills/vendor/<skill>/` 完全鏡射 upstream 的佈局。**不要在原地編輯**

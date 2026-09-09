@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills/skills`. Contains custom-authored skills (`skills/local/`) and cherry-picked 3rd-party skills (`skills/vendor/`) synced from upstream repos.
+A personal agent skills collection installable via `npx skills@latest add daviddwlee84/agent-skills/skills`. Contains local canonical skills (`skills/local/`), first-party project skills (`skills/owned/`), and cherry-picked third-party skills (`skills/vendor/`). Owned and vendor copies sync from their canonical upstream repos.
 
-The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`vendor/` structure works because of this fallback behavior — including vendor `series` subdirs (e.g. `skills/vendor/fullstack-nextjs/<name>/SKILL.md` at depth 4).
+The skills CLI discovers skills by checking `skills/` one level deep for `SKILL.md`, then falls back to recursive search (up to 5 levels). The nested `local/`/`owned/`/`vendor/` structure works because of this fallback behavior — including vendor `series` subdirs (e.g. `skills/vendor/fullstack-nextjs/<name>/SKILL.md` at depth 4).
 
 ## Commands
 
@@ -64,7 +64,24 @@ make docs-serve     # http://127.0.0.1:8000/
 make docs-build     # produces ./site/
 ```
 
-## Vendor System
+## Source categories and upstream sync
+
+- `skills/local/` — canonical skills authored in this repository.
+- `skills/owned/` — first-party skills maintained in another repository owned by the maintainer. Edit the source project, then sync its distribution copy here.
+- `skills/vendor/` — third-party upstream skills; preserve upstream content.
+
+`vendor.yaml` remains the shared sync manifest. `collection: owned` selects
+`skills/owned/`; an omitted collection defaults to `vendor`. Both support `series`,
+`license_path`, `frozen`, and upstream commit tracking. Add published owned sources
+with `scripts/add-vendor.sh --owned <owner/repo/path>`. A cross-repository symlink
+cannot serve as a distributable copy.
+
+An unpublished owned skill may use `pending_upstream: true`. Its bootstrap mirror
+contains real files but claims no remote SHA; routine sync/check preserves it.
+After publishing the canonical source, run `scripts/sync-vendor.sh --activate <name>`.
+Only a successful sync clears pending. See [owned workflow](docs/workflows/adding-owned-skills.md).
+
+## Vendor System (also used for owned sources)
 
 - `vendor.yaml` — manifest of upstream skill sources with `last_sync` tracking (date + commit SHA). Optional per-entry `series:` field groups skills under `skills/vendor/<series>/<name>/`; optional `license_path:` copies a repo-level license into the vendored directory as `LICENSE.txt`; entries without `series` stay flat at `skills/vendor/<name>/`
 - `scripts/sync-vendor.sh` — downloads skill files via GitHub API (`gh` + `yq` required); honors the `series` field for nested destinations, and skips any entry carrying a `frozen:` block (see below)
@@ -119,7 +136,7 @@ When adding a new skill (local or vendored), also append its path to the
 matching plugin's `skills[]` array in the manifest, or accept that it
 will fall through to the **Other** group. Run `make marketplace` after
 editing — the validator catches broken paths, duplicates, and reserved
-marketplace names. Path format is `./local/<name>` or
+marketplace names. Path format is `./local/<name>`, `./owned/<name>`, or
 `./vendor/<name>` (relative to `skills/`, not repo root).
 
 **Picker ordering is alphabetical-only.** `npx skills` sorts groups by

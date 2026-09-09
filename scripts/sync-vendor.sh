@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VENDOR_YAML="$REPO_ROOT/vendor.yaml"
-VENDOR_DIR="$REPO_ROOT/skills/vendor"
+SKILLS_DIR="$REPO_ROOT/skills"
 
 # Colors
 RED='\033[0;31m'
@@ -15,10 +15,11 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] [SKILL_NAME]
 
-Sync vendored skills from upstream repositories.
+Sync vendor and owned skills from upstream repositories.
 
 Options:
   --check    Dry-run: check for upstream updates without syncing
+  --activate Activate one pending owned skill after its upstream is published
   -h, --help Show this help message
 
 Arguments:
@@ -29,6 +30,10 @@ vendored copy is kept as-is). Use this when an upstream skill is deleted or
 renamed away but you want to keep shipping the last-synced version.
 
 Dependencies: gh (GitHub CLI), yq (YAML processor)
+
+collection: owned entries land in skills/owned/; omitted collection defaults
+to vendor. pending_upstream: true keeps a local bootstrap copy unchanged until
+--activate SKILL_NAME succeeds. --activate cannot be combined with --check.
 EOF
 }
 
@@ -88,25 +93,25 @@ get_file_sha() {
 
 download_file() {
   local owner="$1" repo="$2" branch="$3" src_path="$4" dest_path="$5"
-  mkdir -p "$(dirname "$dest_path")"
+  mkdir -p "$(dirname "$dest_path")" || return 1
   gh api "repos/$owner/$repo/contents/$src_path?ref=$branch" \
-    --jq '.content' | base64 -d > "$dest_path"
+    --jq '.content' | base64 -d > "$dest_path" || return 1
 }
 
 # Download a directory tree from GitHub. src_path="." means whole repo root.
 download_tree() {
   local owner="$1" repo="$2" branch="$3" src_path="$4" dest_dir="$5"
 
-  mkdir -p "$dest_dir"
+  mkdir -p "$dest_dir" || return 1
 
   # Get directory contents recursively using git trees API
   local tree_sha
   if [[ "$src_path" == "." ]]; then
     tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
-      --jq '.tree[] | .path + "\t" + .type + "\t" + (.url // "")')
+      --jq '.tree[] | .path + "\t" + .type + "\t" + (.url // "")') || return 1
   else
     tree_sha=$(gh api "repos/$owner/$repo/git/trees/$branch?recursive=1" \
-      --jq '.tree[] | select(.path | startswith("'"$src_path"'/")) | .path + "\t" + .type + "\t" + (.url // "")')
+      --jq '.tree[] | select(.path | startswith("'"$src_path"'/")) | .path + "\t" + .type + "\t" + (.url // "")') || return 1
   fi
 
   if [[ -z "$tree_sha" ]]; then
@@ -125,21 +130,23 @@ download_tree() {
     local dest_path="$dest_dir/$rel_path"
 
     if [[ "$file_type" == "tree" ]]; then
-      mkdir -p "$dest_path"
+      mkdir -p "$dest_path" || return 1
     elif [[ "$file_type" == "blob" ]]; then
-      mkdir -p "$(dirname "$dest_path")"
+      mkdir -p "$(dirname "$dest_path")" || return 1
       # Download file content via the blob API
-      gh api "$file_url" --jq '.content' | base64 -d > "$dest_path"
+      gh api "$file_url" --jq '.content' | base64 -d > "$dest_path" || return 1
     fi
   done <<< "$tree_sha"
 }
 
 sync_skill() {
-  local idx="$1" check_only="${2:-false}"
+  local idx="$1" check_only="${2:-false}" activate="${3:-false}"
 
-  local name series owner repo path branch license_path last_commit last_license_sha
+  local name series collection pending owner repo path branch license_path last_commit last_license_sha
   name=$(skill_field "$idx" "name")
   series=$(skill_field "$idx" "series")
+  collection=$(skill_field "$idx" "collection")
+  pending=$(skill_field "$idx" "pending_upstream")
   owner=$(skill_field "$idx" "upstream.owner")
   repo=$(skill_field "$idx" "upstream.repo")
   path=$(skill_field "$idx" "upstream.path")
@@ -153,6 +160,33 @@ sync_skill() {
   [[ "$last_license_sha" == "null" || "$last_license_sha" == '""' ]] && last_license_sha=""
   [[ "$series" == "null" || "$series" == '""' ]] && series=""
   [[ "$license_path" == "null" || "$license_path" == '""' ]] && license_path=""
+  [[ "$collection" == "null" || "$collection" == '""' ]] && collection="vendor"
+
+  case "$collection" in
+    vendor|owned) ;;
+    *) echo "Error: $name collection must be vendor or owned; got '$collection'." >&2; return 1 ;;
+  esac
+  # These components control a replacement directory. Reject paths, not just
+  # unknown collections, before touching either distribution tree.
+  if [[ ! "$name" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] ||
+     { [[ -n "$series" ]] && [[ ! "$series" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; }; then
+    echo "Error: name and series must be lowercase hyphen-case directory names." >&2
+    return 1
+  fi
+  if [[ "$pending" != "null" && "$pending" != "true" && "$pending" != "false" ]]; then
+    echo "Error: $name pending_upstream must be true or false." >&2
+    return 1
+  fi
+  if [[ "$pending" == "true" ]]; then
+    if [[ "$collection" != "owned" ]]; then
+      echo "Error: pending_upstream is only supported for owned bootstrap copies." >&2
+      return 1
+    fi
+    if [[ "$activate" != "true" ]]; then
+      echo "$name ($owner/$repo)... pending upstream publication — keeping bootstrap copy"
+      return 0
+    fi
+  fi
 
   # Frozen entries: upstream renamed the skill away or deleted it, but we
   # keep shipping the last vendored copy. Skip fetching entirely so a
@@ -184,7 +218,7 @@ sync_skill() {
     fi
   fi
 
-  if [[ "$latest_commit" == "$last_commit" && "$latest_license_sha" == "$last_license_sha" ]]; then
+  if [[ "$pending" != "true" && "$latest_commit" == "$last_commit" && "$latest_license_sha" == "$last_license_sha" ]]; then
     echo -e "${GREEN}up to date${NC}"
     return 0
   fi
@@ -196,18 +230,35 @@ sync_skill() {
 
   echo -e "${YELLOW}syncing...${NC}"
 
-  local dest
+  local dest staged backup
   if [[ -n "$series" ]]; then
-    dest="$VENDOR_DIR/$series/$name"
+    dest="$SKILLS_DIR/$collection/$series/$name"
   else
-    dest="$VENDOR_DIR/$name"
+    dest="$SKILLS_DIR/$collection/$name"
   fi
-  # Clean existing and re-download
-  rm -rf "$dest"
-  download_tree "$owner" "$repo" "$branch" "$path" "$dest"
+  # Download before replacing the last good copy. Fetch the recorded skill
+  # commit, not a branch that may advance during this sync.
+  mkdir -p "$SKILLS_DIR"
+  staged=$(mktemp -d "$SKILLS_DIR/.skill-sync.XXXXXX")
+  if ! download_tree "$owner" "$repo" "$latest_commit" "$path" "$staged"; then
+    rm -rf "$staged"
+    return 1
+  fi
   if [[ -n "$license_path" ]]; then
-    download_file "$owner" "$repo" "$branch" "$license_path" "$dest/LICENSE.txt"
+    if ! download_file "$owner" "$repo" "$branch" "$license_path" "$staged/LICENSE.txt"; then
+      rm -rf "$staged"
+      return 1
+    fi
   fi
+  mkdir -p "$(dirname "$dest")"
+  backup="$staged.previous"
+  if [[ -e "$dest" || -L "$dest" ]]; then mv "$dest" "$backup"; fi
+  if ! mv "$staged" "$dest"; then
+    if [[ -e "$backup" || -L "$backup" ]]; then mv "$backup" "$dest"; fi
+    rm -rf "$staged"
+    return 1
+  fi
+  rm -rf "$backup"
 
   # Update vendor.yaml with sync info
   local sync_date
@@ -218,22 +269,32 @@ sync_skill() {
   else
     yq -i "del(.skills[$idx].last_sync.license_sha)" "$VENDOR_YAML"
   fi
+  if [[ "$pending" == "true" ]]; then
+    yq -i "del(.skills[$idx].pending_upstream)" "$VENDOR_YAML"
+  fi
 
   echo -e "  ${GREEN}synced${NC} to ${latest_commit:0:7}"
 }
 
 main() {
   local check_only=false
+  local activate=false
   local filter_name=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --check) check_only=true; shift ;;
+      --activate) activate=true; shift ;;
       -h|--help) usage; exit 0 ;;
       -*) echo "Unknown option: $1" >&2; usage; exit 1 ;;
       *) filter_name="$1"; shift ;;
     esac
   done
+
+  if [[ "$activate" == "true" && ( "$check_only" == "true" || -z "$filter_name" ) ]]; then
+    echo "Error: use --activate SKILL_NAME without --check, after publishing its upstream." >&2
+    exit 1
+  fi
 
   check_deps
 
@@ -258,7 +319,7 @@ main() {
       continue
     fi
     found=true
-    sync_skill "$i" "$check_only"
+    sync_skill "$i" "$check_only" "$activate"
   done
 
   if [[ "$found" == "false" ]]; then

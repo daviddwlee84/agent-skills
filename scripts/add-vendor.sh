@@ -15,7 +15,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] <owner/repo[/path/to/skill]>
 
-Add a vendored skill to vendor.yaml and optionally sync it.
+Add a vendor or owned skill to vendor.yaml and optionally sync it.
 
 Examples:
   $(basename "$0") marimo-team/skills/skills/marimo-notebook
@@ -23,10 +23,12 @@ Examples:
   $(basename "$0") --name my-skill --branch dev owner/repo/skills/my-skill
   $(basename "$0") --no-sync owner/repo/skills/some-skill
   $(basename "$0") --series fullstack-nextjs vercel/vercel-plugin/skills/nextjs
+  $(basename "$0") --owned daviddwlee84/Tampermonkey-Scripts/.agents/skills/userscript-development
 
 Options:
   --name NAME      Override the skill name (default: last path component)
-  --series SERIES  Group under skills/vendor/<series>/<name>/ (default: flat)
+  --owned          First-party upstream; sync into skills/owned/ instead of vendor/
+  --series SERIES  Group under skills/<collection>/<series>/<name>/ (default: flat)
   --branch BRANCH  Upstream branch (default: main)
   --no-sync        Only add to vendor.yaml, don't sync immediately
   -h, --help       Show this help message
@@ -103,6 +105,7 @@ parse_source() {
 main() {
   local opt_name=""
   local opt_series=""
+  local opt_owned=false
   OPT_BRANCH="main"
   OPT_BRANCH_SET=""
   local opt_sync=true
@@ -112,6 +115,7 @@ main() {
     case "$1" in
       --name) opt_name="$2"; shift 2 ;;
       --series) opt_series="$2"; shift 2 ;;
+      --owned) opt_owned=true; shift ;;
       --branch) OPT_BRANCH="$2"; OPT_BRANCH_SET=1; shift 2 ;;
       --no-sync) opt_sync=false; shift ;;
       -h|--help) usage; exit 0 ;;
@@ -142,6 +146,12 @@ main() {
   local repo="$PARSED_REPO"
   local path="$PARSED_PATH"
   local branch="$OPT_BRANCH"
+
+  if [[ ! "$name" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] ||
+     { [[ -n "$opt_series" ]] && [[ ! "$opt_series" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; }; then
+    echo "Error: name and series must be lowercase hyphen-case directory names." >&2
+    exit 1
+  fi
 
   # Verify the upstream path exists
   echo -n "Verifying upstream $owner/$repo/$path@$branch... "
@@ -182,6 +192,9 @@ main() {
   }]" "$VENDOR_YAML"
   if [[ -n "$opt_series" ]]; then
     yq -i ".skills[-1].series = \"$opt_series\"" "$VENDOR_YAML"
+  fi
+  if [[ "$opt_owned" == "true" ]]; then
+    yq -i '.skills[-1].collection = "owned"' "$VENDOR_YAML"
   fi
   echo -e "${GREEN}done${NC}"
 
