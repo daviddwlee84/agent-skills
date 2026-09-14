@@ -124,8 +124,8 @@ skills:
       path: skills/frontend-design
       branch: main
     last_sync:
-      date: "2026-07-05T03:40:39Z"
-      commit: "2235be7c60b551f5de82ade908fd3816455afcda"
+      date: "2026-09-14T08:39:24Z"
+      commit: "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f"
     series: fullstack-nextjs
   - name: webapp-testing
     upstream:
@@ -422,6 +422,6 @@ skills:
       branch: master
     license_path: LICENSE
     last_sync:
-      date: "2026-08-21T13:16:51Z"
-      commit: "9eb521456ac0d19d3ab3d9d7cea3cca10baa8a4c"
+      date: "2026-09-14T08:39:36Z"
+      commit: "b99002ac99b09e00b4ca692436cb15a6b0d676f1"
       license_sha: "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
