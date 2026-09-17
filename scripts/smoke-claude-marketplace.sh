@@ -5,8 +5,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/skills"
 MANIFEST="$SKILLS_DIR/.claude-plugin/marketplace.json"
-REPRESENTATIVE_PLUGIN="version-control"
-EXPECTED_SKILL="git-workflow"
+REPRESENTATIVE_PLUGIN="${NATIVE_SMOKE_PLUGIN:-version-control}"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -20,6 +19,8 @@ done
 CLAUDE_BIN="$(command -v claude)"
 JQ_BIN="$(command -v jq)"
 MARKETPLACE_NAME="$("$JQ_BIN" -er '.name' "$MANIFEST")"
+EXPECTED_SKILLS="$("$JQ_BIN" -er --arg name "$REPRESENTATIVE_PLUGIN" '.plugins[] | select(.name == $name) | .skills[] | split("/")[-1]' "$MANIFEST")"
+EXPECTED_COUNT="$("$JQ_BIN" -er --arg name "$REPRESENTATIVE_PLUGIN" '.plugins[] | select(.name == $name) | .skills | length' "$MANIFEST")"
 PLUGIN_ID="$REPRESENTATIVE_PLUGIN@$MARKETPLACE_NAME"
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/agent-skills-claude-smoke.XXXXXX")"
 TMP_ROOT="$(cd "$TMP_ROOT" && pwd -P)"
@@ -79,12 +80,15 @@ case "$install_path" in
 esac
 
 details="$("$CLAUDE_BIN" plugin details "$PLUGIN_ID")"
-expected_inventory="Skills (1)  $EXPECTED_SKILL"
+expected_inventory="Skills ($EXPECTED_COUNT)"
 if [[ "$details" != *"$expected_inventory"* ]]; then
   printf '%s\n' "ERROR: expected component inventory '$expected_inventory'" >&2
   printf '%s\n' "$details" >&2
   exit 1
 fi
+while IFS= read -r skill; do
+  [[ "$details" == *"$skill"* ]] || fail "native plugin inventory is missing $skill"
+done <<< "$EXPECTED_SKILLS"
 
-printf 'PASSED: %s exposes only %s and all state stayed under %s\n' \
-  "$PLUGIN_ID" "$EXPECTED_SKILL" "$CLAUDE_CONFIG_DIR"
+printf 'PASSED: %s exposes %s expected skills and all state stayed under %s\n' \
+  "$PLUGIN_ID" "$EXPECTED_COUNT" "$CLAUDE_CONFIG_DIR"

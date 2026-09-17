@@ -5,8 +5,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/skills"
 MANIFEST="$SKILLS_DIR/.claude-plugin/marketplace.json"
-REPRESENTATIVE_PLUGIN="version-control"
-EXPECTED_SKILL_PATH="./local/git-workflow"
+REPRESENTATIVE_PLUGIN="${NATIVE_SMOKE_PLUGIN:-version-control}"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -20,6 +19,7 @@ done
 CODEX_BIN="$(command -v codex)"
 JQ_BIN="$(command -v jq)"
 MARKETPLACE_NAME="$("$JQ_BIN" -er '.name' "$MANIFEST")"
+EXPECTED_SKILLS="$("$JQ_BIN" -ce --arg name "$REPRESENTATIVE_PLUGIN" '.plugins[] | select(.name == $name) | .skills' "$MANIFEST")"
 PLUGIN_ID="$REPRESENTATIVE_PLUGIN@$MARKETPLACE_NAME"
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/agent-skills-codex-smoke.XXXXXX")"
 TMP_ROOT="$(cd "$TMP_ROOT" && pwd -P)"
@@ -86,9 +86,9 @@ generated_manifest="$install_path/.codex-plugin/plugin.json"
 # shellcheck disable=SC2016
 "$JQ_BIN" -e \
   --arg name "$REPRESENTATIVE_PLUGIN" \
-  --arg skill "$EXPECTED_SKILL_PATH" '
+  --argjson skills "$EXPECTED_SKILLS" '
     .name == $name and
-    .skills == [$skill]
+    (.skills | sort) == ($skills | sort)
   ' "$generated_manifest" >/dev/null || {
     printf '%s\n' 'ERROR: generated Codex adapter leaked skills across category boundaries' >&2
     "$JQ_BIN" '.' "$generated_manifest" >&2
@@ -102,5 +102,5 @@ installed_json="$("$CODEX_BIN" plugin list --json)"
   any(.installed[]; .pluginId == $id and .installed == true and .enabled == true)
 ' <<<"$installed_json" >/dev/null || fail "installed Codex plugin is not enabled"
 
-printf 'PASSED: Codex generated a one-skill adapter for %s and kept state under %s\n' \
+printf 'PASSED: Codex generated the exact skill adapter for %s and kept state under %s\n' \
   "$PLUGIN_ID" "$CODEX_HOME"

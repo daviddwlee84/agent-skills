@@ -115,6 +115,7 @@ nav:
       - Local:
           - project-knowledge-harness: skills/project-knowledge-harness.md
           - quantatitive-factor-researcher: skills/quantatitive-factor-researcher.md
+          - vectorbt: skills/vectorbt.md
           - skill-author: skills/skill-author.md
           - verifiable-surfaces: skills/verifiable-surfaces.md
           - 12-factor-agent-design-review: skills/12-factor-agent-design-review.md

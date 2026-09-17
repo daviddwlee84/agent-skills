@@ -23,6 +23,7 @@
 |---|---|---|
 | [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls 結構，附帶 validator/init/promote 工具組 | [docs](project-knowledge-harness.md) |
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | 給 Python 策略開發用的量化因子研究 persona | [docs](quantatitive-factor-researcher.md) |
+| [`vectorbt`](vectorbt.md) | OSS／PRO library 開發、XDG 文件同步與可選 MCP | [docs](vectorbt.md) |
 | [`skill-author`](skill-author.md) | 依 agentskills.io best practices 撰寫新 skill；附 `new-skill.sh` 與 `lint-skill.sh` | [docs](skill-author.md) |
 | [`verifiable-surfaces`](verifiable-surfaces.md) | 設計可驗證的 CLI/tool/service surface (`--help`/`--dry-run`/`--print-config`/isolated smoke)，並用 app-native loader 驗證 config 變更 | [docs](verifiable-surfaces.md) |
 | [`12-factor-agent-design-review`](12-factor-agent-design-review.md) | 設計或 evidence-review production LLM application，涵蓋 prompt、context、typed tool、durable state、owned control flow、pause/resume、human、retry 與 replay | [docs](12-factor-agent-design-review.md) |

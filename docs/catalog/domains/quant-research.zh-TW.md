@@ -17,6 +17,7 @@
 | Skill | 一句話 | 備註 |
 |---|---|---|
 | [`quantatitive-factor-researcher`](../../skills/quantatitive-factor-researcher.md) | Python 量化研究 persona，做 factor engineering、backtesting、cross-validation，附 Sharpe / IR / Tracking Error 指標 (metrics)。 | 此 hub 的核心 skill。 |
+| [`vectorbt`](../../skills/vectorbt.md) | OSS／PRO library 開發、按版本同步的 XDG 文件、遷移驗證與可選 MCP。 | `quantitative-finance` group |
 
 ### Vendored
 
@@ -30,7 +31,7 @@
 
 | Skill / Plugin | Upstream | Status | 為何此狀態 | 安裝提示 |
 |---|---|---|---|---|
-| _尚未調查 —— 量化工具多為 Python library，目前還沒有 agent skill 包裝_ | | | | |
+| VectorBT Backtesting Skills | [marketcalls/vectorbt-backtesting-skills](https://github.com/marketcalls/vectorbt-backtesting-skills) | `skipped` | 已評估 OSS 工作流程；OpenAlgo 指標預設不符合本技能的 library 使用定位。 | Upstream instructions |
 
 ## MCP servers
 
@@ -42,9 +43,6 @@
 
 見 [`TODO.md` 的 `P?` 區](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)：
 
-- `[?/M]` **VectorBT skill** —— 因子研究、回測、結果檢視的最小 workflow。
-- `[?/L]` **VectorBT Pro skill** —— 評估付費版 skill 是否能可靠地把
-  agent 指引到正確的 documentation 頁面與付費版的 workflow 細節。
 - `[?/M]` **Nautilus Trader skill** —— 事件驅動 (event-driven) 交易
   workflow、回測、實盤交易護欄 (guardrails)。
 - `[?/L]` **Tardis SDK skill** —— 歷史市場資料 workflow、access

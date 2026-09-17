@@ -50,16 +50,27 @@
     },
     {
       "name": "04-ml-workflow",
-      "description": "ML experiment tracking, DVC pipelines, batch notebooks, and quant research",
+      "description": "ML experiment tracking, DVC pipelines, and batch notebooks",
       "category": "ML",
-      "tags": ["mlflow", "dvc", "marimo", "quant"],
+      "tags": ["mlflow", "dvc", "marimo"],
       "source": "./",
       "strict": false,
       "skills": [
         "./local/mlflow-tracking",
         "./local/dvc-ml-workflow",
-        "./local/marimo-batch-mlflow",
-        "./local/quantatitive-factor-researcher"
+        "./local/marimo-batch-mlflow"
+      ]
+    },
+    {
+      "name": "quantitative-finance",
+      "description": "Quantitative research, factor research, backtesting, and portfolio analysis with VectorBT OSS and PRO",
+      "category": "Finance",
+      "tags": ["quant", "finance", "factors", "backtesting", "vectorbt"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/quantatitive-factor-researcher",
+        "./local/vectorbt"
       ]
     },
     {

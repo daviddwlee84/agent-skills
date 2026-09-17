@@ -33,8 +33,6 @@ workflow that agents should follow.
 ## P?
 
 - [ ] **[?/L] Next.js + Supabase + shadcn/ui + Tailwind CSS + Vercel** — evaluate a full-stack app skill that covers auth, data, UI scaffolding, and deployment together.
-- [ ] **[?/M] VectorBT skill** — assess the minimum workflow for factor research, backtesting, and result inspection with VectorBT.
-- [ ] **[?/L] VectorBT Pro skill** — assess whether a premium-only skill can reliably point agents at the correct documentation page and paid workflow nuances.
 - [ ] **[?/M] Nautilus Trader skill** — evaluate event-driven trading workflows, backtests, and live-trading guardrails for Nautilus Trader users.
 - [ ] **[?/M] Marimo + Tyro skill** — evaluate notebook-style experimentation plus CLI configuration patterns in one skill.
 - [ ] **[?/M] Streamlit app skill** — evaluate the minimum build, state, and deployment workflow for Streamlit agents.
@@ -70,6 +68,10 @@ workflow that agents should follow.
 - [ ] **[?/M] Evaluate remaining mattpocock/skills for engineering-fundamentals** — Core flow vendored (15 skills). Decide on the rest: setup-matt-pocock-skills (opinionated per-repo bootstrap; soft prereq the flow references), research (overlaps deep-research; wayfinder delegates to /research), ask-matt (router), resolving-merge-conflicts, grill-me, handoff, teach, writing-great-skills (dup skill-author). Skip misc/deprecated/in-progress/personal buckets. See docs/reference/mattpocock-skills.md. → [research](backlog/evaluate-remaining-mattpocock-skills-for-engineering-fundamentals.md)
 
 ## Done
+
+- ✅ [2026-09-17] [P?/L] VectorBT Pro skill — Covered by vectorbt: private release metadata/checksum sync, source-linked Markdown, OSS/PRO migration guidance, and optional verified official MCP integration.
+
+- ✅ [2026-09-17] [P?/M] VectorBT skill — Shipped the dual-edition vectorbt skill with environment-aware library workflows, XDG documentation sync, and quantitative-finance grouping.
 
 - ✅ [2026-08-28] [P?/M] Python + uv workflow skill — Shipped as python-project-best-practice: uv/src-layout/Tyro/loguru/ruff+ty+pytest conventions, a six-profile scaffolder, and a 26-check read-only legacy audit
 

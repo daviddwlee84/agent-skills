@@ -80,6 +80,9 @@ jobs:
       - name: Test vendor and owned source sync
         run: make test-source-sync
 
+      - name: Test VectorBT skill helpers
+        run: make test-vectorbt-skill
+
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 

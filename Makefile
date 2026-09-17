@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -32,9 +32,11 @@ native-marketplace-smoke: native-claude-smoke native-codex-smoke
 
 native-claude-smoke:
 	./scripts/smoke-claude-marketplace.sh
+	NATIVE_SMOKE_PLUGIN=quantitative-finance ./scripts/smoke-claude-marketplace.sh
 
 native-codex-smoke:
 	./scripts/smoke-codex-marketplace.sh
+	NATIVE_SMOKE_PLUGIN=quantitative-finance ./scripts/smoke-codex-marketplace.sh
 
 # YAML-parse every skills/**/SKILL.md frontmatter. A skill whose frontmatter
 # does not parse is silently SKIPPED by `npx skills add` (and by Claude Code /
@@ -100,3 +102,7 @@ test-skill: test-mkdocs-skill
 test-mkdocs-skill:
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/mkdocs-site-bootstrap/tests/test_init_docs_site.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/mkdocs-site-bootstrap/tests/test_i18n_llmstxt.sh
+
+# Offline VectorBT skill fixtures; no PRO membership or external packages required.
+test-vectorbt-skill:
+	python3 -m unittest discover -s skills/local/vectorbt/tests -v
