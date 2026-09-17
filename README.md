@@ -75,13 +75,14 @@ root.
 
 ## What's in here
 
-The `quantitative-finance` marketplace group contains `quantatitive-factor-researcher`
-and `vectorbt`; MLflow, DVC, and batch notebooks remain in `04-ml-workflow`.
+The `quantitative-finance` marketplace group contains `quantatitive-factor-researcher`,
+`vectorbt`, and `nautilus-trader`; MLflow, DVC, and batch notebooks remain in `04-ml-workflow`.
 
 - **`skills/local/`** — custom-authored skills.
   - [`project-knowledge-harness`](skills/local/project-knowledge-harness/) — TODO + backlog + pitfalls structure with init / kanban / promote / add-todo / sweep-inbox toolkit. ([docs](https://daviddwlee84.github.io/agent-skills/skills/project-knowledge-harness/))
   - [`quantatitive-factor-researcher`](skills/local/quantatitive-factor-researcher/) — Python quant-research persona. ([docs](https://daviddwlee84.github.io/agent-skills/skills/quantatitive-factor-researcher/))
   - [`vectorbt`](skills/local/vectorbt/) — OSS/PRO library development, XDG documentation sync, migration guidance, and optional official MCP setup. ([docs](https://daviddwlee84.github.io/agent-skills/skills/vectorbt/))
+  - [`nautilus-trader`](skills/local/nautilus-trader/) — NautilusTrader development: detects the v1 Cython vs v2 Rust/PyO3 generation, syncs version-matched docs/examples from git tags into an XDG cache, and gates sandbox/live trading. ([docs](https://daviddwlee84.github.io/agent-skills/skills/nautilus-trader/))
   - [`skill-author`](skills/local/skill-author/) — Author new skills following [agentskills.io](https://agentskills.io/skill-creation/best-practices) best practices; ships `new-skill.sh` scaffolder and `lint-skill.sh` linter. ([docs](https://daviddwlee84.github.io/agent-skills/skills/skill-author/))
   - [`verifiable-surfaces`](skills/local/verifiable-surfaces/) — Design CLIs/tools/services with `--help`/`--dry-run`/`--print-config`/isolated-state smoke, and verify config/CLI/dotfile/IaC changes via app-native loaders before claiming done. ([docs](https://daviddwlee84.github.io/agent-skills/skills/verifiable-surfaces/))
   - [`12-factor-agent-design-review`](skills/local/12-factor-agent-design-review/) — Design or evidence-review production LLM applications using HumanLayer's 12-Factor Agents principles; covers LLM/code boundaries, prompts, context, typed tools, durable state, pause/resume, humans, retries, and replay. ([docs](https://daviddwlee84.github.io/agent-skills/skills/12-factor-agent-design-review/))

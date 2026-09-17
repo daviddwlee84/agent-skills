@@ -21,6 +21,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`project-knowledge-harness`](project-knowledge-harness.md) | TODO + backlog + pitfalls structure with a bundled validator/init/promote toolkit | [docs](project-knowledge-harness.md) |
 | [`quantatitive-factor-researcher`](quantatitive-factor-researcher.md) | Quantitative factor research persona for Python-based strategy work | [docs](quantatitive-factor-researcher.md) |
 | [`vectorbt`](vectorbt.md) | OSS/PRO library development, XDG documentation synchronization, and optional MCP | [docs](vectorbt.md) |
+| [`nautilus-trader`](nautilus-trader.md) | v1 Cython / v2 Rust-PyO3 generation detection, version-matched docs cache, event-driven backtests, and live-trading gates | [docs](nautilus-trader.md) |
 | [`skill-author`](skill-author.md) | Author new skills following agentskills.io best practices; ships `new-skill.sh` and `lint-skill.sh` | [docs](skill-author.md) |
 | [`verifiable-surfaces`](verifiable-surfaces.md) | Design verifiable CLI/tool/service surfaces (`--help`/`--dry-run`/`--print-config`/isolated smoke) and verify config changes via app-native loaders | [docs](verifiable-surfaces.md) |
 | [`12-factor-agent-design-review`](12-factor-agent-design-review.md) | Design or evidence-review production LLM applications across prompts, context, typed tools, durable state, owned control flow, pause/resume, humans, retries, and replay | [docs](12-factor-agent-design-review.md) |

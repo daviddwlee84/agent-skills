@@ -63,14 +63,15 @@
     },
     {
       "name": "quantitative-finance",
-      "description": "Quantitative research, factor research, backtesting, and portfolio analysis with VectorBT OSS and PRO",
+      "description": "Quantitative and factor research, vectorized backtesting with VectorBT OSS and PRO, and event-driven backtesting through paper and live trading with NautilusTrader",
       "category": "Finance",
-      "tags": ["quant", "finance", "factors", "backtesting", "vectorbt"],
+      "tags": ["quant", "finance", "factors", "backtesting", "vectorbt", "nautilus-trader", "live-trading"],
       "source": "./",
       "strict": false,
       "skills": [
         "./local/quantatitive-factor-researcher",
-        "./local/vectorbt"
+        "./local/vectorbt",
+        "./local/nautilus-trader"
       ]
     },
     {

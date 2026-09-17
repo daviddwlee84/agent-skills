@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill test-nautilus-trader-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -106,3 +106,7 @@ test-mkdocs-skill:
 # Offline VectorBT skill fixtures; no PRO membership or external packages required.
 test-vectorbt-skill:
 	python3 -m unittest discover -s skills/local/vectorbt/tests -v
+
+# Offline NautilusTrader skill fixtures: local git remotes, fake packages, PyPI JSON.
+test-nautilus-trader-skill:
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) python3 -m unittest discover -s skills/local/nautilus-trader/tests -v

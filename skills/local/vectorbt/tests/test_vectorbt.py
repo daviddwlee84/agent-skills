@@ -319,7 +319,7 @@ class MCPConfigTests(unittest.TestCase):
         repo = SKILL.parents[2]
         manifest = json.loads((repo / "skills/.claude-plugin/marketplace.json").read_text())
         groups = {x["name"]: x for x in manifest["plugins"]}
-        expected = {"./local/vectorbt", "./local/quantatitive-factor-researcher"}
+        expected = {"./local/vectorbt", "./local/quantatitive-factor-researcher", "./local/nautilus-trader"}
         self.assertEqual(set(groups["quantitative-finance"]["skills"]), expected)
         self.assertTrue(expected.isdisjoint(groups["04-ml-workflow"]["skills"]))
 

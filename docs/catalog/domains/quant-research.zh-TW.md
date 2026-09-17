@@ -18,6 +18,7 @@
 |---|---|---|
 | [`quantatitive-factor-researcher`](../../skills/quantatitive-factor-researcher.md) | Python 量化研究 persona，做 factor engineering、backtesting、cross-validation，附 Sharpe / IR / Tracking Error 指標 (metrics)。 | 此 hub 的核心 skill。 |
 | [`vectorbt`](../../skills/vectorbt.md) | OSS／PRO library 開發、按版本同步的 XDG 文件、遷移驗證與可選 MCP。 | `quantitative-finance` group |
+| [`nautilus-trader`](../../skills/nautilus-trader.md) | 辨識 v1 Cython／v2 Rust-PyO3 世代、git tag 文件快取、事件驅動回測 (event-driven backtesting)、sandbox／實盤安全關卡。 | `quantitative-finance` group |
 
 ### Vendored
 
@@ -32,6 +33,8 @@
 | Skill / Plugin | Upstream | Status | 為何此狀態 | 安裝提示 |
 |---|---|---|---|---|
 | VectorBT Backtesting Skills | [marketcalls/vectorbt-backtesting-skills](https://github.com/marketcalls/vectorbt-backtesting-skills) | `skipped` | 已評估 OSS 工作流程；OpenAlgo 指標預設不符合本技能的 library 使用定位。 | Upstream instructions |
+| NautilusTrader docs skill | [aysuio/nt-skill](https://github.com/aysuio/nt-skill) | `skipped` | 沒有授權條款；假設官網 `latest` 文件對應已安裝版本，在 v1 → v2 RC 期間並不成立。 | Upstream instructions |
+| NautilusTrader skill | [clay584/nautilus-trader-skill](https://github.com/clay584/nautilus-trader-skill) | `skipped` | 沒有授權條款；只驗證到 1.228.0，教的是 v1 `TradingNode` API。 | Upstream instructions |
 
 ## MCP servers
 
@@ -43,8 +46,6 @@
 
 見 [`TODO.md` 的 `P?` 區](https://github.com/daviddwlee84/agent-skills/blob/main/TODO.md)：
 
-- `[?/M]` **Nautilus Trader skill** —— 事件驅動 (event-driven) 交易
-  workflow、回測、實盤交易護欄 (guardrails)。
 - `[?/L]` **Tardis SDK skill** —— 歷史市場資料 workflow、access
   假設、範例驅動 (example-driven) 指引。
 - `[?/L]` **Financial data sources skill set** —— provider 比較
@@ -56,5 +57,6 @@
 - [AI/ML Research](ai-ml-research.md) —— 量化專案常會疊上去的
   experiment tracking + notebook 生態（`mlflow-tracking`、
   `marimo-batch-mlflow`）。
-- [`docs/skills/quantatitive-factor-researcher.md`](../../skills/quantatitive-factor-researcher.md)
-  —— 該 local skill 頁面。
+- [`docs/skills/quantatitive-factor-researcher.md`](../../skills/quantatitive-factor-researcher.md)、
+  [`vectorbt.md`](../../skills/vectorbt.md)、[`nautilus-trader.md`](../../skills/nautilus-trader.md)
+  —— local skill 頁面。

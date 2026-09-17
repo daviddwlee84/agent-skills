@@ -8,7 +8,8 @@ description: 'Use when writing, debugging, optimizing, or migrating Python code 
 Use the project's actual edition and version as the API contract. This skill
 supports OSS `import vectorbt as vbt` and PRO `import vectorbtpro as vbt`.
 It complements quantitative research methodology; generic finance questions,
-broker execution, and unrelated Python work do not need this skill.
+broker execution, and unrelated Python work do not need this skill. Event-driven
+NautilusTrader backtests and paper/live trading belong to `nautilus-trader`.
 
 Commands below are relative to **this skill directory**, not the user's repo.
 Resolve the installed skill path and pass absolute project/interpreter paths.

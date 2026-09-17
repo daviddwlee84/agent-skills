@@ -83,6 +83,9 @@ jobs:
       - name: Test VectorBT skill helpers
         run: make test-vectorbt-skill
 
+      - name: Test NautilusTrader skill helpers
+        run: make test-nautilus-trader-skill
+
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 
