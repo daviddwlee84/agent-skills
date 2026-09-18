@@ -32,6 +32,32 @@ throwaway commits.
 
 ### Post-session runner/finalizer
 
+- `test_post_session_v2.py` exercises strict new-run v2 evidence, full beforeimages
+  and every occurrence/transformation, complete frozen-index coverage, mixed
+  per-finding decisions, hostile/partial/stale/replayed evidence, no blanket
+  rotation bypass, durable receipt-write failure before publication, and retained
+  partial publication without rollback/retry claims. It also covers read-only
+  masked preview/inspection, historical full-commit/review reproof, helper/tool/
+  policy identity, native revision/prepare/reconcile boundaries, and authentic
+  wrapper context.
+- V2 synthetic process tests prove explicit resume UUID binding and real typed
+  native queued-request acknowledgement linkage, including the native adapter's
+  outer `queue_ack`. Old-session selectors, user prose, and copied environment
+  values are not accepted as lifecycle proof. Cloud choice reaches native run/
+  sync while exact print export always remains no-cloud; stale aliases and
+  changing native sources block without retargeting/removal.
+- Its installed-native regression creates only synthetic JSONL under an isolated
+  HOME/project, runs one no-cloud/no-stats sync then native `sync --print`, and
+  requires full byte equality plus an unchanged file/source inventory. This
+  native compatibility result is separate from fake-provider tests; absent
+  SpecStory is an explicit skip, never a compatibility claim. No agent launch or
+  provider network is used. An optional `DEV_COCOMMIT_TEST_BINARY=/absolute/dev`
+  test connects the real native adapter to a copied canonical helper, records
+  its genuine returned `queue_ack` only in synthetic JSONL, and proves external
+  prepare/revalidate/finalize with all four ordinary hooks exactly once.
+- `test_post_session_finalize.sh` now explicitly selects protocol 1, retaining all
+  original strict-schema and recovery assertions independently of v2.
+
 - `test_post_session_finalize.sh` exercises the public help/argument contracts,
   foreground runner process group, exact single sync, child/signal status
   preservation, inert queue boundary, strict per-worktree request/journal

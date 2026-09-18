@@ -18,9 +18,21 @@ import sys
 import tempfile
 import unicodedata
 import uuid
+import importlib.util
 
+# Inspection/preview never creates helper or redactor bytecode caches either.
+sys.dont_write_bytecode = True
 
-SCHEMA_VERSION = 1
+# Explicit sibling loading also works under python3 -I -B. Never search an
+# ambient PYTHONPATH for the protocol implementation.
+_v2_spec = importlib.util.spec_from_file_location(
+    "_post_session_v2", os.path.join(os.path.dirname(os.path.realpath(__file__)), "_post_session_v2.py")
+)
+v2 = importlib.util.module_from_spec(_v2_spec)
+_v2_spec.loader.exec_module(v2)
+v2.p = sys.modules[__name__]
+
+SCHEMA_VERSION = 1  # Immutable legacy parser; new outer runs explicitly select 2.
 MAX_JSON_BYTES = 128 * 1024
 MAX_MESSAGE_BYTES = 256 * 1024
 MAX_COMMIT_OBJECT_BYTES = MAX_MESSAGE_BYTES + MAX_JSON_BYTES
@@ -131,10 +143,11 @@ def log(message):
 
 
 def emit(value):
-    print(
-        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
-        flush=True,
-    )
+    rendered = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if len(rendered.encode("utf-8")) + 1 > MAX_JSON_BYTES:
+        raise LifecycleError("oversized_public_output", "structured response exceeds its supported bound", 7,
+                             "inspect_private_run_state_without_retrying")
+    print(rendered, flush=True)
 
 
 def sha256_bytes(data):
@@ -329,6 +342,18 @@ def read_canonical_json(path, label, validator):
 
 
 def validate_journal(value):
+    if value.get("schema_version") == 2 and type(value.get("schema_version")) is int:
+        if set(value) != JOURNAL_KEYS | {"v2"}:
+            raise LifecycleError("invalid_state", "journal keys do not match schema version 2")
+        v2.validate_metadata(value["v2"])
+        legacy = {key: item for key, item in value.items() if key != "v2"}
+        legacy["schema_version"] = 1
+        validate_journal(legacy)
+        if value["sync_succeeded"] and (not value["v2"]["freshness"] or value["v2"]["group_quiescent"] is not True):
+            raise LifecycleError("invalid_state", "v2 sync lacks exact export proof")
+        if value["staging_ready"] and (not value["v2"]["receipt_revision"] or not value["v2"]["publication_revision"]):
+            raise LifecycleError("invalid_state", "v2 prepared state lacks durable evidence")
+        return
     if set(value) != JOURNAL_KEYS:
         raise LifecycleError("invalid_state", "journal keys do not match schema version 1")
     if type(value["schema_version"]) is not int or value["schema_version"] != SCHEMA_VERSION:
@@ -419,6 +444,17 @@ def validate_journal(value):
 
 
 def validate_request(value):
+    if value.get("schema_version") == 2 and type(value.get("schema_version")) is int:
+        if set(value) != REQUEST_KEYS | {"v2"} or not isinstance(value["v2"], dict) or set(value["v2"]) != {"helper_revision", "cloud_sync", "repository_identity"}:
+            raise LifecycleError("invalid_request", "request keys do not match schema version 2")
+        validate_sha256(value["v2"]["helper_revision"])
+        v2.validate_repository_identity(value["v2"]["repository_identity"])
+        if type(value["v2"]["cloud_sync"]) is not bool:
+            raise LifecycleError("invalid_request", "invalid cloud choice")
+        legacy = {key: item for key, item in value.items() if key != "v2"}
+        legacy["schema_version"] = 1
+        validate_request(legacy)
+        return
     if set(value) != REQUEST_KEYS:
         raise LifecycleError("invalid_request", "request keys do not match schema version 1")
     if type(value["schema_version"]) is not int or value["schema_version"] != SCHEMA_VERSION:
@@ -466,6 +502,15 @@ def git_environment(extra=None):
     if extra:
         environment.update(extra)
     return environment
+
+
+def bash_executable():
+    # The supported macOS surface is the stock Bash 3.2. In particular, do not
+    # let a PATH-installed shell with different/unstable substitution semantics
+    # silently replace that native interpreter in exact-selector transactions.
+    if sys.platform == "darwin":
+        return "/bin/bash"
+    return shutil.which("bash") or "/bin/bash"
 
 
 def run_command(
@@ -692,6 +737,8 @@ def validate_run_layout(request_path, root, git_dir, expected_run_id=None):
         or journal["gitleaks_config_path"] != os.path.join(run_dir, "gitleaks.toml")
     ):
         raise LifecycleError("run_mismatch", "journal identity does not match this worktree run")
+    if journal["schema_version"] == 2 and journal["v2"]["repository_identity"] != v2.repository_identity(root, git_dir):
+        v2.fail("repository_replaced", 6)
     return run_dir, journal_path, journal
 
 
@@ -853,7 +900,7 @@ def ensure_trusted_gitleaks_config(script_dir, root, request, journal_path, jour
     return journal, path
 
 
-def initialize_run(root, git_dir):
+def initialize_run(root, git_dir, *, protocol_version=1, metadata=None):
     old_umask = os.umask(0o077)
     try:
         private_root = resolve_git_path(root, "agent-history-hygiene")
@@ -905,6 +952,9 @@ def initialize_run(root, git_dir):
             "failure_code": None,
             "updated_at": now_utc(),
         }
+        if protocol_version == 2:
+            journal["schema_version"] = 2
+            journal["v2"] = metadata
         write_journal(journal_path, journal)
         return run_id, run_dir, request_path, journal_path, token
     finally:
@@ -914,6 +964,8 @@ def initialize_run(root, git_dir):
 def update_journal(journal_path, journal, **changes):
     updated = dict(journal)
     updated.update(changes)
+    if updated["schema_version"] == 2:
+        updated["v2"] = dict(updated["v2"], revision=journal["v2"]["revision"] + 1)
     updated["updated_at"] = now_utc()
     write_journal(journal_path, updated)
     return updated
@@ -976,7 +1028,7 @@ def foreground_tty_fd():
     return None
 
 
-def supervise_foreground(command, cwd, environment):
+def supervise_foreground(command, cwd, environment, before_release=None):
     """Run one foreground process group, forwarding targeted termination signals."""
     gate_read, gate_write = os.pipe()
     child_pid = None
@@ -1007,8 +1059,8 @@ def supervise_foreground(command, cwd, environment):
             try:
                 os.close(gate_write)
                 os.setpgrp()
-                while os.read(gate_read, 1) != b"1":
-                    pass
+                if os.read(gate_read, 1) != b"1":
+                    os._exit(127)
                 os.close(gate_read)
                 os.chdir(cwd)
                 os.execvpe(command[0], command, environment)
@@ -1025,6 +1077,13 @@ def supervise_foreground(command, cwd, environment):
                 pass
             finally:
                 signal.signal(signal.SIGTTOU, old_ttou)
+        if before_release is not None:
+            try:
+                before_release(child_pid)
+            except BaseException:
+                os.close(gate_write)
+                os.waitpid(child_pid, 0)
+                raise
         os.write(gate_write, b"1")
         os.close(gate_write)
         if received["signal"] is not None:
@@ -1096,7 +1155,7 @@ def validate_request_matches_run(request, request_path, root, git_dir, run_id):
 def run_find_session(script_dir, root, request):
     find_script = os.path.join(script_dir, "find-session.sh")
     command = [
-        shutil.which("bash") or "/bin/bash",
+        bash_executable(),
         find_script,
         "--quiet",
         "--format",
@@ -1147,6 +1206,7 @@ def run_find_session(script_dir, root, request):
             7,
             "start_fresh_wrapper_and_requeue",
         )
+    return fields
 
 
 def cmd_run(arguments):
@@ -1156,7 +1216,21 @@ def cmd_run(arguments):
     if not specstory:
         raise LifecycleError("dependency_error", "specstory is required on PATH", 3)
     root, git_dir = discover_repository()
-    run_id, _run_dir, request_path, journal_path, token = initialize_run(root, git_dir)
+    forwarded = list(arguments.specstory_args)
+    if forwarded and forwarded[0] == "--":
+        forwarded = forwarded[1:]
+    protocol = arguments.protocol_version
+    resume_session_id = v2.validate_forwarded(forwarded, arguments.cloud_sync) if protocol == 2 else None
+    if protocol == 1 and arguments.cloud_sync:
+        v2.fail("unsupported_cloud_choice", 2)
+    native_flags = []
+    metadata = None
+    if protocol == 2:
+        native_flags = v2.native_flags(specstory, root, arguments.cloud_sync)
+        metadata = v2.initial_metadata(arguments.script_dir, arguments.cloud_sync, specstory, arguments.allow_commit, resume_session_id)
+    run_id, _run_dir, request_path, journal_path, token = initialize_run(
+        root, git_dir, protocol_version=protocol, metadata=metadata
+    )
     log("agent-history: foreground session started; queue path is available to the child")
 
     child_environment = os.environ.copy()
@@ -1175,13 +1249,14 @@ def cmd_run(arguments):
         child_environment.pop(key, None)
     child_environment["AGENT_HISTORY_REQUEST_PATH"] = request_path
     child_environment["AGENT_HISTORY_RUN_ID"] = run_id
-    forwarded = list(arguments.specstory_args)
-    if forwarded and forwarded[0] == "--":
-        forwarded = forwarded[1:]
+    def record_child(pid):
+        _dir, _path, current = validate_run_layout(request_path, root, git_dir, run_id)
+        v2.update(journal_path, current, child_pid=pid)
     direct_return_code, forwarded_signal, group_empty = supervise_foreground(
-        [specstory, "run", "claude"] + forwarded,
+        [specstory, "run", "claude"] + forwarded + native_flags,
         root,
         child_environment,
+        before_release=record_child if protocol == 2 else None,
     )
 
     direct_signal = -direct_return_code if direct_return_code < 0 else None
@@ -1216,6 +1291,7 @@ def cmd_run(arguments):
             child_signal=signal_number,
             state="child_exited" if run_succeeded else "failed",
             failure_code=failure_code,
+            **({"v2": dict(journal["v2"], group_quiescent=group_empty)} if protocol == 2 else {}),
         )
     except (LifecycleError, OSError):
         journal = None
@@ -1272,6 +1348,11 @@ def cmd_run(arguments):
     request, request_raw = read_canonical_json(request_path, "request", validate_request)
     validate_request_matches_run(request, request_path, root, git_dir, run_id)
     request_digest = sha256_bytes(request_raw)
+    try:
+        source_before = v2.capture_source(arguments.script_dir, root, request) if protocol == 2 else None
+    except LifecycleError as error:
+        update_journal(journal_path, journal, state="failed", failure_code=error.code)
+        raise
     journal = update_journal(
         journal_path,
         journal,
@@ -1290,7 +1371,7 @@ def cmd_run(arguments):
             "-s",
             request["session_id"],
             "--silent",
-        ],
+        ] + native_flags,
         cwd=root,
         env=git_environment(),
     )
@@ -1315,6 +1396,9 @@ def cmd_run(arguments):
 
     try:
         run_find_session(arguments.script_dir, root, request)
+        if protocol == 2:
+            freshness = v2.prove_export(arguments.script_dir, root, request, journal, source_before, native_flags)
+            journal = v2.update(journal_path, journal, freshness=freshness)
     except LifecycleError as error:
         update_journal(
             journal_path,
@@ -1353,7 +1437,7 @@ def cmd_run(arguments):
     finalizer = os.path.join(arguments.script_dir, "finalize-agent-commit.sh")
     process = run_command(
         [
-            shutil.which("bash") or "/bin/bash",
+            bash_executable(),
             finalizer,
             "--request",
             request_path,
@@ -1395,6 +1479,14 @@ def cmd_queue(arguments):
         )
     lock_path = os.path.join(run_dir, "queue.lock")
     with ExclusiveLock(lock_path):
+        _dir, _path, journal = validate_run_layout(request_path, root, git_dir, run_id)
+        if journal["schema_version"] == 2:
+            if not v2.authentic_context(journal):
+                v2.fail("requires_wrapper", 5)
+            if journal["v2"]["helper_revision"] != v2.helper_revision(arguments.script_dir):
+                v2.fail("helper_changed", 5)
+            if journal["v2"]["resume_session_id"] not in (None, arguments.session_id):
+                v2.fail("session_mismatch", 5)
         specstory_relative, _specstory_absolute = resolve_repo_file(
             root, arguments.specstory_path, "SpecStory", artifact_dirs
         )
@@ -1427,6 +1519,13 @@ def cmd_queue(arguments):
                 5,
             )
         head_ref, head_oid, tree = capture_snapshot(root, artifact_dirs)
+        if journal["schema_version"] == 2:
+            changed = git_bytes(root, ["diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", head_oid, tree])
+            for raw in changed.split(b"\0"):
+                if raw:
+                    path = raw.decode("utf-8", "strict")
+                    if any(path == prefix or path.startswith(prefix + "/") for prefix in artifact_dirs):
+                        v2.fail("feature_only_index_required", 5)
         created_at = existing_request["created_at"] if existing_request else now_utc()
         request = {
             "schema_version": SCHEMA_VERSION,
@@ -1447,6 +1546,9 @@ def cmd_queue(arguments):
             "base_message_sha256": message_digest,
             "created_at": created_at,
         }
+        if journal["schema_version"] == 2:
+            request["schema_version"] = 2
+            request["v2"] = {key: journal["v2"][key] for key in ("helper_revision", "cloud_sync", "repository_identity")}
         validate_request(request)
         request_raw = canonical_json_bytes(request)
 
@@ -1500,6 +1602,10 @@ def cmd_queue(arguments):
             "idempotent": idempotent,
             "action": "commit",
             "next_action": "exit_agent_session",
+            **({"schema_version": 2, "protocol_version": 2, "request_revision": request_digest,
+                "journal_revision": v2.digest(journal), "helper_revision": journal["v2"]["helper_revision"],
+                "queue_ack": v2.queue_ack(request, journal)}
+               if journal["schema_version"] == 2 else {}),
         }
     )
     log("agent-history: finalization queued; exit the agent session without more repository actions")
@@ -1567,6 +1673,10 @@ def parse_request_for_finalize(request_path, root, git_dir):
     digest = sha256_bytes(request_raw)
     if journal["request_sha256"] != digest:
         raise LifecycleError("request_mismatch", "request digest does not match the journal")
+    if request["schema_version"] != journal["schema_version"]:
+        raise LifecycleError("request_mismatch", "request/journal protocol versions differ")
+    if request["schema_version"] == 2 and any(request["v2"][key] != journal["v2"][key] for key in request["v2"]):
+        raise LifecycleError("request_mismatch", "request/journal v2 policy identities differ")
     return run_id, run_dir, journal_path, journal, request, digest
 
 
@@ -1614,6 +1724,8 @@ def normalize_commit_message(root, message_data):
 
 
 def commit_matches_request(root, oid, request, journal, *, require_trailer):
+    if request["schema_version"] == 2 and journal["expected_commit_parent"] != request["head_oid"]:
+        return False
     if not oid or not journal["expected_commit_parent"] or not journal["expected_commit_tree"]:
         return False
     try:
@@ -1996,7 +2108,10 @@ def require_recovery_authorization(arguments, journal):
             "retry_with_allow_commit",
         )
     if state == "rotation_required":
-        if not arguments.rotation_confirmed:
+        if journal["schema_version"] == 2 and journal["v2"]["review_status"] in ("unresolved", "stale", "not_required"):
+            v2.fail("unresolved_review", 10)
+        reviewed_fixture = journal["schema_version"] == 2 and journal["v2"]["review_status"] == "reviewed_noncredential"
+        if not arguments.rotation_confirmed and not reviewed_fixture:
             raise LifecycleError(
                 "rotation_confirmation_required",
                 "rotate the exposed credential, then explicitly confirm recovery",
@@ -2017,7 +2132,7 @@ def run_stage_transaction(script_dir, root, request, gitleaks_config):
     if not os.path.isfile(stage_script):
         raise LifecycleError("dependency_error", "exact staging helper is missing", 3)
     command = [
-        shutil.which("bash") or "/bin/bash",
+        bash_executable(),
         stage_script,
     ] + exact_selector_arguments(request) + [
         "--gitleaks-config",
@@ -2027,8 +2142,10 @@ def run_stage_transaction(script_dir, root, request, gitleaks_config):
         "--sanitize-index",
         "--materialize-sanitized",
     ]
+    if request["schema_version"] == 2:
+        command += ["--receipt-request", request["request_path"]]
     process = run_command(
-        command, cwd=root, env=git_environment(), suppress_output=True
+        command, cwd=root, env=git_environment({"AGENT_HISTORY_PYTHON": sys.executable} if request["schema_version"] == 2 else None), suppress_output=True
     )
     if process.returncode not in (0, 10):
         raise LifecycleError(
@@ -2048,7 +2165,7 @@ def scan_staged_index(script_dir, root, gitleaks_config, *, index_file=None, lab
         {"GIT_INDEX_FILE": index_file} if index_file is not None else None
     )
     process = run_command(
-        [shutil.which("bash") or "/bin/bash", scanner, "--config", gitleaks_config],
+        [bash_executable(), scanner, "--config", gitleaks_config],
         cwd=root,
         env=environment,
         suppress_output=True,
@@ -2137,7 +2254,7 @@ def verify_prepared_artifacts(script_dir, root, request, journal, artifact_dirs,
     if not os.path.isfile(stage_script) or not os.path.isfile(redactor):
         raise LifecycleError("dependency_error", "prepared-state verifier is missing", 3)
     stage_process = run_command(
-        [shutil.which("bash") or "/bin/bash", stage_script]
+        [bash_executable(), stage_script]
         + exact_selector_arguments(request)
         + [
             "--gitleaks-config",
@@ -2194,7 +2311,7 @@ def derive_metadata(script_dir, root):
     if not os.path.isfile(metadata_script):
         raise LifecycleError("dependency_error", "metadata helper is missing", 3)
     process = run_command(
-        [shutil.which("bash") or "/bin/bash", metadata_script],
+        [bash_executable(), metadata_script],
         cwd=root,
         env=git_environment(),
     )
@@ -2369,7 +2486,7 @@ def validate_composed_message(
         return
     process = run_command(
         [
-            shutil.which("bash") or "/bin/bash",
+            bash_executable(),
             checker,
             "--agentic",
             "--staged",
@@ -2743,13 +2860,35 @@ def cmd_finalize(arguments):
     run_id, run_dir, journal_path, journal, request, _request_digest = parse_request_for_finalize(
         request_path, root, git_dir
     )
+    if arguments.prepare_only and (journal["schema_version"] != 2 or not arguments.allow_commit or arguments.runner_token):
+        v2.fail("invalid_authorization", 5)
+    if arguments.preview_review:
+        if arguments.allow_commit or arguments.runner_token or arguments.review_file or arguments.rotation_confirmed or arguments.prepare_only or not arguments.json:
+            raise LifecycleError("invalid_arguments", "preview requires only --preview-review --json", 1)
+        if arguments.reconcile_only:
+            v2.fail("invalid_arguments", 1)
+        if arguments.expected_revision is not None:
+            validate_sha256(arguments.expected_revision)
+            if journal["schema_version"] != 2 or arguments.expected_revision != v2.digest(journal):
+                v2.fail("stale_revision", 6)
+        return v2.preview(arguments, root, git_dir, journal, request)
+    if arguments.review_file and journal["schema_version"] != 2:
+        v2.fail("legacy_review_unsupported", 4)
     lock_path = os.path.join(run_dir, "finalize.lock")
     with ExclusiveLock(lock_path):
         # Re-read under the lock so authorization and state cannot race another finalizer.
         run_id, run_dir, journal_path, journal, request, _request_digest = parse_request_for_finalize(
             request_path, root, git_dir
         )
+        if arguments.expected_revision is not None:
+            validate_sha256(arguments.expected_revision)
+            if journal["schema_version"] != 2 or arguments.expected_revision != v2.digest(journal):
+                v2.fail("stale_revision", 6)
+        if arguments.reconcile_only and (journal["schema_version"] != 2 or journal["state"] not in ("committing", "done")):
+            v2.fail("reconciliation_required", 8)
         authorize_finalize(arguments, journal)
+        if journal["schema_version"] == 2 and journal["state"] in ("committing", "done"):
+            v2.reprove_receipt(arguments.script_dir, root, request, journal, committed=True)
         recovered = reconcile_commit(root, git_dir, request, journal_path, journal)
         if recovered is not None:
             emit(
@@ -2777,6 +2916,15 @@ def cmd_finalize(arguments):
         journal, gitleaks_config = ensure_trusted_gitleaks_config(
             arguments.script_dir, root, request, journal_path, journal
         )
+        if journal["schema_version"] == 2:
+            if journal["state"] in ("prepared", "rotation_required"):
+                journal = v2.apply_review(arguments, root, request, journal_path, journal)
+            else:
+                if arguments.review_file:
+                    v2.fail("review_not_ready", 5)
+                if journal["v2"]["receipt_revision"] or os.path.lexists(os.path.join(run_dir, "sanitation.json")):
+                    v2.fail("publication_unproven", 8)
+                v2.reprove_freshness(arguments.script_dir, root, request, journal)
         require_recovery_authorization(arguments, journal)
         recovering_prepared = journal["state"] in ("prepared", "rotation_required")
         recovering_rotation = journal["state"] == "rotation_required"
@@ -2822,10 +2970,22 @@ def cmd_finalize(arguments):
                 rotation_required = run_stage_transaction(
                     arguments.script_dir, root, request, gitleaks_config
                 )
-            except LifecycleError as error:
-                update_journal(
-                    journal_path, journal, failure_code=error.code
-                )
+                if journal["schema_version"] == 2:
+                    _dir, _path, journal = validate_run_layout(request_path, root, git_dir, run_id)
+                    journal = v2.record_publication(root, request, journal_path, journal)
+            except (LifecycleError, OSError) as error:
+                if journal["schema_version"] == 2:
+                    # The stage process may have published some/all sanitized
+                    # paths before an index/receipt I/O failed. Never claim a
+                    # rollback and never authorize a replay of that transaction.
+                    _dir, _path, journal = validate_run_layout(request_path, root, git_dir, run_id)
+                    partial = os.path.lexists(os.path.join(run_dir, "sanitation.json"))
+                    update_journal(journal_path, journal, state="failed",
+                                   failure_code="publication_unproven" if partial else "artifact_staging_failed")
+                    if partial:
+                        v2.fail("publication_unproven", 8)
+                else:
+                    update_journal(journal_path, journal, failure_code=getattr(error, "code", "filesystem_error"))
                 raise
             try:
                 prepared_ref, prepared_parent = current_head_state(root)
@@ -2936,6 +3096,13 @@ def cmd_finalize(arguments):
             )
             return 10
 
+        if arguments.prepare_only:
+            v2.reprove_receipt(arguments.script_dir, root, request, journal)
+            emit({"schema_version": 2, "protocol_version": 2, "status": "prepared",
+                  "request_id": run_id, "prepared_tree": journal["expected_commit_tree"],
+                  "commit_attempted": False, "next_action": "revalidate_external_guard_then_finalize"})
+            return 0
+
         # Message derivation and draft I/O can take time. Re-prove the exact
         # prepared parent/ref/tree, then freeze the canonical index under its
         # own lock before granting one ordinary commit process authority.
@@ -2949,6 +3116,17 @@ def cmd_finalize(arguments):
             raise
         failed_editmsg_digest = None
         try:
+            if journal["schema_version"] == 2:
+                receipt, _revision = v2.reprove_receipt(arguments.script_dir, root, request, journal)
+                checker = v2.redactor_module(root, gitleaks_config, frozen_index)
+                try:
+                    audit, coverage = checker.audit_full_index()
+                except (checker.ScannerError, checker.IndexOperationError, checker.PathSafetyError, checker.TransformationError):
+                    v2.fail("frozen_index_coverage_unproven")
+                if audit.has_findings or coverage != receipt["coverage"]:
+                    v2.fail("frozen_index_coverage_unproven")
+                # Scanner/tool/source drift during this last pass is not approval.
+                v2.reprove_receipt(arguments.script_dir, root, request, journal)
             journal = update_journal(
                 journal_path,
                 journal,
@@ -3109,14 +3287,22 @@ def cmd_finalize(arguments):
         return 0
 
 
+class SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, _message):
+        raise LifecycleError("invalid_arguments", "invalid lifecycle arguments; values suppressed", 2,
+                             "inspect_public_help")
+
+
 def build_parser():
-    parser = argparse.ArgumentParser(add_help=False)
+    parser = SafeArgumentParser(add_help=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     run_parser = subparsers.add_parser("run", add_help=False)
     run_parser.add_argument("--script-dir", required=True)
     run_parser.add_argument("--provider", required=True)
     run_parser.add_argument("--allow-commit", action="store_true")
+    run_parser.add_argument("--protocol-version", type=int, choices=(1, 2), default=2)
+    run_parser.add_argument("--cloud-sync", action="store_true")
     run_parser.add_argument("specstory_args", nargs=argparse.REMAINDER)
     run_parser.set_defaults(function=cmd_run)
 
@@ -3136,7 +3322,22 @@ def build_parser():
     final_parser.add_argument("--allow-commit", action="store_true")
     final_parser.add_argument("--runner-token")
     final_parser.add_argument("--rotation-confirmed", action="store_true")
+    final_parser.add_argument("--prepare-only", action="store_true")
+    final_parser.add_argument("--expected-revision")
+    final_parser.add_argument("--reconcile-only", action="store_true")
+    final_parser.add_argument("--preview-review", action="store_true")
+    final_parser.add_argument("--review-file")
+    final_parser.add_argument("--json", action="store_true")
     final_parser.set_defaults(function=cmd_finalize)
+    for name, function in (("capabilities", v2.capabilities), ("inspect", v2.inspect)):
+        api = subparsers.add_parser(name, add_help=False)
+        api.add_argument("--script-dir", default=os.path.dirname(os.path.realpath(__file__)))
+        api.add_argument("--json", action="store_true", required=True)
+        if name == "inspect":
+            selector = api.add_mutually_exclusive_group(required=True)
+            selector.add_argument("--request")
+            selector.add_argument("--context", action="store_true")
+        api.set_defaults(function=function)
     return parser
 
 
@@ -3167,6 +3368,12 @@ def main():
             )
         with contextlib.suppress(OSError):
             log("agent-history: status=filesystem_error; private details suppressed")
+        return 4
+    except (TypeError, ValueError, KeyError, AttributeError, UnicodeError, RecursionError):
+        # Hostile private JSON must never make Python render raw values in a
+        # traceback. Strict evidence failures remain finite secret-free output.
+        emit({"status": "invalid_evidence", "next_action": "inspect_private_run_state_without_retrying"})
+        log("agent-history: status=invalid_evidence; private details suppressed")
         return 4
     except KeyboardInterrupt:
         return 130

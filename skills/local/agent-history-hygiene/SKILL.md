@@ -142,11 +142,16 @@ message edit, sync, or a finalizer call.
 
 ### 4. Let the outer runner finish
 
-Only after child exit `0`, the runner:
+New runs use protocol v2 and default to **no cloud sync**; the explicit choice
+reaches native run and sync flags without changing configuration. Existing v1
+requests retain their strict original schema and recovery rules, never an
+implicit upgrade. Only after child exit `0` and process-group quiescence, the runner:
 
 1. records lifecycle proof;
-2. runs one exact quiet `specstory sync claude -s UUID --silent`;
-3. re-proves the exact session/path;
+2. runs one exact quiet UUID sync with the selected no-cloud policy;
+3. verifies the selected alias's full digest against a bounded private native
+   `sync --print --silent --no-cloud-sync --no-stats` export, binding the unchanged
+   native JSONL generation before/after (unsupported exports or stale aliases stop);
 4. calls the finalizer with its parent-held token;
 5. stages and sanitizes exact artifacts in a locked alternate index;
 6. derives canonical trailers, writes private handoff drafts, and calls one
@@ -165,9 +170,18 @@ validation-only; the quiescent finalizer is the sole sanctioned mutator.
 - **Success (`committed` / exit 0):** an ordinary hook-enabled commit is proven.
   Only now may rebase/update-base, integration, or retirement proceed.
 - **Sanitation (`rotation_required` / exit 10):** exact index and live artifacts
-  are sanitized, drafts are ready, no commit was attempted. Rotate first, then
-  resume with fresh `--allow-commit --rotation-confirmed`; recovery does not
-  restage.
+  are sanitized, private full beforeimages/occurrence evidence and drafts are
+  retained, and no commit was attempted. A v2 read-only `--preview-review --json`
+  shows masked findings; a private versioned `--review-file` accounts for every
+  finding as `reviewed_noncredential`, `credential_rotation_required`, or
+  `unresolved`. Complete reviewed fixtures release only this sanitized snapshot's
+  rotation gate with fresh `--allow-commit`; real credentials still require
+  rotation plus `--rotation-confirmed`, and unresolved/mixed incomplete review
+  blocks. Nothing restores raw bytes, adds a policy allowlist, or skips hooks.
+  Legacy v1 retains rotation-only recovery and cannot acquire v2 review evidence.
+- **Partial publication (`publication_unproven` / exit 8):** private evidence is
+  retained but index/source publication could not be fully proven. Inspect;
+  never assume rollback or replay sanitation automatically.
 - **Hook/commit failure (`commit_failed` / exit 11):** HEAD is unchanged and the
   exact prepared tree plus drafts remain. Fix the hook without changing that
   snapshot, then make one explicit recovery call with fresh `--allow-commit`.
@@ -268,9 +282,18 @@ When a scan finds a real credential, or the user says it was committed/pushed:
   (--plan PATH|--no-plan) --message-file PATH`** — writes one strict,
   metadata-only, per-worktree request; identical repeats are idempotent.
 - **`finalize-agent-commit.sh --request ABSOLUTE_PATH
-  (--allow-commit|--runner-token TOKEN) [--rotation-confirmed]`** — validates
-  lifecycle/snapshot proof, prepares exact sanitized artifacts and drafts,
-  executes one ordinary commit, and reconciles uncertain state without retry.
+  (--allow-commit|--runner-token TOKEN) [--rotation-confirmed] [--review-file PATH]`**
+  — validates lifecycle/snapshot proof, prepares exact sanitized artifacts and
+  drafts, executes one ordinary commit, and reconciles uncertain state without
+  retry. V2 `--preview-review --json` needs no authorization and never writes;
+  `--prepare-only`, `--expected-revision DIGEST`, and `--reconcile-only` support a
+  thin native adapter without a second commit engine.
+- **`_post_session.py capabilities --json` / `inspect --request PATH --json`** —
+  bounded side-effect-free protocol discovery and receipt reproof; `inspect
+  --context --json` additionally requires authentic live wrapper ancestry.
+  Public output contains identities/digests, never raw transcript/message values.
+  Whole frozen-index text coverage is required in v2; product findings block
+  without mutation, and unsupported binary/oversized coverage fails explicitly.
 - **`find-session.sh (--session-id UUID|--specstory-path PATH|--newest)
   [--format specstory|claude|both] [--json]`** — exact checkout/session proof;
   `--newest` is heuristic compatibility only.

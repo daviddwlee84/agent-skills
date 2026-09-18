@@ -385,10 +385,10 @@ run_runner() {
     "$DESCENDANT_PID_LOG"
   set +e
   if [ "$authorization" = allow ]; then
-    (cd "$REPO" && runner_env "$mode" /bin/bash "$RUNNER" --provider claude --allow-commit -- "$@") \
+    (cd "$REPO" && runner_env "$mode" /bin/bash "$RUNNER" --protocol-version 1 --provider claude --allow-commit -- "$@") \
       > "$OUT_FILE" 2> "$ERR_FILE"
   else
-    (cd "$REPO" && runner_env "$mode" /bin/bash "$RUNNER" --provider claude -- "$@") \
+    (cd "$REPO" && runner_env "$mode" /bin/bash "$RUNNER" --protocol-version 1 --provider claude -- "$@") \
       > "$OUT_FILE" 2> "$ERR_FILE"
   fi
   LAST_RC=$?
@@ -527,7 +527,7 @@ mkfifo "$READY_FIFO" "$RELEASE_FIFO"
     REAL_GIT="$(command -v git)" HOOK_LOG="$HOOK_LOG" TEST_STAGE="$STAGE" \
     TEST_CHECK_MESSAGE="$CHECK_MESSAGE" TEST_FAIL_HOOK='' \
     FAKE_GITLEAKS_FILE='' FAKE_GITLEAKS_SECRET='' \
-    /bin/bash "$RUNNER" --provider claude --allow-commit -- --resume "$UUID"
+    /bin/bash "$RUNNER" --protocol-version 1 --provider claude --allow-commit -- --resume "$UUID"
 ) > "$OUT_FILE" 2> "$ERR_FILE" &
 barrier_pid=$!
 IFS= read -r barrier_value < "$READY_FIFO"
@@ -883,7 +883,7 @@ mkfifo "$READY_FIFO" "$RELEASE_FIFO"
     TEST_REQUEST_LOG="$REQUEST_LOG" TEST_SYNC_LOG="$SYNC_LOG" TEST_RUN_LOG="$RUN_LOG" \
     TEST_CHILD_ENV_LOG="$CHILD_ENV_LOG" TEST_READY_FIFO="$READY_FIFO" \
     TEST_RELEASE_FIFO="$RELEASE_FIFO" TEST_SIGNAL_LOG="$SIGNAL_LOG" \
-    /bin/bash "$RUNNER" --provider claude --allow-commit
+    /bin/bash "$RUNNER" --protocol-version 1 --provider claude --allow-commit
 ) > "$OUT_FILE" 2> "$ERR_FILE" &
 signal_runner_pid=$!
 IFS= read -r signal_ready < "$READY_FIFO"
@@ -919,7 +919,7 @@ mkfifo "$READY_FIFO" "$RELEASE_FIFO"
     TEST_REQUEST_LOG="$REQUEST_LOG" TEST_SYNC_LOG="$SYNC_LOG" TEST_RUN_LOG="$RUN_LOG" \
     TEST_CHILD_ENV_LOG="$CHILD_ENV_LOG" TEST_READY_FIFO="$READY_FIFO" \
     TEST_RELEASE_FIFO="$RELEASE_FIFO" TEST_SIGNAL_LOG="$SIGNAL_LOG" \
-    /bin/bash "$RUNNER" --provider claude --allow-commit
+    /bin/bash "$RUNNER" --protocol-version 1 --provider claude --allow-commit
 ) > "$OUT_FILE" 2> "$ERR_FILE" &
 signal_zero_runner_pid=$!
 IFS= read -r signal_zero_ready < "$READY_FIFO"

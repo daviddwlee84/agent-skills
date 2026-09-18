@@ -27,6 +27,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -667,11 +670,23 @@ def redaction_placeholder(rule_id: str, secret: str | None = None) -> str:
     return f"[REDACTED:{slug or 'secret'}]"
 
 
+def _trace_replace(content, start, end, replacement, trace):
+    if trace is not None:
+        if len(trace) >= 4096:
+            raise TransformationError("transformation evidence exceeds supported bound")
+        trace.append({"start": len(_encode_content(content[:start])),
+                      "end": len(_encode_content(content[:end])),
+                      "before": base64.b64encode(_encode_content(content[start:end])).decode("ascii"),
+                      "after": base64.b64encode(_encode_content(replacement)).decode("ascii")})
+    return content[:start] + replacement + content[end:]
+
+
 def redact_content(
     content: str,
     findings: Sequence[dict],
     legacy: bool = False,
     strict: bool = False,
+    trace: list | None = None,
 ) -> str:
     """Purely replace scanner-reported values, retaining every other byte.
 
@@ -705,7 +720,21 @@ def redact_content(
 
     transformed = content
     for secret in sorted(replacements, key=len, reverse=True):
-        transformed = transformed.replace(secret, replacements[secret])
+        if trace is None:
+            transformed = transformed.replace(secret, replacements[secret])
+        else:
+            # Record the actual existing replacement semantics, including every
+            # occurrence; offsets refer to the successive exact byte generation.
+            offsets = []
+            cursor = 0
+            while True:
+                start = transformed.find(secret, cursor)
+                if start < 0:
+                    break
+                offsets.append(start)
+                cursor = start + len(secret)
+            for start in reversed(offsets):
+                transformed = _trace_replace(transformed, start, start + len(secret), replacements[secret], trace)
     if any(secret in transformed for secret in replacements):
         raise TransformationError("reported bytes remained after redaction")
     return transformed
@@ -1193,7 +1222,7 @@ def _private_key_placeholder(kind: str, legacy: bool) -> str:
     return "[REDACTED PEM PRIVKEY BLOCK]" if legacy else "[REDACTED:private-key]"
 
 
-def redact_private_key_content(content: str, legacy: bool = False) -> str:
+def redact_private_key_content(content: str, legacy: bool = False, trace: list | None = None) -> str:
     """Remove complete records/isolated tokens; reject plausible truncation."""
     analysis = analyze_private_key_content(content)
     if analysis.incomplete_headers:
@@ -1217,6 +1246,12 @@ def redact_private_key_content(content: str, legacy: bool = False) -> str:
         cursor = item.end
     parts.append(content[cursor:])
     transformed = "".join(parts)
+    if trace is not None:
+        replay = content
+        for item in reversed(ranges):
+            replay = _trace_replace(replay, item.start, item.end, _private_key_placeholder(item.kind, legacy), trace)
+        if replay != transformed:
+            raise TransformationError("transformation evidence disagrees")
 
     if analyze_private_key_content(transformed).has_findings:
         raise TransformationError("private-key material remained after redaction")
@@ -1393,6 +1428,49 @@ def audit_staged_reachability(prefixes: Sequence[str]) -> StagedArtifactAudit:
     return StagedArtifactAudit(tuple(entries), grouped, private)
 
 
+def audit_full_index() -> tuple[StagedArtifactAudit, list[dict]]:
+    """V2 policy coverage: every regular stage-0 blob, not only added lines.
+
+    Unknown modes, unmerged state, binary or oversized input fail explicitly;
+    there is no silent scanner-success shortcut for an unscanned product file.
+    Gitlinks are non-blob entries and explicitly recorded as outside this policy.
+    """
+    entries, grouped, private, coverage = [], {}, {}, []
+    records = [record for record in _run_git(["ls-files", "--stage", "-z"]).split(b"\0") if record]
+    if len(records) > 4096:
+        raise ScannerError("full-index coverage exceeds supported entry bound")
+    total = 0
+    for record in records:
+        mode, oid, stage, path = _parse_stage_record(record)
+        if stage != 0:
+            raise ScannerError("full-index coverage requires merged entries")
+        if mode == "160000":
+            coverage.append({"path": path, "mode": mode, "oid": oid, "status": "nonblob_gitlink"})
+            continue
+        if mode not in ("100644", "100755", "120000"):
+            raise ScannerError("full-index coverage has an unsupported mode")
+        size = int(_run_git(["cat-file", "-s", oid]).strip())
+        total += size
+        if size > 8 * 1024 * 1024 or total > 128 * 1024 * 1024:
+            raise ScannerError("full-index coverage exceeds supported byte bound")
+        data = _run_git(["cat-file", "blob", oid])
+        if len(data) != size or b"\0" in data:
+            raise ScannerError("full-index binary coverage is unsupported")
+        entry = IndexBlob(path=path, mode=mode, oid=oid, data=data)
+        findings = _run_gitleaks(["gitleaks", "stdin"], input_data=data)
+        for finding in findings:
+            copied = dict(finding)
+            copied["File"] = path
+            grouped.setdefault(path, []).append(copied)
+        analysis = analyze_private_key_content(_decode_content(data))
+        if analysis.has_findings:
+            private[path] = analysis
+        entries.append(entry)
+        coverage.append({"path": path, "mode": mode, "oid": oid, "size": size,
+                         "sha256": hashlib.sha256(data).hexdigest(), "status": "scanned_full_blob"})
+    return StagedArtifactAudit(tuple(entries), grouped, private), coverage
+
+
 def _write_index_blobs(replacements: Sequence[tuple[IndexBlob, bytes]]) -> None:
     updates = []
     for entry, data in replacements:
@@ -1521,7 +1599,8 @@ def _require_noncanonical_alternate_index() -> None:
 
 
 def _fix_index(
-    prefixes: Sequence[str], selected_paths: Sequence[str], legacy: bool
+    prefixes: Sequence[str], selected_paths: Sequence[str], legacy: bool,
+    receipt_request: str | None = None,
 ) -> int:
     _require_noncanonical_alternate_index()
     selected = [_validate_repo_path(path) for path in selected_paths]
@@ -1530,7 +1609,19 @@ def _fix_index(
     if any(not _is_artifact_markdown(path, prefixes) for path in selected):
         raise PathSafetyError("--files must name exact artifact Markdown paths")
 
-    audit = audit_staged_reachability(prefixes)
+    lifecycle = None
+    proof = None
+    if receipt_request:
+        path = Path(__file__).resolve().parent.parent / "scripts" / "_post_session.py"
+        spec = importlib.util.spec_from_file_location("_receipt_lifecycle", path)
+        lifecycle = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = lifecycle
+        spec.loader.exec_module(lifecycle)
+        try:
+            proof = lifecycle.v2.scanner_proof(GITLEAKS_CONFIG, receipt_request)
+        except lifecycle.LifecycleError as exc:
+            raise ScannerError("trusted scanner identity was not proven") from exc
+    audit = audit_full_index()[0] if receipt_request else audit_staged_reachability(prefixes)
     entries_by_path = {entry.path: entry for entry in audit.entries}
     if any(path not in entries_by_path for path in selected):
         raise IndexOperationError("an exact --files path is not staged")
@@ -1540,7 +1631,8 @@ def _fix_index(
         set(audit.findings_by_path) | set(audit.private_by_path)
     ) - selected_set
     if foreign_paths:
-        _report_staged_audit(audit)
+        if not receipt_request:
+            _report_staged_audit(audit)
         print("Cannot sanitize findings outside the exact --files selection.", file=sys.stderr)
         return 1
 
@@ -1550,7 +1642,8 @@ def _fix_index(
         if path in audit.private_by_path
     )
     if incomplete_count:
-        _report_staged_audit(audit)
+        if not receipt_request:
+            _report_staged_audit(audit)
         print(
             "Cannot safely redact incomplete or truncated private-key records.",
             file=sys.stderr,
@@ -1558,6 +1651,7 @@ def _fix_index(
         return 1
 
     planned: list[tuple[IndexBlob, bytes]] = []
+    traces = {path: [] for path in selected}
     for path in selected:
         entry = entries_by_path[path]
         content = _decode_content(entry.data)
@@ -1568,7 +1662,8 @@ def _fix_index(
                 raise TransformationError(
                     "scanner finding did not match the index blob"
                 )
-        transformed = redact_private_key_content(content, legacy=legacy)
+        trace = traces[path] if receipt_request else None
+        transformed = redact_private_key_content(content, legacy=legacy, trace=trace)
         # A complete key record may itself be one scanner finding. Its bytes
         # were already removed wholesale, so only still-present values need the
         # generic replacement pass.
@@ -1582,6 +1677,7 @@ def _fix_index(
             remaining_findings,
             legacy=legacy,
             strict=True,
+            trace=trace,
         )
         transformed_data = _encode_content(transformed)
         if transformed_data != entry.data:
@@ -1589,15 +1685,27 @@ def _fix_index(
 
     _write_index_blobs(planned)
 
-    post_scan = audit_staged_reachability(prefixes)
+    coverage = []
+    if receipt_request:
+        post_scan, coverage = audit_full_index()
+    else:
+        post_scan = audit_staged_reachability(prefixes)
     if post_scan.has_findings:
-        _report_staged_audit(post_scan)
+        if not receipt_request:
+            _report_staged_audit(post_scan)
         print(
             "Staged-diff post-scan still found newly staged or structural material.",
             file=sys.stderr,
         )
         return 1
 
+    if receipt_request:
+        # Reuse the canonical lifecycle evidence writer. Failure leaves only the
+        # disposable alternate index changed; the stage helper cannot publish.
+        try:
+            lifecycle.v2.prepare_receipt(receipt_request, sys.modules[__name__], audit, selected, traces, coverage, proof)
+        except lifecycle.LifecycleError as exc:
+            raise TransformationError("private sanitation evidence was not proven") from exc
     print(
         f"Sanitized {len(planned)} changed staged artifact blob(s); worktree unchanged."
     )
@@ -1808,6 +1916,8 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Exact staged Markdown paths for --fix-index (repeatable)",
     )
+    parser.add_argument("--full-index", action="store_true", help="V2: scan every frozen index blob; unsupported inputs block")
+    parser.add_argument("--receipt-request", help="V2 private request; persist complete evidence before publication")
     return parser
 
 
@@ -1824,14 +1934,26 @@ def main() -> int:
         parser.error("--fix-index requires at least one exact --files path")
     if files and not args.fix_index:
         parser.error("--files is valid only with --fix-index")
+    if args.full_index and (not args.check_index or args.fix_index or args.fix or args.working_dir):
+        parser.error("--full-index requires readonly --check-index")
 
     try:
         _prepare_repository(args.config)
         prefixes = [_normalize_prefix(prefix) for prefix in args.paths]
         if len(set(prefixes)) != len(prefixes):
             raise PathSafetyError("--paths prefixes must be unique")
+        if args.receipt_request and (not args.fix_index or args.legacy):
+            raise PathSafetyError("--receipt-request requires nonlegacy --fix-index")
         if args.fix_index:
-            return _fix_index(prefixes, files, legacy=args.legacy)
+            return _fix_index(prefixes, files, legacy=args.legacy, receipt_request=args.receipt_request)
+        if args.full_index:
+            audit, _coverage = audit_full_index()
+            if audit.has_findings:
+                # This v2 pass is also directly callable. Do not echo a hostile
+                # scanner's rule id, which can itself contain a raw value.
+                print("Full-index scan found blocking findings; index and source unchanged.")
+                return 1
+            return 0
         if args.fix or args.working_dir:
             return _worktree_mode(
                 prefixes,

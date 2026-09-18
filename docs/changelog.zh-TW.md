@@ -11,6 +11,21 @@
 
 ## Unreleased
 
+- 新增 canonical `agent-history-hygiene` post-session protocol v2，保留嚴格且
+  不變的 v1 恢復語意：sanitation 前持久化私有完整 beforeimages、每項 finding／
+  occurrence 的 transformation receipt，掃描整個 frozen prepared index，並以
+  source-bound 逐項審閱區分非 credential fixture、需要 credential rotation、
+  以及 unresolved evidence。審閱不還原 raw bytes、不加入 blanket allow、不跳過
+  hooks，也不重試 uncertain commit；partial publication 明確維持 unproven。
+- 新 v2 wrapper 預設使用原生 no-cloud flags，綁定明確 resume UUID 與 typed
+  queued-request acknowledgement，再以 bounded read-only native exact export
+  的完整 digest 及未變動的 native source generation 證明 selected alias。
+  Stale alias／unsupported export 直接阻擋而不 retarget。新增無副作用的
+  capabilities／inspect 與 revision-guarded prepare／reconcile API，供薄型
+  native adapter 使用；所有 commit authority 仍由 canonical helper 持有。
+  macOS helper 子行程改用系統 Bash 3.2，避開 PATH shell 的不穩定 command
+  substitution 行為，同時保留完整 exact selector 檢查。
+
 - 發布 `agent-history-hygiene` hook v2.0.1：把 upstream
   `sourcegraph-access-token` 的 bare-40-hex false positive 僅限縮於 agent
   artifacts，同時保留真實 `sgp_...` 的偵測；fresh bootstrap 改用 gitleaks

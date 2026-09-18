@@ -6,6 +6,22 @@ file curates the milestones.
 
 ## Unreleased
 
+- Added canonical `agent-history-hygiene` post-session protocol v2 with strict
+  unchanged v1 recovery: durable private sanitation beforeimages, exact finding/
+  occurrence transformation receipts, whole frozen-index scanner coverage, and
+  source-bound per-finding review for noncredential fixtures versus credential
+  rotation or unresolved evidence. Review never restores raw bytes, adds blanket
+  allows, skips hooks, or retries uncertain commits; partial publication remains
+  explicitly unproven.
+- New v2 wrappers default to native no-cloud flags, pin explicit resume UUIDs and
+  typed queued-request acknowledgements, and prove the selected alias against a
+  bounded read-only native exact export plus unchanged native source generation.
+  Stale aliases/unsupported export block without retargeting. Side-effect-free
+  capabilities/inspection and revision-guarded prepare/reconcile APIs support a
+  thin native adapter while the canonical helper retains all commit authority.
+  macOS helper subprocesses use stock Bash 3.2, avoiding unstable PATH-shell
+  substitution behavior without weakening exact selector checks.
+
 - Released `agent-history-hygiene` hook v2.0.1: scoped the upstream
   `sourcegraph-access-token` bare-40-hex false positive to agent artifacts while
   preserving real `sgp_...` detection, and advanced fresh bootstrap to gitleaks

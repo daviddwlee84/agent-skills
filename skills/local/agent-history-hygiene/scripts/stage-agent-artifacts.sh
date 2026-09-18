@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_DIRS_FILE="$SKILL_DIR/assets/artifact-dirs.txt"
 REDACTOR="$SKILL_DIR/assets/redact_secrets.py"
+PYTHON_BIN=python3
 
 usage() {
   cat <<'EOF'
@@ -45,6 +46,10 @@ Exact session-only options:
                           .gitleaks.toml. The finalizer pins this to the
                           request's own HEAD so a live session cannot weaken
                           the policy mid-run. Requires --session-only.
+  --receipt-request PATH V2 finalizer-only private request. Require whole prepared
+                          index scanner coverage and durable complete beforeimage/
+                          transformation evidence before source/index publication.
+                          Requires materialized exact sanitation and owned lock.
   --expect-index-tree OID Refuse to touch the index unless it currently writes
                           exactly this tree. Proves the queued staged tree is
                           still the one being finalized. Requires
@@ -106,6 +111,7 @@ GITLEAKS_CONFIG=""
 GITLEAKS_CONFIG_SET=0
 EXPECT_INDEX_TREE=""
 EXPECT_INDEX_TREE_SET=0
+RECEIPT_REQUEST=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -137,6 +143,11 @@ while [ $# -gt 0 ]; do
       [ -n "$PLAN_INPUT" ] || die "--plan cannot be empty" 1
       shift ;;
     --no-plan) NO_PLAN=1; shift ;;
+    --receipt-request)
+      shift
+      [ $# -gt 0 ] && [ -n "$1" ] || die "--receipt-request requires an absolute private request" 1
+      [ -z "$RECEIPT_REQUEST" ] || die "--receipt-request may be passed only once" 1
+      RECEIPT_REQUEST="$1"; shift ;;
     --sanitize-index) SANITIZE_INDEX=1; shift ;;
     --materialize-sanitized) MATERIALIZE_SANITIZED=1; shift ;;
     --gitleaks-config)
@@ -213,6 +224,14 @@ if [ "$EXPECT_INDEX_TREE_SET" = "1" ]; then
   esac
 fi
 
+if [ -n "$RECEIPT_REQUEST" ]; then
+  PYTHON_BIN="${AGENT_HISTORY_PYTHON:-python3}"
+  [ "$MATERIALIZE_SANITIZED" = "1" ] || die "receipt requires materialized exact sanitation" 1
+  case "$RECEIPT_REQUEST" in /*) ;; *) die "receipt request must be absolute" 1 ;; esac
+  if has_control_bytes "$RECEIPT_REQUEST" || ! is_valid_utf8 "$RECEIPT_REQUEST"; then
+    die "receipt request path is unsafe" 1
+  fi
+fi
 [ "$MATERIALIZE_SANITIZED" = "0" ] || [ "$SANITIZE_INDEX" = "1" ] || \
   die "--materialize-sanitized requires --sanitize-index" 1
 [ "$GITLEAKS_CONFIG_SET" = "0" ] || [ "$SESSION_ONLY" = "1" ] || \
@@ -224,7 +243,7 @@ if [ "$SANITIZE_INDEX" = "1" ]; then
   [ "$CHECK_STAGED" = "0" ] || die "--sanitize-index cannot be combined with --check-staged" 1
   [ "$DRY_RUN" = "0" ] || die "--sanitize-index cannot be combined with --dry-run" 1
   [ "$INCLUDE_ALL_PLANS" = "0" ] || die "--sanitize-index cannot be combined with --include-all-plans" 1
-  command -v python3 >/dev/null 2>&1 || die "python3 is required for index sanitation" 5
+  command -v "$PYTHON_BIN" >/dev/null 2>&1 || die "python3 is required for index sanitation" 5
   [ -f "$REDACTOR" ] || die "the staged artifact sanitizer is unavailable" 5
 fi
 
@@ -619,21 +638,28 @@ run_redactor_index_mode() {
   case "$mode" in
     fix)
       if [ "$GITLEAKS_CONFIG_SET" = "1" ]; then
-        set -- python3 "$REDACTOR" --config "$GITLEAKS_CONFIG" --fix-index \
+        set -- "$PYTHON_BIN" "$REDACTOR" --config "$GITLEAKS_CONFIG" --fix-index \
           --paths "${ARTIFACT_DIRS[@]}" --files "${CANDIDATES[@]}"
       else
-        set -- python3 "$REDACTOR" --fix-index \
+        set -- "$PYTHON_BIN" "$REDACTOR" --fix-index \
           --paths "${ARTIFACT_DIRS[@]}" --files "${CANDIDATES[@]}"
       fi ;;
     check)
       if [ "$GITLEAKS_CONFIG_SET" = "1" ]; then
-        set -- python3 "$REDACTOR" --config "$GITLEAKS_CONFIG" --check-index \
+        set -- "$PYTHON_BIN" "$REDACTOR" --config "$GITLEAKS_CONFIG" --check-index \
           --paths "${ARTIFACT_DIRS[@]}"
       else
-        set -- python3 "$REDACTOR" --check-index --paths "${ARTIFACT_DIRS[@]}"
+        set -- "$PYTHON_BIN" "$REDACTOR" --check-index --paths "${ARTIFACT_DIRS[@]}"
       fi ;;
     *) return 2 ;;
   esac
+  if [ -n "$RECEIPT_REQUEST" ]; then
+    if [ "$mode" = fix ]; then
+      set -- "$@" --receipt-request "$RECEIPT_REQUEST"
+    else
+      set -- "$@" --full-index
+    fi
+  fi
   "$@" >/dev/null 2>&1 || rc=$?
   return "$rc"
 }
@@ -656,7 +682,7 @@ sanitize_candidate_index() {
 }
 
 regular_file_identity() {
-  python3 - "$1" <<'PY'
+  "$PYTHON_BIN" - "$1" <<'PY'
 import os
 import stat
 import sys
@@ -673,7 +699,7 @@ PY
 
 owned_backup_action() {
   local action="$1" backup="$2" identity="$3" target="${4:-}"
-  python3 - "$action" "$backup" "$identity" "$target" <<'PY'
+  "$PYTHON_BIN" - "$action" "$backup" "$identity" "$target" <<'PY'
 import os
 import stat
 import sys
@@ -713,7 +739,7 @@ PY
 
 same_owned_inode() {
   local path="$1" backup="$2" identity="$3"
-  python3 - "$path" "$backup" "$identity" <<'PY'
+  "$PYTHON_BIN" - "$path" "$backup" "$identity" <<'PY'
 import os
 import stat
 import sys
@@ -997,7 +1023,7 @@ trap 'exit 130' HUP INT TERM
 
 run_exact_selector() {
   local selector_output selector_rc=0
-  set -- "$SCRIPT_DIR/find-session.sh" --quiet --format "$1"
+  set -- "$BASH" "$SCRIPT_DIR/find-session.sh" --quiet --format "$1"
   [ "$SESSION_ID_SET" = "1" ] && set -- "$@" --session-id "$SESSION_ID"
   [ "$SPECSTORY_PATH_SET" = "1" ] && set -- "$@" --specstory-path "$SPECSTORY_INPUT"
   selector_output="$("$@")" || selector_rc=$?
