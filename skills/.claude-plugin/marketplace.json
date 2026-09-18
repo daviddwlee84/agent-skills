@@ -207,6 +207,17 @@
       ]
     },
     {
+      "name": "security",
+      "description": "Cloudflare's security-audit skill: source-first vulnerability review with sandboxed validation, independently verified findings, and schema-checked machine-readable reports",
+      "category": "Security",
+      "tags": ["security", "audit", "vulnerability", "pentest", "appsec", "trust-boundary"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/security-audit"
+      ]
+    },
+    {
       "name": "deep-research",
       "description": "Citation-tracked multi-source research with evidence persistence, claim ledger, and structured report generation — pure prompt-flow, no external API required",
       "category": "Research",

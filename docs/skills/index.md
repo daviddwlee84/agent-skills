@@ -70,6 +70,7 @@ for how series work.
 | [`anywidget`](anywidget.md) | [marimo-team/skills](https://github.com/marimo-team/skills/tree/main/skills/anywidget) | [docs](anywidget.md) |
 | [`skill-creator`](skill-creator.md) | [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/skill-creator) | [docs](skill-creator.md) |
 | [`herdr`](herdr.md) | [herdrdev/herdr](https://github.com/herdrdev/herdr/tree/master/skills/herdr) | [docs](herdr.md) |
+| [`security-audit`](security-audit.md) | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill/tree/main/skills/security-audit) | [docs](security-audit.md) |
 
 ### Fullstack Next.js series
 

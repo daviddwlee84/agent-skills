@@ -39,6 +39,7 @@ are partially vendored (specific skills cherry-picked into
 | GarryTan / OpenClaw skills | [`garrytan/gstack`](https://github.com/garrytan/gstack) | `vendored` (partial) | We vendor 4 skills into `product-planning` series. |
 | Warp Oz skills | [`warpdotdev/oz-skills`](https://github.com/warpdotdev/oz-skills) | `vendored` (partial) | 6 of 15 vendored — see [`reference/warp-oz-skills.md`](../reference/warp-oz-skills.md) for what was skipped and why. |
 | 199-biotechnologies deep-research | [`199-biotechnologies/deep-research`](https://github.com/199-biotechnologies/deep-research) | `vendored` | Single-skill series. See [`reference/deep-research-landscape.md`](../reference/deep-research-landscape.md). |
+| Cloudflare security-audit | [`cloudflare/security-audit-skill`](https://github.com/cloudflare/security-audit-skill) | `vendored` | Single-skill repo; flat `security-audit` in its own `security` picker group. See [`skills/security-audit.md`](../skills/security-audit.md). |
 | The Minimalist Entrepreneur skills | [`slavingia/skills`](https://github.com/slavingia/skills) | `evaluated` | Skills based on Sahil Lavingia's [The Minimalist Entrepreneur](https://www.amazon.com/Minimalist-Entrepreneur-Great-Founders-More/dp/0593192397). Persona-style; useful as a model for opinionated single-author skill packs. |
 | `last30days` topic synthesizer | [`mvanhorn/last30days-skill`](https://github.com/mvanhorn/last30days-skill) | `evaluated` | Researches a topic across Reddit, X, YouTube, HN, Polymarket, web → grounded summary. |
 

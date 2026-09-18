@@ -44,6 +44,7 @@ vendored（特定 skill 精選 (cherry-picked) 進
 | GarryTan / OpenClaw skills | [`garrytan/gstack`](https://github.com/garrytan/gstack) | `vendored`（部分） | 已 vendor 4 個 skill 進 `product-planning` series。 |
 | Warp Oz skills | [`warpdotdev/oz-skills`](https://github.com/warpdotdev/oz-skills) | `vendored`（部分） | 15 個中 vendor 6 個 —— 跳過原因見 [`reference/warp-oz-skills.md`](../reference/warp-oz-skills.md)。 |
 | 199-biotechnologies deep-research | [`199-biotechnologies/deep-research`](https://github.com/199-biotechnologies/deep-research) | `vendored` | 單 skill series。見 [`reference/deep-research-landscape.md`](../reference/deep-research-landscape.md)。 |
+| Cloudflare security-audit | [`cloudflare/security-audit-skill`](https://github.com/cloudflare/security-audit-skill) | `vendored` | 單 skill repo；flat 放置為 `security-audit`，在 picker 中自成 `security` 群組。見 [`skills/security-audit.md`](../skills/security-audit.md)。 |
 | The Minimalist Entrepreneur skill | [`slavingia/skills`](https://github.com/slavingia/skills) | `evaluated` | 基於 Sahil Lavingia 的 [The Minimalist Entrepreneur](https://www.amazon.com/Minimalist-Entrepreneur-Great-Founders-More/dp/0593192397) 的 skill。Persona 取向；作為單一作者 opinionated skill pack 的範本很有用。 |
 | `last30days` 主題 synthesizer | [`mvanhorn/last30days-skill`](https://github.com/mvanhorn/last30days-skill) | `evaluated` | 跨 Reddit、X、YouTube、HN、Polymarket、web 研究主題 → 有依據的摘要 (grounded summary)。 |
 

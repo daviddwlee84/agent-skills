@@ -145,6 +145,7 @@ nav:
           - anywidget: skills/anywidget.md
           - skill-creator: skills/skill-creator.md
           - herdr: skills/herdr.md
+          - security-audit: skills/security-audit.md
           - Fullstack Next.js:
               - nextjs: skills/nextjs.md
               - shadcn: skills/shadcn.md
