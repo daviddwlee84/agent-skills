@@ -49,7 +49,10 @@ that version. Copy the current example from the cache at your `docs_ref` when
 signatures matter.
 
 ```python
-from nautilus_trader.adapters.binance import BinanceDataClientConfig, BinanceDataClientFactory, BinanceProductType
+from nautilus_trader.adapters.binance import (
+    BinanceDataClientConfig, BinanceDataClientFactory, BinanceEnvironment,
+    BinanceProductType, BinanceSpotMarketDataMode,
+)
 from nautilus_trader.adapters.sandbox import SandboxExecutionClientConfig, SandboxExecutionClientFactory
 from nautilus_trader.common import Environment
 from nautilus_trader.live import LiveNode
@@ -57,7 +60,14 @@ from nautilus_trader.model import AccountId, Currency, Money, TraderId, Venue
 
 node = (
     LiveNode.builder("PAPER-001", TraderId.from_str("TRADER-001"), Environment.SANDBOX)
-    .add_data_client(None, BinanceDataClientFactory(), BinanceDataClientConfig(product_type=BinanceProductType.SPOT))
+    .add_data_client(
+        None, BinanceDataClientFactory(),
+        BinanceDataClientConfig(
+            product_type=BinanceProductType.SPOT,
+            environment=BinanceEnvironment.LIVE,  # Public data, not live execution
+            spot_market_data_mode=BinanceSpotMarketDataMode.Json,
+        ),
+    )
     .add_simulated_exec_client(
         "BINANCE",
         SandboxExecutionClientFactory(),
@@ -82,6 +92,15 @@ node.run()  # blocks and owns SIGINT/SIGTERM
   `max_order_modify_rate`, `bypass`), cache/message-bus database backing, and
   controllers. Check `LiveNodeBuilder` in the installed stubs for the full set.
 - Register components before the node leaves its idle state.
+- In 2.0.0rc5, Binance Spot defaults to authenticated SBE market data. Explicitly
+  select `BinanceSpotMarketDataMode.Json` for this public-data example; sandbox
+  execution alone does not make the data transport credential-free. Use a
+  credential-free process for public-only checks, since adapters may fall back
+  to environment credentials.
+- Validate the strategy's order directions against the simulated account:
+  a long/short EMA cannot naked-sell BTC in a USDT-only cash account. Preserve
+  or explicitly choose the intended inventory/long-only policy, rather than
+  silently enabling margin. Build-only registration is not an execution test.
 
 ## Operational contracts
 

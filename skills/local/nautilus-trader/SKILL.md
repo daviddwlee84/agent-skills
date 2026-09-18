@@ -95,6 +95,9 @@ check, `--offline` uses only valid cache, and `stale` must be reported as such.
 3. Check the orders, fills and positions reports, not only final PnL. Generate
    reports before `dispose()`. State the fill model, bar-based execution,
    `default_leverage`, `use_mark_prices` and fees whenever they affect results.
+   For time-based exits, test deadlines between bars and across data gaps. Use
+   engine-clock alerts for elapsed-time guarantees; polling only in `on_bar`
+   limits exit timing to incoming bars, regardless of the configured duration.
 4. Run the saved code in a fresh project-interpreter process. One node per
    process: run configs sequentially with `dispose()`, or in separate processes.
    For wide parameter grids, screen with `vectorbt` and confirm here.
@@ -137,8 +140,9 @@ live node. Hard gates:
 - Wheels cover Python 3.12–3.14 on Linux x86_64/ARM64, macOS ARM64 and Windows
   x86_64. There are no Intel macOS wheels.
 - v2 `Order.avg_px` is a `Decimal`, so `Decimal("0.70000") == 0.7` is `False`.
-- An omitted backtest `default_leverage` means 10x for margin accounts in v2
-  (1x in v1).
+- Do not infer leverage from a generation-wide migration table: the verified
+  1.231.0 and 2.0.0rc5 margin backtests both default to 10x. Inspect the source
+  account's actual leverage and preserve it explicitly during migration.
 - `generate_*_report()` after `engine.dispose()` returns empty frames without
   an error (verified on 2.0.0rc5).
 - Python callbacks run synchronously on the event thread. Offload blocking I/O

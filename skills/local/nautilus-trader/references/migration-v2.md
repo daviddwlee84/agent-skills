@@ -1,9 +1,11 @@
 # v1 → v2 migration
 
 Condensed from upstream `MIGRATION_V2.md` at v2.0.0rc5 (verified 2026-09-17).
-The copy in the helper's cache at the **target** ref is authoritative: sync it
-with `scripts/nt_context.py docs --ref <v2 tag>` and read its relevant sections
-before editing. The tables below find candidates; they do not replace that file.
+Sync the guide at the **target** ref with
+`scripts/nt_context.py docs --ref <v2 tag>` and use it to locate changes, then
+verify them against the installed source and target packages. Even a tagged
+guide can contradict a wheel's behavior; preserve measured semantics, not a
+blanket rename/default table.
 
 ## Contents
 
@@ -136,8 +138,11 @@ the target `MIGRATION_V2.md` instead of copying v1 fields.
 
 ## Behavior changes that alter results
 
-- Omitted backtest `default_leverage`: 10x for margin accounts (v1: 1x). Set
-  `default_leverage=Decimal(1)` to keep v1 behavior.
+- Verify `default_leverage` in the source account before migration. Although
+  rc5's migration guide says v1 used 1x, the tested 1.231.0 wheel and its
+  `backtest/engine.pyx` select 10x for margin accounts, as does rc5. Preserve
+  that observed value explicitly; `Decimal(1)` is an unleveraged policy choice,
+  not a universal v1 compatibility setting.
 - `PortfolioConfig.use_mark_prices` defaults to `true` (v1: `false`).
 - Backtest venues no longer accept `settlement_prices`; add `InstrumentClose`
   data with `close_type=InstrumentCloseType.CONTRACT_EXPIRED`.
