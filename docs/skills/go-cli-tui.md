@@ -5,7 +5,7 @@ Lazygit-inspired interaction: visible state, fast context switching, discoverabl
 actions, and immediate feedback. The default stack is Cobra plus compatible
 Bubble Tea, Bubbles, Lip Gloss, and optional Huh versions.
 
-This is a standalone local development skill. It contains instructions and seven
+This is a standalone local development skill. It contains instructions and eight
 references, not a starter application. It primarily serves new tools and new
 features, while respecting existing frameworks and public behavior.
 
@@ -24,6 +24,8 @@ The grouped picker lists it under **go-cli**. Example requests:
   changing its framework version."
 - "Let agents use this CLI reliably, with bundled operational guidance and
   machine output, then prepare a first `go install` release."
+- "Add an upgrade command that updates the running copy and respects source
+  builds, published release assets, and package-manager ownership."
 
 For an implementation request, the skill leads through a compact interaction
 contract, shared domain operations, implementation, and verification. It does not
@@ -69,6 +71,19 @@ the checkout. `@latest` does not generally mean the newest main commit.
 Prebuilt archives, checksums, and a Homebrew tap can follow when distribution
 needs justify them; they are not prerequisites for the first source release.
 
+An explicit upgrade feature selects a strategy from published artifacts and the
+running executable's ownership. A source-only release can build an exact tag
+with installed Go; published archives need checksum and executable verification;
+package-owned copies update through their manager. Build metadata describes
+provenance, not who installed the file. A copied Go binary must update at its
+resolved current path, independent of today's `GOBIN` or another copy on `PATH`.
+Local/dirty builds are preserved by default. Staging, destination locking,
+identity rechecks and atomic replacement retain the old file on failure.
+Check-only/JSON/read-only behavior and Go toolchain selection are explicit; the
+updater does not bootstrap a missing Go command or invoke `sudo`. Embedded
+`--skill` content updates with the binary; end users do not run `npx skills` for
+that content.
+
 Mouse verification combines state tests with SGR events sent through a real PTY,
 including modal capture and stale button presses after resize/target changes.
 Monitoring guidance covers timestamped bounded history, source-specific freshness,
@@ -89,6 +104,7 @@ consistent. These are completion checks, not a requirement to add packaging.
 | [Async and terminal](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | Generations, cancellation, startup, terminal ownership, and dev-cli lessons |
 | [Agent-facing CLI](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/agent-facing-cli.md) | Embedded knowledge, static documentation, machine errors, noninteractive calls, and bounded streams |
 | [Go distribution](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main-package install paths, version reporting, public tags, and later packaging |
+| [Self-update](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | Conditional source/asset/manager strategies, provenance and ownership, current-copy replacement, and failure preservation |
 | [Verification](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | State tests, real PTY checks, Unicode emulator limits, and three acceptance walkthroughs |
 
 The Charm map includes Glamour, Log, Wish, ANSI/terminal utilities, Harmonica,

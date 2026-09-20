@@ -5,7 +5,7 @@
 操作後立即得到回饋。預設採 Cobra，加上版本相容的 Bubble Tea、Bubbles、
 Lip Gloss，表單需要時使用 Huh。
 
-這是可獨立安裝的 local 開發 skill，包含主文件與七份參考文件，不附 starter
+這是可獨立安裝的 local 開發 skill，包含主文件與八份參考文件，不附 starter
 專案。主要服務從零開發與新增功能，也保留既有專案的框架與公開操作契約。
 
 ## 安裝與使用
@@ -22,6 +22,8 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
 - 「改善這個 Bubble Tea v1 app 的焦點、搜尋與刷新體驗，保留原本框架版本。」
 - 「讓 agent 能可靠使用這個 CLI，提供內建操作指南與機器輸出，再準備第一個
   `go install` 版本。」
+- 「加入 upgrade 命令，更新目前執行的那份 binary，並依原始碼建置、release
+  assets 或套件管理器擁有權選擇正確流程。」
 
 收到實作要求時，skill 會從精簡互動規格、共用領域操作一路做到實作與驗證，
 不會停在畫面建議。
@@ -61,6 +63,16 @@ Go 工具的初期發佈可從 `go install` 開始，使用實際 main package �
 等發佈需求增加，再加入預編譯壓縮檔、checksums 與 Homebrew tap；這些不是
 第一個原始碼發佈版本的必要條件。
 
+明確要求升級功能時，依已發佈的產物與目前 executable 的擁有權選擇策略。
+只有原始碼的 release 可使用已安裝的 Go 建置確切 tag；預編譯壓縮檔要驗證
+checksum 與 executable；套件管理器擁有的版本由該管理器更新。Build metadata
+說明建置來源，不代表由誰安裝。搬移過的 Go binary 應更新目前解析後的路徑，
+不受現在的 `GOBIN` 或 `PATH` 上另一份副本影響。預設保留本機／dirty build；
+暫存建置、目標鎖定、檔案身分重查與原子替換，讓失敗時舊檔仍可使用。
+Check-only／JSON／read-only 與 Go toolchain 選擇策略要明確；缺少 Go 命令時，
+updater 不會自行下載安裝它或執行 `sudo`。內建 `--skill` 內容隨 binary 更新，
+使用者不必為此執行 `npx skills`。
+
 滑鼠驗證結合狀態測試與真實 PTY 的 SGR 事件，包含 modal 捕捉，以及縮放或
 切換 target 後取消舊按鈕按壓。監控畫面的指引涵蓋帶時間戳的有界歷史、各資料源
 的新鮮度、真實斷線缺口、計數器重設與精確 drilldown。設定檔損壞時仍應能開啟
@@ -80,6 +92,7 @@ editor，並保留未通過驗證的使用者修改。
 | [非同步與終端](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | 請求世代、取消、啟動、終端控制權與 dev-cli 經驗 |
 | [Agent CLI](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/agent-facing-cli.md) | 內建知識、靜態文件、機器錯誤、非互動呼叫與有界串流 |
 | [Go 發佈](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main package 安裝路徑、版本回報、公開 tags 與後續打包 |
+| [自我更新](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | 依條件選擇原始碼／產物／管理器策略、建置來源與擁有權、更新目前副本，以及失敗時保留舊版 |
 | [驗證](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作、Unicode emulator 限制與三種驗收案例 |
 
 Charm 速查包含 Glamour、Log、Wish、ANSI／terminal utilities、Harmonica、
