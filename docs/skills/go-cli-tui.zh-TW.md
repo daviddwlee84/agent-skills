@@ -5,7 +5,7 @@
 操作後立即得到回饋。預設採 Cobra，加上版本相容的 Bubble Tea、Bubbles、
 Lip Gloss，表單需要時使用 Huh。
 
-這是可獨立安裝的 local 開發 skill，包含主文件與五份參考文件，不附 starter
+這是可獨立安裝的 local 開發 skill，包含主文件與七份參考文件，不附 starter
 專案。主要服務從零開發與新增功能，也保留既有專案的框架與公開操作契約。
 
 ## 安裝與使用
@@ -20,6 +20,8 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
   導航，以及背景 refresh。」
 - 「加入 `hosts add` wizard，讓使用者不用記住所有 flags 也能完成設定。」
 - 「改善這個 Bubble Tea v1 app 的焦點、搜尋與刷新體驗，保留原本框架版本。」
+- 「讓 agent 能可靠使用這個 CLI，提供內建操作指南與機器輸出，再準備第一個
+  `go install` 版本。」
 
 收到實作要求時，skill 會從精簡互動規格、共用領域操作一路做到實作與驗證，
 不會停在畫面建議。
@@ -44,6 +46,20 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
 輸出模式互相衝突時明確報錯。Wizard 的 Back 保留答案，與 CLI 共用驗證，
 執行前呈現實際目標與變更摘要。
 
+## Agent 使用與分階段安裝
+
+當工具需要支援 agent 操作時，skill 包含將唯一的操作指南嵌入 binary、離線
+可讀的 `--skill`／主題輸出、JSON 錯誤、非互動認證行為與有界限的日誌串流。
+CLI、TUI 與 agent 呼叫使用相同的領域操作。命令 help 是語法的依據；指南
+說明流程、作用範圍與結果不確定的寫入。不要求所有工具都附帶 skill 或安裝器。
+
+Go 工具的初期發佈可從 `go install` 開始，使用實際 main package 路徑；
+若 repo 採用 `cmd/<name>` 結構，安裝路徑也要包含它。文件交代 Go 版本需求
+與 binary 的 `PATH`，缺少 linker flags 時從安裝模組取得版本，並在 checkout
+外驗證公開的固定 tag 與 `@latest`。`@latest` 通常不代表最新的 main commit。
+等發佈需求增加，再加入預編譯壓縮檔、checksums 與 Homebrew tap；這些不是
+第一個原始碼發佈版本的必要條件。
+
 ## 包含的參考文件
 
 | 文件 | 適用情境 |
@@ -52,7 +68,9 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
 | [CLI、wizard、config](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/cli-wizards-config.md) | 入口規則、表單、共用驗證、XDG 與優先序 |
 | [Charm 工具選用](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/charm-stack.md) | 版本辨識、依需求選擇函式庫或工具 |
 | [非同步與終端](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | 請求世代、取消、啟動、終端控制權與 dev-cli 經驗 |
-| [驗證](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作與三種驗收案例 |
+| [Agent CLI](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/agent-facing-cli.md) | 內建知識、靜態文件、機器錯誤、非互動呼叫與有界串流 |
+| [Go 發佈](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main package 安裝路徑、版本回報、公開 tags 與後續打包 |
+| [驗證](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作、Unicode emulator 限制與三種驗收案例 |
 
 Charm 速查包含 Glamour、Log、Wish、ANSI／terminal utilities、Harmonica、
 Gum、Glow、VHS 與 Freeze 等可選能力，不會把所有工具都加入依賴。
@@ -63,15 +81,17 @@ Gum、Glow、VHS 與 Freeze 等可選能力，不會把所有工具都加入依�
 [Lazygit](https://github.com/jesseduffield/lazygit/blob/master/AGENTS.md) 使用
 自行維護的 gocui fork。本 skill 參考它的 UX，新專案實作則偏好
 [Charm](https://charm.land/)。也抽取 [dev-cli](https://github.com/daviddwlee84/dev-cli)
-的 live filter、請求世代處理、共用 wizard 與終端交接經驗，不依賴該專案，
-也不複製它的領域模型。
+的 live filter、請求世代處理、共用 wizard、終端交接、內建 skills 與版本回報
+經驗，不依賴該專案，也不複製它的領域模型。
 
 [外部 catalog](../catalog/skill-collections.md#go-clitui-candidates) 記錄
 2026-09-20 對 `golang-cli`、`tui-design` 與 `bubbletea` 的比較、手動安裝方式，
 以及本 repo 選擇自製整合的理由。
 
 驗證指引包含確定性的狀態測試、錯誤參數／JSON／設定檢查，以及實際終端操作。
-三種 walkthrough 是驗收規格，不是已執行的 app 或 skill benchmark。
+lazyclash 的具體案例記錄 pyte 0.8.2 的 VS16／ZWJ 重播限制，以及為何需要
+直接 View 檢查搭配 PTY 輸入測試。三種 walkthrough 仍是驗收規格，
+不是已執行的 app 或 skill benchmark。
 發佈需求可搭配可選的 [CLI release skill](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/cli-release-distribution)。
 
 ## Canonical SKILL.md
