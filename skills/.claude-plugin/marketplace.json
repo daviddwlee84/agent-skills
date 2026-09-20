@@ -99,6 +99,17 @@
       ]
     },
     {
+      "name": "go-cli",
+      "description": "Build Go CLIs, Lazygit-inspired terminal dashboards, and guided wizards with compatible Charm libraries, arrow/Vim navigation, XDG preferences, and terminal verification",
+      "category": "Engineering",
+      "tags": ["go", "cli", "tui", "charm", "bubbletea", "wizard", "ux"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./local/go-cli-tui"
+      ]
+    },
+    {
       "name": "fullstack-nextjs",
       "description": "Next.js App Router + Supabase + shadcn/ui + design + testing series",
       "category": "Web",

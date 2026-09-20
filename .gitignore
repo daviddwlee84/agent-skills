@@ -232,3 +232,5 @@ skills/local/12-factor-agent-design-review-workspace/
 # of the way, but not this.
 node_modules/
 npm-debug.log*
+
+.DS_Store

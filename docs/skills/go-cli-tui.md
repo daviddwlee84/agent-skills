@@ -1,0 +1,87 @@
+# go-cli-tui
+
+Build Go command-line tools, terminal dashboards, and guided configuration with
+Lazygit-inspired interaction: visible state, fast context switching, discoverable
+actions, and immediate feedback. The default stack is Cobra plus compatible
+Bubble Tea, Bubbles, Lip Gloss, and optional Huh versions.
+
+This is a standalone local development skill. It contains instructions and five
+references, not a starter application. It primarily serves new tools and new
+features, while respecting existing frameworks and public behavior.
+
+## Install and use
+
+```bash
+npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
+```
+
+The grouped picker lists it under **go-cli**. Example requests:
+
+- "Build a Go resource manager with a Lazygit-style list and preview, arrow/Vim
+  navigation, and background refresh."
+- "Add a guided `hosts add` wizard so users do not need to memorize flags."
+- "Improve this Bubble Tea v1 app's focus, search, and refresh behavior without
+  changing its framework version."
+
+For an implementation request, the skill leads through a compact interaction
+contract, shared domain operations, implementation, and verification. It does not
+stop at recommending a layout.
+
+## Interaction defaults
+
+| Area | Behavior |
+|---|---|
+| Navigation | Arrows and j/k together; Tab/Shift+Tab for focus; contextual h/l; gg/G for long lists |
+| Editing | Printable keys stay text; no required normal/insert mode |
+| Discoverability | Contextual footer, help, and action menu share effective bindings |
+| Continuity | Keep valid selection, filter, and scroll across views, refresh, and wizard return |
+| Responsiveness | Initial UI before slow work; reject stale results; distinguish cached, unknown, empty, and failed states |
+| Preferences | Optional TOML; XDG on macOS/Linux, native Windows directories; flags → env → file → defaults |
+
+Bare dashboard apps open their UI in a TTY. A designated wizard command such as
+`hosts add` guides on bare invocation; ordinary command groups show help.
+Partial business flags with missing data produce a usage error. Explicit
+`--interactive` starts a prefilled wizard. Global options such as `--config`
+alone do not change a bare wizard entry into command mode.
+
+Unknown flags/invalid values report errors before prompting. Non-TTY and JSON
+execution never prompt; contradictory interactive/output modes fail clearly.
+Wizards retain answers on Back, validate through the shared service, and review
+the real target and changes before applying them.
+
+## References included
+
+| Reference | Load for |
+|---|---|
+| [Interaction design](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/interaction-design.md) | Layout, focus, dual navigation, filtering, help, Unicode, and resize |
+| [CLI, wizards, config](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/cli-wizards-config.md) | Entry policy, form behavior, shared validation, XDG, and precedence |
+| [Charm stack](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/charm-stack.md) | Version selection and routing needs to libraries/tools |
+| [Async and terminal](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | Generations, cancellation, startup, terminal ownership, and dev-cli lessons |
+| [Verification](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | State tests, real PTY checks, and three concrete acceptance walkthroughs |
+
+The Charm map includes Glamour, Log, Wish, ANSI/terminal utilities, Harmonica,
+Gum, Glow, VHS, and Freeze as optional capabilities. It does not make all of them
+dependencies. New code checks current compatible stable releases; existing code
+reads its module versions before borrowing examples.
+
+## Sources and limits
+
+[Lazygit](https://github.com/jesseduffield/lazygit/blob/master/AGENTS.md) uses its
+own in-tree gocui fork. Its UX is the inspiration; the new-project implementation
+preference is [Charm](https://charm.land/). This skill also extracts lessons from
+[dev-cli](https://github.com/daviddwlee84/dev-cli), including live filtering,
+generation handling, shared wizards, and terminal handoffs, without depending on
+that project or copying its domain model.
+
+The [external catalog](../catalog/skill-collections.md#go-clitui-candidates)
+records the 2026-09-20 comparison of `golang-cli`, `tui-design`, and `bubbletea`,
+their manual-install paths, and why this repo chose local integration.
+
+Verification guidance includes deterministic state tests, bad-input/JSON/config
+checks, and actual terminal operation. The three walkthroughs are specifications,
+not pre-executed applications or measured skill benchmarks. Distribution work
+can use the optional [CLI release skill](https://github.com/daviddwlee84/agent-skills/tree/main/skills/local/cli-release-distribution).
+
+## Canonical SKILL.md
+
+See [skills/local/go-cli-tui/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/SKILL.md).

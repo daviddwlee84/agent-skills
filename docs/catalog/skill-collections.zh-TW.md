@@ -84,6 +84,23 @@ vendored（特定 skill 精選 (cherry-picked) 進
 | `agent-skill-creator` | [`FrancyJGLisboa/agent-skill-creator`](https://github.com/FrancyJGLisboa/agent-skill-creator) | `wishlist` | 另一個 authoring 工具；與本 repo 的 [`skill-author`](../skills/skill-author.md) + vendored `skill-creator` 對照。 |
 | `find-skills` | [`vercel-labs/skills/find-skills`](https://skills.sh/vercel-labs/skills/find-skills) | `evaluated` | 來自 `vercel-labs/skills` 的探索 skill。 |
 
+## Go CLI/TUI candidates
+
+於 **2026-09-20** 檢查 skills.sh 目錄、`npx skills@1.7.0 find`、upstream skill
+內容與 GitHub repo metadata。下列數字是當日探索快照，不代表產出程式必然正確。
+本次採用可獨立使用的 local [go-cli-tui](../skills/go-cli-tui.md)；
+候選保留為可選替代方案，不是已安裝依賴。
+
+| 候選 | Status | 快照與決策 | 手動安裝 |
+|---|---|---|---|
+| [samber/golang-cli](https://github.com/samber/cc-skills-golang/tree/19a0626ae8565d27a7b7bdf59d8d99d94d7e284c/skills/golang-cli) | `skipped` | 約 38K installs；repo 3,284 stars；MIT。CLI 基礎實用，但未涵蓋完整 dashboard／wizard UX；local 整合也明確檢查 TTY 偵測與 Cobra hook 順序。 | `npx skills@1.7.0 add samber/cc-skills-golang --skill golang-cli` |
+| [hyperb1iss/tui-design](https://github.com/hyperb1iss/hyperskills/tree/5c2f96185a7ea1f9a3e9e397b1687f674c4c8c36/skills/tui-design) | `skipped` | 約 1.2K installs；repo 33 stars；MIT。最接近所需 UX，但框架中立；選擇 local Go／wizard 整合，不要求多裝一個 skill。 | `npx skills@1.7.0 add hyperb1iss/hyperskills --skill tui-design` |
+| [ggprompts/bubbletea](https://github.com/ggprompts/tfe/tree/b71818c5c92d8b45980eda352969817e6284cd91/.claude/skills/bubbletea) | `skipped` | 464 installs；repo 21 stars；MIT。有排版經驗，但舊 API 與 byte 切字範例不符合這次的版本／Unicode 契約。 | `npx skills@1.7.0 add ggprompts/tfe --skill bubbletea` |
+
+[Charm](https://charm.land/) 與其[官方 repositories](https://github.com/charmbracelet)
+狀態為 `evaluated`，是函式庫／工具來源，不是可安裝的 agent skills。Local skill 會依需求指向工具，
+並檢查版本，不會 vendor 這些函式庫。
+
 ## Vendoring 政策
 
 我們在以下情況 vendor 一個 skill：
