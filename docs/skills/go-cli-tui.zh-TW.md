@@ -31,6 +31,7 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
 | 面向 | 行為 |
 |---|---|
 | 導航 | 方向鍵與 j/k 並存；Tab/Shift+Tab 切焦點；依情境提供 h/l；長列表支援 gg/G |
+| 滑鼠 | 共用純 layout／hit geometry、語意化按下／放開動作、modal 捕捉，以及可關閉以恢復原生選字 |
 | 文字輸入 | 可列印按鍵維持文字輸入，不要求先學 normal／insert mode |
 | 操作提示 | 情境 footer、help 與 action menu 使用同一份有效按鍵定義 |
 | 狀態延續 | 切換、refresh 與 wizard 返回時保留有效選取、篩選與捲動位置 |
@@ -59,6 +60,15 @@ Go 工具的初期發佈可從 `go install` 開始，使用實際 main package �
 外驗證公開的固定 tag 與 `@latest`。`@latest` 通常不代表最新的 main commit。
 等發佈需求增加，再加入預編譯壓縮檔、checksums 與 Homebrew tap；這些不是
 第一個原始碼發佈版本的必要條件。
+
+滑鼠驗證結合狀態測試與真實 PTY 的 SGR 事件，包含 modal 捕捉，以及縮放或
+切換 target 後取消舊按鈕按壓。監控畫面的指引涵蓋帶時間戳的有界歷史、各資料源
+的新鮮度、真實斷線缺口、計數器重設與精確 drilldown。設定檔損壞時仍應能開啟
+editor，並保留未通過驗證的使用者修改。
+
+維護面向使用者的 changelog，對實際要發佈的程式碼完成檢查，並讓 changelog
+版本、不可覆寫的 tag、release notes 與安裝後 binary 版本一致。這些是完成發佈
+的檢查項目，不表示每次都要加入套件管理或預編譯打包。
 
 ## 包含的參考文件
 

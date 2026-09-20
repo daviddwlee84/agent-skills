@@ -34,6 +34,7 @@ stop at recommending a layout.
 | Area | Behavior |
 |---|---|
 | Navigation | Arrows and j/k together; Tab/Shift+Tab for focus; contextual h/l; gg/G for long lists |
+| Mouse | Shared pure layout/hit geometry, semantic press/release actions, modal capture, optional native selection |
 | Editing | Printable keys stay text; no required normal/insert mode |
 | Discoverability | Contextual footer, help, and action menu share effective bindings |
 | Continuity | Keep valid selection, filter, and scroll across views, refresh, and wizard return |
@@ -67,6 +68,16 @@ flags are absent, and verify both a public fixed tag and `@latest` from outside
 the checkout. `@latest` does not generally mean the newest main commit.
 Prebuilt archives, checksums, and a Homebrew tap can follow when distribution
 needs justify them; they are not prerequisites for the first source release.
+
+Mouse verification combines state tests with SGR events sent through a real PTY,
+including modal capture and stale button presses after resize/target changes.
+Monitoring guidance covers timestamped bounded history, source-specific freshness,
+real gaps, counter resets and exact drilldowns. Settings editor entry points stay
+usable when the file is malformed and retain edits that fail validation.
+
+Maintain a user-facing changelog, pass checks on the exact release source, and
+keep changelog version, immutable tag, release notes and installed binary version
+consistent. These are completion checks, not a requirement to add packaging.
 
 ## References included
 
