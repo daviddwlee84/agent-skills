@@ -5,7 +5,7 @@
 操作後立即得到回饋。預設採 Cobra，加上版本相容的 Bubble Tea、Bubbles、
 Lip Gloss，表單需要時使用 Huh。
 
-這是可獨立安裝的 local 開發 skill，包含主文件與九份參考文件，不附 starter
+這是可獨立安裝的 local 開發 skill，包含主文件與十份參考文件，不附 starter
 專案。主要服務從零開發與新增功能，也保留既有專案的框架與公開操作契約。
 
 ## 安裝與使用
@@ -98,6 +98,12 @@ Completion 分成生成、安裝使用者檔案、啟用父 shell 與離線候�
 SSH 認證透過明確動作把終端交給原生 SSH；背景檢查不發問。使用者設定的
 共用 master 與 app 自有的備用 session，分別管理生命週期及清理責任。
 
+獨立 shell 整合使用固定格式的環境交接，保留原值、functions 與 exit hooks，
+認證不混入被擷取的輸出。持久化 shell 連線明確記錄擁有權及異常退出清理；
+產生容器設定時辨識真正的 consumer，保留既有設定管理器的責任。Dashboard
+可釋放終端給同一套 CLI wizard，保留結果直到使用者確認，再刷新正確 target。
+空搜尋與被裁掉的 Apply 按鈕都不能提交隱藏的選項。
+
 ## 包含的參考文件
 
 | 文件 | 適用情境 |
@@ -110,6 +116,7 @@ SSH 認證透過明確動作把終端交給原生 SSH；背景檢查不發問。
 | [Go 發佈](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main package 安裝路徑、版本回報、公開 tags 與後續打包 |
 | [自我更新](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | 依條件選擇原始碼／產物／管理器策略、建置來源與擁有權、更新目前副本，以及失敗時保留舊版 |
 | [Shell completion](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-completion.md) | Install/status、zsh fpath、離線候選、更新行為與真實 Tab 驗證 |
+| [Shell context](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-context.md) | 父 shell 環境、持久化連線、舊 helper adapter 與 consumer 設定擁有權 |
 | [驗證](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作、Unicode emulator 限制與三種驗收案例 |
 
 Charm 速查包含 Glamour、Log、Wish、ANSI／terminal utilities、Harmonica、

@@ -5,7 +5,7 @@ Lazygit-inspired interaction: visible state, fast context switching, discoverabl
 actions, and immediate feedback. The default stack is Cobra plus compatible
 Bubble Tea, Bubbles, Lip Gloss, and optional Huh versions.
 
-This is a standalone local development skill. It contains instructions and nine
+This is a standalone local development skill. It contains instructions and ten
 references, not a starter application. It primarily serves new tools and new
 features, while respecting existing frameworks and public behavior.
 
@@ -113,6 +113,14 @@ SSH authentication releases the terminal to native SSH through an explicit
 action. Background checks never prompt; configured shared masters and app-owned
 fallback sessions have separate lifetimes and cleanup responsibilities.
 
+Standalone shell integration uses a narrow generated environment handoff, preserves
+prior values/functions/exit hooks, and keeps authentication outside captured output.
+Persistent shell connections have explicit ownership and crash cleanup; generated
+container settings identify the actual consumer and preserve existing config owners.
+Dashboard actions can release the terminal to the same CLI wizard, retain results
+until acknowledgement, and refresh the correct target on return. Empty searches and
+clipped Apply buttons cannot submit hidden choices.
+
 ## References included
 
 | Reference | Load for |
@@ -125,6 +133,7 @@ fallback sessions have separate lifetimes and cleanup responsibilities.
 | [Go distribution](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main-package install paths, version reporting, public tags, and later packaging |
 | [Self-update](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | Conditional source/asset/manager strategies, provenance and ownership, current-copy replacement, and failure preservation |
 | [Shell completion](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-completion.md) | Install/status, zsh fpath, offline candidates, update freshness and actual Tab verification |
+| [Shell context](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-context.md) | Parent environment, persistent connections, legacy adapters and consumer configuration ownership |
 | [Verification](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | State tests, real PTY checks, Unicode emulator limits, and three acceptance walkthroughs |
 
 The Charm map includes Glamour, Log, Wish, ANSI/terminal utilities, Harmonica,
