@@ -47,7 +47,9 @@ npx skills@latest add daviddwlee84/agent-skills/skills --skill go-cli-tui
 
 未知 flag 或不合法的值會在互動前回報。非 TTY 與 JSON 模式不發問；互動與
 輸出模式互相衝突時明確報錯。Wizard 的 Back 保留答案，與 CLI 共用驗證，
-執行前呈現實際目標與變更摘要。
+有重要影響的套用前呈現實際目標與變更摘要。預填的本機設定表單可從任何欄位
+按 Ctrl+S 儲存，保留可選的 Review、共用驗證與失敗時的草稿；在真實 PTY
+驗證原始 Ctrl+S 按鍵與終端 flow control。
 
 ## Agent 使用與分階段安裝
 

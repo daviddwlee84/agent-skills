@@ -52,7 +52,9 @@ alone do not change a bare wizard entry into command mode.
 Unknown flags/invalid values report errors before prompting. Non-TTY and JSON
 execution never prompt; contradictory interactive/output modes fail clearly.
 Wizards retain answers on Back, validate through the shared service, and review
-the real target and changes before applying them.
+consequential changes before applying them. Prefilled local settings forms can
+offer Ctrl+S from any field with optional Review, preserving validation and drafts
+on failure; verify raw Ctrl+S and terminal flow control in a real PTY.
 
 ## Agent use and staged installation
 
