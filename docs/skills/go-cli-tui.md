@@ -109,6 +109,10 @@ atomic. Keep saved source, owner activation and observed runtime behavior
 separate. Background discovery must not replace pending operation surfaces;
 after an operation, invalidate affected cached views while retaining stale data.
 
+SSH authentication releases the terminal to native SSH through an explicit
+action. Background checks never prompt; configured shared masters and app-owned
+fallback sessions have separate lifetimes and cleanup responsibilities.
+
 ## References included
 
 | Reference | Load for |
