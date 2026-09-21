@@ -34,6 +34,19 @@ so switch to `homebrew_casks:` — lands you on the broken combination: an unsig
 prebuilt binary in the one format that gets quarantined. Publish a formula and
 push it yourself instead.
 
+## Choose the writer
+
+A tool-owned push generates a formula from its release checksums and uses
+explicit cross-repository credentials. A tap-owned sync instead reads public
+stable releases on a schedule or dispatch and writes with the tap's own
+`GITHUB_TOKEN`. Use one owner rather than enabling both writers for the same
+formula. Public release reads do not require distributing a tap-write PAT to
+the tool repositories.
+
+For central sync, validate complete platform assets and checksums before changing
+the formula, retain the old formula on failure, and make repeated unchanged
+releases a no-op. Preserve source/HEAD support separately from stable binaries.
+
 ## Prebuilt formula shape
 
 ```ruby

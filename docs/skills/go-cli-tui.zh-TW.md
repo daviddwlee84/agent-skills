@@ -86,6 +86,12 @@ editor，並保留未通過驗證的使用者修改。
 版本、不可覆寫的 tag、release notes 與安裝後 binary 版本一致。這些是完成發佈
 的檢查項目，不表示每次都要加入套件管理或預編譯打包。
 
+Source 包裝分清 binary archive、Git source archive、Go module ZIP 與 clone
+歷史。精確的 `export-ignore` 可從 source archive 排除開發紀錄；Go 下載則需
+在純紀錄目錄建立 module 邊界。保留嵌入的 build inputs，並對兩種解壓後的
+發行內容實際編譯、在隔離環境執行 smoke checks。指引也說明測試 module ZIP
+時仍啟用 Git export attributes 會造成的假陽性。排除規則用於新的不可覆寫版本。
+
 ## Completion 與共用操作經驗
 
 Completion 分成生成、安裝使用者檔案、啟用父 shell 與離線候選查詢。

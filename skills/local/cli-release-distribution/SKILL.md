@@ -27,6 +27,8 @@ release.
 - *"How do I get on repology / AUR / nixpkgs / Debian?"* → read
   `references/channel-tiers.md` first; the honest answer is usually "you don't,
   they come to you."
+- *"Source downloads are full of agent transcripts"* → Workflow E; distinguish
+  source archives, Go module ZIPs and Git history before choosing exclusions.
 
 ## When NOT to use
 
@@ -119,12 +121,18 @@ and the v2 key changes (`formats:`, `directory:`) that break copy-pasted example
 A tap is just a GitHub repo named `homebrew-<name>` with a `Formula/` dir;
 `brew install <user>/<name>/<tool>` finds it.
 
-**Publish a formula, not a cask** (Gotcha 2), and generate the formula from a
-template in the *tool's* repo rather than hand-editing the tap:
+**Publish a formula, not a cask** (Gotcha 2). Choose one writer for the tap:
 
-- `packaging/<tool>.rb.tmpl` with `__VERSION__` / `__SHA256_<OS>_<ARCH>__`
-  placeholders → `assets/formula.rb.template`.
-- `scripts/bump-formula.sh` fills them from `dist/checksums.txt` and pushes.
+- **Tap-owned sync:** the tap reads stable public releases on a schedule or
+  dispatch, verifies the platform archives/checksums, and updates formulas using
+  its own repository token. This avoids distributing tap-write credentials to
+  every tool. Keep previous formulas on incomplete releases and make unchanged
+  releases a no-op.
+- **Tool-owned push:** keep `packaging/<tool>.rb.tmpl` with version/checksum
+  placeholders in the tool repo. `scripts/bump-formula.sh` fills them from
+  `dist/checksums.txt` and pushes with explicit cross-repository authorization.
+
+Preserve an established writer model rather than adding a competing publisher.
 
 Read `references/homebrew-tap.md` for the `on_macos`/`on_arm` layout, keeping
 `head` support alongside prebuilt bottles, and `brew audit` expectations.
@@ -159,6 +167,18 @@ normal filename thing" — i.e. you have no completion.
 
 Read `references/shell-completions.md` for the per-manager install lines, the
 `shell_parameter_format: :cobra` idiom, and the no-side-effects rule.
+
+## Workflow E — source and Go module packaging
+
+Read [source-packaging.md](references/source-packaging.md) for independent
+archive/module boundaries, retained build inputs, and tests that expose false
+positives. Measure each channel separately. `export-ignore` does not control
+Go's module fetcher or reduce a Git clone's history.
+
+When a dedicated source asset is requested, give it an explicit name, include
+it in the checksum manifest, and build its extracted contents. Update strict
+publisher asset allowlists and their old-version compatibility together; a new
+source asset must not weaken verification of platform binaries.
 
 ## Available scripts
 
@@ -211,6 +231,9 @@ or a placeholder went unsubstituted · `3` push failed.
   or migrating Windows users off `go install`.
 - `references/shell-completions.md` — **Read when** completions are missing,
   incomplete, or need wiring into packaging.
+- `references/source-packaging.md` — **Read when** source/module downloads are
+  large, evidence directories need exclusion, or a checksummed source asset is
+  added to an existing release contract.
 
 ## See also
 
@@ -247,9 +270,10 @@ or a placeholder went unsubstituted · `3` push failed.
   -X` at your own `var version string` and fall back to build info. The failure
   mode is nasty: the build succeeds and the binary reports `(devel)`.
 
-- **`GITHUB_TOKEN` cannot push to another repo.** Publishing to a tap or bucket
-  needs a fine-grained PAT with `contents: write` on **each** target repo, stored
-  as a secret. The default workflow token is scoped to its own repository. And
+- **`GITHUB_TOKEN` cannot push to another repo.** A tool-owned push to a tap or
+  bucket needs separately authorized cross-repository credentials; the default
+  workflow token is scoped to its own repository. A tap-owned sync can instead
+  use its own `GITHUB_TOKEN` and read public releases without a tool-side PAT. And
   **`gh` cannot mint the PAT** — GitHub removed the API (`POST /authorizations`
   404s), so creating it is browser-only at
   <https://github.com/settings/personal-access-tokens/new>. Everything after that

@@ -75,6 +75,14 @@ the checkout. `@latest` does not generally mean the newest main commit.
 Prebuilt archives, checksums, and a Homebrew tap can follow when distribution
 needs justify them; they are not prerequisites for the first source release.
 
+Source packaging distinguishes binary archives, Git source archives, Go module
+ZIPs and clone history. Narrow `export-ignore` rules can omit development records
+from source archives; Go downloads instead need module boundaries around pure
+evidence directories. Preserve embedded build inputs, and verify both extracted
+distributions with real builds and isolated runtime smoke checks. The guide
+also covers the false-positive risk of testing Go ZIPs with ordinary Git export
+attributes still enabled. New exclusions apply to new immutable versions.
+
 An explicit upgrade feature selects a strategy from published artifacts and the
 running executable's ownership. A source-only release can build an exact tag
 with installed Go; published archives need checksum and executable verification;
@@ -135,7 +143,7 @@ clipped Apply buttons cannot submit hidden choices.
 | [Charm stack](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/charm-stack.md) | Version selection and routing needs to libraries/tools |
 | [Async and terminal](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/async-terminal.md) | Generations, cancellation, startup, terminal ownership, and dev-cli lessons |
 | [Agent-facing CLI](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/agent-facing-cli.md) | Embedded knowledge, static documentation, machine errors, noninteractive calls, and bounded streams |
-| [Go distribution](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/go-distribution.md) | Main-package install paths, version reporting, public tags, and later packaging |
+| [Go distribution](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/go-distribution.md) | Main-package install paths, versions, source/module boundaries and packaging verification |
 | [Self-update](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/self-update.md) | Conditional source/asset/manager strategies, provenance and ownership, current-copy replacement, and failure preservation |
 | [Shell completion](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-completion.md) | Install/status, zsh fpath, offline candidates, update freshness and actual Tab verification |
 | [Shell context](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-context.md) | Parent environment, persistent connections, legacy adapters and consumer configuration ownership |
