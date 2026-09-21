@@ -100,7 +100,9 @@ SSH 認證透過明確動作把終端交給原生 SSH；背景檢查不發問。
 
 獨立 shell 整合使用固定格式的環境交接，保留原值、functions 與 exit hooks，
 認證不混入被擷取的輸出。持久化 shell 連線明確記錄擁有權及異常退出清理；
-產生容器設定時辨識真正的 consumer，保留既有設定管理器的責任。Dashboard
+產生容器設定時辨識真正的 consumer，保留既有設定管理器的責任。反向 SSH
+分清命令、shell 與服務的生命週期，驗證遠端實際監聽位址，將分配埠號的 stdout
+與診斷分開，保留 login rc 的優先序並提供明確的 clean-shell 選項。Dashboard
 可釋放終端給同一套 CLI wizard，保留結果直到使用者確認，再刷新正確 target。
 空搜尋與被裁掉的 Apply 按鈕都不能提交隱藏的選項。
 

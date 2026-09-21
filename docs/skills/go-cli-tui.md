@@ -117,6 +117,9 @@ Standalone shell integration uses a narrow generated environment handoff, preser
 prior values/functions/exit hooks, and keeps authentication outside captured output.
 Persistent shell connections have explicit ownership and crash cleanup; generated
 container settings identify the actual consumer and preserve existing config owners.
+Reverse SSH guidance separates command, shell and service lifetimes, checks the
+actual remote bind address, keeps allocated-port stdout separate from diagnostics,
+and preserves login-rc precedence with an explicit clean-shell alternative.
 Dashboard actions can release the terminal to the same CLI wizard, retain results
 until acknowledgement, and refresh the correct target on return. Empty searches and
 clipped Apply buttons cannot submit hidden choices.
