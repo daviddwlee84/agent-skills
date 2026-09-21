@@ -45,7 +45,6 @@
 | [`fastapi-ai-interview-prep`](fastapi-ai-interview-prep.md) | 100 題自撰的 FastAPI/AI 面試問答，橫跨 10 個主題 + `quiz.py` mock interview CLI | [docs](fastapi-ai-interview-prep.md) |
 | [`raycast-extension-dev`](raycast-extension-dev.md) | 開發／驗證／上架 Raycast 擴充 —— launchd 的 PATH 陷阱、`ray build` 跳過的型別檢查、`MenuBarExtra` 限制，以及 `ray lint` 從不執行的 store 檢查；附 scaffolder 與上架就緒檢查器 | [docs](raycast-extension-dev.md) |
 | [`python-project-best-practice`](python-project-best-practice.md) | 現代 Python 專案慣例 —— uv + src layout、Tyro CLI、loguru、Justfile 後面的 ruff/型別/pytest gate、AGENTS.md docs-drift 檢查；附六種 profile 的 scaffolder 與 26 項唯讀 legacy 盤點 | [docs](python-project-best-practice.md) |
-| [`go-cli-tui`](go-cli-tui.md) | 開發 Go CLI、Lazygit 風格 dashboard 與 wizard，涵蓋 Charm、方向鍵／Vim 導航、XDG 偏好與真實終端驗證 | [docs](go-cli-tui.md) |
 
 ## Owned skills
 
@@ -53,6 +52,7 @@
 
 | Skill | Canonical 專案 | 詳細頁面 |
 |---|---|---|
+| [`go-cli-tui`](go-cli-tui.md) | [awesome-lazy-tools](https://github.com/daviddwlee84/awesome-lazy-tools) | [docs](go-cli-tui.md) |
 | `userscript-development` | [Tampermonkey-Scripts](https://github.com/daviddwlee84/Tampermonkey-Scripts) | [docs](userscript-development.md) |
 
 ## Vendored skills

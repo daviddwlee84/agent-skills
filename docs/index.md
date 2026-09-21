@@ -10,10 +10,12 @@ single package.
 
 ## What's in here
 
-Two flavors of skills live under `skills/`:
+Three categories of skills live under `skills/`:
 
 - **`skills/local/`** — custom-authored skills maintained in this repo.
   See the [Skills overview](skills/index.md) for the index.
+- **`skills/owned/`** — first-party skills maintained in other projects, including
+  [go-cli-tui](skills/go-cli-tui.md); see [owned workflows](workflows/adding-owned-skills.md).
 - **`skills/vendor/`** — third-party skills synced from upstream repos via
   the [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
   manifest. See [Adding vendor skills](workflows/adding-vendor-skills.md).

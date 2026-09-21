@@ -106,7 +106,7 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./local/go-cli-tui"
+        "./owned/go-cli-tui"
       ]
     },
     {

@@ -78,7 +78,7 @@ vendored（特定 skill 精選 (cherry-picked) 進
 | xixu-me userscript skill | [skills.sh listing](https://skills.sh/xixu-me/skills/develop-userscripts) | `evaluated` | 僅檢視 listing；2026-09-09 canonical repo API 回傳 404，可安裝性未確認。 |
 | andradeatdev userscript creator | [skills.sh listing](https://skills.sh/andradeatdev/skills/userscript-creator) | `wishlist` | 未讀到內容；2026-09-09 canonical repo API 回傳 404。 |
 | 12-factor agents | [`humanlayer/12-factor-agents`](https://github.com/humanlayer/12-factor-agents) | `skipped` | Canonical methodology，不是可安裝 skill，因此不 vendor；它是 local [`12-factor-agent-design-review`](../skills/12-factor-agent-design-review.md) 的 CC BY-SA attribution source。 |
-| `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence gate 有價值，但 rubric 綁定 Python/Pydantic/Jinja/REST implementation choice。Local skill 只引用 framework-neutral 的 evidence pattern。 |
+| `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence gate 有價值，但 rubric 綁定 Python/Pydantic/Jinja/REST implementation choice。Owned skill 只引用 framework-neutral 的 evidence pattern。 |
 | 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | Design/review/debug decomposition 可借鏡，但單獨安裝 skill 可能缺少 cross-skill reference，heuristic scanner 也可能把自身 source 當成證據；只作 extension reference，不 vendor。 |
 | The Twelve-Factor App | [12factor.net](https://12factor.net/) | `evaluated` | 原始 12-factor 宣言。靈感來源，非 skill。 |
 | `agent-skill-creator` | [`FrancyJGLisboa/agent-skill-creator`](https://github.com/FrancyJGLisboa/agent-skill-creator) | `wishlist` | 另一個 authoring 工具；與本 repo 的 [`skill-author`](../skills/skill-author.md) + vendored `skill-creator` 對照。 |
@@ -88,17 +88,18 @@ vendored（特定 skill 精選 (cherry-picked) 進
 
 於 **2026-09-20** 檢查 skills.sh 目錄、`npx skills@1.7.0 find`、upstream skill
 內容與 GitHub repo metadata。下列數字是當日探索快照，不代表產出程式必然正確。
-本次採用可獨立使用的 local [go-cli-tui](../skills/go-cli-tui.md)；
+本次採用可獨立使用的 owned [go-cli-tui](../skills/go-cli-tui.md)；
+原始版本現由 [awesome-lazy-tools](https://github.com/daviddwlee84/awesome-lazy-tools/tree/main/skills/go-cli-tui) 維護。
 候選保留為可選替代方案，不是已安裝依賴。
 
 | 候選 | Status | 快照與決策 | 手動安裝 |
 |---|---|---|---|
-| [samber/golang-cli](https://github.com/samber/cc-skills-golang/tree/19a0626ae8565d27a7b7bdf59d8d99d94d7e284c/skills/golang-cli) | `skipped` | 約 38K installs；repo 3,284 stars；MIT。CLI 基礎實用，但未涵蓋完整 dashboard／wizard UX；local 整合也明確檢查 TTY 偵測與 Cobra hook 順序。 | `npx skills@1.7.0 add samber/cc-skills-golang --skill golang-cli` |
-| [hyperb1iss/tui-design](https://github.com/hyperb1iss/hyperskills/tree/5c2f96185a7ea1f9a3e9e397b1687f674c4c8c36/skills/tui-design) | `skipped` | 約 1.2K installs；repo 33 stars；MIT。最接近所需 UX，但框架中立；選擇 local Go／wizard 整合，不要求多裝一個 skill。 | `npx skills@1.7.0 add hyperb1iss/hyperskills --skill tui-design` |
+| [samber/golang-cli](https://github.com/samber/cc-skills-golang/tree/19a0626ae8565d27a7b7bdf59d8d99d94d7e284c/skills/golang-cli) | `skipped` | 約 38K installs；repo 3,284 stars；MIT。CLI 基礎實用，但未涵蓋完整 dashboard／wizard UX；自製整合也明確檢查 TTY 偵測與 Cobra hook 順序。 | `npx skills@1.7.0 add samber/cc-skills-golang --skill golang-cli` |
+| [hyperb1iss/tui-design](https://github.com/hyperb1iss/hyperskills/tree/5c2f96185a7ea1f9a3e9e397b1687f674c4c8c36/skills/tui-design) | `skipped` | 約 1.2K installs；repo 33 stars；MIT。最接近所需 UX，但框架中立；選擇 自製 Go／wizard 整合，不要求多裝一個 skill。 | `npx skills@1.7.0 add hyperb1iss/hyperskills --skill tui-design` |
 | [ggprompts/bubbletea](https://github.com/ggprompts/tfe/tree/b71818c5c92d8b45980eda352969817e6284cd91/.claude/skills/bubbletea) | `skipped` | 464 installs；repo 21 stars；MIT。有排版經驗，但舊 API 與 byte 切字範例不符合這次的版本／Unicode 契約。 | `npx skills@1.7.0 add ggprompts/tfe --skill bubbletea` |
 
 [Charm](https://charm.land/) 與其[官方 repositories](https://github.com/charmbracelet)
-狀態為 `evaluated`，是函式庫／工具來源，不是可安裝的 agent skills。Local skill 會依需求指向工具，
+狀態為 `evaluated`，是函式庫／工具來源，不是可安裝的 agent skills。Owned skill 會依需求指向工具，
 並檢查版本，不會 vendor 這些函式庫。
 
 ## Vendoring 政策

@@ -14,10 +14,12 @@ upstream repo 精選 (cherry-picked) 過來的 skill —— 可作為單一套�
 
 ## 內容概覽
 
-`skills/` 底下有兩種 skill：
+`skills/` 底下有三種 skill：
 
 - **`skills/local/`** —— 在這個 repo 內自製維護的 skill。索引請看
   [Skills 總覽](skills/index.md)。
+- **`skills/owned/`** —— 在自己的其他專案維護、同步到此分發，例如
+  [go-cli-tui](skills/go-cli-tui.md)；詳見 [owned 工作流程](workflows/adding-owned-skills.md)。
 - **`skills/vendor/`** —— 透過
   [`vendor.yaml`](https://github.com/daviddwlee84/agent-skills/blob/main/vendor.yaml)
   manifest 從 upstream repo 同步過來的第三方 skill。詳見

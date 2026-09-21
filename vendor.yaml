@@ -1,6 +1,16 @@
 # Upstream skill sources for skills/vendor/ and first-party skills/owned/
 # Managed by scripts/sync-vendor.sh
 skills:
+  - name: go-cli-tui
+    collection: owned
+    upstream:
+      owner: daviddwlee84
+      repo: awesome-lazy-tools
+      path: skills/go-cli-tui
+      branch: main
+    last_sync:
+      date: "2026-09-21T03:32:16Z"
+      commit: "d8d675af39e8610c301717ae9e5b201e6762d6b8"
   - name: userscript-development
     collection: owned
     upstream:

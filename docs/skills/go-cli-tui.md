@@ -5,7 +5,9 @@ Lazygit-inspired interaction: visible state, fast context switching, discoverabl
 actions, and immediate feedback. The default stack is Cobra plus compatible
 Bubble Tea, Bubbles, Lip Gloss, and optional Huh versions.
 
-This is a standalone local development skill. It contains instructions and ten
+This is a standalone owned development skill, maintained in
+[awesome-lazy-tools](https://github.com/daviddwlee84/awesome-lazy-tools/tree/main/skills/go-cli-tui)
+and synced here for distribution under MIT. Edit the canonical source, not this mirror. It contains instructions and ten
 references, not a starter application. It primarily serves new tools and new
 features, while respecting existing frameworks and public behavior.
 
@@ -128,16 +130,16 @@ clipped Apply buttons cannot submit hidden choices.
 
 | Reference | Load for |
 |---|---|
-| [Interaction design](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/interaction-design.md) | Layout, focus, dual navigation, filtering, help, Unicode, and resize |
-| [CLI, wizards, config](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/cli-wizards-config.md) | Entry policy, form behavior, shared validation, XDG, and precedence |
-| [Charm stack](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/charm-stack.md) | Version selection and routing needs to libraries/tools |
-| [Async and terminal](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | Generations, cancellation, startup, terminal ownership, and dev-cli lessons |
-| [Agent-facing CLI](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/agent-facing-cli.md) | Embedded knowledge, static documentation, machine errors, noninteractive calls, and bounded streams |
-| [Go distribution](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main-package install paths, version reporting, public tags, and later packaging |
-| [Self-update](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | Conditional source/asset/manager strategies, provenance and ownership, current-copy replacement, and failure preservation |
-| [Shell completion](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-completion.md) | Install/status, zsh fpath, offline candidates, update freshness and actual Tab verification |
-| [Shell context](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-context.md) | Parent environment, persistent connections, legacy adapters and consumer configuration ownership |
-| [Verification](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | State tests, real PTY checks, Unicode emulator limits, and three acceptance walkthroughs |
+| [Interaction design](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/interaction-design.md) | Layout, focus, dual navigation, filtering, help, Unicode, and resize |
+| [CLI, wizards, config](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/cli-wizards-config.md) | Entry policy, form behavior, shared validation, XDG, and precedence |
+| [Charm stack](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/charm-stack.md) | Version selection and routing needs to libraries/tools |
+| [Async and terminal](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/async-terminal.md) | Generations, cancellation, startup, terminal ownership, and dev-cli lessons |
+| [Agent-facing CLI](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/agent-facing-cli.md) | Embedded knowledge, static documentation, machine errors, noninteractive calls, and bounded streams |
+| [Go distribution](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/go-distribution.md) | Main-package install paths, version reporting, public tags, and later packaging |
+| [Self-update](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/self-update.md) | Conditional source/asset/manager strategies, provenance and ownership, current-copy replacement, and failure preservation |
+| [Shell completion](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-completion.md) | Install/status, zsh fpath, offline candidates, update freshness and actual Tab verification |
+| [Shell context](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-context.md) | Parent environment, persistent connections, legacy adapters and consumer configuration ownership |
+| [Verification](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/verification.md) | State tests, real PTY checks, Unicode emulator limits, and three acceptance walkthroughs |
 
 The Charm map includes Glamour, Log, Wish, ANSI/terminal utilities, Harmonica,
 Gum, Glow, VHS, and Freeze as optional capabilities. It does not make all of them
@@ -166,4 +168,4 @@ can use the optional [CLI release skill](https://github.com/daviddwlee84/agent-s
 
 ## Canonical SKILL.md
 
-See [skills/local/go-cli-tui/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/SKILL.md).
+See [Canonical go-cli-tui/SKILL.md](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/SKILL.md).

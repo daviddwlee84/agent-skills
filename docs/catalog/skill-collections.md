@@ -85,17 +85,18 @@ one — not formally evaluated yet.
 Reviewed **2026-09-20** using the skills.sh directory, `npx skills@1.7.0 find`,
 upstream skill contents, and GitHub repository metadata. Counts below are a
 dated discovery snapshot, not evidence that a skill produces correct code.
-We chose the standalone local [go-cli-tui](../skills/go-cli-tui.md) integration;
-these candidates are optional alternatives, not installed dependencies.
+We chose the standalone owned [go-cli-tui](../skills/go-cli-tui.md) integration;
+its canonical source now lives in [awesome-lazy-tools](https://github.com/daviddwlee84/awesome-lazy-tools/tree/main/skills/go-cli-tui).
+These candidates are optional alternatives, not installed dependencies.
 
 | Candidate | Status | Snapshot and decision | Manual install |
 |---|---|---|---|
-| [samber/golang-cli](https://github.com/samber/cc-skills-golang/tree/19a0626ae8565d27a7b7bdf59d8d99d94d7e284c/skills/golang-cli) | `skipped` | ~38K installs; repo 3,284 stars; MIT. Useful CLI foundation, but lacks the combined dashboard/wizard UX; local integration also checks terminal detection and Cobra hook ordering explicitly. | `npx skills@1.7.0 add samber/cc-skills-golang --skill golang-cli` |
-| [hyperb1iss/tui-design](https://github.com/hyperb1iss/hyperskills/tree/5c2f96185a7ea1f9a3e9e397b1687f674c4c8c36/skills/tui-design) | `skipped` | ~1.2K installs; repo 33 stars; MIT. Closest UX overlap, but framework-neutral; choose local Go/wizard integration instead of a required second skill. | `npx skills@1.7.0 add hyperb1iss/hyperskills --skill tui-design` |
+| [samber/golang-cli](https://github.com/samber/cc-skills-golang/tree/19a0626ae8565d27a7b7bdf59d8d99d94d7e284c/skills/golang-cli) | `skipped` | ~38K installs; repo 3,284 stars; MIT. Useful CLI foundation, but lacks the combined dashboard/wizard UX; first-party integration also checks terminal detection and Cobra hook ordering explicitly. | `npx skills@1.7.0 add samber/cc-skills-golang --skill golang-cli` |
+| [hyperb1iss/tui-design](https://github.com/hyperb1iss/hyperskills/tree/5c2f96185a7ea1f9a3e9e397b1687f674c4c8c36/skills/tui-design) | `skipped` | ~1.2K installs; repo 33 stars; MIT. Closest UX overlap, but framework-neutral; choose first-party Go/wizard integration instead of a required second skill. | `npx skills@1.7.0 add hyperb1iss/hyperskills --skill tui-design` |
 | [ggprompts/bubbletea](https://github.com/ggprompts/tfe/tree/b71818c5c92d8b45980eda352969817e6284cd91/.claude/skills/bubbletea) | `skipped` | 464 installs; repo 21 stars; MIT. Layout ideas are useful, but older APIs and byte-slicing truncation do not meet the chosen version/Unicode contract. | `npx skills@1.7.0 add ggprompts/tfe --skill bubbletea` |
 
 [Charm](https://charm.land/) and its [official repositories](https://github.com/charmbracelet)
-are `evaluated` library/tool sources, not installable agent skills. The local skill includes
+are `evaluated` library/tool sources, not installable agent skills. The owned skill includes
 a need-to-tool map and version checks; it does not vendor these libraries.
 
 ## Vendoring policy

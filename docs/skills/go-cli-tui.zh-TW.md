@@ -5,7 +5,9 @@
 操作後立即得到回饋。預設採 Cobra，加上版本相容的 Bubble Tea、Bubbles、
 Lip Gloss，表單需要時使用 Huh。
 
-這是可獨立安裝的 local 開發 skill，包含主文件與十份參考文件，不附 starter
+這是可獨立安裝的 owned 開發 skill；原始版本由
+[awesome-lazy-tools](https://github.com/daviddwlee84/awesome-lazy-tools/tree/main/skills/go-cli-tui)
+維護，這裡以 MIT 授權同步分發。請修改原始版本，不要直接編輯分發副本。內容包含主文件與十份參考文件，不附 starter
 專案。主要服務從零開發與新增功能，也保留既有專案的框架與公開操作契約。
 
 ## 安裝與使用
@@ -110,16 +112,16 @@ SSH 認證透過明確動作把終端交給原生 SSH；背景檢查不發問。
 
 | 文件 | 適用情境 |
 |---|---|
-| [互動設計](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/interaction-design.md) | 畫面、焦點、雙導航、篩選、help、Unicode 與 resize |
-| [CLI、wizard、config](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/cli-wizards-config.md) | 入口規則、表單、共用驗證、XDG 與優先序 |
-| [Charm 工具選用](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/charm-stack.md) | 版本辨識、依需求選擇函式庫或工具 |
-| [非同步與終端](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/async-terminal.md) | 請求世代、取消、啟動、終端控制權與 dev-cli 經驗 |
-| [Agent CLI](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/agent-facing-cli.md) | 內建知識、靜態文件、機器錯誤、非互動呼叫與有界串流 |
-| [Go 發佈](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/go-distribution.md) | Main package 安裝路徑、版本回報、公開 tags 與後續打包 |
-| [自我更新](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/self-update.md) | 依條件選擇原始碼／產物／管理器策略、建置來源與擁有權、更新目前副本，以及失敗時保留舊版 |
-| [Shell completion](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-completion.md) | Install/status、zsh fpath、離線候選、更新行為與真實 Tab 驗證 |
-| [Shell context](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/shell-context.md) | 父 shell 環境、持久化連線、舊 helper adapter 與 consumer 設定擁有權 |
-| [驗證](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作、Unicode emulator 限制與三種驗收案例 |
+| [互動設計](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/interaction-design.md) | 畫面、焦點、雙導航、篩選、help、Unicode 與 resize |
+| [CLI、wizard、config](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/cli-wizards-config.md) | 入口規則、表單、共用驗證、XDG 與優先序 |
+| [Charm 工具選用](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/charm-stack.md) | 版本辨識、依需求選擇函式庫或工具 |
+| [非同步與終端](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/async-terminal.md) | 請求世代、取消、啟動、終端控制權與 dev-cli 經驗 |
+| [Agent CLI](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/agent-facing-cli.md) | 內建知識、靜態文件、機器錯誤、非互動呼叫與有界串流 |
+| [Go 發佈](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/go-distribution.md) | Main package 安裝路徑、版本回報、公開 tags 與後續打包 |
+| [自我更新](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/self-update.md) | 依條件選擇原始碼／產物／管理器策略、建置來源與擁有權、更新目前副本，以及失敗時保留舊版 |
+| [Shell completion](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-completion.md) | Install/status、zsh fpath、離線候選、更新行為與真實 Tab 驗證 |
+| [Shell context](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/shell-context.md) | 父 shell 環境、持久化連線、舊 helper adapter 與 consumer 設定擁有權 |
+| [驗證](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/references/verification.md) | 狀態測試、真實 PTY 操作、Unicode emulator 限制與三種驗收案例 |
 
 Charm 速查包含 Glamour、Log、Wish、ANSI／terminal utilities、Harmonica、
 Gum、Glow、VHS 與 Freeze 等可選能力，不會把所有工具都加入依賴。
@@ -145,4 +147,4 @@ lazyclash 的具體案例記錄 pyte 0.8.2 的 VS16／ZWJ 重播限制，以及�
 
 ## Canonical SKILL.md
 
-完整指令見 [skills/local/go-cli-tui/SKILL.md](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/go-cli-tui/SKILL.md)。
+完整指令見 [Canonical go-cli-tui/SKILL.md](https://github.com/daviddwlee84/awesome-lazy-tools/blob/main/skills/go-cli-tui/SKILL.md)。

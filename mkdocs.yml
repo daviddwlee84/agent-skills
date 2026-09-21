@@ -137,8 +137,8 @@ nav:
           - fastapi-ai-interview-prep: skills/fastapi-ai-interview-prep.md
           - raycast-extension-dev: skills/raycast-extension-dev.md
           - python-project-best-practice: skills/python-project-best-practice.md
-          - go-cli-tui: skills/go-cli-tui.md
       - Owned:
+          - go-cli-tui: skills/go-cli-tui.md
           - userscript-development: skills/userscript-development.md
       - Vendored:
           - marimo-notebook: skills/marimo-notebook.md
