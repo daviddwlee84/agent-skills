@@ -9,8 +9,8 @@ skills:
       path: skills/go-cli-tui
       branch: main
     last_sync:
-      date: "2026-09-21T18:11:18Z"
-      commit: "8ae7924212397ab758c5cc0fc3c228b2afd5fad6"
+      date: "2026-09-22T17:09:14Z"
+      commit: "0927526fff9017b921b6d7a3e2e9639ba2ca75a5"
   - name: userscript-development
     collection: owned
     upstream:
