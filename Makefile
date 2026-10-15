@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill test-nautilus-trader-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo start-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill test-nautilus-trader-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -58,11 +58,15 @@ install-hooks:
 	@ln -sf "$$(git rev-parse --show-toplevel)/scripts/git-hooks/pre-push" "$$(git rev-parse --git-dir)/hooks/pre-push"
 	@echo "installed: $$(git rev-parse --git-dir)/hooks/pre-push -> scripts/git-hooks/pre-push"
 
-# Convenience wrappers around scripts/add-todo.sh, promote-todo.sh, sweep-inbox.sh.
+# Convenience wrappers around scripts/add-todo.sh, start-todo.sh, promote-todo.sh, sweep-inbox.sh.
 # For full flags use the scripts directly.
 # Usage: make add-todo ARGS="--priority P3 --effort M --title 'X' --description 'Y'"
 add-todo:
 	./scripts/add-todo.sh $(ARGS)
+
+# Usage: make start-todo ARGS="--title 'substring'"   (td bridge; no-op without td)
+start-todo:
+	./scripts/start-todo.sh $(ARGS)
 
 # Usage: make promote-todo ARGS="--title 'substring' --summary 'shipped summary'"
 promote-todo:

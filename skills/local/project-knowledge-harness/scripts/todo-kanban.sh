@@ -36,6 +36,10 @@ Options:
   --validate-only      Validate without rendering the board
   --json               Emit a JSON summary instead of the Markdown board
                        (counts per lane + items per lane)
+  --td                 Overlay in-flight td issues (label `pkh`, same title):
+                       marks active items and lists orphaned issues. Default:
+                       on when td resolves a project here (PKH_TD=auto).
+  --no-td              Never query td. --validate-only never queries td.
 
 Exit codes:
   0  validation passed (and board rendered if not --validate-only)
@@ -47,12 +51,15 @@ EOF
 mode_render="markdown"
 validate_only=0
 todo_file=""
+td_flag="auto"
 
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
     --validate-only) validate_only=1; shift ;;
     --json) mode_render="json"; shift ;;
+    --td) td_flag="on"; shift ;;
+    --no-td) td_flag="off"; shift ;;
     --) shift; break ;;
     -*) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
     *)
@@ -213,6 +220,83 @@ if [ "$validate_only" -eq 1 ]; then
   exit 0
 fi
 
+# Optional td overlay (render modes only, so CI validation stays hermetic).
+td_open=""
+td_orphans=""
+td_used=0
+if [ "$td_flag" != "off" ]; then
+  src="$0"
+  while [ -L "$src" ]; do
+    link="$(readlink "$src")"
+    case "$link" in /*) src="$link" ;; *) src="$(dirname "$src")/$link" ;; esac
+  done
+  lib_dir="$(cd "$(dirname "$src")" && pwd)/_lib"
+  if [ -f "$lib_dir/td-bridge.sh" ]; then
+    # shellcheck source=_lib/td-bridge.sh
+    . "$lib_dir/td-bridge.sh"
+    [ "$td_flag" = "auto" ] || pkh_td_mode="$td_flag"
+    td_rc=0
+    pkh_td_enabled || td_rc=$?
+    if [ "$td_rc" -eq 0 ]; then
+      td_used=1
+      td_open="$(pkh_td_list_open)"
+    elif [ "$td_rc" -eq 2 ]; then
+      exit 2
+    fi
+  fi
+fi
+
+# item_title LINE -> prints the Title of an active/P? item (empty otherwise)
+item_title() {
+  if [[ "$1" =~ ^-\ \[\ \]\ \*\*\[(\?/)?(S|M|L|XL)\]\ (.+)\*\*\ —\ .+$ ]]; then
+    printf '%s' "${BASH_REMATCH[3]}"
+  fi
+}
+
+# td_lookup TITLE -> prints "id<TAB>status" from td_open
+td_lookup() {
+  local id status title tab
+  tab="$(printf '\t')"
+  while IFS="$tab" read -r id status title; do
+    if [ -n "$id" ] && [ "$title" = "$1" ]; then
+      printf '%s\t%s' "$id" "$status"
+      return 0
+    fi
+  done <<TD_EOF
+$td_open
+TD_EOF
+  return 1
+}
+
+if [ "$td_used" -eq 1 ] && [ -n "$td_open" ]; then
+  active_titles=""
+  i=0
+  while [ $i -lt 4 ]; do
+    if [ "${lane_count[$i]}" -gt 0 ]; then
+      while IFS= read -r itm; do
+        t="$(item_title "$itm")"
+        active_titles="$active_titles$t"$'\n'
+      done <<TD_EOF
+${lane_items[$i]}
+TD_EOF
+    fi
+    i=$(( i + 1 ))
+  done
+  tab="$(printf '\t')"
+  while IFS="$tab" read -r id status title; do
+    [ -n "$id" ] || continue
+    case $'\n'"$active_titles" in
+      *$'\n'"$title"$'\n'*) ;;
+      *)
+        td_orphans="$td_orphans$id$tab$status$tab$title"$'\n'
+        echo "Warning: td $id ($status) '$title' has no active TODO.md item (shipped, renamed, or removed?)" >&2
+        ;;
+    esac
+  done <<TD_EOF
+$td_open
+TD_EOF
+fi
+
 if [ "$mode_render" = "json" ]; then
   printf '{\n'
   printf '  "source": "%s",\n' "$todo_file"
@@ -246,7 +330,33 @@ EOF
     fi
     i=$(( i + 1 ))
   done
-  printf '  ]\n}\n'
+  if [ "$td_used" -eq 1 ]; then
+    printf '  ],\n'
+    json_td_list() {
+      local first=1 id status title tab
+      tab="$(printf '\t')"
+      while IFS="$tab" read -r id status title; do
+        [ -n "$id" ] || continue
+        title="${title//\\/\\\\}"
+        title="${title//\"/\\\"}"
+        [ $first -eq 1 ] || printf ','
+        printf '\n    {"id": "%s", "status": "%s", "title": "%s"}' "$id" "$status" "$title"
+        first=0
+      done
+      [ $first -eq 1 ] || printf '\n  '
+    }
+    printf '  "td_inflight": ['
+    json_td_list <<TD_EOF
+$td_open
+TD_EOF
+    printf '],\n  "td_orphans": ['
+    json_td_list <<TD_EOF
+$td_orphans
+TD_EOF
+    printf ']\n}\n'
+  else
+    printf '  ]\n}\n'
+  fi
   exit 0
 fi
 
@@ -267,8 +377,32 @@ while [ $i -lt ${#lane_names[@]} ]; do
   printf '## %s (%s)\n\n' "${lane_names[$i]}" "${lane_count[$i]}"
   if [ "${lane_count[$i]}" -eq 0 ]; then
     printf '_No items._\n\n'
+  elif [ "$td_used" -eq 1 ] && [ $i -lt 4 ] && [ -n "$td_open" ]; then
+    while IFS= read -r itm; do
+      t="$(item_title "$itm")"
+      if [ -n "$t" ] && hit="$(td_lookup "$t")"; then
+        printf '%s 🔧 `%s` (%s)\n' "$itm" "${hit%%$'\t'*}" "${hit#*$'\t'}"
+      else
+        printf '%s\n' "$itm"
+      fi
+    done <<TD_EOF
+${lane_items[$i]}
+TD_EOF
+    printf '\n'
   else
     printf '%s\n\n' "${lane_items[$i]}"
   fi
   i=$(( i + 1 ))
 done
+
+if [ -n "$td_orphans" ]; then
+  printf '## td issues without an active TODO item\n\n'
+  printf '_Labelled `pkh` and still open, but no active TODO.md title matches. Review or approve them, or fix the title._\n\n'
+  while IFS="$(printf '\t')" read -r id status title; do
+    [ -n "$id" ] || continue
+    printf -- '- `%s` (%s) %s\n' "$id" "$status" "$title"
+  done <<TD_EOF
+$td_orphans
+TD_EOF
+  printf '\n'
+fi

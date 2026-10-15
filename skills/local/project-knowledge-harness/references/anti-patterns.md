@@ -42,3 +42,19 @@ When applying or maintaining this harness, avoid the following:
 - **Overwriting an existing `TODO.md` with the template**. The bundled
   `scripts/init.sh` is conservative on purpose — pass `--force` only after
   preserving any real entries you want to keep.
+
+- **Writing td ids into `TODO.md`**. td issues live in a machine-local
+  SQLite (`.todos/`). Another clone or devbox cannot resolve `td-xxxx`
+  unless td-sync is set up and linked. Let the td issue point at the
+  `TODO.md` item (label `pkh` and the same title); see
+  [`integrating-trackers.md`](integrating-trackers.md).
+
+- **Tracking the same item in two systems**. A "maybe later" idea filed with
+  both `add-todo.sh` and `td create` (or GitHub Issues) drifts as soon as one
+  copy is edited. Each item lives in one place at a time: `TODO.md` until
+  someone starts it, then td while it is in flight, then `## Done` once it
+  ships.
+
+- **Closing a td issue without harvesting it**. td logs and handoffs never
+  reach git. Before `td approve`, move any non-obvious trap into `pitfalls/`
+  and any design reasoning into `backlog/`.

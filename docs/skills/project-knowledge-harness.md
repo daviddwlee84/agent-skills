@@ -36,16 +36,20 @@ skills/local/project-knowledge-harness/
 │   ├── pitfalls-README.md.template
 │   ├── pitfall-doc.md.template
 │   ├── agent-guidance.md.template   # Snippet for AGENTS.md / CLAUDE.md
-│   └── readme-roadmap.md.template   # Snippet for README.md
+│   ├── readme-roadmap.md.template   # Snippet for README.md
+│   └── td-routing.md.template       # td ↔ TODO.md routing snippet (when td is present)
 ├── scripts/                      # Executed during setup or by the agent
 │   ├── init.sh                   # One-shot setup of all of the above
 │   ├── todo-kanban.sh            # Validator + Markdown / JSON board renderer
-│   └── promote-todo.sh           # Atomic active → ## Done move + re-validate
+│   ├── promote-todo.sh           # Atomic active → ## Done move + re-validate
+│   ├── start-todo.sh             # Optional td bridge: start an item as a td issue
+│   └── _lib/                     # Shared TODO parser + td bridge (sourced)
 └── references/                   # Loaded on demand from SKILL.md links
     ├── tag-schema.md             # Priority × effort schema and exact syntax
     ├── when-to-add-docs.md       # Backlog vs pitfall vs invariant decision rules
     ├── anti-patterns.md          # Mistakes to avoid
-    └── deployment-exclusion.md   # Per-mechanism ignore-rule cheatsheet
+    ├── deployment-exclusion.md   # Per-mechanism ignore-rule cheatsheet
+    └── integrating-trackers.md   # td / GitHub Issues / Linear layering
 ```
 
 `SKILL.md` is intentionally short and points to `references/*.md` so the
@@ -137,6 +141,27 @@ Behaviour:
   edit, the original file is restored.
 - Use `--dry-run` to preview the rewritten file without mutating.
 
+### `scripts/start-todo.sh` (optional td bridge)
+
+For projects that also use [td](https://github.com/marcus/td) for in-flight
+agent work. Git stays the source of truth, and the link runs one way: a td
+issue labelled `pkh` with the item's exact title points at the `TODO.md`
+item. `TODO.md` never stores td ids, because they are machine-local unless
+td-sync is set up.
+
+```sh
+scripts/start-todo.sh --title "<substring>"   # create or reuse the issue, then td start
+```
+
+- `PKH_TD=auto|on|off` (default `auto`): the bridge is active only when td
+  resolves a project from the current directory, including worktrees.
+  Without td every script behaves as before.
+- `promote-todo.sh` prints a harvest-then-review hint for the open issue and
+  never closes it.
+- `todo-kanban.sh` marks in-flight items with `🔧 td-xxxx` and lists orphaned
+  `pkh` issues. `--validate-only` never queries td.
+- `init.sh --td auto|on|off` appends the routing snippet to the agent contract.
+
 ### `scripts/init.sh`
 
 See the workflow above. Notable flags:
@@ -147,6 +172,8 @@ See the workflow above. Notable flags:
   own conventions).
 - `--no-validate` — skip the final `todo-kanban.sh --validate-only` pass
   (for scripted bootstraps where validation is checked separately).
+- `--td auto|on|off` — append the td ↔ `TODO.md` routing snippet when td
+  is detected (`auto`), always (`on`), or never (`off`).
 
 ## Reference docs the skill loads on demand
 
@@ -155,6 +182,7 @@ See the workflow above. Notable flags:
 - [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
 - [`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)
 - [`references/deployment-exclusion.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/deployment-exclusion.md)
+- [`references/integrating-trackers.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/integrating-trackers.md)
 
 ## How this repo uses the skill on itself
 

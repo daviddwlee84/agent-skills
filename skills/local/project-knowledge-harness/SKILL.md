@@ -32,13 +32,14 @@ Use this skill when the user surfaces any of:
 - A request to consolidate `IDEAS.md` / `ROADMAP.md` / `WISHLIST.md` /
   `LESSONS.md` files
 
-Do NOT use this skill for active sprint planning (use issue trackers),
+Do NOT use this skill for active sprint planning (use issue trackers, or
+td for in-flight agent work — see "Optional: td integration" below),
 ephemeral agent scratchpads (use `.claude/plans/`), or current feature
 documentation (use `docs/`).
 
 ## How to apply this skill (default workflow)
 
-The skill bundles five scripts and several templates. **Default to the
+The skill bundles six scripts and several templates. **Default to the
 init script** for setup, and **default to `add-todo.sh` / `sweep-inbox.sh`
 for capture** rather than asking the agent to edit `TODO.md` by hand.
 
@@ -50,6 +51,8 @@ scripts/
   add-todo.sh     # insert a structured entry into the right ## P* lane
   promote-todo.sh # move an active TODO item to ## Done with the right syntax
   sweep-inbox.sh  # triage backlog/inbox.md into TODO.md via add-todo.sh
+  start-todo.sh   # optional: open/reuse a td issue for an item (no-op without td)
+  _lib/           # shared TODO parser + td bridge (sourced, not run directly)
 ```
 
 ### 1. Run `scripts/init.sh` against the target repo
@@ -144,6 +147,25 @@ In the same commit:
    delete — historical record may inform adjacent decisions).
 3. If shipping uncovered a trap, write a `pitfalls/<slug>.md` for it.
 
+## Optional: td integration
+
+If the project uses [td](https://github.com/marcus/td) for in-flight agent work,
+the scripts detect it (`PKH_TD=auto|on|off`, default `auto`) and bridge one
+way. Git stays the source of truth. A td issue labelled `pkh` with the same
+title points at its `TODO.md` item, and `TODO.md` never stores td ids, which
+are machine-local.
+
+- Starting an item: `scripts/start-todo.sh --title "<substring>"` creates or
+  reuses the td issue and starts it.
+- `promote-todo.sh` then prints a harvest-then-review hint and never closes
+  the issue. `todo-kanban.sh` marks in-flight items and lists orphaned issues.
+- `init.sh` appends a routing snippet to the agent contract when td is present.
+- "Maybe later" still goes to `add-todo.sh`, not `td create` / `td defer`.
+
+Without td, nothing changes. Layering, cross-machine caveats, the td exit
+plan, and GitHub Issues / Linear guidance are in
+[`references/integrating-trackers.md`](references/integrating-trackers.md).
+
 ## When a TODO entry needs a `backlog/` doc, when a debug needs a `pitfalls/` doc
 
 Decision rules and the upgrade path to `AGENTS.md` invariants live in
@@ -180,6 +202,8 @@ not files to ship. Cheatsheet for chezmoi / npm / pip / Docker in
 - `assets/pitfall-doc.md.template` — single pitfall doc (symptom-first)
 - `assets/agent-guidance.md.template` — snippet for `AGENTS.md` / `CLAUDE.md`
 - `assets/readme-roadmap.md.template` — snippet for project `README.md`
+- `assets/td-routing.md.template` — td ↔ `TODO.md` routing snippet
+  (appended by `init.sh` when td is detected)
 - `scripts/init.sh` — one-shot setup
 - `scripts/todo-kanban.sh` — validator + Markdown kanban renderer
   (also supports `--json` and `--validate-only`)
@@ -187,6 +211,8 @@ not files to ship. Cheatsheet for chezmoi / npm / pip / Docker in
   `--backlog` also scaffolds `backlog/<slug>.md`
 - `scripts/promote-todo.sh` — atomic active-→-Done move with re-validation
 - `scripts/sweep-inbox.sh` — triage `backlog/inbox.md` → `add-todo.sh`
+- `scripts/start-todo.sh` — optional td bridge: start an item as a td issue
+- `scripts/_lib/todo-match.sh`, `scripts/_lib/td-bridge.sh` — shared helpers
 
 ## Reference implementation
 

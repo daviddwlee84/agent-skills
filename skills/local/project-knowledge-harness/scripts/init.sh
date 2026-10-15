@@ -35,6 +35,10 @@ Options:
   --force                   Overwrite TODO.md / backlog/README.md /
                             pitfalls/README.md if they already exist.
   --no-validate             Skip the final todo-kanban.sh validation pass.
+  --td MODE                 auto | on | off (default: auto). Append the
+                            td <-> TODO.md routing snippet to the agent
+                            contract when td resolves a project in the
+                            target (auto), always (on), or never (off).
   -h, --help                Show this help and exit.
 
 The script never edits .gitignore / .chezmoiignore — it only prints the
@@ -50,6 +54,7 @@ readme_file=""
 readme_explicit=0
 force=0
 do_validate=1
+td_mode="auto"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -61,6 +66,7 @@ while [ $# -gt 0 ]; do
     --readme) readme_file="$2"; readme_explicit=1; shift 2 ;;
     --force) force=1; shift ;;
     --no-validate) do_validate=0; shift ;;
+    --td) td_mode="$2"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
@@ -68,6 +74,11 @@ done
 case "$deployment" in
   chezmoi|npm|pip|docker|none) ;;
   *) echo "Error: --deployment must be chezmoi|npm|pip|docker|none" >&2; exit 2 ;;
+esac
+
+case "$td_mode" in
+  auto|on|off) ;;
+  *) echo "Error: --td must be auto|on|off" >&2; exit 2 ;;
 esac
 
 target_abs="$(cd "$target" && pwd)"
@@ -125,6 +136,7 @@ fi
 # Sentinel markers so re-runs don't double-append snippets.
 agent_marker="<!-- project-knowledge-harness:agent-guidance -->"
 readme_marker="<!-- project-knowledge-harness:readme-roadmap -->"
+td_marker="<!-- project-knowledge-harness:td-routing -->"
 
 # --- helper: render a template by replacing placeholders, write to stdout
 render_template() {
@@ -230,6 +242,18 @@ else
 fi
 
 append_snippet "$agent_contract" "$assets_dir/agent-guidance.md.template" "$agent_marker"
+use_td=0
+case "$td_mode" in
+  on) use_td=1 ;;
+  auto)
+    if command -v td >/dev/null 2>&1 && ( cd "$target_abs" && td info >/dev/null 2>&1 ); then
+      use_td=1
+    fi
+    ;;
+esac
+if [ "$use_td" -eq 1 ]; then
+  append_snippet "$agent_contract" "$assets_dir/td-routing.md.template" "$td_marker"
+fi
 if [ -n "$readme_file" ]; then
   append_snippet "$readme_file" "$assets_dir/readme-roadmap.md.template" "$readme_marker"
 fi
@@ -262,6 +286,8 @@ invoke them from the skill folder; they act on the current directory's TODO.md):
        $scripts_dir/todo-kanban.sh
   5. Promote shipped items via:
        $scripts_dir/promote-todo.sh --title "<substring>" --summary "<what shipped>"
+  6. Optional, with td: start an item as a td issue (TODO.md is unchanged) via:
+       $scripts_dir/start-todo.sh --title "<substring>"
 
 Run these from $target_abs (or pass --file / a TODO_FILE path) so they find
 this project's TODO.md rather than one in the current shell directory.

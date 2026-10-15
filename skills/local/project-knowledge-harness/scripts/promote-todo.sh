@@ -17,6 +17,10 @@ Move an active TODO item to the `## Done` section, rewriting it as:
 The script edits TODO.md in-place. If validation fails after the edit,
 the original file is restored.
 
+td: when td is enabled (PKH_TD=auto|on|off, default auto) and an open issue
+labelled `pkh` has the same title, a review/harvest hint is printed to
+stderr. The td issue is never closed by this script.
+
 Required:
   --title SUBSTRING     Match an active item whose Title contains SUBSTRING
                         (case-sensitive). Must match exactly one active item.
@@ -68,8 +72,20 @@ if [ ! -f "$file" ]; then
   exit 1
 fi
 
+# Resolve symlinks (repos often link scripts/promote-todo.sh to the skill) so
+# _lib/ is found next to the real file.
+src="$0"
+while [ -L "$src" ]; do
+  link="$(readlink "$src")"
+  case "$link" in /*) src="$link" ;; *) src="$(dirname "$src")/$link" ;; esac
+done
+script_dir="$(cd "$(dirname "$src")" && pwd)"
+# shellcheck source=_lib/todo-match.sh
+. "$script_dir/_lib/todo-match.sh"
+# shellcheck source=_lib/td-bridge.sh
+. "$script_dir/_lib/td-bridge.sh"
+
 if [ -z "$validator" ]; then
-  script_dir="$(cd "$(dirname "$0")" && pwd)"
   if [ -x "$script_dir/todo-kanban.sh" ]; then
     validator="$script_dir/todo-kanban.sh"
   fi
@@ -85,70 +101,8 @@ else
   today="$(date -u +%Y-%m-%d)"
 fi
 
-# Find the matching active item.
-# Active line shape:
-#   - [ ] **[Effort] Title** — description       (P1/P2/P3)
-#   - [ ] **[?/Effort] Title** — description     (P?)
-#
-# Build a list of (line_no, lane, effort, title, raw) for active items whose
-# title contains title_substr.
-
-current_lane=""
-match_count=0
-match_line_no=0
-match_lane=""
-match_effort=""
-match_title=""
-match_priority=""
-
-line_no=0
-while IFS= read -r line || [ -n "$line" ]; do
-  line_no=$(( line_no + 1 ))
-  case "$line" in
-    "## P1") current_lane="P1"; continue ;;
-    "## P2") current_lane="P2"; continue ;;
-    "## P3") current_lane="P3"; continue ;;
-    "## P?") current_lane="P?"; continue ;;
-    "## Done") current_lane="Done"; continue ;;
-    "## "*) current_lane="post-done"; continue ;;
-  esac
-
-  # Only consider active items in P1/P2/P3/P?
-  case "$current_lane" in
-    P1|P2|P3)
-      if [[ "$line" =~ ^-\ \[\ \]\ \*\*\[(S|M|L|XL)\]\ (.+)\*\*\ —\ (.+)$ ]]; then
-        eff="${BASH_REMATCH[1]}"
-        ttl="${BASH_REMATCH[2]}"
-        case "$ttl" in
-          *"$title_substr"*)
-            match_count=$(( match_count + 1 ))
-            match_line_no=$line_no
-            match_lane="$current_lane"
-            match_effort="$eff"
-            match_title="$ttl"
-            match_priority="$current_lane"
-            ;;
-        esac
-      fi
-      ;;
-    "P?")
-      if [[ "$line" =~ ^-\ \[\ \]\ \*\*\[\?/(S|M|L|XL)\]\ (.+)\*\*\ —\ (.+)$ ]]; then
-        eff="${BASH_REMATCH[1]}"
-        ttl="${BASH_REMATCH[2]}"
-        case "$ttl" in
-          *"$title_substr"*)
-            match_count=$(( match_count + 1 ))
-            match_line_no=$line_no
-            match_lane="P?"
-            match_effort="$eff"
-            match_title="$ttl"
-            match_priority="P?"
-            ;;
-        esac
-      fi
-      ;;
-  esac
-done < "$file"
+# Find the matching active item (shared parser in _lib/todo-match.sh).
+pkh_todo_match "$file" "$title_substr"
 
 if [ "$match_count" -eq 0 ]; then
   echo "Error: no active item title contains: $title_substr" >&2
@@ -207,3 +161,18 @@ fi
 
 rm -f "$backup"
 echo "Promoted: $match_priority/$match_effort '$match_title' → ## Done [$today]" >&2
+
+# Optional td bridge: point at the in-flight td issue, never close it here
+# (td's review gate stays in charge). No-op when td is unavailable.
+if pkh_td_enabled 2>/dev/null; then
+  if td_hit="$(pkh_td_find "$match_title")"; then
+    td_id="${td_hit%%	*}"
+    td_status="${td_hit#*	}"
+    {
+      echo "td: $td_id is still $td_status for this item."
+      echo "  1. Harvest first: \`td show $td_id\` — move pitfall- or backlog-worthy"
+      echo "     findings into pitfalls/ or backlog/ (td logs stay on this machine)."
+      echo "  2. Then: td review $td_id   (or td approve $td_id ... per your review policy)"
+    } >&2
+  fi
+fi

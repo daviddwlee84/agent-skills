@@ -41,16 +41,20 @@ skills/local/project-knowledge-harness/
 │   ├── pitfalls-README.md.template
 │   ├── pitfall-doc.md.template
 │   ├── agent-guidance.md.template   # 給 AGENTS.md / CLAUDE.md 的片段
-│   └── readme-roadmap.md.template   # 給 README.md 的片段
+│   ├── readme-roadmap.md.template   # 給 README.md 的片段
+│   └── td-routing.md.template       # td ↔ TODO.md 路由片段 (偵測到 td 時)
 ├── scripts/                      # 在 setup 時或被 agent 執行
 │   ├── init.sh                   # 上述全部的一次性 setup
 │   ├── todo-kanban.sh            # validator + Markdown / JSON 看板渲染器
-│   └── promote-todo.sh           # 原子性 active → ## Done 搬移 + 重新驗證
+│   ├── promote-todo.sh           # 原子性 active → ## Done 搬移 + 重新驗證
+│   ├── start-todo.sh             # 選用的 td bridge：把項目開成 td issue
+│   └── _lib/                     # 共用 TODO parser + td bridge (被 source)
 └── references/                   # 從 SKILL.md 連結按需載入
     ├── tag-schema.md             # priority × effort schema 與精確語法
     ├── when-to-add-docs.md       # backlog vs pitfall vs invariant 決策規則
     ├── anti-patterns.md          # 該避免的錯誤
-    └── deployment-exclusion.md   # 各部署機制的 ignore-rule 快查
+    ├── deployment-exclusion.md   # 各部署機制的 ignore-rule 快查
+    └── integrating-trackers.md   # td / GitHub Issues / Linear 分層
 ```
 
 `SKILL.md` 刻意短，並指向 `references/*.md`，這樣 agent 只在需要時才
@@ -136,6 +140,25 @@ scripts/promote-todo.sh \
 - 在自身旁邊查找 validator；編輯後驗證失敗就還原原檔。
 - 用 `--dry-run` 預覽改寫後的檔案而不改動。
 
+### `scripts/start-todo.sh` (選用的 td bridge)
+
+給同時用 [td](https://github.com/marcus/td) 管理進行中 agent 工作的 project。
+git 仍是 source of truth，而且連結只有一個方向：td issue 帶 label `pkh`、標題
+和 `TODO.md` 項目完全相同，由它指向該項目。`TODO.md` 永遠不存 td id，因為
+沒有設定 td-sync 時，td id 只在單一機器上有效。
+
+```sh
+scripts/start-todo.sh --title "<substring>"   # 建立或沿用 issue，然後 td start
+```
+
+- `PKH_TD=auto|on|off` (預設 `auto`)：只有在目前目錄解析得到 td project 時
+  (含 worktree) bridge 才會啟用。沒有 td 時，所有 script 的行為和以前一樣。
+- `promote-todo.sh` 會對還開著的 issue 印出「先收割、再 review」的提示，
+  但絕不會關掉它。
+- `todo-kanban.sh` 會用 `🔧 td-xxxx` 標出進行中的項目，並列出孤兒 `pkh`
+  issue。`--validate-only` 不會查詢 td。
+- `init.sh --td auto|on|off` 會把路由片段加進 agent contract。
+
 ### `scripts/init.sh`
 
 詳見上面工作流程。值得注意的 flag：
@@ -145,6 +168,8 @@ scripts/promote-todo.sh \
 - `--readme ""` —— 跳過 README 片段 (對於有自己慣例的 repo 有用)。
 - `--no-validate` —— 跳過最後的 `todo-kanban.sh --validate-only`
   (給有獨立驗證步驟的 scripted bootstrap 用)。
+- `--td auto|on|off` —— 偵測到 td 時 (`auto`)、一律 (`on`) 或從不 (`off`)
+  加入 td ↔ `TODO.md` 路由片段。
 
 ## skill 按需載入的 reference 文件
 
@@ -153,6 +178,7 @@ scripts/promote-todo.sh \
 - [`references/when-to-add-docs.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/when-to-add-docs.md)
 - [`references/anti-patterns.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/anti-patterns.md)
 - [`references/deployment-exclusion.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/deployment-exclusion.md)
+- [`references/integrating-trackers.md`](https://github.com/daviddwlee84/agent-skills/blob/main/skills/local/project-knowledge-harness/references/integrating-trackers.md)
 
 ## 這個 repo 怎麼把 skill 用在自己身上
 

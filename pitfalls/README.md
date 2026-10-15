@@ -37,6 +37,7 @@ and prevention guidance.
 
 | Slug | Symptom keywords | Status |
 |---|---|---|
+| [`skill-lib-dir-silently-gitignored`](skill-lib-dir-silently-gitignored.md) | new `scripts/lib/` missing from `git status`, Python `.gitignore` `lib/` | active |
 | [`yq-bad-expression-and-silent-null`](yq-bad-expression-and-silent-null.md) | `bad expression`, yq returns null, ISO date parse, `strenv` vs `env` | active |
 | [`symlink-target-relative-to-symlink-not-cwd`](symlink-target-relative-to-symlink-not-cwd.md) | dangling symlink, looks valid in `ls -la`, agent skill not loading | active |
 | [`mkdocs-strict-rejects-build-time-generated-links`](mkdocs-strict-rejects-build-time-generated-links.md) | `Aborted with N warnings in strict mode`, `llms.txt` link, raw-markdown URL, `unrecognized_links` config | active |

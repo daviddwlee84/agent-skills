@@ -1,5 +1,26 @@
 # CLAUDE.md
 
+<!-- td-agent-instructions:start -->
+<!-- td-agent-instructions:version=3 -->
+
+## Working with td
+
+td keeps task context durable across sessions. In a new context, run `td usage --new-session -q` to see current work.
+
+Use your judgment about how much tracking a task needs. For substantive work: `td start <id>`, record progress with `td log`, hand off with `td handoff <id>`, then `td review <id>`.
+
+Closing needs a review. Say who did it (default trusted mode; delegated/strict allow only the first):
+
+- independent session: `td approve <id> --reason "..."`
+- a sub-agent: `td approve <id> --reviewed-by "<who>"`
+- you: `td approve <id> --self-review --reason "..."`
+
+Prefer a reviewer with its own `TD_CONTEXT_ID`; never name one who did not review.
+
+Run `td usage` or `td <command> --help`.
+
+<!-- td-agent-instructions:end -->
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -51,6 +72,9 @@ make install-hooks
 # Triage backlog/inbox.md (loose captures) into TODO.md
 ./scripts/sweep-inbox.sh             # interactive
 ./scripts/sweep-inbox.sh --batch     # only formalize parseable key=value lines
+
+# Start a TODO item as a td issue (td bridge; no-op without td, TODO.md unchanged)
+./scripts/start-todo.sh --title "<substring>"
 
 # Move an active TODO item to ## Done with the right syntax
 ./scripts/promote-todo.sh --title "<substring>" --summary "<shipped summary>"
@@ -181,6 +205,37 @@ rm .agents/skills/<name> .claude/skills/<name>
 ```
 
 ## Project Memory Workflow
+
+<!-- project-knowledge-harness:td-routing -->
+### td ↔ `TODO.md` routing (scripts: `scripts/start-todo.sh` etc.)
+
+This repo uses both. Each piece of information lives in exactly **one** place:
+
+| Information | Lives in | Why |
+|---|---|---|
+| "Maybe later" ideas, priorities, deferred work | `TODO.md` (+ `backlog/`) | In git, so it follows every clone and devbox |
+| Research, trade-offs, past traps | `backlog/`, `pitfalls/` | Diffable, greppable, reviewed in PRs |
+| What is in flight now, logs, handoffs, review | td | Machine-local execution state |
+
+Rules:
+
+1. When the user says "maybe later" or "先記下來", use `add-todo.sh`. Do not use
+   `td create` or `td defer` for that.
+2. To start a `TODO.md` item, run `start-todo.sh --title "<substring>"`. It
+   creates or reuses a td issue labelled `pkh` with the same title, then
+   starts it. Ad-hoc session work with no `TODO.md` line can use plain `td`.
+3. On shipping, run `promote-todo.sh` in the same commit, then
+   `td review` / `td approve` the issue.
+4. **Harvest before you approve.** td logs and handoffs stay on this machine.
+   Move anything worth keeping into `pitfalls/` or `backlog/` first.
+5. References go one way: the td issue names its `TODO.md` item. Never write
+   td ids into `TODO.md` (other clones cannot resolve them). Never commit
+   `.todos/`.
+6. If a td issue and `TODO.md` disagree, `TODO.md` wins. `todo-kanban.sh`
+   lists open `pkh` issues that have no active `TODO.md` item.
+
+Set `PKH_TD=off` to make the harness scripts ignore td.
+<!-- project-knowledge-harness:td-routing (end) -->
 
 ### Long-term backlog -> `TODO.md` + `backlog/`
 
