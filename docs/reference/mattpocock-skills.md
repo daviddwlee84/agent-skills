@@ -27,7 +27,7 @@ broke" branch.
 
 ```mermaid
 flowchart TD
-    G["grill-with-docs / grill-me<br/>align intent · write CONTEXT.md + ADRs"]
+    G["grill-with-docs / grill-me<br/>align intent · write GLOSSARY.md + ADRs"]
     S["to-spec<br/>synthesize a spec (PRD)"]
     T["to-tickets / wayfinder<br/>tracer-bullet tickets + blocking edges"]
     TR["triage<br/>agent-ready briefs · ready-for-agent"]
@@ -56,7 +56,7 @@ The engineering payoff Matt targets, step by step:
 
 - **Alignment first.** `grill-me` / `grill-with-docs` interview you until every
   branch of a decision is resolved, and capture the shared language in a
-  `CONTEXT.md` glossary + ADRs. `grilling` is the reusable interview loop behind
+  `GLOSSARY.md` (formerly `CONTEXT.md`) + ADRs. `grilling` is the reusable interview loop behind
   both; `domain-modeling` maintains the ubiquitous language. This is what stops
   an agent from confidently building the wrong thing.
 - **A durable spec, then slices.** `to-spec` turns the aligned conversation into

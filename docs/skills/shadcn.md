@@ -1,5 +1,10 @@
 # shadcn (vendored)
 
+!!! warning "Frozen"
+    Upstream removed this skill in [vercel/vercel-plugin#291](https://github.com/vercel/vercel-plugin/pull/291) (2026-10-02). `vendor.yaml` marks it `frozen:`,
+    so `make sync` keeps the last-synced copy and no longer updates it.
+    `shadcn-ui/ui` now publishes its own [`skills/shadcn`](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn); switching the source is tracked separately.
+
 Vendored from
 [vercel/vercel-plugin/skills/shadcn](https://github.com/vercel/vercel-plugin/tree/main/skills/shadcn)
 (part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).

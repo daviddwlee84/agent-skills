@@ -1,5 +1,10 @@
 # nextjs (vendored)
 
+!!! warning "Frozen"
+    Upstream removed this skill in [vercel/vercel-plugin#282](https://github.com/vercel/vercel-plugin/pull/282) (2026-10-01). `vendor.yaml` marks it `frozen:`,
+    so `make sync` keeps the last-synced copy and no longer updates it.
+    Next.js now ships version-matched docs in `node_modules/next/dist/docs/` (16.3+ `next dev` also generates `AGENTS.md`); prefer those for current APIs.
+
 Vendored from
 [vercel/vercel-plugin/skills/nextjs](https://github.com/vercel/vercel-plugin/tree/main/skills/nextjs)
 (part of the [`fullstack-nextjs`](index.md#fullstack-nextjs-series) series).

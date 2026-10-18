@@ -1,5 +1,10 @@
 # shadcn (vendored)
 
+!!! warning "已凍結 (frozen)"
+    上游已在 [vercel/vercel-plugin#291](https://github.com/vercel/vercel-plugin/pull/291) (2026-10-02) 移除此 skill。`vendor.yaml` 將其標為 `frozen:`，
+    `make sync` 會保留最後一次同步的版本，不再更新。
+    `shadcn-ui/ui` 現在自己發布 [`skills/shadcn`](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn)；是否改用該來源另行追蹤。
+
 !!! note "Terminology rule (zh-TW pages)"
     技術名詞首次出現以「中文 (English original)」格式呈現，例：依賴注入
     (dependency injection)。**不自創翻譯**——若無公認譯名直接保留英文

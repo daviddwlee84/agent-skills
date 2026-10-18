@@ -2,7 +2,7 @@
 
 !!! note "Terminology rule (zh-TW pages)"
     技術名詞首次出現以「中文 (English original)」格式呈現。**不自創翻譯**——
-    若無公認譯名直接保留英文（如 `SKILL.md`、`CONTEXT.md`、`ADR`、`PRD`、`gh`）。
+    若無公認譯名直接保留英文（如 `SKILL.md`、`GLOSSARY.md`、`ADR`、`PRD`、`gh`）。
     代碼、API 名、CLI flag、套件名、檔名一律不翻。
 
 [Matt Pocock](https://github.com/mattpocock)——[Total TypeScript](https://www.totaltypescript.com/)
@@ -32,7 +32,7 @@ end-to-end 流程，以及我們刻意留在上游的部分。
 
 ```mermaid
 flowchart TD
-    G["grill-with-docs / grill-me<br/>align intent · write CONTEXT.md + ADRs"]
+    G["grill-with-docs / grill-me<br/>align intent · write GLOSSARY.md + ADRs"]
     S["to-spec<br/>synthesize a spec (PRD)"]
     T["to-tickets / wayfinder<br/>tracer-bullet tickets + blocking edges"]
     TR["triage<br/>agent-ready briefs · ready-for-agent"]
@@ -60,7 +60,7 @@ flowchart TD
 Matt 想達成的工程效益，逐步來看：
 
 - **先對齊。** `grill-me` / `grill-with-docs` 會不斷質問（interview）你，直到一個
-  決策的每個分支都被解決，並把共用語言記進 `CONTEXT.md` 詞彙表（glossary）+
+  決策的每個分支都被解決，並把共用語言記進 `GLOSSARY.md` 詞彙表（原 `CONTEXT.md`）+
   ADR。`grilling` 是這兩者背後可重用的質問迴圈；`domain-modeling` 維護
   ubiquitous language（通用語言）。這正是防止 agent 自信地做錯東西的關鍵。
 - **先產出可留存的 spec，再切片。** `to-spec` 把已對齊的對話變成一份 spec（你可能
