@@ -34,6 +34,7 @@ audits. This is the most-populated domain in this repo, anchored by the
 | [`web-design-guidelines`](../../skills/web-design-guidelines.md) | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) | `fullstack-nextjs` |
 | [`frontend-design`](../../skills/frontend-design.md) | [`anthropics/skills`](https://github.com/anthropics/skills) | `fullstack-nextjs` |
 | [`webapp-testing`](../../skills/webapp-testing.md) | [`anthropics/skills`](https://github.com/anthropics/skills) | `fullstack-nextjs` |
+| [`openui`](../../skills/openui.md) | [`thesysdev/skills`](https://github.com/thesysdev/skills) | — (flat, `generative-ui` group; Gateway-first) |
 
 GitHub workflow + web quality (Warp Oz, see [`docs/reference/warp-oz-skills.md`](../../reference/warp-oz-skills.md)):
 

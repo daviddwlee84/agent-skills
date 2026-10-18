@@ -147,6 +147,7 @@ nav:
           - skill-creator: skills/skill-creator.md
           - herdr: skills/herdr.md
           - security-audit: skills/security-audit.md
+          - openui: skills/openui.md
           - Fullstack Next.js:
               - nextjs: skills/nextjs.md
               - shadcn: skills/shadcn.md

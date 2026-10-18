@@ -218,6 +218,17 @@
       ]
     },
     {
+      "name": "generative-ui",
+      "description": "OpenUI generative UI: a provider-neutral builder plus the official Gateway-first OpenUI skill",
+      "category": "Web",
+      "tags": ["openui", "generative-ui", "react", "agents", "llm-ui"],
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./vendor/openui"
+      ]
+    },
+    {
       "name": "security",
       "description": "Cloudflare's security-audit skill: source-first vulnerability review with sandboxed validation, independently verified findings, and schema-checked machine-readable reports",
       "category": "Security",

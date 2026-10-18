@@ -39,6 +39,7 @@ Vercel / Postgres / browser automation / GitHub workflow / web 品質
 | [`web-design-guidelines`](../../skills/web-design-guidelines.md) | [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills) | `fullstack-nextjs` |
 | [`frontend-design`](../../skills/frontend-design.md) | [`anthropics/skills`](https://github.com/anthropics/skills) | `fullstack-nextjs` |
 | [`webapp-testing`](../../skills/webapp-testing.md) | [`anthropics/skills`](https://github.com/anthropics/skills) | `fullstack-nextjs` |
+| [`openui`](../../skills/openui.md) | [`thesysdev/skills`](https://github.com/thesysdev/skills) | —（flat，`generative-ui` 群組；預設以 Gateway 為主） |
 
 GitHub workflow + web quality（Warp Oz，見
 [`docs/reference/warp-oz-skills.md`](../../reference/warp-oz-skills.md)）：

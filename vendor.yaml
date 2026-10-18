@@ -458,3 +458,12 @@ skills:
       date: "2026-09-18T06:08:50Z"
       commit: "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8"
       license_sha: "6dbc9ecb3a5b9080e95b962869e8c7ab16cfdc20"
+  - name: openui
+    upstream:
+      owner: thesysdev
+      repo: skills
+      path: skills/openui
+      branch: main
+    last_sync:
+      date: "2026-10-18T10:30:48Z"
+      commit: "bcd93adc9185e333bc9a83b29f7d81d67ab1935f"
