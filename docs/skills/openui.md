@@ -44,6 +44,9 @@ and porting to Python from the JS packages.
     something like *"call my provider directly, no Gateway"*.
 
 Because vendored content is kept unedited, the rule stays as it is upstream.
+For a provider-neutral alternative, install the local
+[`openui-direct-provider`](openui-direct-provider.md) skill. Both trigger on
+"OpenUI", so install the one that matches how you run inference.
 
 ## Install
 

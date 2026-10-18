@@ -22,7 +22,7 @@ Vercel / Postgres / browser automation / GitHub workflow / web 品質
 
 | Skill | 一句話 | 備註 |
 |---|---|---|
-| _暫無直接相關_ | | local skill 主要偏 ML / docs / process 工具，少有 web framework 取向。 |
+| [`openui-direct-provider`](../../skills/openui-direct-provider.md) | 用自己的模型 provider 建 OpenUI generative UI | vendored `openui` 的中立搭檔；除非主動要求，否則不導向 Gateway。 |
 
 ### Vendored
 

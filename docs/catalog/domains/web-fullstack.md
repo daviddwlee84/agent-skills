@@ -17,7 +17,7 @@ audits. This is the most-populated domain in this repo, anchored by the
 
 | Skill | One-line | Notes |
 |---|---|---|
-| _none direct_ | | The local skill lineup leans towards ML / docs / process tooling rather than web frameworks. |
+| [`openui-direct-provider`](../../skills/openui-direct-provider.md) | OpenUI generative UI on your own model provider | Provider-neutral companion to vendored `openui`; no Gateway unless asked. |
 
 ### Vendored
 

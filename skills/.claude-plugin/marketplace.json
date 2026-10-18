@@ -225,6 +225,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./local/openui-direct-provider",
         "./vendor/openui"
       ]
     },

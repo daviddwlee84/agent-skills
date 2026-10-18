@@ -28,6 +28,7 @@
 | [`skill-author`](skill-author.md) | 依 agentskills.io best practices 撰寫新 skill；附 `new-skill.sh` 與 `lint-skill.sh` | [docs](skill-author.md) |
 | [`verifiable-surfaces`](verifiable-surfaces.md) | 設計可驗證的 CLI/tool/service surface (`--help`/`--dry-run`/`--print-config`/isolated smoke)，並用 app-native loader 驗證 config 變更 | [docs](verifiable-surfaces.md) |
 | [`12-factor-agent-design-review`](12-factor-agent-design-review.md) | 設計或 evidence-review production LLM application，涵蓋 prompt、context、typed tool、durable state、owned control flow、pause/resume、human、retry 與 replay | [docs](12-factor-agent-design-review.md) |
+| [`openui-direct-provider`](openui-direct-provider.md) | 用自己的模型 provider 建 OpenUI generative UI（不經 Gateway）；vendored `openui` 的中立搭檔 | [docs](openui-direct-provider.md) |
 | [`demo-evidence`](demo-evidence.md) | 把驗收證據(截圖/錄影/HTTP log)歸檔到受 gitignore 保護的 `.evidence/` bundle，關聯 git branch/commit + agent session，供非同步「Demos over diffs」驗收 | [docs](demo-evidence.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | 啟動 MkDocs Material 站 + GitHub Pages 部署；以 `.skills/preferences.yaml` consent-gate | [docs](mkdocs-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo 雙模式 (UI + batch CLI) notebook，搭配 Tyro + MLflow | [docs](marimo-batch-mlflow.md) |

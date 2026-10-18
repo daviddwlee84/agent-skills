@@ -43,7 +43,9 @@ react-headless、server、Vue/Svelte/Angular renderer、cli 等），以及幾�
     使用。直接呼叫 provider 的路徑（`references/direct-provider.md`）只有在你明確
     要求時才會用到；可以對 agent 說「直接呼叫我的 provider，不要用 Gateway」。
 
-vendored 內容維持上游原樣，因此這條規則保留不改。
+vendored 內容維持上游原樣，因此這條規則保留不改。若要 provider 中立的版本，請安裝本地的
+[`openui-direct-provider`](openui-direct-provider.md) skill。兩者都會因「OpenUI」被觸發，
+請依推論方式擇一安裝。
 
 ## 安裝
 
