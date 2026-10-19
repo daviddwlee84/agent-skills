@@ -42,6 +42,7 @@ harness runtime。
 | Pi SDK | [`badlogic/pi-mono`](https://github.com/badlogic/pi-mono) | `evaluated` | Agent harness 的另一選項。 | （見 upstream README） |
 | `agent-architecture-analysis` | [`existential-birds/beagle`](https://github.com/existential-birds/beagle/tree/main/plugins/beagle-analysis/skills/agent-architecture-analysis) | `skipped` | Evidence-first 12-Factor review 有價值，但 rubric 綁定 Python 與特定 implementation；local skill 只引用可攜的 evidence-gate 構想。 | `npx skills add existential-birds/beagle --skill agent-architecture-analysis` |
 | 12-factor agent skill pack | [`tika/12-factor-agent-skills`](https://github.com/tika/12-factor-agent-skills) | `skipped` | 五個 skill 的廣泛組合，但 cross-skill reference 與 scanner self-match 問題使它不適合原樣 vendor。 | `npx skills add tika/12-factor-agent-skills` |
+| pstack（`poteto-mode`） | [`cursor/plugins/pstack`](https://github.com/cursor/plugins/tree/main/pstack) | `evaluated` | 強主張的 Cursor workflow pack：router、playbook、principle skill 與 subagent fan-out。耦合度高且更新太快，不適合 vendor。Claude Code 由 upstream 生成的 adapter 支援；Codex 等其他 agent 可用社群移植（[`Go7hic/ystack`](https://github.com/Go7hic/ystack)、[`TheOnlyFusionCube/potetos-for-everyone`](https://github.com/TheOnlyFusionCube/potetos-for-everyone)）。見 [skill collections](../skill-collections.zh-TW.md)。 | `/plugin marketplace add cursor/plugins` then `/plugin install pstack@cursor-plugins` |
 
 ## MCP servers
 
