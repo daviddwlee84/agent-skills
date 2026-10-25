@@ -67,6 +67,11 @@ MANIFEST = SKILL_DIR / "assets" / "manifest.toml"
 _IF = re.compile(r"^\s*#\s*__IF:([a-z, ]+)__\s*$")
 _END = re.compile(r"^\s*#\s*__END__\s*$")
 _SLUG_OK = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+_VER_OK = re.compile(r"^(\d+)\.(\d+)(?:\.\d+)?$")
+
+# Per https://devguide.python.org/versions/, Python 3.10 reached EOL in Oct 2026.
+MIN_ACTIVE_PYTHON = (3, 11)
+FALLBACK_PIN = "3.13"
 
 
 def log(message: str) -> None:
@@ -76,6 +81,95 @@ def log(message: str) -> None:
 def die(message: str, code: int) -> None:
     print(f"error: {message}", file=sys.stderr)
     raise SystemExit(code)
+
+
+def parse_python_version(raw: str, flag: str) -> tuple[int, int]:
+    match = _VER_OK.match(raw.strip())
+    if not match:
+        die(f"invalid {flag} {raw!r}: expected major.minor (e.g. 3.11, 3.13)", 2)
+    return int(match.group(1)), int(match.group(2))
+
+
+def _detect_local_python() -> str | None:
+    """Return the user's default installed Python major.minor, if discoverable."""
+    try:
+        proc = subprocess.run(
+            ["uv", "python", "find", "--no-project"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            ver = subprocess.run(
+                [
+                    proc.stdout.strip(),
+                    "-c",
+                    "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if ver.returncode == 0 and _VER_OK.match(ver.stdout.strip()):
+                return ver.stdout.strip()
+    except OSError:
+        pass
+    return f"{sys.version_info.major}.{sys.version_info.minor}"
+
+
+def resolve_python_versions(floor_raw: str, pin_raw: str) -> tuple[str, str]:
+    """Validate (python_floor, python_pin) and auto-detect local pin when 'auto'."""
+    floor_tuple = parse_python_version(floor_raw, "--python-floor")
+    floor = f"{floor_tuple[0]}.{floor_tuple[1]}"
+    if floor_tuple < MIN_ACTIVE_PYTHON:
+        log(
+            f"note: Python {floor} is past End-of-Life "
+            "(https://devguide.python.org/versions/); prefer --python-floor 3.11+ "
+            "unless required by a legacy deployment target"
+        )
+
+    if pin_raw.strip().lower() != "auto":
+        pin_tuple = parse_python_version(pin_raw, "--python-pin")
+        pin = f"{pin_tuple[0]}.{pin_tuple[1]}"
+        if pin_tuple < floor_tuple:
+            die(
+                f"--python-pin ({pin}) cannot be older than --python-floor ({floor}); "
+                "requires-python must cover the dev interpreter in .python-version",
+                2,
+            )
+        if pin_tuple < MIN_ACTIVE_PYTHON:
+            log(
+                f"note: Python {pin} is past End-of-Life "
+                "(https://devguide.python.org/versions/); consider upgrading with "
+                "`uv python install 3.13 && uv python pin 3.13`"
+            )
+        return floor, pin
+
+    detected = _detect_local_python()
+    if detected is not None:
+        det_tuple = parse_python_version(detected, "detected python")
+        if det_tuple < MIN_ACTIVE_PYTHON:
+            log(
+                f"note: local Python {detected} is past End-of-Life "
+                "(https://devguide.python.org/versions/); consider "
+                "`uv python install 3.13`"
+            )
+        if det_tuple >= max(floor_tuple, MIN_ACTIVE_PYTHON):
+            log(
+                f"using local Python {detected} for .python-version "
+                "(reuses local uv cache; pass --python-pin to override)"
+            )
+            return floor, detected
+
+    fallback_tuple = parse_python_version(FALLBACK_PIN, "fallback")
+    chosen_tuple = max(floor_tuple, fallback_tuple)
+    chosen = f"{chosen_tuple[0]}.{chosen_tuple[1]}"
+    log(
+        f"pinning .python-version to {chosen} "
+        f"(local Python {detected or 'none'} is below {max(floor_tuple, MIN_ACTIVE_PYTHON)[0]}."
+        f"{max(floor_tuple, MIN_ACTIVE_PYTHON)[1]})"
+    )
+    return floor, chosen
 
 
 @dataclasses.dataclass(frozen=True)
@@ -101,10 +195,10 @@ class Args:
     """GitHub owner used to build repository URLs."""
 
     python_floor: str = "3.11"
-    """Minimum supported Python (requires-python, CI matrix floor)."""
+    """Minimum supported Python (requires-python, CI matrix floor). Default 3.11 (oldest non-EOL)."""
 
-    python_pin: str = "3.13"
-    """Python written to .python-version and used for local development."""
+    python_pin: str = "auto"
+    """Dev Python written to .python-version ('auto' reuses installed local Python >= floor, or e.g. '3.13')."""
 
     dry_run: bool = False
     """List what would be written; create nothing."""
@@ -181,20 +275,32 @@ def apply_markers(text: str, profile: str) -> str:
     return "".join(out)
 
 
-def substitutions(args: Args, slug: str, package: str) -> dict[str, str]:
+def substitutions(
+    args: Args,
+    slug: str,
+    package: str,
+    python_floor: str,
+    python_pin: str,
+) -> dict[str, str]:
     description = args.description.strip()
     if description and not description.endswith((".", "!", "?")):
         description += "."
+    matrix_versions = (
+        f'"{python_floor}"'
+        if python_floor == python_pin
+        else f'"{python_floor}", "{python_pin}"'
+    )
     return {
         "PROJECT_SLUG_PLACEHOLDER": slug,
         "PACKAGE_NAME_PLACEHOLDER": package,
         "PROJECT_DESCRIPTION_PLACEHOLDER": description,
         "AUTHOR_PLACEHOLDER": args.author,
         "OWNER_PLACEHOLDER": args.owner,
-        "PYTHON_FLOOR_PLACEHOLDER": args.python_floor,
-        "PYTHON_PIN_PLACEHOLDER": args.python_pin,
-        "RUFF_TARGET_PLACEHOLDER": "py" + args.python_floor.replace(".", ""),
-        "ABI3_PLACEHOLDER": args.python_floor.replace(".", ""),
+        "PYTHON_FLOOR_PLACEHOLDER": python_floor,
+        "PYTHON_PIN_PLACEHOLDER": python_pin,
+        "CI_PYTHON_MATRIX_PLACEHOLDER": matrix_versions,
+        "RUFF_TARGET_PLACEHOLDER": "py" + python_floor.replace(".", ""),
+        "ABI3_PLACEHOLDER": python_floor.replace(".", ""),
         "ENV_PREFIX_PLACEHOLDER": package.upper() + "_",
     }
 
@@ -233,7 +339,8 @@ def main(args: Args) -> None:
 
     files = load_manifest()
     check_manifest(files)
-    subs = substitutions(args, slug, package)
+    python_floor, python_pin = resolve_python_versions(args.python_floor, args.python_pin)
+    subs = substitutions(args, slug, package, python_floor, python_pin)
 
     written: list[str] = []
     for rel, spec in sorted(files.items()):
@@ -296,6 +403,8 @@ def main(args: Args) -> None:
         "project": slug,
         "package": package,
         "profile": args.profile,
+        "python_floor": python_floor,
+        "python_pin": python_pin,
         "path": str(target),
         "dry_run": args.dry_run,
         "git_initialised": git_initialised,

@@ -46,9 +46,17 @@ inherit a hundred constraints you did not choose and cannot upgrade. Instead:
 ```bash
 uv init --package                 # or hand-write [project] in pyproject.toml
 uv add <the packages you import>  # imports only; let the resolver do the rest
+# then relax [project.dependencies] floors from uv add's >=<today> default to
+# >=<lowest-compatible-minor>, and set requires-python = ">=3.11"
 uv lock && uv sync
 uv run pytest                     # then reconcile what actually broke
 ```
+
+If the project is still on an EOL Python (`<=3.10` per
+<https://devguide.python.org/versions/>), upgrade `.python-version` (`uv python
+pin 3.13`), bump `requires-python = ">=3.11"` and `ruff.target-version =
+"py311"`, and run `uv run ruff check --select UP --fix` once the ruff rung is in
+place.
 
 Read the imports, not the file. `grep -rhoE '^(from|import) [a-z_]+' src/ |
 sort -u` is a faster first pass than reading `requirements.txt`.

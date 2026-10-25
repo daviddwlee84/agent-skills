@@ -8,15 +8,18 @@ license = "MIT"
 authors = [{ name = "AUTHOR_PLACEHOLDER" }]
 classifiers = ["Programming Language :: Python :: 3"]
 
+# Keep runtime dependency floors at the lowest version whose API you actually
+# use (do not leave `uv add`'s `>=<released-today>` default or add `<` upper
+# caps). Exact reproducibility for dev and CI lives in `uv.lock`.
 dependencies = [
 # __IF:cli,lib,api,ml,rust__
-    "tyro>=0.9.5",
-    "loguru>=0.7.2",
-    "pydantic-settings>=2.7",
+    "tyro>=0.8",
+    "loguru>=0.7",
+    "pydantic-settings>=2.0",
 # __END__
 # __IF:api__
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.34",
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.20",
 # __END__
 ]
 
