@@ -54,6 +54,7 @@ of these projects change CLI surface between minor versions.
 | loguru | <https://loguru.readthedocs.io/> |
 | pydantic-settings | <https://docs.pydantic.dev/latest/concepts/pydantic_settings/> |
 | PyO3 / maturin | <https://pyo3.rs/> · <https://www.maturin.rs/> |
+| Python versions / EOL | <https://devguide.python.org/versions/> (3.10 EOL Oct 2026; default floor `>=3.11`) |
 | Packaging specs | <https://packaging.python.org/> · PEP 735 (dependency groups), PEP 723 (script deps) |
 
 ## The canonical layout
@@ -103,11 +104,26 @@ scaffolder's `recommended_skills[]`.
 
 ## Workflow A — new project from zero
 
-### 1. Decide the profile and the name
+### 1. Decide the profile, name, and Python targets
 
-Ask only what you cannot infer: what the project does, and whether it needs a
-CLI, HTTP, notebooks, or Rust. The slug is hyphen-case (`churn-scorer`); the
-package is the underscore form (`churn_scorer`). Everything else has a default.
+Ask only what you cannot infer: what the project does, whether it needs a CLI,
+HTTP, notebooks, or Rust, and whether the user has a preferred local Python
+version for `.venv`. The slug is hyphen-case (`churn-scorer`); the package is
+the underscore form (`churn_scorer`).
+
+Keep the two Python version knobs separate:
+
+- **`--python-pin` (`.python-version`, default `auto`)**: the local dev
+  interpreter. `auto` detects the user's installed `3.11+` local Python so
+  `uv sync` reuses their local interpreter and warm `uv` wheel cache instead of
+  downloading a new Python. Pass `--python-pin 3.12` (etc.) if the user states a
+  preference.
+- **`--python-floor` (`requires-python`, default `3.11`)**: the package's
+  downstream compatibility floor — set to the oldest non-EOL Python
+  ([devguide](https://devguide.python.org/versions/): 3.10 reached EOL in Oct
+  2026) unless the code genuinely needs `3.12+` features or must target a legacy
+  `3.10` host. If the user's local Python is `<=3.10`, advise upgrading with
+  `uv python install 3.13 && uv python pin 3.13`.
 
 ### 2. Generate
 
@@ -155,7 +171,7 @@ uv run skills/local/python-project-best-practice/scripts/audit-python-project.py
     --format table /path/to/repo
 ```
 
-26 checks with evidence and a fix hint, plus an ordered `migration_plan[]`.
+27 checks with evidence and a fix hint, plus an ordered `migration_plan[]`.
 Exit `4` when something fails. It never writes, and there is deliberately no
 `--fix`.
 
@@ -236,9 +252,18 @@ Load on demand — do not read them all up front.
   is published and installable by your users; a PEP 735 group is local-only.
   Your test runner in an extra is a defect you cannot remove without a release.
   `uv sync` installs the `dev` group by default.
-- **`uv.lock` does not constrain your users.** Installed as a dependency, your
-  package is resolved from `[project.dependencies]` and the lock is ignored.
-  Commit it anyway — it pins your dev and CI environment, which is the point.
+- **`uv.lock` does not constrain your users — `[project.dependencies]` and
+  `requires-python` do.** Installed as a dependency or via `uv tool install`,
+  your package is resolved from `pyproject.toml` and `uv.lock` is ignored.
+  Commit `uv.lock` to pin *your* dev and CI environment, but keep
+  `[project.dependencies]` floors as wide as your actual API usage allows (`>=`
+  the lowest compatible release, no `<` or `~=` upper caps).
+- **`uv init` and `uv add` over-constrain packages by default.** `uv init` sets
+  `requires-python` to whatever interpreter you ran it with (e.g. `>=3.13`), and
+  `uv add foo` writes `foo>=<version-released-today>`. If others install your
+  package, both cause avoidable solver conflicts: lower `requires-python` to the
+  oldest non-EOL Python your features actually need (`>=3.11`), and relax
+  `[project.dependencies]` floors after `uv add`.
 - **loguru in a library hijacks the importing program's logging.** Library
   modules use `logging.getLogger(__name__)`; only entry points call
   `_log.configure()`. Symptom: "my app's log format changed after I added a
@@ -249,7 +274,11 @@ Load on demand — do not read them all up front.
   production logs. Keep it off outside development.
 - **`.python-version` is read by pyenv as well as uv.** A stale value silently
   changes which interpreter builds the venv. Write it with `uv python pin`.
-  It is the dev pin; `requires-python` is the supported range. Keep both in CI.
+  Use it for your preferred local interpreter (to reuse your local `uv` wheel
+  cache); keep `requires-python` lower for consumer compatibility, and test both
+  ends in CI. If either is on EOL Python (`<=3.10`), upgrade with `uv python pin
+  3.13`, set `requires-python = ">=3.11"` + `ruff.target-version = "py311"`, and
+  run `uv run ruff check --select UP --fix`.
 - **`ruff`'s `target-version` should be your `requires-python` floor**, not
   your dev pin, or `UP` rewrites code to syntax your declared floor cannot run.
 - **direnv cannot change `PS1`.** There is no `(.venv)` prompt even when the

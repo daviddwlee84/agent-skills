@@ -57,13 +57,25 @@ class Check:
     fix: str
 
 
+# Per https://devguide.python.org/versions/, Python 3.10 reached EOL in Oct 2026.
+MIN_ACTIVE_PYTHON = (3, 11)
+_VER_RE = re.compile(r"(\d+)\.(\d+)")
+
+
+def _parse_ver_tuple(text: str) -> tuple[int, int] | None:
+    match = _VER_RE.search(text)
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
 # Ordered migration rungs. Each names the check ids it resolves; a rung with
 # nothing outstanding is dropped from the plan.
 RUNGS: list[tuple[str, tuple[str, ...]]] = [
     ("Adopt uv as the single source of truth for the environment",
      ("pyproject-exists", "requires-python", "build-backend", "uv-lock",
-      "python-version-pin", "legacy-setup-py", "legacy-requirements-txt",
-      "legacy-poetry", "legacy-conda")),
+      "python-version-pin", "dependency-bounds", "legacy-setup-py",
+      "legacy-requirements-txt", "legacy-poetry", "legacy-conda")),
     ("Move the package under src/ so tests exercise the installed artifact",
      ("src-layout", "py-typed")),
     ("Split dev tooling out of published extras into [dependency-groups]",
@@ -128,9 +140,33 @@ def audit(root: Path) -> list[Check]:
             "uv init --package  (then move metadata out of setup.py/setup.cfg)")
 
     requires = project.get("requires-python")
-    add("requires-python", "pass" if requires else "fail",
-        f"requires-python = {requires!r}" if requires else "no [project] requires-python",
-        "" if requires else 'set requires-python = ">=3.11" in [project]')
+    pin_file = root / ".python-version"
+    pin_text = pin_file.read_text(encoding="utf-8", errors="replace").strip() if pin_file.exists() else ""
+    pin_ver = _parse_ver_tuple(pin_text)
+    req_ver = _parse_ver_tuple(requires) if isinstance(requires, str) else None
+
+    if not requires:
+        add("requires-python", "fail", "no [project] requires-python",
+            'set requires-python = ">=3.11" in [project]')
+    elif any(op in requires for op in ("==", "~=")):
+        add("requires-python", "warn",
+            f"requires-python = {requires!r} uses a narrow pin",
+            'use an open floor (requires-python = ">=3.11"); .python-version pins '
+            "your dev venv while requires-python defines who can install the package")
+    elif req_ver and req_ver < MIN_ACTIVE_PYTHON:
+        add("requires-python", "warn",
+            f"requires-python = {requires!r} targets EOL Python (<3.11)",
+            "Python <=3.10 is past End-of-Life (https://devguide.python.org/versions/); "
+            'bump requires-python = ">=3.11", set [tool.ruff] target-version = "py311", '
+            "and run `uv run ruff check --select UP --fix`")
+    elif req_ver and pin_ver and req_ver >= (3, 12) and req_ver == pin_ver:
+        add("requires-python", "warn",
+            f"requires-python = {requires!r} matches .python-version ({pin_text})",
+            'uv init sets requires-python to your local interpreter; lower it to ">=3.11" '
+            "unless the code genuinely needs 3.12+ features so consumers on older active "
+            "Pythons can install the package")
+    else:
+        add("requires-python", "pass", f"requires-python = {requires!r}", "")
 
     backend = data.get("build-system", {}).get("build-backend")
     modern = {"hatchling.build", "uv_build", "maturin", "flit_core.buildapi", "pdm.backend",
@@ -144,10 +180,28 @@ def audit(root: Path) -> list[Check]:
         "" if (root / "uv.lock").exists() else
         "uv lock  (commit it: it pins YOUR dev env, not your users')")
 
-    add("python-version-pin", "pass" if (root / ".python-version").exists() else "warn",
-        ".python-version present" if (root / ".python-version").exists()
-        else "no .python-version",
-        "" if (root / ".python-version").exists() else "uv python pin 3.13")
+    if not pin_file.exists():
+        add("python-version-pin", "warn", "no .python-version",
+            "uv python pin 3.13  (or your preferred local 3.11+ interpreter to reuse uv cache)")
+    elif pin_ver and pin_ver < MIN_ACTIVE_PYTHON:
+        add("python-version-pin", "warn",
+            f".python-version = {pin_text!r} is past End-of-Life",
+            "Python <=3.10 reached EOL (https://devguide.python.org/versions/); "
+            "upgrade with `uv python install 3.13 && uv python pin 3.13`")
+    else:
+        add("python-version-pin", "pass", f".python-version = {pin_text!r}", "")
+
+    raw_deps = project.get("dependencies", [])
+    tight_deps = [
+        dep for dep in raw_deps
+        if isinstance(dep, str) and any(op in dep for op in ("==", "~=", "<"))
+    ]
+    add("dependency-bounds", "warn" if tight_deps else "pass",
+        f"tight bounds in [project.dependencies]: {', '.join(tight_deps[:4])}"
+        if tight_deps else "[project.dependencies] uses open >= floors",
+        "relax [project.dependencies] to `>=<lowest-compatible-version>` and remove `<`/`==`/`~=`; "
+        "uv.lock already pins exact versions for dev and CI, while tight metadata bounds "
+        "cause solver conflicts for downstream users" if tight_deps else "")
 
     for name, marker in (
         ("legacy-setup-py", "setup.py"),
