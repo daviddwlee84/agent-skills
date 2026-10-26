@@ -81,6 +81,43 @@ If you have an existing `project-knowledge-harness` setup:
 4. Remove the PKH agent-guidance block from `AGENTS.md`
 5. Run `forge-init.sh` to set up the forge-native workflow
 
+## Issue vs Discussion: where does content go?
+
+A common question: "this is more than a simple bug — should it be an Issue
+or a Discussion?"
+
+**Rule of thumb**: if there's a clear done criteria (you can close it when
+something ships), it's an Issue. If it's exploratory ("should we?",
+"compare A vs B", "what's the right approach?"), it's a Discussion.
+
+### The promotion pattern
+
+```
+Discussion (Ideas)                  Issue (Backlog)
+  "Should we add OAuth?"    ──→     "Add OAuth support"
+  - Option A: JWT                   - Design: Discussion #15
+  - Option B: Sessions              - Approach: JWT (Option A)
+  - Trade-offs...                   - Effort: L
+```
+
+1. Exploration happens in a Discussion
+2. When a decision is reached, create an Issue
+3. Link the Issue back to the Discussion
+4. The Discussion can stay open for future revisits
+
+### Keeping issues clean
+
+Issue bodies should be concise and actionable:
+
+- **Good**: "Add pagination to search results. Currently all items load at
+  once, causing slow page loads. Paginate at 50 items per page."
+- **Bad**: Three paragraphs of analysis, five alternatives considered, a
+  table of benchmarks, then "so maybe do option B?"
+
+Put the analysis in a Discussion or `backlog/` doc and link it from the
+issue. An issue cluttered with research is hard to scan for "what do I
+need to build?"
+
 ## When to stick with local files
 
 - Private repos where you don't want to expose backlog publicly

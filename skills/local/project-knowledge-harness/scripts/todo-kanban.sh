@@ -154,6 +154,14 @@ while IFS= read -r line || [ -n "$line" ]; do
       fi
       expected="${lane_names[$expected_next]}"
       if [ "$heading" != "$expected" ]; then
+        # Allow jumping straight to Done (slim pointer format: active items
+        # migrated to GitHub Issues, only ## Done remains).
+        if [ "$heading" = "Done" ]; then
+          section_idx=4
+          expected_next=5
+          post_done=1
+          continue
+        fi
         error "$line_no" "expected section heading '## $expected', got '## $heading'"
       fi
       section_idx=$expected_next
@@ -210,7 +218,7 @@ if [ "$title_seen" -eq 0 ]; then
   error 1 "missing '# TODO' heading"
 fi
 
-if [ "$expected_next" -ne "${#lane_names[@]}" ]; then
+if [ "$expected_next" -ne "${#lane_names[@]}" ] && [ "$post_done" -eq 0 ]; then
   missing="${lane_names[$expected_next]}"
   error "$line_no" "missing section heading '## $missing'"
 fi

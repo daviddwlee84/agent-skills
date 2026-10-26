@@ -609,7 +609,7 @@ forge_discussion_create() {
 }
 
 # ---------------------------------------------------------------------------
-# Project / Board (read-only)
+# Project / Board
 # ---------------------------------------------------------------------------
 
 forge_project_view() {
@@ -623,6 +623,97 @@ forge_project_view() {
     gitlab)
       _forge_log "GitLab Boards:"
       glab board list 2>/dev/null || _forge_warn "no boards found"
+      ;;
+  esac
+}
+
+# forge_project_create TITLE
+#   Creates a GitHub Project or documents manual GitLab Board setup.
+#   Requires 'project' scope on the gh token.
+#   Idempotent: skips if a project with the same title already exists.
+#   Returns the project number on stdout.
+forge_project_create() {
+  _forge_require_cli
+  local title="${1:-Backlog}"
+
+  case "$FORGE_TYPE" in
+    github)
+      # Check if project already exists
+      local existing
+      existing="$(gh project list --owner @me --format json 2>/dev/null \
+        | sed -n "s/.*\"number\":\([0-9]*\),\"title\":\"$(printf '%s' "$title" | sed 's/[\"\\]/\\&/g')\".*/\1/p" \
+        | head -1 || true)"
+
+      if [ -n "$existing" ]; then
+        _forge_log "Project '$title' already exists (#$existing)"
+        printf '%s' "$existing"
+        return 0
+      fi
+
+      _forge_log "Creating GitHub Project: $title"
+      gh project create --title "$title" --owner @me 2>/dev/null || {
+        _forge_warn "Failed to create project. Ensure gh token has 'project' scope."
+        _forge_warn "Run: gh auth refresh -s project"
+        return 1
+      }
+
+      # Get the new project number
+      local proj_num
+      proj_num="$(gh project list --owner @me --format json 2>/dev/null \
+        | sed -n "s/.*\"number\":\([0-9]*\),\"title\":\"$(printf '%s' "$title" | sed 's/[\"\\]/\\&/g')\".*/\1/p" \
+        | head -1 || true)"
+
+      if [ -n "$proj_num" ]; then
+        _forge_log "Project created: #$proj_num"
+
+        # Create custom fields
+        gh project field-create "$proj_num" --owner @me \
+          --name "Priority" --data-type "SINGLE_SELECT" \
+          --single-select-options "P1,P2,P3,P?" 2>/dev/null || true
+        gh project field-create "$proj_num" --owner @me \
+          --name "Effort" --data-type "SINGLE_SELECT" \
+          --single-select-options "S,M,L,XL" 2>/dev/null || true
+        gh project field-create "$proj_num" --owner @me \
+          --name "Target Date" --data-type "DATE" 2>/dev/null || true
+
+        _forge_log "Custom fields created (Priority, Effort, Target Date)"
+
+        # Link project to current repo
+        local repo_slug
+        repo_slug="$(git remote get-url origin 2>/dev/null \
+          | sed 's#.*github.com[:/]##; s#\.git$##')"
+        if [ -n "$repo_slug" ]; then
+          gh project link "$proj_num" --owner "$(printf '%s' "$repo_slug" | cut -d/ -f1)" \
+            --repo "$repo_slug" 2>/dev/null || true
+        fi
+
+        printf '%s' "$proj_num"
+      fi
+      ;;
+    gitlab)
+      _forge_warn "GitLab Board creation is not supported via glab CLI."
+      _forge_warn "Create boards manually in the GitLab web UI:"
+      _forge_warn "  Project > Plan > Boards > New board"
+      _forge_warn "Recommended lists: Backlog, Todo, In Progress, In Review, Done"
+      return 1
+      ;;
+  esac
+}
+
+# forge_project_add_item PROJECT_NUMBER ISSUE_URL
+forge_project_add_item() {
+  _forge_require_cli
+  local proj_num="$1" issue_url="$2"
+
+  case "$FORGE_TYPE" in
+    github)
+      gh project item-add "$proj_num" --owner @me --url "$issue_url" 2>/dev/null || {
+        _forge_warn "Failed to add item to project #$proj_num"
+        return 1
+      }
+      ;;
+    gitlab)
+      _forge_warn "GitLab: add items to boards via the web UI or API"
       ;;
   esac
 }

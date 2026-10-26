@@ -33,6 +33,8 @@ Options:
   --skip-labels             Do not create labels on the forge.
   --skip-templates          Do not scaffold issue templates.
   --skip-git-config         Do not set git config (fetch.prune, pull.rebase, etc).
+  --setup-project           Create a GitHub Project board with standard
+                            fields and views (requires 'project' scope).
   --force                   Overwrite existing files.
   -h, --help                Show this help and exit.
 EOF
@@ -45,6 +47,7 @@ role_mode="auto"
 skip_labels=0
 skip_templates=0
 skip_git_config=0
+setup_project=0
 force=0
 
 while [ $# -gt 0 ]; do
@@ -57,6 +60,7 @@ while [ $# -gt 0 ]; do
     --skip-labels) skip_labels=1; shift ;;
     --skip-templates) skip_templates=1; shift ;;
     --skip-git-config) skip_git_config=1; shift ;;
+    --setup-project) setup_project=1; shift ;;
     --force) force=1; shift ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -213,6 +217,22 @@ else
   _forge_log "Skipping git config (--skip-git-config)."
 fi
 
+# --- Step 4b: GitHub Project board (optional) ---------------------------------
+
+if [ "$setup_project" -eq 1 ] && forge_is_maintainer; then
+  _forge_log ""
+  _forge_log "--- Setting up Project board ---"
+
+  proj_num="$(forge_project_create "$project_name Backlog" 2>/dev/null || true)"
+  if [ -n "$proj_num" ]; then
+    _forge_log "Project board: #$proj_num"
+  else
+    _forge_warn "Project creation failed or not supported. Set up manually."
+  fi
+elif [ "$setup_project" -eq 1 ] && ! forge_is_maintainer; then
+  _forge_warn "Skipping project creation (contributor role — only maintainers can create projects)."
+fi
+
 # --- Step 5: Agent guidance snippet -------------------------------------------
 
 _forge_log ""
@@ -260,7 +280,9 @@ _forge_log ""
 if [ "$FORGE_TYPE" = "github" ]; then
   _forge_log "Manual steps you may want to do:"
   _forge_log "  1. Enable Discussions on the repo (Settings > Features > Discussions)"
-  _forge_log "  2. Create a GitHub Project board for backlog visualization"
+  if [ "$setup_project" -eq 0 ]; then
+    _forge_log "  2. Create a GitHub Project board (or re-run with --setup-project)"
+  fi
   _forge_log "  3. Review .gitignore changes and commit"
 elif [ "$FORGE_TYPE" = "gitlab" ]; then
   _forge_log "Manual steps you may want to do:"
