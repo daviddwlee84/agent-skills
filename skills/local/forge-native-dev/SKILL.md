@@ -178,6 +178,58 @@ bash scripts/forge-status.sh          # your assigned issues
 bash scripts/forge-status.sh --all    # all open issues
 ```
 
+## Merge strategy
+
+**Default: squash and merge.** One issue = one PR = one commit on `main`.
+
+| Strategy | When to use |
+|---|---|
+| **Squash and merge** | Default. Agent/vibe-coding PRs with WIP commits. Gives the cleanest `git log`. |
+| **Rebase and merge** | Every commit in the PR is a meaningful, curated logical change worth preserving. |
+| **Create a merge commit** | Almost never in this workflow. Only if you need branch topology in history. |
+
+Why squash is the default:
+- Agent work produces noisy WIP commits — squash collapses them into one clean commit.
+- One commit per issue on `main` makes `git log --oneline` a readable changelog.
+- The squash commit message carries `Closes #N`, auto-closing the issue.
+- `git bisect` and `git revert` operate on meaningful units (one feature/fix).
+
+`forge-pr.sh merge` defaults to `--squash`. Override with `--rebase` when
+commits are curated, or `--merge` when you need the topology (rare).
+
+## Role awareness
+
+The skill detects your access level to decide what operations are available:
+
+| Role | Detection | Behavior |
+|---|---|---|
+| **Maintainer** | Has push/write access (owner, org dev with write, collaborator) | Creates labels, assigns issues, sets priority, merges PRs |
+| **Contributor** | Read-only or fork-based | Opens issues/PRs, describes priority in body text, leaves labeling to maintainers |
+
+Detection is automatic via `forge_detect_role` (queries repo permissions API).
+Override with `--role maintainer` or `--role contributor` in `forge-init.sh`,
+or set `FORGE_ROLE_OVERRIDE=maintainer` / `FORGE_ROLE_OVERRIDE=contributor`
+in your shell.
+
+### Maintainer behavior
+
+- `forge-init.sh` creates labels, scaffolds issue templates
+- `forge-issue.sh backlog` applies `priority/*` and `backlog` labels directly
+- `forge-worktree.sh start` assigns the issue and adds `in-progress` label
+- Full access to merge, close, and triage
+
+### Contributor behavior
+
+- `forge-init.sh` skips label creation (labels are managed by maintainers)
+- `forge-issue.sh backlog` notes priority in the issue body as a suggestion,
+  does not apply labels (maintainer will triage)
+- Issue templates are still scaffolded (they're just files in the repo)
+- PRs can be opened; merging is up to maintainers
+
+**Note**: "maintainer" here means anyone with write access — this includes
+org members, collaborators, and core contributors, not just the repo owner.
+If you can push to the repo, you're a maintainer in this skill's model.
+
 ## Where things go
 
 | Kind of information | Where it lives | Why |
@@ -260,8 +312,9 @@ Both patterns are recognized by `forge-cleanup.sh` and `forge-status.sh`.
   scripts depend on it. Exports `forge_detect`, `forge_issue_*`,
   `forge_pr_*`, `forge_label_ensure`, `forge_slugify`, `forge_whoami`,
   `forge_default_branch`.
-- **`scripts/forge-init.sh [--target DIR] [--project-name NAME] [--skip-labels] [--skip-templates] [--skip-git-config] [--force] [--help]`**
-  — one-shot setup: labels, issue templates, git config, AGENTS.md snippet.
+- **`scripts/forge-init.sh [--target DIR] [--project-name NAME] [--role auto|maintainer|contributor] [--skip-labels] [--skip-templates] [--skip-git-config] [--force] [--help]`**
+  — one-shot setup: labels (maintainer only), issue templates, git config,
+  AGENTS.md snippet. Role auto-detected from API permissions.
 - **`scripts/forge-worktree.sh <start|finish|list> [ISSUE_NUM] [--agent] [--base BRANCH] [--draft] [--help]`**
   — the core lifecycle script.
 - **`scripts/forge-cleanup.sh [--dry-run] [--force] [--all] [--help]`**

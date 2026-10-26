@@ -165,11 +165,29 @@ case "$subcmd" in
     done
     [ -z "$title" ] && _forge_die "backlog: --title is required" 1
 
-    local label_arg="--label backlog"
-    case "$priority" in
-      P1|P2|P3) label_arg="$label_arg --label priority/$priority" ;;
-      "P?"|*) label_arg="$label_arg --label priority/P3" ;;
-    esac
+    # Detect role if not already done
+    if [ -z "$FORGE_ROLE" ]; then
+      forge_detect_role 2>/dev/null || true
+    fi
+
+    local label_arg=""
+
+    if forge_is_maintainer; then
+      # Maintainers: apply backlog + priority labels directly
+      label_arg="--label backlog"
+      case "$priority" in
+        P1|P2|P3) label_arg="$label_arg --label priority/$priority" ;;
+        "P?"|*) label_arg="$label_arg --label priority/P3" ;;
+      esac
+    else
+      # Contributors: describe priority in body, don't apply labels
+      # (the maintainer will triage and label)
+      _forge_log "Contributor role: priority/effort noted in body, not as labels (maintainer will triage)."
+      body="${body:+$body
+
+}Suggested priority: $priority"
+    fi
+
     [ -n "$effort" ] && body="${body:+$body
 
 }Effort: $effort"

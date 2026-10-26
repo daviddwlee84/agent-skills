@@ -103,6 +103,44 @@ The vendored `create-pull-request` skill is a standalone PR creation guide.
 If both are installed, prefer `forge-native-dev`'s PR flow because it
 automatically links the PR to the originating issue.
 
+## Role model
+
+The skill distinguishes two roles based on actual repository permissions,
+not repo ownership:
+
+| Role | Who | Detection |
+|---|---|---|
+| **Maintainer** | Repo owner, org member with write access, collaborator with push | GitHub: `repo.permissions.push == true`; GitLab: `access_level >= 30` (Developer+) |
+| **Contributor** | Fork-based contributor, read-only org member, guest | Everything else |
+
+This means a core developer in an organization who has write access is
+correctly detected as `maintainer` — they can create labels, assign issues,
+and merge PRs, even though they didn't create the repo.
+
+### Override
+
+If auto-detection gives the wrong answer (e.g., API rate-limited, SSO
+not configured):
+
+```bash
+# At init time
+forge-init.sh --role maintainer
+
+# At runtime (env var)
+export FORGE_ROLE_OVERRIDE=maintainer
+```
+
+### What changes by role
+
+| Action | Maintainer | Contributor |
+|---|---|---|
+| `forge-init.sh` creates labels | Yes | Skipped |
+| `forge-issue.sh backlog` applies priority labels | Yes | Priority noted in body text |
+| `forge-worktree.sh start` assigns issue + adds label | Yes | May fail silently (no write access) |
+| `forge-pr.sh merge` | Yes | Cannot merge (expected — maintainer merges) |
+| Issue templates scaffolded | Yes | Yes (they're just repo files) |
+| Git config set | Yes | Yes (local config only) |
+
 ## Detecting which workflow is active
 
 Agents can detect the active workflow by checking for sentinel markers:

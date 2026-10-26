@@ -1,12 +1,12 @@
 <!-- forge-native-dev:guidance -->
-### Issue-driven workflow (<FORGE_TYPE>)
+### Issue-driven workflow (<FORGE_TYPE>, role: <FORGE_ROLE>)
 
 This project uses <FORGE_TYPE> Issues as the canonical backlog. The
 `forge-native-dev` skill provides the scripts below.
 
 **Capture intent as Issues** — when the user describes a bug, idea, or
-"maybe later" item, create an Issue with appropriate labels. Do not ask
-"should I create an issue?" — default to creating one.
+"maybe later" item, create an Issue. Do not ask "should I create an
+issue?" — default to creating one.
 
 **Work lifecycle:**
 1. Start: `bash scripts/forge-worktree.sh start <issue-number>`
@@ -28,5 +28,14 @@ This project uses <FORGE_TYPE> Issues as the canonical backlog. The
 **Dashboard:** `bash scripts/forge-status.sh`
 
 **PRs are review gates, not proposals.** The issue describes intent;
-the PR is the diff to review.
+the PR is the diff to review. Default merge strategy: **squash and merge**
+(one issue = one commit on main). Use rebase-merge only when every commit
+in the PR is a meaningful, curated logical change.
+
+**Role: <FORGE_ROLE>**
+- maintainer: may create/assign labels, assign issues, merge PRs, manage
+  project boards, and triage incoming issues.
+- contributor: describe problems clearly in issues, open PRs, but leave
+  priority labeling and triage to maintainers. Do not auto-assign priority
+  labels.
 <!-- forge-native-dev:guidance (end) -->
