@@ -206,92 +206,39 @@ rm .agents/skills/<name> .claude/skills/<name>
 
 ## Project Memory Workflow
 
-<!-- project-knowledge-harness:td-routing -->
-### td ↔ `TODO.md` routing (scripts: `scripts/start-todo.sh` etc.)
+<!-- forge-native-dev:guidance -->
+### Issue-driven workflow (GitHub)
 
-This repo uses both. Each piece of information lives in exactly **one** place:
+This project uses GitHub Issues as the canonical backlog and GitHub
+Discussions for evaluative/research topics. The `forge-native-dev` skill
+provides the scripts below.
 
 | Information | Lives in | Why |
 |---|---|---|
-| "Maybe later" ideas, priorities, deferred work | `TODO.md` (+ `backlog/`) | In git, so it follows every clone and devbox |
-| Research, trade-offs, past traps | `backlog/`, `pitfalls/` | Diffable, greppable, reviewed in PRs |
-| What is in flight now, logs, handoffs, review | td | Machine-local execution state |
+| Actionable work (bugs, features, chores) | [GitHub Issues](https://github.com/daviddwlee84/agent-skills/issues) | Searchable, assignable, cross-linkable |
+| Evaluations, "should we?", research | [Discussions](https://github.com/daviddwlee84/agent-skills/discussions) | Threaded, collaborative |
+| Research docs, trade-off analysis | `backlog/` | In-repo, diffable, reviewed in PRs |
+| Past traps, debugging knowledge | `pitfalls/` | Grep-able by symptom, portable |
+| Backlog visualization | [Project board](https://github.com/users/daviddwlee84/projects/11) | Built-in to the forge |
+| Historical record | `TODO.md` `## Done` section | In git |
 
-Rules:
+**Capture intent as Issues** — when the user describes a bug, idea, or
+"maybe later" item, create an Issue with appropriate labels. Do not ask
+"should I create an issue?" — default to creating one.
 
-1. When the user says "maybe later" or "先記下來", use `add-todo.sh`. Do not use
-   `td create` or `td defer` for that.
-2. To start a `TODO.md` item, run `start-todo.sh --title "<substring>"`. It
-   creates or reuses a td issue labelled `pkh` with the same title, then
-   starts it. Ad-hoc session work with no `TODO.md` line can use plain `td`.
-3. On shipping, run `promote-todo.sh` in the same commit, then
-   `td review` / `td approve` the issue.
-4. **Harvest before you approve.** td logs and handoffs stay on this machine.
-   Move anything worth keeping into `pitfalls/` or `backlog/` first.
-5. References go one way: the td issue names its `TODO.md` item. Never write
-   td ids into `TODO.md` (other clones cannot resolve them). Never commit
-   `.todos/`.
-6. If a td issue and `TODO.md` disagree, `TODO.md` wins. `todo-kanban.sh`
-   lists open `pkh` issues that have no active `TODO.md` item.
+**Work lifecycle:**
+1. Start: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh start <issue-number>`
+2. Work in the worktree, commit conventionally
+3. Finish: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh finish <issue-number>`
+4. After merge: `bash skills/local/forge-native-dev/scripts/forge-cleanup.sh`
 
-Set `PKH_TD=off` to make the harness scripts ignore td.
-<!-- project-knowledge-harness:td-routing (end) -->
+**Check for work:** `bash skills/local/forge-native-dev/scripts/forge-issue.sh list --assignee @me`
 
-### Long-term backlog -> `TODO.md` + `backlog/`
+**Dashboard:** `bash skills/local/forge-native-dev/scripts/forge-status.sh`
 
-When work is explicitly deferred, add it to [`TODO.md`](TODO.md) using the
-fixed section order `P1`, `P2`, `P3`, `P?`, `Done`.
-
-- Active items must use `- [ ] **[Effort] Title** — description`
-- `P?` items must use `- [ ] **[?/Effort] Title** — description`
-- Non-trivial research should be linked as `→ [research](backlog/<slug>.md)`
-
-`TODO.md` is parsed by [`scripts/todo-kanban.sh`](scripts/todo-kanban.sh), so
-do not invent alternate headings, nested bullets, or ad hoc checkbox formats.
-
-#### Three ways to add a TODO entry (preferred order)
-
-1. **Structured CLI — `scripts/add-todo.sh`** (default):
-
-   ```bash
-   ./scripts/add-todo.sh --priority P3 --effort M \
-     --title "Title" --description "Description"
-   # add --backlog to also scaffold backlog/<slug>.md
-   ```
-
-   This inserts a canonically-formatted line into the right `## P*` lane
-   and re-runs the validator. Refuses to write a malformed entry.
-
-2. **Quick capture — `backlog/inbox.md`** (when priority/effort unclear):
-
-   ```bash
-   echo "- maybe add docs versioning with mike" >> backlog/inbox.md
-   ```
-
-   When the user asks "sweep the inbox" or "clear inbox.md", run
-   [`./scripts/sweep-inbox.sh`](scripts/sweep-inbox.sh). It prompts for
-   priority/effort/title/description per loose line and calls
-   `add-todo.sh`. Use `--batch` for non-interactive runs that only
-   formalize lines with parseable `key=value` pairs.
-
-3. **Direct edit of `TODO.md`** — fine if the format is fresh in your
-   head; run `make kanban` (or `./scripts/todo-kanban.sh --validate-only`)
-   afterwards to catch drift.
-
-#### Promote a TODO when implementing it
-
-When implementing a TODO item, in the same commit run:
-
-```bash
-./scripts/promote-todo.sh --title "<substring>" --summary "<one-line shipped summary>"
-```
-
-That moves the matched active item into `## Done` with the dated `Done`
-syntax and re-validates the file. If a `backlog/<slug>.md` exists for the
-item, also mark it as shipped (don't delete — keep it as historical record).
-
-Keep `## Done` as the recent history buffer. Prune it into `CHANGELOG.md` only
-when it contains items from a previous calendar year or grows past 20 entries.
+**PRs are review gates, not proposals.** The issue describes intent; the
+PR is the diff to review. Default merge strategy: **squash and merge**.
+<!-- forge-native-dev:guidance (end) -->
 
 ### External skill / MCP / domain / curiosity catalog -> `docs/catalog/`
 

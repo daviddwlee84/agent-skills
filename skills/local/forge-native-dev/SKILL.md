@@ -26,6 +26,7 @@ Surfaces, separated by the question they answer:
 | `references/coexistence.md` | "I have git-workflow / PKH installed too — which wins?" |
 | `references/github-features.md` | "How do I use Discussions, Projects, Wiki?" |
 | `references/gitlab-features.md` | "How do I use Boards, Threads, CI/CD?" |
+| `references/conventions.md` | "What commit/branch/merge conventions should I follow?" |
 | `scripts/forge.sh` | The sourced library — all other scripts depend on it. |
 | `scripts/forge-init.sh` | One-shot repo setup. |
 | `scripts/forge-worktree.sh` | Issue-to-worktree-to-PR lifecycle. |
@@ -230,6 +231,29 @@ in your shell.
 org members, collaborators, and core contributors, not just the repo owner.
 If you can push to the repo, you're a maintainer in this skill's model.
 
+## Issue vs Discussion: content boundary
+
+| | Issue | Discussion |
+|---|---|---|
+| **Nature** | Actionable, with clear done criteria | Open-ended: evaluations, trade-offs, "should we?" |
+| **Lifecycle** | Open → In Progress → PR → Closed | Open → threaded conversation → may spawn Issue |
+| **Signals** | "Fix X", "Add Y", "Build Z" | "Should we use X?", "Compare A vs B", "Evaluate" |
+| **Body** | Concise — what to do, acceptance criteria | Detailed — analysis, pros/cons, research |
+| **Closing** | Closed when the PR merges | Stays open for ongoing discussion, or answered |
+
+**Promotion pattern**: when a Discussion matures into actionable work,
+create an Issue and link back to the Discussion. The Issue body says
+"Design decided in Discussion #N — proceeding with approach B."
+
+**Keep issue bodies concise.** Detailed analysis, trade-off tables, and
+research belong in Discussion threads or `backlog/` docs, linked from the
+issue. An issue cluttered with research is hard to scan for "what do I
+need to build?"
+
+**Cross-referencing**: Issues, Discussions, and PRs can all reference each
+other via `#N`. Use this freely — the three-way linking is the key value
+of using the forge natively.
+
 ## Where things go
 
 | Kind of information | Where it lives | Why |
@@ -352,3 +376,17 @@ Both patterns are recognized by `forge-cleanup.sh` and `forge-status.sh`.
   Users can modify or remove them.
 - **The `@me` assignee shortcut** works in `gh` but may need the actual
   username in older `glab` versions.
+- **After a PR merges, always create a new branch from updated main.**
+  Do not reuse the merged branch (squash-merge makes its history diverge
+  from main). Do not try to reopen a merged PR (GitHub does not allow it).
+  Each PR is one logical change; follow-ups are new branches and new PRs.
+  See [`references/conventions.md`](references/conventions.md) for details.
+- **GitHub Discussion categories cannot be created via API.** The GraphQL
+  API has no `createDiscussionCategory` mutation. Default categories
+  (General, Ideas, Q&A, Announcements, Polls, Show and tell) are created
+  automatically when Discussions is enabled. Custom categories (e.g.
+  "Design", "Research") must be created via the web UI:
+  Settings → Discussions → New category.
+- **`gh project link --owner @me` fails for personal repos.** Use the
+  actual username (e.g. `--owner myuser`) extracted from the remote URL.
+  The `forge_project_create` function handles this automatically.
