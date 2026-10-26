@@ -1,0 +1,32 @@
+<!-- forge-native-dev:guidance -->
+### Issue-driven workflow (<FORGE_TYPE>)
+
+This project uses <FORGE_TYPE> Issues as the canonical backlog. The
+`forge-native-dev` skill provides the scripts below.
+
+**Capture intent as Issues** — when the user describes a bug, idea, or
+"maybe later" item, create an Issue with appropriate labels. Do not ask
+"should I create an issue?" — default to creating one.
+
+**Work lifecycle:**
+1. Start: `bash scripts/forge-worktree.sh start <issue-number>`
+2. Work in the worktree, commit conventionally
+3. Finish: `bash scripts/forge-worktree.sh finish <issue-number>`
+4. After merge: `bash scripts/forge-cleanup.sh`
+
+**Check for work:** `bash scripts/forge-issue.sh list --assignee @me`
+
+**Progress reporting:** post comments on long-running tasks:
+`bash scripts/forge-issue.sh comment <number> --body "progress update"`
+
+**Where things go:**
+- Actionable work → Issues (with priority labels)
+- Design discussion → Discussions (GitHub) / issue threads (GitLab)
+- Past traps → `pitfalls/` in-repo (grep-able)
+- Review → PR/MR comments
+
+**Dashboard:** `bash scripts/forge-status.sh`
+
+**PRs are review gates, not proposals.** The issue describes intent;
+the PR is the diff to review.
+<!-- forge-native-dev:guidance (end) -->

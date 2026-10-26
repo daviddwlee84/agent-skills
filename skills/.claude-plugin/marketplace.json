@@ -196,13 +196,14 @@
     },
     {
       "name": "version-control",
-      "description": "Scale-aware git workflow discipline: English Conventional Commits, cross-harness AI provenance, linear history, worktrees, SemVer release tagging, and pre-merge hygiene",
+      "description": "Git and forge workflows: offline git discipline (Conventional Commits, AI provenance, linear history, SemVer) plus issue-driven GitHub/GitLab development (Issues as backlog, worktree-per-issue, auto-cleanup)",
       "category": "Engineering",
-      "tags": ["git", "commits", "ai-provenance", "commit-signing", "branching", "worktree", "semver", "conventional-commits"],
+      "tags": ["git", "commits", "ai-provenance", "branching", "worktree", "semver", "conventional-commits", "github", "gitlab", "issues", "forge"],
       "source": "./",
       "strict": false,
       "skills": [
-        "./local/git-workflow"
+        "./local/git-workflow",
+        "./local/forge-native-dev"
       ]
     },
     {
