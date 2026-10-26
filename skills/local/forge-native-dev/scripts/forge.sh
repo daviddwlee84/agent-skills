@@ -90,6 +90,62 @@ _forge_require_cli() {
 }
 
 # ---------------------------------------------------------------------------
+# Role detection
+# ---------------------------------------------------------------------------
+
+# FORGE_ROLE: "maintainer" | "contributor" | "unknown"
+#   maintainer = has push/write access (owner, org member with write, collaborator)
+#   contributor = read-only / fork-based
+FORGE_ROLE=""
+
+forge_detect_role() {
+  _forge_require_cli
+
+  # Allow explicit override
+  if [ -n "${FORGE_ROLE_OVERRIDE:-}" ]; then
+    FORGE_ROLE="$FORGE_ROLE_OVERRIDE"
+    _forge_log "forge: role override: $FORGE_ROLE"
+    return 0
+  fi
+
+  case "$FORGE_TYPE" in
+    github)
+      local perms
+      perms="$(gh api repos/{owner}/{repo} --jq '.permissions.push' 2>/dev/null || true)"
+      case "$perms" in
+        true)  FORGE_ROLE="maintainer" ;;
+        false) FORGE_ROLE="contributor" ;;
+        *)     FORGE_ROLE="unknown"; _forge_warn "could not detect role (API query failed)" ;;
+      esac
+      ;;
+    gitlab)
+      local access
+      access="$(glab api projects/:id --jq '.permissions.project_access.access_level // .permissions.group_access.access_level // 0' 2>/dev/null || true)"
+      # GitLab access levels: 10=Guest, 20=Reporter, 30=Developer, 40=Maintainer, 50=Owner
+      if [ -n "$access" ] && [ "$access" -ge 30 ] 2>/dev/null; then
+        FORGE_ROLE="maintainer"
+      elif [ -n "$access" ] && [ "$access" -gt 0 ] 2>/dev/null; then
+        FORGE_ROLE="contributor"
+      else
+        FORGE_ROLE="unknown"
+        _forge_warn "could not detect role (API query failed)"
+      fi
+      ;;
+    *)
+      FORGE_ROLE="unknown"
+      ;;
+  esac
+
+  _forge_log "forge: role detected: $FORGE_ROLE"
+  return 0
+}
+
+# Check if the current user can perform maintainer actions (labels, assign, etc.)
+forge_is_maintainer() {
+  [ "$FORGE_ROLE" = "maintainer" ]
+}
+
+# ---------------------------------------------------------------------------
 # Labels
 # ---------------------------------------------------------------------------
 

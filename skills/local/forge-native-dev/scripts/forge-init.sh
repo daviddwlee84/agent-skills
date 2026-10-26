@@ -24,6 +24,10 @@ Set up forge-native-dev workflow files in a target project.
 Options:
   --target DIR              Target project root (default: current directory)
   --project-name NAME       Project name (default: basename of --target)
+  --role ROLE               maintainer | contributor | auto (default: auto).
+                            auto detects via API permissions. maintainer =
+                            has write access (owner, org dev, collaborator);
+                            contributor = read-only / fork-based.
   --agent-contract FILE     Path (relative to --target) to the agent contract
                             file (AGENTS.md / CLAUDE.md). Default: auto-detect.
   --skip-labels             Do not create labels on the forge.
@@ -37,6 +41,7 @@ EOF
 target="."
 project_name=""
 agent_contract=""
+role_mode="auto"
 skip_labels=0
 skip_templates=0
 skip_git_config=0
@@ -47,6 +52,7 @@ while [ $# -gt 0 ]; do
     -h|--help) usage; exit 0 ;;
     --target) target="$2"; shift 2 ;;
     --project-name) project_name="$2"; shift 2 ;;
+    --role) role_mode="$2"; shift 2 ;;
     --agent-contract) agent_contract="$2"; shift 2 ;;
     --skip-labels) skip_labels=1; shift ;;
     --skip-templates) skip_templates=1; shift ;;
@@ -55,6 +61,11 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+case "$role_mode" in
+  auto|maintainer|contributor) ;;
+  *) echo "Error: --role must be auto|maintainer|contributor" >&2; exit 2 ;;
+esac
 
 target="$(cd "$target" && pwd)"
 [ -z "$project_name" ] && project_name="$(basename "$target")"
@@ -73,7 +84,32 @@ if [ "$FORGE_TYPE" = "unknown" ]; then
   _forge_die "Cannot set up forge-native-dev: no GitHub or GitLab remote detected." 1
 fi
 
-# --- Step 2: Create labels ---------------------------------------------------
+# --- Step 1b: Detect role ----------------------------------------------------
+
+if [ "$role_mode" = "auto" ]; then
+  if [ -n "$FORGE_CLI" ]; then
+    forge_detect_role
+  else
+    FORGE_ROLE="unknown"
+  fi
+elif [ "$role_mode" = "maintainer" ]; then
+  FORGE_ROLE="maintainer"
+elif [ "$role_mode" = "contributor" ]; then
+  FORGE_ROLE="contributor"
+fi
+
+_forge_log "Role:       $FORGE_ROLE"
+
+# --- Step 2: Create labels (maintainer only) ----------------------------------
+
+if [ "$FORGE_ROLE" = "contributor" ]; then
+  if [ "$skip_labels" -eq 0 ]; then
+    _forge_log ""
+    _forge_log "--- Skipping label creation (contributor role) ---"
+    _forge_log "Labels are managed by the project maintainers."
+  fi
+  skip_labels=1
+fi
 
 if [ "$skip_labels" -eq 0 ] && [ -n "$FORGE_CLI" ]; then
   _forge_log ""
@@ -201,7 +237,7 @@ else
   if [ -f "$SKILL_DIR/assets/agent-guidance.md.template" ]; then
     {
       printf '\n'
-      sed "s/<PROJECT NAME>/$project_name/g; s/<FORGE_TYPE>/$FORGE_TYPE/g" \
+      sed "s/<PROJECT NAME>/$project_name/g; s/<FORGE_TYPE>/$FORGE_TYPE/g; s/<FORGE_ROLE>/$FORGE_ROLE/g" \
         "$SKILL_DIR/assets/agent-guidance.md.template"
     } >> "$agent_contract"
     _forge_log "Appended agent guidance to $agent_contract"
@@ -217,6 +253,7 @@ _forge_log "=== Setup complete ==="
 _forge_log ""
 _forge_log "Forge:      $FORGE_TYPE"
 _forge_log "CLI:        ${FORGE_CLI:-not available}"
+_forge_log "Role:       $FORGE_ROLE"
 _forge_log "Contract:   $agent_contract"
 _forge_log ""
 

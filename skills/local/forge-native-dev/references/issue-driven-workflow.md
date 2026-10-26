@@ -88,6 +88,31 @@ If you have an existing `project-knowledge-harness` setup:
 - Projects where grep-ability of TODO items is critical
 - When working offline frequently
 
+## Merge strategy: why squash is the default
+
+In the issue-driven model, each PR corresponds to one issue. The merge
+strategy should reinforce this 1:1 mapping on `main`.
+
+**Squash and merge** collapses all PR commits into a single commit:
+
+```
+main: ... → feat: add OAuth support (Closes #42) → fix: login redirect (#38) → ...
+```
+
+Each commit is one shipped issue. `git log --oneline` reads like a changelog.
+`git bisect` finds "which issue introduced the bug". `git revert` undoes one
+issue cleanly.
+
+**Rebase and merge** preserves individual commits — useful only when the
+author curated meaningful commits (e.g., "add schema migration",
+"add API endpoint", "add tests" as separate logical steps). In practice,
+agent-generated branches rarely have this quality.
+
+**Merge commits** create diamond topology in the graph. The only benefit
+is seeing "this commit came from a branch" — but the PR URL in the
+squash commit message already tells you that. Avoid unless you have a
+specific reason to preserve topology.
+
 ## The lifecycle in detail
 
 ```
