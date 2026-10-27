@@ -96,8 +96,8 @@ skills:
       path: skills/react-best-practices
       branch: main
     last_sync:
-      date: "2026-10-18T10:27:22Z"
-      commit: "bc504c0a812e6832a513f7e68735c389732e88ef"
+      date: "2026-10-26T08:38:31Z"
+      commit: "d579a556afb28d5cbdd1c50df84d96929b5aaa8a"
     series: fullstack-nextjs
   - name: vercel-storage
     upstream:
@@ -106,8 +106,8 @@ skills:
       path: skills/vercel-storage
       branch: main
     last_sync:
-      date: "2026-10-18T10:27:27Z"
-      commit: "d545222180fa98e32aaf1bdace5c005419f1a62d"
+      date: "2026-10-26T08:38:33Z"
+      commit: "6400c27898f28197a235fc1c93ecf53d86df2d40"
     series: fullstack-nextjs
   - name: supabase
     upstream:

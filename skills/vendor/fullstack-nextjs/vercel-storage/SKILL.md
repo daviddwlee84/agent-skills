@@ -134,7 +134,7 @@ chainTo:
   -
     pattern: "from\\s+['\"]@prisma/client['\"]|from\\s+['\"]prisma['\"]"
     targetSkill: vercel-storage
-    message: 'Prisma ORM detected — loading Vercel Storage guidance for Neon Postgres integration with Prisma, connection pooling, and Marketplace provisioning.'
+    message: 'Prisma ORM detected — loading Vercel Storage guidance for Marketplace Postgres providers (Neon, Supabase, AWS Aurora, Nile, Prisma Postgres), connection pooling, and Marketplace provisioning.'
     skipIfFileContains: "@neondatabase/serverless|POSTGRES_PRISMA_URL"
   -
     pattern: "from\\s+['\"]@libsql/client['\"]"
@@ -396,20 +396,35 @@ const { data, error } = await supabase.from('users').select('*')
 
 Install via Vercel Marketplace: `vercel integration add supabase`
 
-### Prisma ORM (Marketplace Native)
+### Prisma Postgres (Marketplace Native)
 
-Type-safe ORM with auto-generated client, migrations, and Prisma Accelerate for connection pooling.
+Managed PostgreSQL with a PgBouncer connection pooler on every plan. Any Postgres client works: Prisma ORM, Drizzle, Kysely, or `pg`.
+
+Connecting a database sets `DATABASE_URL`, `POSTGRES_URL`, and `PRISMA_DATABASE_URL` on each connected environment. All three hold the **direct** connection string (host `db.prisma.io`), not the pooled one. Read `DATABASE_URL` in new code: on older databases `PRISMA_DATABASE_URL` can still hold a hosted Prisma Accelerate URL (`prisma+postgres://accelerate.prisma-data.net/...`), and Accelerate is retired on December 1, 2026.
+
+Direct connections are capped low (10 on Free and Starter, 5 of them reserved for the platform), so production traffic from Vercel Functions should use the pooled string (host `pooled.db.prisma.io`). The integration doesn't set it, so the user adds it:
+
+1. Run `vercel integration open prisma` to open Prisma Console, select the database, and create a connection string. Console shows a pooled and a direct string.
+2. Add the pooled string under a new name, for example `vercel env add DATABASE_URL_POOLED production`, once per connected environment. Don't overwrite the integration's variables.
+3. Keep the direct `DATABASE_URL` for migrations and Prisma CLI commands, then redeploy.
 
 ```bash
-npm install prisma @prisma/client
-npx prisma init
+npm install pg @vercel/functions
 ```
 
 ```ts
-import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { attachDatabasePool } from '@vercel/functions'
 
-const prisma = new PrismaClient()
-const users = await prisma.user.findMany()
+// Module scope: concurrent requests on a Fluid compute instance share one pool
+const pool = new Pool({
+  // DATABASE_URL_POOLED is the variable added above; the direct DATABASE_URL works until then
+  connectionString: process.env.DATABASE_URL_POOLED ?? process.env.DATABASE_URL,
+})
+// Closes idle connections before the instance suspends
+attachDatabasePool(pool)
+
+const { rows } = await pool.query('SELECT * FROM users')
 ```
 
 Install via Vercel Marketplace: `vercel integration add prisma`
@@ -472,7 +487,7 @@ const turso = createClient({
 const result = await turso.execute('SELECT * FROM users')
 ```
 
-Install via Vercel Marketplace: `vercel integration add turso`
+Install via Vercel Marketplace: `vercel integration add tursocloud`
 
 ## Storage Decision Matrix
 
