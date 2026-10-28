@@ -1,0 +1,49 @@
+# superproject-workspace:begin (managed by `superproject.py adopt`; edits inside this block are overwritten)
+# The CLI is NOT copied into this repo. It resolves, first match wins:
+#   $SUPERPROJECT_CLI > scripts/superproject.py (adopt --vendor-cli)
+#   > project skill install (.agents/skills) > global skill install (~/.agents/skills)
+#   > GitHub raw at $SUPERPROJECT_CLI_REF (default: main).
+# Update every superproject at once with `npx skills update`.
+_sp_vendored := justfile_directory() / "scripts" / "superproject.py"
+_sp_project := justfile_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+_sp_global := home_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+_sp_remote := "https://raw.githubusercontent.com/daviddwlee84/agent-skills/" + env("SUPERPROJECT_CLI_REF", "main") + "/skills/local/superproject-workspace/scripts/superproject.py"
+_sp := env("SUPERPROJECT_CLI", if path_exists(_sp_vendored) == "true" { _sp_vendored } else if path_exists(_sp_project) == "true" { _sp_project } else if path_exists(_sp_global) == "true" { _sp_global } else { _sp_remote })
+
+# Policy, lag and drift for every submodule (add --fetch for current numbers).
+sub-status *args:
+    uv run --script "{{_sp}}" status {{args}}
+
+# Initialize children; lazy ones only when named, by --tier, or with --all.
+sub-init *args:
+    uv run --script "{{_sp}}" init {{args}}
+
+# Fast-forward track children to origin/<branch> (checkouts only).
+sub-pull *args:
+    uv run --script "{{_sp}}" pull {{args}}
+
+# Record children's HEADs as gitlinks after preflight (add --commit).
+sub-bump *args:
+    uv run --script "{{_sp}}" bump {{args}}
+
+# Verify staged gitlinks are pushed and reachable.
+sub-preflight *args:
+    uv run --script "{{_sp}}" preflight {{args}}
+
+# Child worktrees: sub-wt add <child> <branch> | list | remove <child> <branch>
+sub-wt *args:
+    uv run --script "{{_sp}}" worktree {{args}}
+
+# Read-only health report (also flags stale managed blocks).
+sub-audit *args:
+    uv run --script "{{_sp}}" audit {{args}}
+
+# Re-apply managed blocks from the current CLI version (idempotent).
+sub-adopt *args:
+    uv run --script "{{_sp}}" adopt {{args}}
+
+# Which CLI file the recipes resolve to.
+sub-which:
+    @echo "{{_sp}}"
+
+# superproject-workspace:end

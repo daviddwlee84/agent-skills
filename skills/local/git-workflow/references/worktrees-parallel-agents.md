@@ -126,3 +126,13 @@ deps, create venvs). For **non-git VCS** (SVN/Perforce/hg), configure
 `WorktreeCreate`/`WorktreeRemove` hooks — note that `.worktreeinclude` is **not
 processed** when a custom hook replaces the default git logic, so copy local
 config files inside the hook script instead.
+
+## Worktrees in a submodule superproject
+
+A worktree of a **superproject** starts with every submodule uninitialized, so
+it is the wrong tool for work inside a child repo. Create a worktree of the
+**child** instead, under `.worktrees/<child-path>/<branch>`. The
+`superproject-workspace` skill's
+`superproject.py worktree add <child> <branch>` does this, including the
+`.gitignore` entry and branching pins from their recorded gitlink. See its
+`references/worktrees.md`.

@@ -1,0 +1,112 @@
+# superproject-workspace: move gitlinks of `x-policy = track` children.
+#   x-bump = direct -> committed straight to the default branch after preflight
+#   x-bump = pr     -> one PR on the fixed branch chore/submodule-bump
+#   x-bump = manual -> never touched here
+# Private children need a SUBMODULE_TOKEN secret (fine-grained PAT with
+# contents:read on each child). See references/ci-bump.md.
+# The CLI is fetched from the skill repo at SUPERPROJECT_CLI_REF (repository
+# variable; default main). Pin it to a tag or SHA for fully reproducible runs.
+name: superproject-bump
+
+on:
+  schedule:
+    - cron: "17 3 * * 1" # weekly, Mon 03:17 UTC
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Bump only this submodule (name or path); empty = all"
+        required: false
+        default: ""
+  repository_dispatch:
+    types: [submodule-bump] # sent by a child's notify workflow
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: superproject-bump
+  cancel-in-progress: false
+
+env:
+  CLI_REF: ${{ vars.SUPERPROJECT_CLI_REF || 'main' }}
+  ONLY: ${{ github.event.inputs.only || github.event.client_payload.submodule || '' }}
+  BUMP_BRANCH: chore/submodule-bump
+  DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Resolve the CLI (vendored copy if present, else the skill repo)
+        run: |
+          if [ -f scripts/superproject.py ]; then
+            echo "CLI=$PWD/scripts/superproject.py" >> "$GITHUB_ENV"
+          else
+            echo "CLI=https://raw.githubusercontent.com/daviddwlee84/agent-skills/${CLI_REF}/skills/local/superproject-workspace/scripts/superproject.py" >> "$GITHUB_ENV"
+          fi
+
+      - name: Configure git identity and child credentials
+        env:
+          SUBMODULE_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$SUBMODULE_TOKEN" ]; then
+            git config --global url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf "git@github.com:"
+            git config --global --add url."https://x-access-token:${SUBMODULE_TOKEN}@github.com/".insteadOf "https://github.com/"
+          fi
+          if [ -n "$GITLAB_TOKEN" ]; then
+            git config --global url."https://oauth2:${GITLAB_TOKEN}@gitlab.com/".insteadOf "git@gitlab.com:"
+            git config --global --add url."https://oauth2:${GITLAB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
+          fi
+
+      - name: Plan and initialize the automated children
+        run: |
+          uv run --script "$CLI" ci-plan --json ${ONLY:+--only "$ONLY"} > "$RUNNER_TEMP/plan.json"
+          cat "$RUNNER_TEMP/plan.json"
+          mapfile -t paths < <(jq -r '.init_paths[]' "$RUNNER_TEMP/plan.json")
+          if [ "${#paths[@]}" -gt 0 ]; then
+            uv run --script "$CLI" init "${paths[@]}"
+          fi
+
+      - name: Direct bumps (commit to the default branch)
+        run: |
+          mapfile -t names < <(jq -r '.direct[].name' "$RUNNER_TEMP/plan.json")
+          [ "${#names[@]}" -gt 0 ] || { echo "no direct children"; exit 0; }
+          before=$(git rev-parse HEAD)
+          uv run --script "$CLI" pull "${names[@]}"
+          uv run --script "$CLI" bump "${names[@]}" --commit --subject "chore(submodules): auto-bump ${names[*]}"
+          if [ "$(git rev-parse HEAD)" != "$before" ]; then
+            git push origin "HEAD:$DEFAULT_BRANCH"
+          fi
+
+      - name: PR bumps (fixed branch)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t names < <(jq -r '.pr[].name' "$RUNNER_TEMP/plan.json")
+          [ "${#names[@]}" -gt 0 ] || { echo "no pr children"; exit 0; }
+          before=$(git rev-parse HEAD)
+          git switch -C "$BUMP_BRANCH"
+          uv run --script "$CLI" pull "${names[@]}"
+          uv run --script "$CLI" bump "${names[@]}" --commit
+          if [ "$(git rev-parse HEAD)" = "$before" ]; then
+            echo "pr children already up to date"
+            exit 0
+          fi
+          git push --force origin "$BUMP_BRANCH"
+          state=$(gh pr view "$BUMP_BRANCH" --json state -q .state 2>/dev/null || true)
+          if [ "$state" != "OPEN" ]; then
+            gh pr create --base "$DEFAULT_BRANCH" --head "$BUMP_BRANCH" \
+              --title "chore(submodules): bump tracked children" \
+              --body "Automated by superproject-bump. The commit body lists each child's range and \`--submodule=log\`. PRs opened with GITHUB_TOKEN do not trigger other workflows; run checks manually if needed."
+          fi

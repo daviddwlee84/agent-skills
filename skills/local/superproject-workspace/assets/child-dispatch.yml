@@ -1,0 +1,22 @@
+# superproject-workspace: place in a CHILD repo to request an immediate
+# pointer bump in its superproject after every push to main.
+# Replace OWNER/SUPERPROJECT and CHILD_NAME (the submodule name in the
+# superproject's .gitmodules). SUPERPROJECT_DISPATCH_TOKEN is a fine-grained
+# PAT with contents:write on the superproject (needed for repository_dispatch).
+name: notify-superproject
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request a submodule bump
+        env:
+          GH_TOKEN: ${{ secrets.SUPERPROJECT_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/OWNER/SUPERPROJECT/dispatches \
+            -f event_type=submodule-bump \
+            -f "client_payload[submodule]=CHILD_NAME"
