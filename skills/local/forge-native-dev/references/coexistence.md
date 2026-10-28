@@ -103,6 +103,18 @@ The vendored `create-pull-request` skill is a standalone PR creation guide.
 If both are installed, prefer `forge-native-dev`'s PR flow because it
 automatically links the PR to the originating issue.
 
+## forge-native-dev in a submodule superproject
+
+If the repo is a superproject (`.gitmodules` present), use the two skills at
+different levels:
+
+- **forge-native-dev** handles issues and PRs in each child, in that child's
+  own forge. Superproject issue worktrees (`.worktrees/issue-<n>`) are only for
+  changes to outer content.
+- **superproject-workspace** handles pointer policy, child worktrees under
+  `.worktrees/<child-path>/<branch>`, and the preflighted bump commit that
+  records merged child work in the superproject.
+
 ## Role model
 
 The skill distinguishes two roles based on actual repository permissions,

@@ -1,0 +1,31 @@
+# superproject-workspace:begin (managed by `superproject.py adopt`; edits inside this block are overwritten)
+
+# Policy, lag and drift for every submodule (add --fetch for current numbers).
+sub-status *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" status {{args}}
+
+# Initialize children; lazy ones only when named, by --tier, or with --all.
+sub-init *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" init {{args}}
+
+# Fast-forward track children to origin/<branch> (checkouts only).
+sub-pull *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" pull {{args}}
+
+# Record children's HEADs as gitlinks after preflight (add --commit).
+sub-bump *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" bump {{args}}
+
+# Verify staged gitlinks are pushed and reachable.
+sub-preflight *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" preflight {{args}}
+
+# Child worktrees: sub-wt add <child> <branch> | list | remove <child> <branch>
+sub-wt *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" worktree {{args}}
+
+# Read-only health report.
+sub-audit *args:
+    uv run --script "{{justfile_directory()}}/__CLI__" audit {{args}}
+
+# superproject-workspace:end

@@ -36,6 +36,7 @@
 | [`mlflow-tracking`](mlflow-tracking.md) | 通用 MLflow skill —— sqlite + `mlflow ui`、附帶 PostgreSQL + MinIO docker stack、LLM tracing、registry、autolog | [docs](mlflow-tracking.md) |
 | [`agent-history-hygiene`](agent-history-hygiene.md) | 把 transcript/plan 與功能 diff 一起 commit、從 staged artifact 產生 harness/model provenance、初始化 secret scanning，並提供 rotate-first 洩漏處理 | [docs](agent-history-hygiene.md) |
 | [`git-workflow`](git-workflow.md) | 隨規模調整的 Git 工作流：英文 Conventional Commits、跨 harness AI provenance、線性歷史、worktree、SemVer 與 commit 驗證 | [docs](git-workflow.md) |
+| [`superproject-workspace`](superproject-workspace.md) | 避免 git submodule superproject 偏掉：`.gitmodules` 內每個子 repo 的 track/pin/lazy policy、落後與偏移狀態、preflight 後收斂成單一 commit 的 bump、排程 bump PR、子 repo worktree、audit/adopt | [docs](superproject-workspace.md) |
 | [`pueue-job-queue`](pueue-job-queue.md) | 驅動 Nukesor/pueue 做佇列 (queued) / 平行 / 排程的 shell job；submit-one + DAG submitter + JSON-summary waiter；對應 pueue 4.0.2 schema | [docs](pueue-job-queue.md) |
 | [`slurm-hpc`](slurm-hpc.md) | 可攜的 Slurm 知識 —— sbatch 骨架、資源請求、job 串接（`--dependency=afterok` 與 DependencyNeverSatisfied 陷阱），以及什麼才真的圍得住 GPU VRAM（shard vs MPS vs MIG） | [docs](slurm-hpc.md) |
 | [`long-running-jobs`](long-running-jobs.md) | Agent 該怎麼等跨回合的工作 —— scheduler 串接、單次 blocking 背景等待、過濾後的事件串流，定時回檢排最後；用 `run-and-mark.sh` + `check-runs.sh` 留下持久的 exit code marker | [docs](long-running-jobs.md) |
