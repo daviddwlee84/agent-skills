@@ -111,7 +111,26 @@ class TestAuditAdopt(Fixture):
 
         gm = sh("git", "config", "-f", ".gitmodules", "--get", "submodule.ref.update", cwd=self.root)
         self.assertEqual(gm, "none")
-        self.assertTrue((self.root / "scripts" / "superproject.py").exists())
+        # The CLI is referenced from the installed skill, never copied by default.
+        self.assertFalse((self.root / "scripts" / "superproject.py").exists())
+        self.assertIn("_sp_global", (self.root / "justfile").read_text())
+
+    def test_audit_flags_tool_drift(self) -> None:
+        self.adopt_policies()
+        agents = self.root / "AGENTS.md"
+        agents.write_text(agents.read_text().replace("Gitlinks record commits", "Old wording"))
+        self.run_cli("adopt", "--vendor-cli", "--no-git-config")
+        vendored = self.root / "scripts" / "superproject.py"
+        self.assertTrue(vendored.exists())
+        vendored.write_text(vendored.read_text().replace('__version__ = "', '__version__ = "0.0.1-old+'))
+        agents.write_text(agents.read_text().replace("Gitlinks record commits", "Old wording"))
+        codes = {f["code"] for f in self.json_cli("audit")["findings"]}
+        self.assertIn("managed-block-stale", codes)
+        self.assertIn("vendored-cli-stale", codes)
+        self.run_cli("adopt", "--vendor-cli", "--no-git-config")
+        codes = {f["code"] for f in self.json_cli("audit")["findings"]}
+        self.assertNotIn("managed-block-stale", codes)
+        self.assertNotIn("vendored-cli-stale", codes)
 
     def test_adopt_is_idempotent(self) -> None:
         self.adopt_policies()

@@ -10,23 +10,26 @@ there. This file only governs cross-repo work.
   `.gitmodules` (`x-policy`): `track` follows `origin/<branch>` by
   fast-forward, `pin` moves only for a stated reason, `lazy` is not
   initialized until a task needs it. "Latest" never means resetting pins.
-- **Look before acting:** `uv run --script __CLI__ status --fetch` shows
+- The `just sub-*` recipes run the shared skill CLI (`just sub-which` shows
+  which file). Without just: `uv run --script
+  ~/.agents/skills/superproject-workspace/scripts/superproject.py <cmd>`.
+- **Look before acting:** `just sub-status --fetch` shows
   policy, lag, drift, and dirty checkouts. `audit` gives fixes.
-- **Need an absent child?** `uv run --script __CLI__ init <name>`. Never
+- **Need an absent child?** `just sub-init <name>`. Never
   recurse into nested submodules unless the task needs them.
 - **Develop in a child worktree, not the child checkout:**
-  `uv run --script __CLI__ worktree add <child> <branch>` creates
+  `just sub-wt add <child> <branch>` creates
   `.worktrees/<child-path>/<branch>`. Keep the checkout at its tracked branch
   or pinned commit. Do not create worktrees of this superproject for child
   work; their submodules start uninitialized.
 - **Commit inside-out.** Commit and push the child first, through the child's
   own PR flow. Then move the pointer here with
-  `uv run --script __CLI__ bump <child> --commit` (add `--reason` for pin/lazy).
+  `just sub-bump <child> --commit` (add `--reason` for pin/lazy).
   The bump refuses unpushed or unreachable commits.
 - **One cross-repo change gets one outer commit.** Bump every affected child
   together, and leave no unrelated gitlink drift behind.
 - **Before any outer commit that stages gitlinks**, run
-  `uv run --script __CLI__ preflight`.
+  `just sub-preflight`.
 - Preserve existing child branches, local commits, and dirty work. `pull`
   refuses diverged or dirty checkouts; resolve those by hand, don't force.
 <!-- superproject-workspace:agent-guidance --> (end)

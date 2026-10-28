@@ -35,6 +35,6 @@ knowledge, matters.
 
 ## Session start checklist (put in AGENTS.md)
 
-1. `uv run --script scripts/superproject.py status --fetch`
+1. `sp status --fetch`
 2. Read the target child's AGENTS.md.
 3. Branch work goes in `worktree add`, never in the submodule checkout.

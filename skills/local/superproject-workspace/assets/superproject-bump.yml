@@ -4,6 +4,8 @@
 #   x-bump = manual -> never touched here
 # Private children need a SUBMODULE_TOKEN secret (fine-grained PAT with
 # contents:read on each child). See references/ci-bump.md.
+# The CLI is fetched from the skill repo at SUPERPROJECT_CLI_REF (repository
+# variable; default main). Pin it to a tag or SHA for fully reproducible runs.
 name: superproject-bump
 
 on:
@@ -27,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CLI: __CLI__
+  CLI_REF: ${{ vars.SUPERPROJECT_CLI_REF || 'main' }}
   ONLY: ${{ github.event.inputs.only || github.event.client_payload.submodule || '' }}
   BUMP_BRANCH: chore/submodule-bump
   DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -42,6 +44,14 @@ jobs:
           submodules: false
 
       - uses: astral-sh/setup-uv@v6
+
+      - name: Resolve the CLI (vendored copy if present, else the skill repo)
+        run: |
+          if [ -f scripts/superproject.py ]; then
+            echo "CLI=$PWD/scripts/superproject.py" >> "$GITHUB_ENV"
+          else
+            echo "CLI=https://raw.githubusercontent.com/daviddwlee84/agent-skills/${CLI_REF}/skills/local/superproject-workspace/scripts/superproject.py" >> "$GITHUB_ENV"
+          fi
 
       - name: Configure git identity and child credentials
         env:

@@ -13,8 +13,10 @@ silently falls behind; checkouts end up detached, dirty, or on stray branches;
 pointers reference commits nobody pushed. Drift is the default, not a bug.
 
 This skill makes drift **visible** and moves pointers **by policy**, with one
-CLI (`scripts/superproject.py`, stdlib Python ≥3.10, PEP 723) that every
-superproject vendors so its recipes and CI work without the skill installed.
+CLI (`scripts/superproject.py`, stdlib Python ≥3.10, PEP 723). Every
+superproject **references** the installed skill's CLI instead of copying it,
+so `npx skills update` upgrades all of them at once. Otherwise the tool itself
+would drift the same way the gitlinks do.
 
 ## When to use
 
@@ -63,16 +65,25 @@ child follows main is simply "everything `track`". A workspace hub mixes core
 
 ## Workflow
 
-Run the CLI through the superproject's vendored copy: `uv run --script
-scripts/superproject.py <cmd>`. `python3` works too, and `adopt` also installs
-`just sub-*` recipes. Every command takes `--json`. Mutating commands take
-`--dry-run`.
+Below, `sp` means `uv run --script <skill-dir>/scripts/superproject.py`. For a
+global install, `<skill-dir>` is `~/.agents/skills/superproject-workspace`.
+After `adopt`, the same commands are available as `just sub-*` recipes. They
+resolve the CLI in this order, first match wins:
+
+1. `$SUPERPROJECT_CLI`
+2. a vendored `scripts/superproject.py` (opt-in)
+3. the project skill install `.agents/skills/...`
+4. the global install `~/.agents/skills/...`
+5. GitHub raw at `$SUPERPROJECT_CLI_REF` (default `main`)
+
+`just sub-which` prints which one won. Every command takes `--json`. Mutating
+commands take `--dry-run`.
 
 ### 1. Look first
 
 ```bash
-uv run --script scripts/superproject.py status --fetch   # policy, lag, drift, dirty, worktrees
-uv run --script scripts/superproject.py audit            # findings + exact fix commands
+sp status --fetch   # policy, lag, drift, dirty, worktrees
+sp audit            # findings + exact fix commands
 ```
 
 Without `--fetch`, lag is computed against stale remote refs. Never report
@@ -81,8 +92,8 @@ Without `--fetch`, lag is computed against stale remote refs. Never report
 ### 2. Get a child you need
 
 ```bash
-uv run --script scripts/superproject.py init                 # all non-lazy, uninitialized children
-uv run --script scripts/superproject.py init some-reference  # a lazy child, by name/path/basename
+sp init                 # all non-lazy, uninitialized children
+sp init some-reference  # a lazy child, by name/path/basename
 ```
 
 `init` never touches an already-initialized checkout and does not recurse
@@ -91,7 +102,7 @@ unless you pass `--recursive`. Initialization is not a way to update.
 ### 3. Develop inside a child: use a child worktree
 
 ```bash
-uv run --script scripts/superproject.py worktree add app feat/login
+sp worktree add app feat/login
 # -> .worktrees/app/feat-login  (gitignored; branch from origin/main for track,
 #    from the recorded gitlink for pin, so fixes start from the baseline)
 ```
@@ -104,9 +115,9 @@ Do not create worktrees of the superproject for this; see `references/worktrees.
 ### 4. Move pointers: inside-out, one outer commit
 
 ```bash
-uv run --script scripts/superproject.py pull                 # ff track children (checkout only)
-uv run --script scripts/superproject.py bump --all-track --commit
-uv run --script scripts/superproject.py bump lib --reason "prod baseline v2.3" --commit   # pin/lazy
+sp pull                 # ff track children (checkout only)
+sp bump --all-track --commit
+sp bump lib --reason "prod baseline v2.3" --commit   # pin/lazy
 ```
 
 `bump` refuses the whole set if any child is dirty or its commit is not
@@ -118,7 +129,7 @@ commit body contains each range and the `--submodule=log` summary. Pass
 ### 5. Guard every outer commit
 
 ```bash
-uv run --script scripts/superproject.py preflight   # also installed as a pre-commit hook by adopt --with-hook
+sp preflight   # also installed as a pre-commit hook by adopt --with-hook
 ```
 
 ### 6. Adopt an existing superproject
@@ -130,14 +141,19 @@ uv run --script <skill>/scripts/superproject.py adopt --root ../old-super --dry-
 ```
 
 `adopt` writes policy keys, but only where they are missing or named by
-`--set`. It also vendors the CLI to `scripts/superproject.py`, upserts a
-marker-delimited AGENTS.md block and `sub-*` justfile recipes, adds `.worktrees/`
-to `.gitignore`, and sets local git config:
+`--set`. It also upserts a marker-delimited AGENTS.md block and `sub-*`
+justfile recipes, adds `.worktrees/` to `.gitignore`, and sets local git
+config:
 - `diff.submodule=log`
 - `status.submoduleSummary=true`
 - `push.recurseSubmodules=check`
 
-Opt in to `--with-ci` and `--with-hook`. It is idempotent. Review `git diff`
+Opt in to `--with-ci` and `--with-hook`. It does **not** copy the CLI. Pass
+`--vendor-cli` only for offline or air-gapped superprojects, and accept that
+the copy stops receiving fixes. It is idempotent: rerun it (`just sub-adopt`)
+after a skill update to refresh the managed blocks. `audit` reports
+`managed-block-stale` and `vendored-cli-stale` when the tool itself has
+drifted. Review `git diff`
 before committing, and pick policies with the user. The default
 `--policy-default pin` is deliberately conservative.
 
@@ -156,7 +172,9 @@ before committing, and pick policies with the user. The default
 - `assets/child-dispatch.yml`: optional; goes in a child repo to request an immediate bump on push to main.
 - `assets/pre-commit-hook.sh`: runs `preflight`.
 
-`__CLI__` in the assets is replaced by the vendored CLI path.
+The recipes, hook, and workflow all use the same CLI resolution. CI pins
+the version with the `SUPERPROJECT_CLI_REF` repository variable (a tag or
+SHA).
 
 ## Reference files
 
@@ -170,6 +188,9 @@ before committing, and pick policies with the user. The default
 
 ## Gotchas
 
+- **Don't copy the CLI into each superproject.** Copies freeze at adoption
+  time and silently diverge across repos. Reference the installed skill; vendor
+  only for offline use, and let `audit` flag stale copies.
 - **`git pull` in the superproject does not update children.** It moves gitlinks and leaves checkouts behind, which then shows as `modified: app (new commits)`. Run `status`, then decide whether to `bump` (keep the checkout) or `git submodule update -- app` (discard and go back to the gitlink).
 - **`git submodule update` detaches HEAD** and can strand local commits that are not on a branch. `pull` refuses "detached commit not on origin/<branch>" for this reason; save the commit to a branch first.
 - **"Latest" never means resetting pins.** A pinned child may legitimately be behind or sit on a release branch. `audit` reports this as info, not an error.

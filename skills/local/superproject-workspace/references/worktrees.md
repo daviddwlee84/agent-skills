@@ -6,9 +6,9 @@ Feature work in a child happens in a **worktree of the child**, placed inside
 the superproject at `.worktrees/<child-path>/<branch-slug>` (gitignored):
 
 ```bash
-uv run --script scripts/superproject.py worktree add <child> <branch> [--base REV]
-uv run --script scripts/superproject.py worktree list
-uv run --script scripts/superproject.py worktree remove <child> <branch> --delete-branch
+sp worktree add <child> <branch> [--base REV]
+sp worktree list
+sp worktree remove <child> <branch> --delete-branch
 ```
 
 The submodule checkout itself stays on its tracked branch, or at its pin.

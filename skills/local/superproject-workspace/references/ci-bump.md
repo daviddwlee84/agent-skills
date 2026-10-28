@@ -14,6 +14,17 @@ The job fails, with a red run, when `pull` or `bump` refuses. Typical causes:
 a child's history was rewritten (diverged), or the gitlink points at a
 deleted commit. Fix those by hand.
 
+## Which CLI version CI runs
+
+The workflow uses `scripts/superproject.py` if the repo vendored one
+(`adopt --vendor-cli`). Otherwise it runs the skill's CLI straight from GitHub
+raw at the `SUPERPROJECT_CLI_REF` repository variable, defaulting to `main`:
+
+- **`main`**: every superproject picks up fixes automatically. You trust the
+  skill repo's main branch with a job that has `contents: write`.
+- **tag or SHA**: reproducible and reviewed. Moving it is one variable change
+  per repo. Use this for superprojects that guard production.
+
 ## Credentials
 
 | Children | Secret | Notes |

@@ -31,7 +31,8 @@ tracker, because those repos are private.
    - references and rarely used children → `lazy`
 3. `adopt --dry-run --policy-default pin --set <child>=track:pr ...`, review,
    then `adopt` (`--with-ci` once a `SUBMODULE_TOKEN` exists for private
-   children).
+   children). Install the skill globally first (`npx skills add ...`), because
+   the recipes reference it instead of copying the CLI.
 4. Replace hand-written submodule recipes with the `sub-*` block. Keep
    repo-specific recipes (deploy, build), but make them read paths from the CLI
    rather than hard-coding them.

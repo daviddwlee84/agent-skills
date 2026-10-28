@@ -43,16 +43,22 @@ pointer 默默落後、checkout 停在 detached 或 dirty、pointer 指向沒人
 ## 核心流程
 
 ```bash
-uv run --script scripts/superproject.py status --fetch
-uv run --script scripts/superproject.py worktree add app feat/login   # .worktrees/app/feat-login
+sp status --fetch
+sp worktree add app feat/login   # .worktrees/app/feat-login
 # ...在子 repo 內 commit + push + PR...
-uv run --script scripts/superproject.py pull
-uv run --script scripts/superproject.py bump --all-track --commit     # 先 preflight，收斂成一個外層 commit
+sp pull
+sp bump --all-track --commit     # 先 preflight，收斂成一個外層 commit
 ```
 
 既有的 superproject：先跑 `audit`，再跑 `adopt --dry-run --policy-default pin --set app=track:pr`，
-review 之後執行 `adopt`。它會 vendor CLI，並寫入 AGENTS.md 區塊、`sub-*` justfile
+review 之後執行 `adopt`。它會寫入 AGENTS.md 區塊、`sub-*` justfile
 recipe、`.worktrees/` ignore、本地 git config，也可選擇加入 CI workflow 與 pre-commit hook。
+
+CLI 是**引用，不複製**：recipe 會找已安裝的 skill（`~/.agents/skills/superproject-workspace`），
+找不到才從 GitHub raw 的 `$SUPERPROJECT_CLI_REF` 取得。一次 `npx skills update` 就能更新所有 superproject。
+skill 更新後重跑 `adopt` 即可刷新 managed block；過時時 `audit` 會提示。
+
+（`sp` = `uv run --script ~/.agents/skills/superproject-workspace/scripts/superproject.py`，或 `just sub-*` recipe。）
 
 ## 延伸閱讀
 

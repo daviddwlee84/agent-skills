@@ -39,18 +39,25 @@ dirty, and pointers reference commits nobody pushed. The skill makes drift
 ## Core workflow
 
 ```bash
-uv run --script scripts/superproject.py status --fetch
-uv run --script scripts/superproject.py worktree add app feat/login   # .worktrees/app/feat-login
+sp status --fetch
+sp worktree add app feat/login   # .worktrees/app/feat-login
 # ...commit + push + PR inside the child...
-uv run --script scripts/superproject.py pull
-uv run --script scripts/superproject.py bump --all-track --commit     # preflighted, one outer commit
+sp pull
+sp bump --all-track --commit     # preflighted, one outer commit
 ```
 
 To adopt an existing superproject, run
 `audit`, then `adopt --dry-run --policy-default pin --set app=track:pr`. After
-review, run `adopt`. It vendors the CLI and writes an AGENTS.md block, `sub-*`
-justfile recipes, the `.worktrees/` ignore entry, local git config, and,
-optionally, the CI workflow and pre-commit hook.
+review, run `adopt`. It writes an AGENTS.md block, `sub-*` justfile recipes,
+the `.worktrees/` ignore entry, local git config, and, optionally, the CI
+workflow and pre-commit hook.
+
+The CLI is **referenced, not copied**: recipes resolve the installed skill
+(`~/.agents/skills/superproject-workspace`) and fall back to GitHub raw at
+`$SUPERPROJECT_CLI_REF`. One `npx skills update` upgrades every superproject.
+Rerun `adopt` to refresh the managed blocks; `audit` flags them when stale.
+
+(`sp` = `uv run --script ~/.agents/skills/superproject-workspace/scripts/superproject.py`, or the `just sub-*` recipes.)
 
 ## See also
 

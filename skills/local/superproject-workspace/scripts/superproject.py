@@ -34,7 +34,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 POLICIES = ("track", "pin", "lazy")
 BUMP_MODES = ("pr", "direct", "manual")
@@ -44,7 +44,7 @@ AGENTS_BEGIN = "<!-- superproject-workspace:agent-guidance -->"
 AGENTS_END = "<!-- superproject-workspace:agent-guidance --> (end)"
 JUST_BEGIN = "# superproject-workspace:begin"
 JUST_END = "# superproject-workspace:end"
-CLI_PLACEHOLDER = "__CLI__"
+VENDORED_CLI = "scripts/superproject.py"
 
 SKILL_ASSETS = Path(__file__).resolve().parent.parent / "assets"
 GIT_ENV = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"}
@@ -362,7 +362,7 @@ def cmd_status(root: Path, subs: list[Sub], args) -> int:
             short(st["recorded"]), lag, note,
         ])
     hint = "" if args.fetch else "\n(lag uses local remote refs; add --fetch for current numbers)"
-    emit(args, {"root": str(root), "submodules": states}, table(rows) + hint)
+    emit(args, {"root": str(root), "cli_version": __version__, "submodules": states}, table(rows) + hint)
     return 0
 
 
@@ -775,6 +775,23 @@ def cmd_audit(root: Path, subs: list[Sub], args) -> int:
         if JUST_BEGIN not in text and len(hard) >= 2:
             add("info", "justfile-hardcoded", jf.name,
                 f"recipes hard-code {len(hard)} submodule paths; policy-driven recipes avoid per-child edits", "adopt")
+    # The tool itself drifts too: compare managed blocks and any vendored copy to this CLI.
+    if SKILL_ASSETS.exists():
+        for target, begin, end, asset in (
+            (agents, AGENTS_BEGIN, AGENTS_END, "agents-block.md.template"),
+            (jf, JUST_BEGIN, JUST_END, "justfile.snippet"),
+        ):
+            block = extract_block(target.read_text(), begin, end) if target else None
+            want = extract_block(render_asset(asset), begin, end)
+            if block and want and block != want:
+                add("warn", "managed-block-stale", target.name,
+                    f"managed block differs from superproject-workspace {__version__}", "adopt")
+    vendored = root / VENDORED_CLI
+    if vendored.exists() and vendored.resolve() != Path(__file__).resolve() \
+            and vendored.read_bytes() != Path(__file__).read_bytes():
+        add("warn", "vendored-cli-stale", VENDORED_CLI,
+            f"vendored CLI {cli_version(vendored)} differs from running CLI {__version__}",
+            "adopt --vendor-cli to refresh, or delete it to use the installed skill")
     automated = [s for s in subs if s.eff_bump in ("pr", "direct")]
     wf_dir = root / ".github" / "workflows"
     has_ci = wf_dir.is_dir() and any("ci-plan" in w.read_text() or "superproject.py" in w.read_text()
@@ -798,11 +815,21 @@ def cmd_audit(root: Path, subs: list[Sub], args) -> int:
 
 # ---------------------------------------------------------------- adopt
 
-def render_asset(name: str, cli: str) -> str:
+def render_asset(name: str) -> str:
     path = SKILL_ASSETS / name
     if not path.exists():
-        raise UsageError(f"asset {name} not found; run adopt from the skill copy of superproject.py")
-    return path.read_text().replace(CLI_PLACEHOLDER, cli)
+        raise UsageError(f"asset {name} not found; run adopt from the installed skill, not a vendored copy")
+    return path.read_text()
+
+
+def extract_block(text: str, begin: str, end: str) -> str | None:
+    m = re.search(re.escape(begin) + r".*?" + re.escape(end), text, re.S)
+    return m.group(0) if m else None
+
+
+def cli_version(path: Path) -> str:
+    m = re.search(r'^__version__ = "([^"]+)"', path.read_text(), re.M)
+    return m.group(1) if m else "?"
 
 
 def upsert_block(text: str, begin: str, end: str, block: str) -> str:
@@ -846,13 +873,13 @@ def cmd_adopt(root: Path, subs: list[Sub], args) -> int:
         if policy == "lazy" and s.update != "none":
             set_key(s, "update", "none")
 
-    cli = args.cli_dest
-    if not args.no_cli:
-        dest = root / cli
+    if args.vendor_cli:
+        # Opt-in only (offline / air-gapped): a copy stops receiving skill updates.
+        dest = root / VENDORED_CLI
         src = Path(__file__).resolve()
-        if not dest.exists() or dest.read_bytes() != src.read_bytes():
-            actions.append({"kind": "file", "target": cli,
-                            "detail": "update CLI copy" if dest.exists() else "vendor CLI so recipes and CI work without the skill"})
+        if dest.resolve() != src and (not dest.exists() or dest.read_bytes() != src.read_bytes()):
+            actions.append({"kind": "file", "target": VENDORED_CLI,
+                            "detail": f"{'refresh' if dest.exists() else 'vendor'} CLI {__version__}"})
             if not args.dry_run:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
@@ -860,7 +887,7 @@ def cmd_adopt(root: Path, subs: list[Sub], args) -> int:
     if not args.no_agents:
         agents = find_agents_file(root) or root / "AGENTS.md"
         old = agents.read_text() if agents.exists() else ""
-        new = upsert_block(old, AGENTS_BEGIN, AGENTS_END, render_asset("agents-block.md.template", cli))
+        new = upsert_block(old, AGENTS_BEGIN, AGENTS_END, render_asset("agents-block.md.template"))
         if new != old:
             actions.append({"kind": "file", "target": agents.name, "detail": "upsert agent guidance block"})
             if not args.dry_run:
@@ -869,7 +896,7 @@ def cmd_adopt(root: Path, subs: list[Sub], args) -> int:
     if not args.no_justfile:
         jf = find_justfile(root) or root / "justfile"
         old = jf.read_text() if jf.exists() else ""
-        new = upsert_block(old, JUST_BEGIN, JUST_END, render_asset("justfile.snippet", cli))
+        new = upsert_block(old, JUST_BEGIN, JUST_END, render_asset("justfile.snippet"))
         if new != old:
             actions.append({"kind": "file", "target": jf.name, "detail": "upsert sub-* recipes"})
             if not args.dry_run:
@@ -880,7 +907,7 @@ def cmd_adopt(root: Path, subs: list[Sub], args) -> int:
 
     if args.with_ci:
         wf = root / ".github" / "workflows" / "superproject-bump.yml"
-        content = render_asset("superproject-bump.yml", cli)
+        content = render_asset("superproject-bump.yml")
         if not wf.exists() or wf.read_text() != content:
             actions.append({"kind": "file", "target": str(wf.relative_to(root)), "detail": "scheduled bump workflow"})
             if not args.dry_run:
@@ -890,14 +917,14 @@ def cmd_adopt(root: Path, subs: list[Sub], args) -> int:
     if args.with_hook:
         hook = root / git("rev-parse", "--git-path", "hooks/pre-commit", cwd=root)
         if hook.exists():
-            if render_asset("pre-commit-hook.sh", cli) != hook.read_text():
+            if render_asset("pre-commit-hook.sh") != hook.read_text():
                 actions.append({"kind": "skipped", "target": "pre-commit hook",
                                 "detail": "a different hook exists; chain `preflight` into it by hand"})
         else:
             actions.append({"kind": "file", "target": "pre-commit hook", "detail": "run preflight before commits"})
             if not args.dry_run:
                 hook.parent.mkdir(parents=True, exist_ok=True)
-                hook.write_text(render_asset("pre-commit-hook.sh", cli))
+                hook.write_text(render_asset("pre-commit-hook.sh"))
                 hook.chmod(0o755)
 
     if not args.no_git_config:
@@ -1013,8 +1040,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--bump-default", choices=BUMP_MODES, default="manual",
                    help="x-bump for track children that declare none (default: manual)")
     p.add_argument("--set", action="append", metavar="NAME=POLICY[:BUMP]", help="explicit per-child policy (repeatable)")
-    p.add_argument("--cli-dest", default="scripts/superproject.py", help="where to vendor this CLI in the superproject")
-    p.add_argument("--no-cli", action="store_true")
+    p.add_argument("--vendor-cli", action="store_true",
+                   help=f"copy this CLI to {VENDORED_CLI} (offline use only; the copy stops receiving skill updates)")
     p.add_argument("--no-agents", action="store_true")
     p.add_argument("--no-justfile", action="store_true")
     p.add_argument("--no-gitignore", action="store_true")
