@@ -238,3 +238,5 @@ npm-debug.log*
 
 # td
 .todos/
+
+.worktrees/
