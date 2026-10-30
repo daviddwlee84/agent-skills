@@ -8,8 +8,8 @@ requires-python = ">=3.11"
 docs = [
     # Cap mkdocs/mkdocs-material below the next major: MkDocs 2.0 removes the
     # plugin system entirely (no llmstxt / static-i18n / copy-to-llm under 2.x).
-    # See references/mkdocs-2-and-zensical.md for the full rationale and
-    # criteria for lifting these caps.
+    # See references/mkdocs-2-and-zensical.md for the rationale and successor
+    # adoption gates. Keep these caps while using the MkDocs/Material stack.
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.5,<10",
     # __SOCIAL_IMAGING__  (init-docs-site.sh --social adds mkdocs-material[imaging] here)

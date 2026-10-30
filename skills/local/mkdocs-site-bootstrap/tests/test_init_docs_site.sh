@@ -251,6 +251,29 @@ if validate_config "$FRESH/mkdocs.yml" fresh; then pass "fresh config keeps star
 if build_fixture "$FRESH"; then pass "fresh scaffold builds strictly"; else fail "fresh scaffold builds strictly"; fi
 assert_no_file "fresh scaffold does not publish snippets" "$FRESH/site/_snippets"
 
+# Existing projects receive the same dependency caps as fresh scaffolds.
+for mode in plain social; do
+  EXISTING_PROJECT="$BASE/existing-project-$mode"
+  mkdir -p "$EXISTING_PROJECT"
+  printf '[project]\nname = "existing"\nversion = "0.1.0"\n' > "$EXISTING_PROJECT/pyproject.toml"
+  BEFORE="$(git hash-object --no-filters "$EXISTING_PROJECT/pyproject.toml")"
+  if [ "$mode" = "social" ]; then
+    OUTPUT="$(run_init "$EXISTING_PROJECT" skip --social 2>&1)"
+  else
+    OUTPUT="$(run_init "$EXISTING_PROJECT" skip 2>&1)"
+  fi
+  assert_contains "$mode dependency hint caps MkDocs" "$OUTPUT" '"mkdocs>=1.6,<2"'
+  assert_contains "$mode dependency hint caps Material" "$OUTPUT" '"mkdocs-material>=9.5,<10"'
+  if [ "$mode" = "social" ]; then
+    assert_contains "social dependency hint caps imaging extra" "$OUTPUT" '"mkdocs-material[imaging]>=9.5,<10"'
+  fi
+  if [ "$BEFORE" = "$(git hash-object --no-filters "$EXISTING_PROJECT/pyproject.toml")" ]; then
+    pass "$mode dependency hint preserves existing pyproject"
+  else
+    fail "$mode dependency hint preserves existing pyproject"
+  fi
+done
+
 MARKER_NAME="$BASE/marker-name"
 mkdir -p "$MARKER_NAME"
 "$INIT" --target-dir "$MARKER_NAME" --site-name '__STARTER_COPY_TO_LLM_BEGIN__' \

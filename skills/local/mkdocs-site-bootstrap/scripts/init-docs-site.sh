@@ -394,9 +394,9 @@ fi
 if [ -e "$TARGET/pyproject.toml" ]; then
   log "Note: $TARGET/pyproject.toml already exists; not modifying it."
   log "      Add this to your [project.optional-dependencies]:"
-  log "        docs = [\"mkdocs>=1.6\", \"mkdocs-material>=9.5\","
+  log "        docs = [\"mkdocs>=1.6,<2\", \"mkdocs-material>=9.5,<10\","
   if [ "$SOCIAL" = "1" ]; then
-    log "                \"mkdocs-material[imaging]>=9.5\",  # social/OG cards"
+    log "                \"mkdocs-material[imaging]>=9.5,<10\",  # social/OG cards"
   fi
   log "                \"mkdocs-llmstxt>=0.2\", \"mkdocs-copy-to-llm>=0.1\","
   log "                \"pymdown-extensions>=10.7\"]"

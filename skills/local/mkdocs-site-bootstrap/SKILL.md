@@ -332,11 +332,11 @@ for manual replacement with `site_url`-based URLs.
 - `references/i18n-llmstxt-migration.md` — Audit/apply/verify migration guide,
   exit-code contract, automatic patch boundary, and manual fallback. Read this
   **before repairing or upgrading an existing i18n + llmstxt site**.
-- `references/mkdocs-2-and-zensical.md` — Why the stack pins `mkdocs<2` and
-  `mkdocs-material<10`. Captures the MkDocs 2.0 plugin-removal situation,
-  Material team's Zensical replacement, and the criteria for lifting the
-  caps. Read whenever a user asks about upgrading MkDocs or why the docs
-  build is on 1.x.
+- `references/mkdocs-2-and-zensical.md` — Dated MkDocs/Zensical assessment,
+  dependency-cap rationale, Material maintenance deadline, and output-based
+  adoption gates. Read when choosing a docs engine, considering a Zensical
+  pilot, or explaining why existing sites stay on MkDocs 1.x. A successor
+  migration is separate from lifting the MkDocs caps.
 
 ## Bundled assets
 
@@ -371,6 +371,12 @@ Templates the scripts copy from. Edit them here, not in the user's repo.
 
 ## Gotchas
 
+- **Selective translations need missing files, not placeholders.** For an
+  English-first site with optional zh-TW, read `references/i18n-guide.md`
+  before adding languages. `add-language.sh --no-stubs` skips initial stubs,
+  but is not persistent: later `add-docs-page.sh` calls still create them for
+  configured languages. Existing "Translation pending" files mask fallback;
+  do not remove them without approval or auto-translate them.
 - **Social cards (OG previews) are opt-in — off by default.** Pass `--social`
   to `init-docs-site.sh` to enable them; a plain scaffold has no social plugin,
   no `[imaging]` dep, and no Cairo/Pango CI step, so it builds with zero system
