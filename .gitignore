@@ -240,3 +240,4 @@ npm-debug.log*
 .todos/
 
 .worktrees/
+/.playwright-cli

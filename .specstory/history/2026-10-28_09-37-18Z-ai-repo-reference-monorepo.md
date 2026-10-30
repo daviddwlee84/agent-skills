@@ -4932,3 +4932,696 @@ gitlink 記的是 commit，不是 branch，所以偏移一定會發生。做法�
 這份清單我只放在這裡，沒寫進 repo：這個 skills repo 是公開的，而那兩個 repo 是私有的。PR 裡的 `backlog/superproject-workspace-adoption.md` 和 `references/case-patterns.md` 只放去識別化的通用版本。
 
 PR merge 之後，跑 `bash skills/local/forge-native-dev/scripts/forge-cleanup.sh` 清掉 worktree 和 branch。
+
+---
+
+_**User (2026-10-28 10:40:08Z)**_
+
+Here is a note offered by a side agent:
+
+> Heads up · 主 agent 決定讓 adopt 把同步工具複製一份進每個 monorepo，這些副本日後不會自動更新，又會慢慢偏掉。.
+>
+> **每個 monorepo 都會多一份工具副本**
+> - 新 skill 有一個「升級舊 monorepo」的指令（`adopt`）。它會把整支同步工具 `superproject.py` **複製一份**到該 repo 的 `scripts/` 底下。
+> - 這樣做的好處是 justfile 和 GitHub 自動 bump 流程不用另外裝 skill 就能跑。
+> - 代價是：你有很多個 monorepo，每個都會留著當下那個版本的副本。之後 skill 修了 bug 或加了功能，**舊副本不會跟著變**。這正是你一開始擔心的「慢慢偏掉」，只是換成工具本身在偏。
+> - **建議**：決定好之後要怎麼更新這些副本，例如定期在每個 repo 重跑一次 `adopt`，或乾脆改成直接從 skill 安裝的位置執行、不複製。
+
+可能確實能夠直接引用skill中的script比較好？ 如果skill更新的話 等等情況
+
+---
+
+然後可以直接幫我 merge PR
+
+---
+
+_**Agent (claude-opus-5-5 2026-10-28 10:40:45Z)**_
+
+你的 side agent 說得對：預設把 CLI 複製進每個 repo，就等於把「慢慢偏掉」換成工具本身在偏。我會改成**直接引用 skill 安裝的那一份，不複製**，然後再 merge。先確認兩個前提：just 有沒有 `path_exists()`，以及 `uv` 能不能直接跑遠端 URL 的腳本。
+
+_**Agent (claude-opus-5-5 2026-10-28 10:40:49Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify just path_exists and uv remote script support
+
+```bash
+just --version; uv --version; ls -la ~/.agents/skills 2>/dev/null | head -5; ls ~/.claude/skills 2>/dev/null | head -3
+uv run --script "https://raw.githubusercontent.com/daviddwlee84/agent-skills/issue/33-feat-skills-superproject-workspace-submodule-super/skills/local/superproject-workspace/scripts/superproject.py" --version 2>&1 | tail -2
+d=$(mktemp -d); printf 'x := home_directory() / "nope"\ny := if path_exists(x) == "true" { "yes" } else { "no" }\n_p := env("ZZ", y)\nt:\n    @echo {{_p}}\n' > $d/justfile; just -f $d/justfile t; rm -rf $d
+```
+
+```text
+just 1.58.0
+uv 0.12.18 (01cb90c1a 2026-09-22 aarch64-apple-darwin)
+drwxr-xr-x@ - zhouhanru 25 Oct 13:14 chezmoi-dotfiles
+drwxr-xr-x@ - zhouhanru 23 Oct 14:51 dev-cli
+drwxr-xr-x@ - zhouhanru 19 Mar 15:33 find-skills
+drwxr-xr-x@ - zhouhanru 14 Oct 13:41 herdr
+lrwxr-xr-x@ - zhouhanru 20 Sep 16:01 playwright-cli -> /Users/zhouhanru/.local/share/mise/installs/node/24.13.0/lib/node_modules/@playwright/cli/node_modules/playwright-core/lib/tools/skills/playwright-cli
+chezmoi-dotfiles -> ../../.agents/skills/chezmoi-dotfiles
+dev-cli -> /Users/zhouhanru/.agents/skills/dev-cli
+find-skills -> ../../.agents/skills/find-skills
+superproject.py 0.1.0
+no
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:40:52Z)**_
+
+兩個都可行：just 1.58 支援 `path_exists()`，uv 也能直接 `uv run --script <URL>`。開始改：
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:10Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Rewrite assets to resolve the shared CLI instead of a copy
+
+```bash
+cd /Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-33/skills/local/superproject-workspace && cat > assets/justfile.snippet <<'EOF'
+# superproject-workspace:begin (managed by `superproject.py adopt`; edits inside this block are overwritten)
+# The CLI is NOT copied into this repo. It resolves, first match wins:
+#   $SUPERPROJECT_CLI > scripts/superproject.py (adopt --vendor-cli)
+#   > project skill install (.agents/skills) > global skill install (~/.agents/skills)
+#   > GitHub raw at $SUPERPROJECT_CLI_REF (default: main).
+# Update every superproject at once with `npx skills update`.
+_sp_vendored := justfile_directory() / "scripts" / "superproject.py"
+_sp_project := justfile_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+_sp_global := home_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+_sp_remote := "https://raw.githubusercontent.com/daviddwlee84/agent-skills/" + env("SUPERPROJECT_CLI_REF", "main") + "/skills/local/superproject-workspace/scripts/superproject.py"
+_sp := env("SUPERPROJECT_CLI", if path_exists(_sp_vendored) == "true" { _sp_vendored } else if path_exists(_sp_project) == "true" { _sp_project } else if path_exists(_sp_global) == "true" { _sp_global } else { _sp_remote })
+
+# Policy, lag and drift for every submodule (add --fetch for current numbers).
+sub-status *args:
+    uv run --script "{{_sp}}" status {{args}}
+
+# Initialize children; lazy ones only when named, by --tier, or with --all.
+sub-init *args:
+    uv run --script "{{_sp}}" init {{args}}
+
+# Fast-forward track children to origin/<branch> (checkouts only).
+sub-pull *args:
+    uv run --script "{{_sp}}" pull {{args}}
+
+# Record children's HEADs as gitlinks after preflight (add --commit).
+sub-bump *args:
+    uv run --script "{{_sp}}" bump {{args}}
+
+# Verify staged gitlinks are pushed and reachable.
+sub-preflight *args:
+    uv run --script "{{_sp}}" preflight {{args}}
+
+# Child worktrees: sub-wt add <child> <branch> | list | remove <child> <branch>
+sub-wt *args:
+    uv run --script "{{_sp}}" worktree {{args}}
+
+# Read-only health report (also flags stale managed blocks).
+sub-audit *args:
+    uv run --script "{{_sp}}" audit {{args}}
+
+# Re-apply managed blocks from the current CLI version (idempotent).
+sub-adopt *args:
+    uv run --script "{{_sp}}" adopt {{args}}
+
+# Which CLI file the recipes resolve to.
+sub-which:
+    @echo "{{_sp}}"
+
+# superproject-workspace:end
+EOF
+cat > assets/pre-commit-hook.sh <<'EOF'
+#!/bin/sh
+# superproject-workspace: refuse outer commits whose staged gitlinks point at
+# commits that are not pushed. Resolves the CLI like the justfile recipes do.
+root=$(git rev-parse --show-toplevel) || exit 1
+rel=skills/superproject-workspace/scripts/superproject.py
+cli=${SUPERPROJECT_CLI:-}
+for cand in "$root/scripts/superproject.py" "$root/.agents/$rel" "$HOME/.agents/$rel"; do
+  [ -n "$cli" ] && break
+  [ -f "$cand" ] && cli=$cand
+done
+cli=${cli:-https://raw.githubusercontent.com/daviddwlee84/agent-skills/${SUPERPROJECT_CLI_REF:-main}/skills/local/superproject-workspace/scripts/superproject.py}
+exec uv run --quiet --script "$cli" preflight
+EOF
+python3 - <<'EOF'
+from pathlib import Path
+p = Path("assets/superproject-bump.yml"); s = p.read_text()
+s = s.replace("""# Private children need a SUBMODULE_TOKEN secret (fine-grained PAT with
+# contents:read on each child). See references/ci-bump.md.""", """# Private children need a SUBMODULE_TOKEN secret (fine-grained PAT with
+# contents:read on each child). See references/ci-bump.md.
+# The CLI is fetched from the skill repo at SUPERPROJECT_CLI_REF (repository
+# variable; default main). Pin it to a tag or SHA for fully reproducible runs.""")
+s = s.replace("""  CLI: __CLI__
+""", """  CLI_REF: ${{ vars.SUPERPROJECT_CLI_REF || 'main' }}
+""")
+s = s.replace("""      - uses: astral-sh/setup-uv@v6
+""", """      - uses: astral-sh/setup-uv@v6
+
+      - name: Resolve the CLI (vendored copy if present, else the skill repo)
+        run: |
+          if [ -f scripts/superproject.py ]; then
+            echo "CLI=$PWD/scripts/superproject.py" >> "$GITHUB_ENV"
+          else
+            echo "CLI=https://raw.githubusercontent.com/daviddwlee84/agent-skills/${CLI_REF}/skills/local/superproject-workspace/scripts/superproject.py" >> "$GITHUB_ENV"
+          fi
+""")
+assert "__CLI__" not in s
+p.write_text(s)
+
+p = Path("assets/agents-block.md.template"); s = p.read_text()
+s = s.replace("""- **Look before acting:** `uv run --script __CLI__ status --fetch` shows""", """- The `just sub-*` recipes run the shared skill CLI (`just sub-which` shows
+  which file). Without just: `uv run --script
+  ~/.agents/skills/superproject-workspace/scripts/superproject.py <cmd>`.
+- **Look before acting:** `just sub-status --fetch` shows""")
+s = s.replace("`uv run --script __CLI__ init <name>`", "`just sub-init <name>`")
+s = s.replace("`uv run --script __CLI__ worktree add <child> <branch>`", "`just sub-wt add <child> <branch>`")
+s = s.replace("`uv run --script __CLI__ bump <child> --commit`", "`just sub-bump <child> --commit`")
+s = s.replace("`uv run --script __CLI__ preflight`", "`just sub-preflight`")
+assert "__CLI__" not in s, s
+p.write_text(s)
+EOF
+grep -rn "__CLI__" assets; actionlint assets/*.yml && echo actionlint-ok
+```
+
+```text
+actionlint-ok
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:13Z)**_
+
+Now the CLI: vendoring becomes opt-in (`--vendor-cli`), and `audit` reports stale managed blocks and stale vendored copies, so you can see the tool itself drifting.
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Make vendoring opt-in and add tool-drift audit checks
+
+```bash
+python3 - <<'EOF'
+from pathlib import Path
+p = Path("scripts/superproject.py"); s = p.read_text()
+def rep(old, new):
+    global s
+    assert s.count(old) == 1, old
+    s = s.replace(old, new)
+
+rep('CLI_PLACEHOLDER = "__CLI__"\n', 'VENDORED_CLI = "scripts/superproject.py"\n')
+
+rep('''def render_asset(name: str, cli: str) -> str:
+    path = SKILL_ASSETS / name
+    if not path.exists():
+        raise UsageError(f"asset {name} not found; run adopt from the skill copy of superproject.py")
+    return path.read_text().replace(CLI_PLACEHOLDER, cli)
+''', '''def render_asset(name: str) -> str:
+    path = SKILL_ASSETS / name
+    if not path.exists():
+        raise UsageError(f"asset {name} not found; run adopt from the installed skill, not a vendored copy")
+    return path.read_text()
+
+
+def extract_block(text: str, begin: str, end: str) -> str | None:
+    m = re.search(re.escape(begin) + r".*?" + re.escape(end), text, re.S)
+    return m.group(0) if m else None
+
+
+def cli_version(path: Path) -> str:
+    m = re.search(r'^__version__ = "([^"]+)"', path.read_text(), re.M)
+    return m.group(1) if m else "?"
+''')
+
+# audit: stale managed blocks + vendored copy (insert before ci check)
+rep('''    automated = [s for s in subs if s.eff_bump in ("pr", "direct")]''', '''    # The tool itself drifts too: compare managed blocks and any vendored copy to this CLI.
+    if SKILL_ASSETS.exists():
+        for target, begin, end, asset in (
+            (agents, AGENTS_BEGIN, AGENTS_END, "agents-block.md.template"),
+            (jf, JUST_BEGIN, JUST_END, "justfile.snippet"),
+        ):
+            block = extract_block(target.read_text(), begin, end) if target else None
+            want = extract_block(render_asset(asset), begin, end)
+            if block and want and block != want:
+                add("warn", "managed-block-stale", target.name,
+                    f"managed block differs from superproject-workspace {__version__}", "adopt")
+    vendored = root / VENDORED_CLI
+    if vendored.exists() and vendored.resolve() != Path(__file__).resolve() \\
+            and vendored.read_bytes() != Path(__file__).read_bytes():
+        add("warn", "vendored-cli-stale", VENDORED_CLI,
+            f"vendored CLI {cli_version(vendored)} differs from running CLI {__version__}",
+            "adopt --vendor-cli to refresh, or delete it to use the installed skill")
+    automated = [s for s in subs if s.eff_bump in ("pr", "direct")]''')
+
+# adopt: vendoring opt-in
+rep('''    cli = args.cli_dest
+    if not args.no_cli:
+        dest = root / cli
+        src = Path(__file__).resolve()
+        if not dest.exists() or dest.read_bytes() != src.read_bytes():
+            actions.append({"kind": "file", "target": cli,
+                            "detail": "update CLI copy" if dest.exists() else "vendor CLI so recipes and CI work without the skill"})
+            if not args.dry_run:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dest)
+''', '''    if args.vendor_cli:
+        # Opt-in only (offline / air-gapped): a copy stops receiving skill updates.
+        dest = root / VENDORED_CLI
+        src = Path(__file__).resolve()
+        if dest.resolve() != src and (not dest.exists() or dest.read_bytes() != src.read_bytes()):
+            actions.append({"kind": "file", "target": VENDORED_CLI,
+                            "detail": f"{'refresh' if dest.exists() else 'vendor'} CLI {__version__}"})
+            if not args.dry_run:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dest)
+''')
+for a in ('render_asset("agents-block.md.template", cli)', 'render_asset("justfile.snippet", cli)',
+          'render_asset("superproject-bump.yml", cli)'):
+    rep(a, a.replace(", cli)", ")"))
+assert s.count('render_asset("pre-commit-hook.sh", cli)') == 2
+s = s.replace('render_asset("pre-commit-hook.sh", cli)', 'render_asset("pre-commit-hook.sh")')
+
+rep('''    p.add_argument("--cli-dest", default="scripts/superproject.py", help="where to vendor this CLI in the superproject")
+    p.add_argument("--no-cli", action="store_true")
+''', '''    p.add_argument("--vendor-cli", action="store_true",
+                   help=f"copy this CLI to {VENDORED_CLI} (offline use only; the copy stops receiving skill updates)")
+''')
+rep('''    emit(args, {"root": str(root), "submodules": states}, table(rows) + hint)''',
+    '''    emit(args, {"root": str(root), "cli_version": __version__, "submodules": states}, table(rows) + hint)''')
+rep('__version__ = "0.1.0"', '__version__ = "0.2.0"')
+p.write_text(s)
+EOF
+grep -n "args.cli\|\bcli\b" scripts/superproject.py | head
+```
+
+```text
+792:        add("warn", "vendored-cli-stale", VENDORED_CLI,
+794:            "adopt --vendor-cli to refresh, or delete it to use the installed skill")
+1043:    p.add_argument("--vendor-cli", action="store_true",
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:31Z)**_
+
+The file is longer than I expected, so I'll check it before going further:
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check CLI file size and diff since commit
+
+`wc -l scripts/superproject.py tests/test_superproject.py; git diff --stat HEAD -- scripts/superproject.py; sed -n 1,40p scripts/superproject.py | head -5; grep -c "^def " scripts/superproject.py`
+
+```text
+    1074 scripts/superproject.py
+     263 tests/test_superproject.py
+    1337 total
+ .../superproject-workspace/scripts/superproject.py | 65 +++++++++++++++-------
+ 1 file changed, 46 insertions(+), 19 deletions(-)
+#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.10"
+# dependencies = []
+# ///
+43
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:35Z)**_
+
+It's fine: the diff since the commit only contains my change. The extra length comes from reformatting at commit time (long lines wrapped). Updating the tests next:
+
+_**Agent (claude-opus-5-5 2026-10-28 10:41:36Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Locate assertions to update in tests
+
+`grep -n "superproject.py\").exists\|def test_adopt_dry_run" tests/test_superproject.py`
+
+```text
+114:        self.assertTrue((self.root / "scripts" / "superproject.py").exists())
+124:    def test_adopt_dry_run_writes_nothing(self) -> None:
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:42:21Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add tool-drift test, run suite, check justfile resolution
+
+```bash
+python3 - <<'EOF'
+from pathlib import Path
+p = Path("tests/test_superproject.py"); s = p.read_text()
+old = '''        self.assertTrue((self.root / "scripts" / "superproject.py").exists())
+'''
+new = '''        # The CLI is referenced from the installed skill, never copied by default.
+        self.assertFalse((self.root / "scripts" / "superproject.py").exists())
+        self.assertIn("_sp_global", (self.root / "justfile").read_text())
+
+    def test_audit_flags_tool_drift(self) -> None:
+        self.adopt_policies()
+        agents = self.root / "AGENTS.md"
+        agents.write_text(agents.read_text().replace("Gitlinks record commits", "Old wording"))
+        self.run_cli("adopt", "--vendor-cli", "--no-git-config")
+        vendored = self.root / "scripts" / "superproject.py"
+        self.assertTrue(vendored.exists())
+        vendored.write_text(vendored.read_text().replace('__version__ = "', '__version__ = "0.0.1-old+'))
+        agents.write_text(agents.read_text().replace("Gitlinks record commits", "Old wording"))
+        codes = {f["code"] for f in self.json_cli("audit")["findings"]}
+        self.assertIn("managed-block-stale", codes)
+        self.assertIn("vendored-cli-stale", codes)
+        self.run_cli("adopt", "--vendor-cli", "--no-git-config")
+        codes = {f["code"] for f in self.json_cli("audit")["findings"]}
+        self.assertNotIn("managed-block-stale", codes)
+        self.assertNotIn("vendored-cli-stale", codes)
+'''
+assert s.count(old) == 1
+p.write_text(s.replace(old, new))
+EOF
+cd ../../.. && python3 -m unittest discover -s skills/local/superproject-workspace/tests 2>&1 | tail -3
+# real justfile resolution check in a scratch superproject
+d=$(mktemp -d); cd $d && git init -q && git -c protocol.file.allow=always submodule add -q https://github.com/daviddwlee84/agent-skills.git x >/dev/null 2>&1 || true; cp /Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-33/skills/local/superproject-workspace/assets/justfile.snippet justfile; just sub-which; SUPERPROJECT_CLI_REF=issue/33-feat-skills-superproject-workspace-submodule-super just sub-which; cd /; rm -rf $d
+```
+
+```text
+Ran 18 tests in 29.391s
+
+OK
+https://raw.githubusercontent.com/daviddwlee84/agent-skills/main/skills/local/superproject-workspace/scripts/superproject.py
+https://raw.githubusercontent.com/daviddwlee84/agent-skills/issue/33-feat-skills-superproject-workspace-submodule-super/skills/local/superproject-workspace/scripts/superproject.py
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:42:27Z)**_
+
+<think><details><summary>Thought Process</summary>
+Resolution works as expected—since the skill isn't installed globally, it falls back to the GitHub URL, and `SUPERPROJECT_CLI_REF` can switch the ref. Next, I'll update the docs, which still describe the CLI as being copied into each repo.
+
+</details></think>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:42:27Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find docs referencing the vendored CLI
+
+`cd /Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-33 && grep -rn "vendor\|uv run --script scripts\|__CLI__\|cli-dest" skills/local/superproject-workspace/SKILL.md skills/local/superproject-workspace/references docs/skills/superproject-workspace*.md backlog/superproject-workspace-adoption.md | cut -c1-170`
+
+```text
+skills/local/superproject-workspace/references/agent-entry.md:38:1. `uv run --script scripts/superproject.py status --fetch`
+skills/local/superproject-workspace/SKILL.md:17:superproject vendors so its recipes and CI work without the skill installed.
+skills/local/superproject-workspace/SKILL.md:66:Run the CLI through the superproject's vendored copy: `uv run --script
+skills/local/superproject-workspace/SKILL.md:74:uv run --script scripts/superproject.py status --fetch   # policy, lag, drift, dirty, worktrees
+skills/local/superproject-workspace/SKILL.md:75:uv run --script scripts/superproject.py audit            # findings + exact fix commands
+skills/local/superproject-workspace/SKILL.md:84:uv run --script scripts/superproject.py init                 # all non-lazy, uninitialized children
+skills/local/superproject-workspace/SKILL.md:85:uv run --script scripts/superproject.py init some-reference  # a lazy child, by name/path/basename
+skills/local/superproject-workspace/SKILL.md:94:uv run --script scripts/superproject.py worktree add app feat/login
+skills/local/superproject-workspace/SKILL.md:107:uv run --script scripts/superproject.py pull                 # ff track children (checkout only)
+skills/local/superproject-workspace/SKILL.md:108:uv run --script scripts/superproject.py bump --all-track --commit
+skills/local/superproject-workspace/SKILL.md:109:uv run --script scripts/superproject.py bump lib --reason "prod baseline v2.3" --commit   # pin/lazy
+skills/local/superproject-workspace/SKILL.md:121:uv run --script scripts/superproject.py preflight   # also installed as a pre-commit hook by adopt --with-hook
+skills/local/superproject-workspace/SKILL.md:133:`--set`. It also vendors the CLI to `scripts/superproject.py`, upserts a
+skills/local/superproject-workspace/SKILL.md:159:`__CLI__` in the assets is replaced by the vendored CLI path.
+skills/local/superproject-workspace/references/worktrees.md:9:uv run --script scripts/superproject.py worktree add <child> <branch> [--base REV]
+skills/local/superproject-workspace/references/worktrees.md:10:uv run --script scripts/superproject.py worktree list
+skills/local/superproject-workspace/references/worktrees.md:11:uv run --script scripts/superproject.py worktree remove <child> <branch> --delete-branch
+docs/skills/superproject-workspace.md:42:uv run --script scripts/superproject.py status --fetch
+docs/skills/superproject-workspace.md:43:uv run --script scripts/superproject.py worktree add app feat/login   # .worktrees/app/feat-login
+docs/skills/superproject-workspace.md:45:uv run --script scripts/superproject.py pull
+docs/skills/superproject-workspace.md:46:uv run --script scripts/superproject.py bump --all-track --commit     # preflighted, one outer commit
+docs/skills/superproject-workspace.md:51:review, run `adopt`. It vendors the CLI and writes an AGENTS.md block, `sub-*`
+docs/skills/superproject-workspace.zh-TW.md:46:uv run --script scripts/superproject.py status --fetch
+docs/skills/superproject-workspace.zh-TW.md:47:uv run --script scripts/superproject.py worktree add app feat/login   # .worktrees/app/feat-login
+docs/skills/superproject-workspace.zh-TW.md:49:uv run --script scripts/superproject.py pull
+docs/skills/superproject-workspace.zh-TW.md:50:uv run --script scripts/superproject.py bump --all-track --commit     # 先 preflight，收斂成一個外層 commit
+docs/skills/superproject-workspace.zh-TW.md:54:review 之後執行 `adopt`。它會 vendor CLI，並寫入 AGENTS.md 區塊、`sub-*` justfile
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:42:48Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Update docs to describe reference-not-copy CLI model
+
+```bash
+python3 - <<'EOF'
+from pathlib import Path
+files = ["skills/local/superproject-workspace/SKILL.md", "skills/local/superproject-workspace/references/agent-entry.md",
+         "skills/local/superproject-workspace/references/worktrees.md", "docs/skills/superproject-workspace.md",
+         "docs/skills/superproject-workspace.zh-TW.md"]
+for f in files:
+    p = Path(f); s = p.read_text().replace("uv run --script scripts/superproject.py", "sp"); p.write_text(s)
+
+def rep(f, old, new):
+    p = Path(f); s = p.read_text(); assert s.count(old) == 1, (f, old); p.write_text(s.replace(old, new))
+
+S = "skills/local/superproject-workspace/SKILL.md"
+rep(S, """This skill makes drift **visible** and moves pointers **by policy**, with one
+CLI (`scripts/superproject.py`, stdlib Python ≥3.10, PEP 723) that every
+superproject vendors so its recipes and CI work without the skill installed.""",
+"""This skill makes drift **visible** and moves pointers **by policy**, with one
+CLI (`scripts/superproject.py`, stdlib Python ≥3.10, PEP 723). Every
+superproject **references** the installed skill's CLI instead of copying it,
+so `npx skills update` upgrades all of them at once. Otherwise the tool itself
+would drift the same way the gitlinks do.""")
+rep(S, """Run the CLI through the superproject's vendored copy: `uv run --script
+scripts/superproject.py <cmd>`. `python3` works too, and `adopt` also installs
+`just sub-*` recipes. Every command takes `--json`. Mutating commands take
+`--dry-run`.""",
+"""Below, `sp` means `uv run --script <skill-dir>/scripts/superproject.py`. For a
+global install, `<skill-dir>` is `~/.agents/skills/superproject-workspace`.
+After `adopt`, the same commands are available as `just sub-*` recipes. They
+resolve the CLI in this order, first match wins:
+
+1. `$SUPERPROJECT_CLI`
+2. a vendored `scripts/superproject.py` (opt-in)
+3. the project skill install `.agents/skills/...`
+4. the global install `~/.agents/skills/...`
+5. GitHub raw at `$SUPERPROJECT_CLI_REF` (default `main`)
+
+`just sub-which` prints which one won. Every command takes `--json`. Mutating
+commands take `--dry-run`.""")
+rep(S, """`--set`. It also vendors the CLI to `scripts/superproject.py`, upserts a
+marker-delimited AGENTS.md block and `sub-*` justfile recipes, adds `.worktrees/`
+to `.gitignore`, and sets local git config:""",
+"""`--set`. It also upserts a marker-delimited AGENTS.md block and `sub-*`
+justfile recipes, adds `.worktrees/` to `.gitignore`, and sets local git
+config:""")
+rep(S, """Opt in to `--with-ci` and `--with-hook`. It is idempotent.""",
+"""Opt in to `--with-ci` and `--with-hook`. It does **not** copy the CLI. Pass
+`--vendor-cli` only for offline or air-gapped superprojects, and accept that
+the copy stops receiving fixes. It is idempotent: rerun it (`just sub-adopt`)
+after a skill update to refresh the managed blocks. `audit` reports
+`managed-block-stale` and `vendored-cli-stale` when the tool itself has
+drifted.""")
+rep(S, """`__CLI__` in the assets is replaced by the vendored CLI path.""",
+"""The recipes, hook, and workflow all use the same CLI resolution. CI pins
+the version with the `SUPERPROJECT_CLI_REF` repository variable (a tag or
+SHA).""")
+rep(S, """## Gotchas
+""", """## Gotchas
+
+- **Don't copy the CLI into each superproject.** Copies freeze at adoption
+  time and silently diverge across repos. Reference the installed skill; vendor
+  only for offline use, and let `audit` flag stale copies.""")
+
+D = "docs/skills/superproject-workspace.md"
+rep(D, """review, run `adopt`. It vendors the CLI and writes an AGENTS.md block, `sub-*`
+justfile recipes, the `.worktrees/` ignore entry, local git config, and,
+optionally, the CI workflow and pre-commit hook.""",
+"""review, run `adopt`. It writes an AGENTS.md block, `sub-*` justfile recipes,
+the `.worktrees/` ignore entry, local git config, and, optionally, the CI
+workflow and pre-commit hook.
+
+The CLI is **referenced, not copied**: recipes resolve the installed skill
+(`~/.agents/skills/superproject-workspace`) and fall back to GitHub raw at
+`$SUPERPROJECT_CLI_REF`. One `npx skills update` upgrades every superproject.
+Rerun `adopt` to refresh the managed blocks; `audit` flags them when stale.
+
+(`sp` = `uv run --script ~/.agents/skills/superproject-workspace/scripts/superproject.py`, or the `just sub-*` recipes.)""")
+Z = "docs/skills/superproject-workspace.zh-TW.md"
+rep(Z, """review 之後執行 `adopt`。它會 vendor CLI，並寫入 AGENTS.md 區塊、`sub-*` justfile""",
+"""review 之後執行 `adopt`。它會寫入 AGENTS.md 區塊、`sub-*` justfile""")
+p = Path(Z); s = p.read_text()
+s = s.replace("recipe、`.worktrees/` ignore、本地 git config，也可選擇加入 CI workflow 與 pre-commit hook。",
+"""recipe、`.worktrees/` ignore、本地 git config，也可選擇加入 CI workflow 與 pre-commit hook。
+
+CLI 是**引用，不複製**：recipe 會找已安裝的 skill（`~/.agents/skills/superproject-workspace`），
+找不到才從 GitHub raw 的 `$SUPERPROJECT_CLI_REF` 取得。一次 `npx skills update` 就能更新所有 superproject。
+skill 更新後重跑 `adopt` 即可刷新 managed block；過時時 `audit` 會提示。
+
+（`sp` = `uv run --script ~/.agents/skills/superproject-workspace/scripts/superproject.py`，或 `just sub-*` recipe。）""", 1)
+p.write_text(s)
+
+B = "backlog/superproject-workspace-adoption.md"
+rep(B, """   then `adopt` (`--with-ci` once a `SUBMODULE_TOKEN` exists for private
+   children).""", """   then `adopt` (`--with-ci` once a `SUBMODULE_TOKEN` exists for private
+   children). Install the skill globally first (`npx skills add ...`), because
+   the recipes reference it instead of copying the CLI.""")
+EOF
+grep -rn "vendored copy\|__CLI__" skills/local/superproject-workspace docs/skills/superproject-workspace*.md | cut -c1-140; grep -n "CLI_REF\|cli-dest" skills/local/superproject-workspace/references/ci-bump.md
+```
+
+```text
+skills/local/superproject-workspace/assets/superproject-bump.yml:48:      - name: Resolve the CLI (vendored copy if present, else the skill 
+skills/local/superproject-workspace/scripts/superproject.py:778:    # The tool itself drifts too: compare managed blocks and any vendored co
+skills/local/superproject-workspace/scripts/superproject.py:821:        raise UsageError(f"asset {name} not found; run adopt from the instal
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:42:49Z)**_
+
+Next, a note in ci-bump.md about pinning the CI ref, then validation, commit, and push.
+
+_**Agent (claude-opus-5-5 2026-10-28 10:43:34Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Add CI ref note and rerun all gates
+
+```bash
+python3 - <<'EOF'
+from pathlib import Path
+p = Path("skills/local/superproject-workspace/references/ci-bump.md"); s = p.read_text()
+old = "## Credentials"
+new = """## Which CLI version CI runs
+
+The workflow uses `scripts/superproject.py` if the repo vendored one
+(`adopt --vendor-cli`). Otherwise it runs the skill's CLI straight from GitHub
+raw at the `SUPERPROJECT_CLI_REF` repository variable, defaulting to `main`:
+
+- **`main`**: every superproject picks up fixes automatically. You trust the
+  skill repo's main branch with a job that has `contents: write`.
+- **tag or SHA**: reproducible and reviewed. Moving it is one variable change
+  per repo. Use this for superprojects that guard production.
+
+## Credentials"""
+assert s.count(old) == 1
+p.write_text(s.replace(old, new))
+EOF
+python3 -m unittest discover -s skills/local/superproject-workspace/tests 2>&1 | tail -1; make validate 2>&1 | grep -E "failed|PASSED|OK: TODO"; bash skills/local/skill-author/scripts/lint-skill.sh skills/local/superproject-workspace 2>&1 | grep -E "errors:|warnings:"; uv run python scripts/build-docs-site.py 2>&1 | grep -o '"status": "[a-z]*"'; git branch --show-current
+```
+
+```text
+OK
+checked 76 SKILL.md (parser: yq) — 0 failed, 0 warned
+PASSED: 0 errors, 0 warning(s)
+OK: TODO.md passes project-knowledge-harness format
+  errors:   0
+  warnings: 0
+"status": "ok"
+issue/33-feat-skills-superproject-workspace-submodule-super
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:44:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the reference-not-copy change and push
+
+```bash
+git add -A skills/local/superproject-workspace docs/skills/superproject-workspace.md docs/skills/superproject-workspace.zh-TW.md backlog/superproject-workspace-adoption.md && git status --short && git commit -q -F - <<'EOF'
+refactor(superproject-workspace): reference the installed CLI instead of vendoring it
+
+Copying superproject.py into every superproject froze it at adoption time,
+so the tool itself would drift across repos exactly like gitlinks do.
+
+- justfile recipes, pre-commit hook, and bump workflow resolve the CLI:
+  $SUPERPROJECT_CLI > vendored scripts/superproject.py (opt-in) > project
+  skill install > ~/.agents/skills install > GitHub raw at
+  $SUPERPROJECT_CLI_REF (default main); `just sub-which` shows the winner
+- adopt no longer copies the CLI; --vendor-cli is opt-in for offline use
+- audit flags tool drift: managed-block-stale and vendored-cli-stale
+- new sub-adopt recipe to refresh managed blocks after a skill update
+- docs: `sp` shorthand, CI ref pinning trade-off; CLI version 0.2.0
+
+Refs #33
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+EOF
+git push -q origin HEAD 2>&1 | tail -2; git log --oneline -2
+```
+
+```text
+M  backlog/superproject-workspace-adoption.md
+M  docs/skills/superproject-workspace.md
+M  docs/skills/superproject-workspace.zh-TW.md
+M  skills/local/superproject-workspace/SKILL.md
+M  skills/local/superproject-workspace/assets/agents-block.md.template
+M  skills/local/superproject-workspace/assets/justfile.snippet
+M  skills/local/superproject-workspace/assets/pre-commit-hook.sh
+M  skills/local/superproject-workspace/assets/superproject-bump.yml
+M  skills/local/superproject-workspace/references/agent-entry.md
+M  skills/local/superproject-workspace/references/ci-bump.md
+M  skills/local/superproject-workspace/references/worktrees.md
+M  skills/local/superproject-workspace/scripts/superproject.py
+M  skills/local/superproject-workspace/tests/test_superproject.py
+b7b14a2 refactor(superproject-workspace): reference the installed CLI instead of vendoring it
+2d6054d feat(skills): add superproject-workspace for submodule superprojects
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:44:05Z)**_
+
+Pushed. Waiting for CI on PR #34, then squash merge.
+
+_**Agent (claude-opus-5-5 2026-10-28 10:45:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait for PR 34 CI checks to finish
+
+`sleep 5; gh pr checks 34 --watch --interval 15 2>&1 | tail -6`
+
+```text
+validate	pending	0	https://github.com/daviddwlee84/agent-skills/actions/runs/40674452320/job/122769183442	
+Refreshing checks status every 15 seconds. Press Ctrl+C to quit.
+
+validate	pending	0	https://github.com/daviddwlee84/agent-skills/actions/runs/40674452320/job/122769183442	
+validate	pass	57s	https://github.com/daviddwlee84/agent-skills/actions/runs/40674452320/job/122769183442	
+validate	pass	57s	https://github.com/daviddwlee84/agent-skills/actions/runs/40674452320/job/122769183442
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:45:24Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Squash-merge PR 34 and confirm issue closed
+
+`gh pr merge 34 --squash --subject "feat(skills): add superproject-workspace for submodule superprojects (#34)" 2>&1 | tail -3; gh pr view 34 --json state,mergedAt,mergeCommit -q '"\(.state) \(.mergedAt) \(.mergeCommit.oid[0:7])"'; gh issue view 33 --json state -q .state`
+
+```text
+MERGED 2026-10-28T10:45:21Z 7f295df
+CLOSED
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-10-28 10:45:35Z)**_
+
+改好也已經 merge 了：PR #34 用 squash 合進 main（`7f295df`），issue #33 自動關閉，CI `validate` 通過。
+
+**改成引用，不再複製**
+
+- **`adopt` 預設不再複製 CLI。** justfile recipe、pre-commit hook 和 CI workflow 都用同一套順序去找 CLI，找到第一個就用：
+  1. 環境變數 `$SUPERPROJECT_CLI`
+  2. repo 裡的 `scripts/superproject.py`（只有加 `--vendor-cli` 才會有，給離線環境用）
+  3. 專案內安裝的 skill（`.agents/skills/...`）
+  4. 全域安裝的 skill（`~/.agents/skills/superproject-workspace/...`）
+  5. GitHub raw 上的版本，預設 `main`，可用 `SUPERPROJECT_CLI_REF` 改成 tag 或 SHA
+- **`just sub-which`** 會印出實際用到的是哪一份。
+- **skill 更新後：** 一次 `npx skills update`，所有 monorepo 本機都會用到新版。recipe、AGENTS.md 這些寫進 repo 的區塊，各 repo 重跑一次 `just sub-adopt` 就會刷新，這一步是冪等的。
+- **工具本身的偏移也會被抓到：** `audit` 在 AGENTS.md 或 justfile 的區塊跟目前版本不同時會報 `managed-block-stale`，在 repo 裡的複製版跟目前版本不同時會報 `vendored-cli-stale`。
+- **CI 的取捨：** `SUPERPROJECT_CLI_REF` 用 `main` 的話會自動拿到修正，但等於讓這個 skills repo 的 main 在有寫入權限的 job 裡執行。改成 tag 或 SHA 就能重現、也經過審查，代價是每個 repo 要各改一次這個變數。管 production 的 repo 建議 pin 住。
+
+新增一個測試涵蓋這兩種工具偏移，目前 18 個測試全部通過。
+
+**接下來要你做的**
+
+1. 全域安裝這個 skill（`npx skills@latest add daviddwlee84/agent-skills/skills`，選 `superproject-workspace`）。沒裝也能用，只是每次會從 GitHub main 抓，比較慢。
+2. 清掉 worktree 和 branch：在主 checkout 跑 `bash skills/local/forge-native-dev/scripts/forge-cleanup.sh`。我目前就在那個 worktree 裡，所以沒有自己清。
