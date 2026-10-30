@@ -101,6 +101,11 @@ test-skill: test-mkdocs-skill
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_post_session_finalize.sh
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/git-workflow/tests/test_check_commit_msg.sh
 
+# Isolated Zensical scaffold safety and pinned native-export tests.
+.PHONY: test-zensical-skill
+test-zensical-skill:
+	ZENSICAL_INTEGRATION=1 python3 -I -m unittest discover -s skills/local/zensical-site-bootstrap/tests -v
+
 # MkDocs bootstrap behavior: linked worktrees, existing-doc navigation, and
 # generated-site strict builds. Uses the docs extra for PyYAML + MkDocs plugins.
 test-mkdocs-skill:

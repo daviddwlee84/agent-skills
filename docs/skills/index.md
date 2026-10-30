@@ -28,6 +28,7 @@ Custom-authored, curated to this repo's conventions (see
 | [`openui-direct-provider`](openui-direct-provider.md) | Build OpenUI generative UI on your own model provider (no Gateway); provider-neutral companion to vendored `openui` | [docs](openui-direct-provider.md) |
 | [`demo-evidence`](demo-evidence.md) | Capture acceptance evidence (screenshots/recordings/HTTP logs) into a gitignored `.evidence/` bundle keyed to git branch/commit + agent session, for async "Demos over diffs" review | [docs](demo-evidence.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | Bootstrap a MkDocs Material site + GitHub Pages deploy; consent-gated with `.skills/preferences.yaml` | [docs](mkdocs-site-bootstrap.md) |
+| [`zensical-site-bootstrap`](zensical-site-bootstrap.md) | English Zensical pilot with safe initialization, native LLM exports, and build-only CI | [docs](zensical-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo dual-mode (UI + batch CLI) notebooks with Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipelines + queued experiments with metrics auto-bound to ephemeral commits; ships init/queue/lint helpers | [docs](dvc-ml-workflow.md) |
 | [`mlflow-tracking`](mlflow-tracking.md) | Generic MLflow skill — sqlite + `mlflow ui`, vendored PostgreSQL + MinIO docker stack, LLM tracing, registry, autolog | [docs](mlflow-tracking.md) |

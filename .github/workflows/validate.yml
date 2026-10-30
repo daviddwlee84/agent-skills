@@ -89,6 +89,9 @@ jobs:
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 
+      - name: Test Zensical bootstrap and native exports
+        run: make test-zensical-skill
+
       - name: Lint SKILL.md frontmatter
         run: NODE_PATH="$PWD/node_modules" ./scripts/lint-frontmatter.sh --parser node skills
 

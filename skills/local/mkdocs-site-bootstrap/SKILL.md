@@ -32,6 +32,8 @@ decision so the next invocation starts fresh.
 ## When NOT to trigger
 
 - User just wants to write a single doc file → don't scaffold a whole site
+- User explicitly chose an English Zensical pilot → use `zensical-site-bootstrap`;
+  don't switch that project back to MkDocs via generic docs setup guidance
 - User explicitly opted out (preferences.yaml says `enabled: false`) → defer
   unless the user is now reversing that decision
 - User wants to evaluate or benchmark a skill → use `skill-creator`
