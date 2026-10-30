@@ -140,6 +140,45 @@ assert_contains "full output contains home body" "$FRESH/site/llms-full.txt" \
 assert_contains "helper emits structured success" "$FRESH/helper.json" \
   '"status": "ok"'
 
+# Selective translation uses the existing --no-stubs flag and English fallback.
+if "$ADD_LANGUAGE" --target-dir "$FRESH" --lang zh-TW --no-stubs \
+  > "$FRESH/selective-language.json" 2> "$FRESH/selective-language.log"; then
+  pass "no-stubs enables locale without translation placeholders"
+else
+  fail "no-stubs enables locale without translation placeholders"
+  sed -n '1,160p' "$FRESH/selective-language.log" >&2
+fi
+assert_no_file "no-stubs leaves home untranslated" "$FRESH/docs/index.zh-TW.md"
+assert_no_file "no-stubs leaves guide untranslated" "$FRESH/docs/getting-started.zh-TW.md"
+printf '# 開始使用\n\nSelective translation fixture.\n' > "$FRESH/docs/getting-started.zh-TW.md"
+DOCS_BEFORE="$(fingerprint_tree "$FRESH/docs")"
+if run_helper "$FRESH" > "$FRESH/selective-helper.json" 2> "$FRESH/selective-helper.log"; then
+  pass "managed selective-translation build succeeds"
+else
+  fail "managed selective-translation build succeeds"
+  sed -n '1,200p' "$FRESH/selective-helper.log" >&2
+fi
+if [ "$DOCS_BEFORE" = "$(fingerprint_tree "$FRESH/docs")" ]; then
+  pass "selective build preserves source docs"
+else
+  fail "selective build preserves source docs"
+fi
+assert_contains "untranslated locale page falls back to English body" \
+  "$FRESH/site/zh-TW/index.html" "Welcome to the Fixture Docs documentation."
+assert_contains "selected locale page uses translated body" \
+  "$FRESH/site/zh-TW/getting-started/index.html" "Selective translation fixture."
+assert_contains "selected locale page links to translated source" \
+  "$FRESH/site/zh-TW/getting-started/index.html" \
+  "https://github.com/owner/repo/edit/main/docs/getting-started.zh-TW.md"
+assert_contains "selective build keeps English LLM content" \
+  "$FRESH/site/llms-full.txt" "Welcome to the Fixture Docs documentation."
+if grep -Fq 'Selective translation fixture.' "$FRESH/site/llms-full.txt" || \
+   grep -Fq '/zh-TW/' "$FRESH/site/llms.txt"; then
+  fail "selective build excludes translations from root LLM output"
+else
+  pass "selective build excludes translations from root LLM output"
+fi
+
 # Adding zh-TW keeps both builds strict while root llms remains default-language.
 if "$ADD_LANGUAGE" --target-dir "$FRESH" --lang zh-TW \
   > "$FRESH/add-language.json" 2> "$FRESH/add-language.log"; then

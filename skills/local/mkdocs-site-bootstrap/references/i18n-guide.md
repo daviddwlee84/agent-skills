@@ -41,6 +41,45 @@ The trade-off: directory listings get crowded once you have many languages.
 For sites that grow to 5+ languages the `folder` structure starts to win on
 readability — but you can migrate later.
 
+## English-first with selective translations
+
+For a complete English site with selected Traditional Chinese counterparts:
+
+- Keep English as the default content and UI language.
+- Add `*.zh-TW.md` only for pages the user wants translated. Missing siblings
+  fall back to English with `fallback_to_default: true`.
+- Keep root LLM artifacts in the default language; translated pages can still
+  expose their own source links for human readers.
+- A translated interface or language selector does not translate article bodies.
+  Enabling a locale is not consent to translate, nor does it make that locale
+  private: published translations are as public as the rest of the site.
+
+The existing language helper can skip initial placeholders:
+
+```bash
+bash skills/local/mkdocs-site-bootstrap/scripts/add-language.sh \
+  --lang zh-TW --default-lang en --no-stubs --dry-run
+# After reviewing the changes, repeat without --dry-run.
+```
+
+**`--no-stubs` applies only to that invocation.** The helper still records the
+configured languages. Running it again without this flag creates missing
+stubs, and `add-docs-page.sh` still creates stubs for all configured languages
+when adding a default-language page. There is no persistent on-demand mode yet.
+Until one is added, preserve that distinction when adding English pages and
+maintaining their nav/llmstxt entries; do not delete the locale from preferences
+or claim a nonexistent flag to suppress future stubs.
+
+For a specifically requested translation of an existing page, the page helper's
+`--lang zh-TW` creates only that sibling. Translate its body after consent, not
+as an automatic consequence of enabling the locale.
+
+**A placeholder is not a missing translation.** An existing `*.zh-TW.md` with
+"Translation pending" masks English fallback. `--no-stubs` leaves existing
+files alone; review them individually and obtain approval before removing or
+replacing anything. This selective policy does not override a project's rules
+requiring complete bilingual coverage (such as this repo's published catalog).
+
 ## Terminology preservation rule (hard requirement)
 
 This is the rule for any non-English page in a project that uses this skill:

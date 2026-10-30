@@ -6,7 +6,16 @@ or [`quantatitive-factor-researcher`](../skills/quantatitive-factor-researcher.m
 this is the docs stack we recommend.
 
 It's the same stack this repo uses for its own docs, plus the optional
-`mkdocstrings` layer for projects that have a Python API to document.
+`mkdocstrings` layer for projects that have a Python API to document. Keep it
+for existing plugin-dependent sites and English-first docs with optional
+Traditional Chinese. For new single-language projects, evaluate Zensical in an
+isolated pilot rather than silently changing engines; read
+[the dated compatibility assessment](mkdocs-2-and-zensical.md) first.
+
+For selective translation, read
+[the i18n guide](i18n-guide.md#english-first-with-selective-translations):
+`add-language.sh --no-stubs` skips initial translation placeholders, but does
+not persist an on-demand policy for future page-helper invocations.
 
 ## TL;DR
 
@@ -14,9 +23,9 @@ It's the same stack this repo uses for its own docs, plus the optional
 # pyproject.toml
 [project.optional-dependencies]
 docs = [
-  "mkdocs>=1.6",
-  "mkdocs-material>=9.5",
-  # "mkdocs-material[imaging]>=9.5",  # only with --social (cairosvg+pillow)
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.5,<10",
+  # "mkdocs-material[imaging]>=9.5,<10",  # only with --social (cairosvg+pillow)
   "mkdocstrings[python]>=0.24",   # only if you have a Python API
   "mkdocs-llmstxt>=0.1",
   "mkdocs-copy-to-llm>=0.1",
