@@ -31,6 +31,7 @@
 | [`openui-direct-provider`](openui-direct-provider.md) | 用自己的模型 provider 建 OpenUI generative UI（不經 Gateway）；vendored `openui` 的中立搭檔 | [docs](openui-direct-provider.md) |
 | [`demo-evidence`](demo-evidence.md) | 把驗收證據(截圖/錄影/HTTP log)歸檔到受 gitignore 保護的 `.evidence/` bundle，關聯 git branch/commit + agent session，供非同步「Demos over diffs」驗收 | [docs](demo-evidence.md) |
 | [`mkdocs-site-bootstrap`](mkdocs-site-bootstrap.md) | 啟動 MkDocs Material 站 + GitHub Pages 部署；以 `.skills/preferences.yaml` consent-gate | [docs](mkdocs-site-bootstrap.md) |
+| [`zensical-site-bootstrap`](zensical-site-bootstrap.md) | 英文 Zensical 試點：保護既有內容、原生 LLM 匯出，以及只建置不部署的 CI | [docs](zensical-site-bootstrap.md) |
 | [`marimo-batch-mlflow`](marimo-batch-mlflow.md) | marimo 雙模式 (UI + batch CLI) notebook，搭配 Tyro + MLflow | [docs](marimo-batch-mlflow.md) |
 | [`dvc-ml-workflow`](dvc-ml-workflow.md) | DVC pipeline + queued experiment，metrics 自動繫結到 ephemeral commit；附 init/queue/lint helper | [docs](dvc-ml-workflow.md) |
 | [`mlflow-tracking`](mlflow-tracking.md) | 通用 MLflow skill —— sqlite + `mlflow ui`、附帶 PostgreSQL + MinIO docker stack、LLM tracing、registry、autolog | [docs](mlflow-tracking.md) |

@@ -122,6 +122,7 @@ nav:
           - 12-factor-agent-design-review: skills/12-factor-agent-design-review.md
           - demo-evidence: skills/demo-evidence.md
           - mkdocs-site-bootstrap: skills/mkdocs-site-bootstrap.md
+          - zensical-site-bootstrap: skills/zensical-site-bootstrap.md
           - marimo-batch-mlflow: skills/marimo-batch-mlflow.md
           - dvc-ml-workflow: skills/dvc-ml-workflow.md
           - mlflow-tracking: skills/mlflow-tracking.md
