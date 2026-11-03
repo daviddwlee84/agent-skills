@@ -123,9 +123,11 @@ It checks three things:
 1. **Frontmatter & length** — `name` and `description` exist; name is
    hyphen-case and <=64 chars; description has a "use when" trigger phrase,
    respects the 1024-char hard limit, and SKILL.md is under 500 lines.
-2. **Script hygiene** — every `scripts/*.sh` has a shebang, is executable, and
-   responds to `--help` (presence of the flag handler, not necessarily a working
-   script).
+2. **Script hygiene** — shell CLI entrypoints in `scripts/*.sh` need a shebang,
+   executable mode, and a `--help` handler (presence, not execution). Bash libraries
+   may declare `# skill-lint: sourced-only` in their leading comment header;
+   they must be non-executable and pass a parse-only Bash syntax check. Missing
+   CLI requirements alone do not identify a library. See `references/script-design.md`.
 3. **Reference reachability** — every file in `references/` is mentioned at
    least once from `SKILL.md` (no dead reference docs).
 

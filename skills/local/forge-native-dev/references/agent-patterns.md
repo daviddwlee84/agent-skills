@@ -4,8 +4,8 @@ Recipes for wiring AI coding agents into the issue-driven workflow.
 
 ## Pattern 1: Cursor Agent with worktree-per-issue
 
-The most natural pattern for Cursor users. Each agent session works on one
-issue in an isolated worktree.
+For work already tied to an Issue, an agent can use an isolated issue worktree.
+This pattern does not require a new Issue for every agent session or experiment.
 
 ### Setup
 
@@ -172,14 +172,19 @@ add it manually:
 
 This project uses GitHub/GitLab Issues as the canonical backlog.
 
-- When the user describes a bug, idea, or "maybe later" item, create an
-  Issue with appropriate labels. Do not ask "should I create an issue?"
-- To work on an issue: `bash scripts/forge-worktree.sh start <number>`
-- To ship: `bash scripts/forge-worktree.sh finish <number>`
+- Default to local conversation/diff for bounded work; preserve reusable
+  findings in local notes. Research or another session alone does not need a ticket.
+- Reuse/create an Issue only for an explicit request or outstanding work needing
+  durable backlog, ownership, blocker, or dependency tracking.
+- Use Discussions only for open questions needing ongoing shared input. Do not
+  automatically create both surfaces, or backfill tickets for completed small work.
+- To work on an existing issue: `bash scripts/forge-worktree.sh start <number>`
+- For lightweight work, a normal branch/worktree and direct PR need no Issue.
+- To publish issue work when authorized: `bash scripts/forge-worktree.sh finish <number>`
 - To clean up: `bash scripts/forge-cleanup.sh`
 - To check what's assigned: `bash scripts/forge-issue.sh list --assignee @me`
-- Post progress comments on long tasks.
-- PRs are review gates, not proposals. The issue describes intent.
+- Post meaningful milestones/blockers to the existing issue, not every experiment.
+- PRs are review gates; link an Issue when there is one.
 <!-- forge-native-dev:guidance (end) -->
 ```
 
@@ -187,8 +192,11 @@ This project uses GitHub/GitLab Issues as the canonical backlog.
 
 - **Don't create issues AND TODO.md entries for the same item.** Pick one
   system per project.
-- **Don't skip the PR.** Even for trivial changes, the PR creates a
-  reviewable record and a revert point.
+- **Keep required review gates.** Follow the repository's review policy; a
+  lightweight tracking path does not waive required PR review. Conversely, a
+  directly requested PR does not need a prerequisite Issue.
+- **Don't create one record per agent or phase.** A small experiment or local
+  subtask can stay under an existing Issue without another Issue/Discussion.
 - **Don't assign all issues to the agent at once.** Work in small batches
   to maintain review quality.
 - **Don't let agent branches accumulate.** Run `forge-cleanup.sh`

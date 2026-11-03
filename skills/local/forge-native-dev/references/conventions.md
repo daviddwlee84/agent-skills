@@ -50,6 +50,8 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 The `issue/<N>-*` pattern ties the branch to its issue, enabling
 `forge-cleanup.sh` and `forge-status.sh` to track alignment automatically.
+For bounded work without an Issue, use a normal descriptive branch such as
+`fix/typo` or `docs/queue-example`; do not create a ticket merely for the name.
 
 ## Linear history
 
@@ -62,7 +64,9 @@ git config merge.ff only         # refuse merges that can't fast-forward
 
 ## Merge strategy
 
-**Default: squash and merge.** One issue = one PR = one commit on `main`.
+**Default: squash and merge.** One logical change = one PR = one commit on
+`main`. Link an Issue when one exists; a bounded change does not need a ticket
+solely to satisfy this convention.
 
 | Strategy | When |
 |---|---|
@@ -82,4 +86,4 @@ After a PR merges:
 2. **New PR** — each PR is one logical change
 3. **Do not** reuse the merged branch (history diverges after squash)
 4. **Do not** try to reopen a merged PR (GitHub doesn't allow it)
-5. Name branches for the issue they address, not the previous PR
+5. Name branches for the current change (or Issue, if present), not the previous PR

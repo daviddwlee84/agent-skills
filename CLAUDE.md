@@ -209,24 +209,33 @@ rm .agents/skills/<name> .claude/skills/<name>
 <!-- forge-native-dev:guidance -->
 ### Issue-driven workflow (GitHub)
 
-This project uses GitHub Issues as the canonical backlog and GitHub
-Discussions for evaluative/research topics. The `forge-native-dev` skill
-provides the scripts below.
+This project uses GitHub Issues as the canonical shared backlog, not as a
+mandatory record of every change. The `forge-native-dev` skill provides the
+scripts below; apply its scope gate before publishing any new record.
 
 | Information | Lives in | Why |
 |---|---|---|
-| Actionable work (bugs, features, chores) | [GitHub Issues](https://github.com/daviddwlee84/agent-skills/issues) | Searchable, assignable, cross-linkable |
-| Evaluations, "should we?", research | [Discussions](https://github.com/daviddwlee84/agent-skills/discussions) | Threaded, collaborative |
-| Research docs, trade-off analysis | `backlog/` | In-repo, diffable, reviewed in PRs |
+| Bounded experiment, small fix, same-session evaluation | Conversation + diff; optional local note | Avoid unnecessary tracking overhead |
+| Durable actionable backlog, blockers, shared ownership | [GitHub Issues](https://github.com/daviddwlee84/agent-skills/issues) | Searchable, assignable, cross-linkable |
+| Open questions needing ongoing asynchronous input | [Discussions](https://github.com/daviddwlee84/agent-skills/discussions) | Shared deliberation, not a research archive |
+| Research docs, trade-off analysis | `backlog/` | Durable, diffable; no Discussion required |
 | Past traps, debugging knowledge | `pitfalls/` | Grep-able by symptom, portable |
 | Backlog visualization | [Project board](https://github.com/users/daviddwlee84/projects/11) | Built-in to the forge |
 | Historical record | `TODO.md` `## Done` section | In git |
 
-**Capture intent as Issues** — when the user describes a bug, idea, or
-"maybe later" item, create an Issue with appropriate labels. Do not ask
-"should I create an issue?" — default to creating one.
+**Right-size tracking.** Default to local work for bounded experiments and
+small changes. Create an external record only when explicitly requested or when
+outstanding work needs durable backlog/ownership/dependency tracking or shared
+input. Another session or a long research document alone does not require it;
+use td/local notes for execution context where sufficient.
 
-**Work lifecycle:**
+Reuse an existing relevant Issue/Discussion before creating one. "Research",
+"maybe later", and "先記下來" do not automatically mean publish a Discussion or
+Issue. Do not create both merely because a task includes research and code, or
+retrospectively open tickets for completed small work. Local branches/worktrees
+and directly requested PRs do not require a synthetic Issue number.
+
+**Tracked work lifecycle (when an Issue is warranted):**
 1. Start: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh start <issue-number>`
 2. Work in the worktree, commit conventionally
 3. Finish: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh finish <issue-number>`
@@ -236,8 +245,9 @@ provides the scripts below.
 
 **Dashboard:** `bash skills/local/forge-native-dev/scripts/forge-status.sh`
 
-**PRs are review gates, not proposals.** The issue describes intent; the
-PR is the diff to review. Default merge strategy: **squash and merge**.
+**PRs are review gates.** Link the existing Issue when there is one; a bounded
+change may go directly to a requested PR without a prerequisite ticket. Keep
+normal review/publication permissions. Default merge strategy: **squash and merge**.
 <!-- forge-native-dev:guidance (end) -->
 
 ### External skill / MCP / domain / curiosity catalog -> `docs/catalog/`

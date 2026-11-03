@@ -1,4 +1,5 @@
 # shellcheck shell=bash
+# skill-lint: sourced-only
 # Forge abstraction library — sourced by other scripts, not executed directly.
 # Provides a unified interface over GitHub (gh) and GitLab (glab) CLIs.
 # Compatibility: macOS system Bash 3.2+.

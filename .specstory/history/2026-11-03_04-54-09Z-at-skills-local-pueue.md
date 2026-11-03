@@ -23977,3 +23977,4223 @@ _**Agent (gpt-6-astra 2026-11-03 05:47:05Z)**_
 - 34 個測試與 `make validate` 通過
 - 僅提交六個功能檔案；plan／transcripts 保留未提交
 - 未 push，feature worktree 乾淨
+
+---
+
+_**User (2026-11-03 05:48:06Z)**_
+
+另外我發現 @skills/local/forge-native-dev/ 好像有點強勢 很容易開很多 issue, discussion 即使是一個很小的實驗changes
+這樣會不會其實有點heavy？
+> 變更留在 .worktrees/issue-44，尚未 commit／push；追蹤於 Discussion #43 (https://github.com/daviddwlee84/agent-skills/discussions/43) 與 Issue #44 (https://github.com/daviddwlee84/agent-skills/issues/44)。
+
+是不是應該要能區別一下 如果是真的需要比較長期track的情況 才會需要external的討論？
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:13Z)**_
+
+對，這次同時開 Discussion 和 Issue 偏重了；「做研究」不等於「需要公開、長期追蹤」。我會檢查 skill 與 repo 指引裡哪些規則造成這種預設，改成依工作是否跨 session、需要協作或尚有未決事項來判斷；這次調整不再另開追蹤項目。
+
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:13Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="Skill"><details>
+<summary>Tool use: **Skill**</summary>
+
+**Input:**
+
+- skill: `skill-author`
+
+</details></tool-use>
+
+---
+
+_**User (2026-11-03 05:48:13Z)**_
+
+Skill /skill-author is already loaded above; instructions unchanged.
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:20Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/SKILL.md`
+
+````text
+1	---
+2	name: forge-native-dev
+3	description: Issue-driven development workflow backed by GitHub/GitLab — uses Issues as the canonical backlog, PRs as review gates, and worktrees for per-issue isolation with auto-cleanup. The hosted-first alternative to project-knowledge-harness. Use when committing to an issue-first workflow, creating backlog items as Issues, managing worktree-per-issue lifecycles, or cleaning up merged branches — incl. "開 issue", "maybe later", "幫我開 PR", "清理 branch".
+4	---
+5	
+6	# forge-native-dev
+7	
+8	An opinionated, issue-driven development workflow that treats GitHub/GitLab as
+9	the single source of truth for intent, backlog, and collaboration — not just
+10	code hosting.
+11	
+12	**Core thesis**: Issues are the unit of work. PRs are review gates. With AI
+13	agents, creating a PR is near-zero cost — the human's job shifts from
+14	*proposing* changes (PR-first) to *describing intent* (issue-first) and
+15	*reviewing* results (PR-as-gate).
+16	
+17	Lifecycle: **Issue -> branch -> worktree -> work -> PR -> review -> merge -> cleanup**.
+18	
+19	Surfaces, separated by the question they answer:
+20	
+21	| Surface | Question it answers |
+22	|---|---|
+23	| `references/issue-driven-workflow.md` | "Why issues over local TODO.md?" |
+24	| `references/forge-abstraction.md` | "What `gh` command maps to what `glab` command?" |
+25	| `references/agent-patterns.md` | "How do I wire agents to work from issues?" |
+26	| `references/coexistence.md` | "I have git-workflow / PKH installed too — which wins?" |
+27	| `references/github-features.md` | "How do I use Discussions, Projects, Wiki?" |
+28	| `references/gitlab-features.md` | "How do I use Boards, Threads, CI/CD?" |
+29	| `references/conventions.md` | "What commit/branch/merge conventions should I follow?" |
+30	| `scripts/forge.sh` | The sourced library — all other scripts depend on it. |
+31	| `scripts/forge-init.sh` | One-shot repo setup. |
+32	| `scripts/forge-worktree.sh` | Issue-to-worktree-to-PR lifecycle. |
+33	| `scripts/forge-cleanup.sh` | Auto-cleanup merged branches + worktrees. |
+34	| `scripts/forge-status.sh` | Alignment dashboard. |
+35	| `scripts/forge-issue.sh` | Standalone issue operations. |
+36	| `scripts/forge-pr.sh` | Standalone PR/MR operations. |
+37	
+38	## When to use this skill
+39	
+40	- The user says "open an issue", "create a backlog item", "開 issue",
+41	  "maybe later", "先記下來", or describes a bug/idea worth tracking.
+42	- The user asks "should I open a PR?", "幫我開 PR", or finishes work on
+43	  a branch and needs to ship it.
+44	- The user says "clean up branches", "清理 branch", "which branches are
+45	  done?", or has stale worktrees.
+46	- The user wants to see the state of their issues/branches/PRs at a glance.
+47	- A new project needs to be set up for issue-driven development.
+48	- The user asks about configuring agents to work from GitHub/GitLab issues.
+49	
+50	## When NOT to use this skill
+51	
+52	- The project has no GitHub/GitLab remote — use `git-workflow` instead.
+53	- The user explicitly prefers `project-knowledge-harness` (local TODO.md).
+54	- Purely offline git operations with no forge interaction.
+55	- Secret scanning or agent transcript hygiene — use `agent-history-hygiene`.
+56	
+57	## Coexistence with other skills
+58	
+59	### If `git-workflow` is also installed
+60	
+61	Both skills cover branching, PRs, and worktrees. On first ambiguous
+62	operation (e.g., "should I branch?", "open a PR"), ask the user:
+63	
+64	> I see both `git-workflow` (git-native) and `forge-native-dev`
+65	> (GitHub/GitLab-native) are available. Which workflow do you prefer for
+66	> this project? Default: `forge-native-dev` for any operation involving
+67	> the remote forge.
+68	
+69	Once decided, remember the preference for the session. `forge-native-dev`
+70	is the upgrade path — it covers everything `git-workflow` does plus the
+71	forge layer.
+72	
+73	### If `project-knowledge-harness` is also installed
+74	
+75	PKH uses `TODO.md` + `backlog/` + `pitfalls/` as file-based project memory.
+76	`forge-native-dev` uses Issues + Discussions + in-repo `pitfalls/`.
+77	
+78	If `TODO.md` exists with PKH markers (`## P1` / `## P2` etc.), warn:
+79	
+80	> This project uses `project-knowledge-harness` (local TODO.md) for backlog.
+81	> `forge-native-dev` uses Issues instead. Using both creates duplicate
+82	> sources of truth. Which do you prefer for this project?
+83	
+84	**One workflow per project, not both.** The migration path is documented in
+85	[`references/coexistence.md`](references/coexistence.md).
+86	
+87	## Core workflow
+88	
+89	### 1. Setup (once per project)
+90	
+91	```bash
+92	bash scripts/forge-init.sh --target /path/to/project --project-name "My Project"
+93	```
+94	
+95	This detects the forge, creates labels, configures git, and adds agent
+96	guidance to `AGENTS.md`. Read [`references/forge-abstraction.md`](references/forge-abstraction.md)
+97	for the full gh/glab mapping.
+98	
+99	### 2. Capture intent as Issues
+100	
+101	When the user surfaces a "maybe later" idea, a bug, or a feature request:
+102	
+103	**Default to creating an Issue.** Do not ask "should I create an issue?" —
+104	just create it with appropriate labels.
+105	
+106	```bash
+107	# Quick backlog item
+108	bash scripts/forge-issue.sh backlog \
+109	  --title "Add pagination to search" \
+110	  --body "Results page loads all items; should paginate at 50." \
+111	  --priority P3 --effort M
+112	
+113	# Bug report
+114	bash scripts/forge-issue.sh create \
+115	  --title "Login redirect fails on Safari" \
+116	  --body "Steps to reproduce: ..." \
+117	  --label "type/bug" --label "priority/P2"
+118	
+119	# Feature request
+120	bash scripts/forge-issue.sh create \
+121	  --title "Add dark mode toggle" \
+122	  --body "User preference, persist in localStorage." \
+123	  --label "type/feature" --label "backlog"
+124	```
+125	
+126	### 3. Work on an issue
+127	
+128	```bash
+129	# Start: creates branch + worktree, assigns issue, adds "in-progress" label
+130	bash scripts/forge-worktree.sh start 42
+131	
+132	# Agent variant (uses agent/ branch prefix)
+133	bash scripts/forge-worktree.sh --agent start 42
+134	
+135	# Work in the worktree
+136	cd .worktrees/issue-42/
+137	# ... make changes, commit conventionally ...
+138	
+139	# Finish: pushes branch, creates PR linking to issue
+140	bash scripts/forge-worktree.sh finish 42
+141	```
+142	
+143	### 4. Review and merge
+144	
+145	The PR is a review artifact. The issue already described the intent.
+146	PR description auto-fills with `Closes #42`.
+147	
+148	Review happens on the PR — by humans, review agents, or both.
+149	
+150	```bash
+151	# Check PR status
+152	bash scripts/forge-pr.sh status
+153	
+154	# Merge (default: squash, delete branch)
+155	bash scripts/forge-pr.sh merge 55
+156	```
+157	
+158	### 5. Clean up
+159	
+160	After PRs merge, clean up stale branches and worktrees:
+161	
+162	```bash
+163	# See what's ready to clean
+164	bash scripts/forge-cleanup.sh --dry-run
+165	
+166	# Clean with confirmation
+167	bash scripts/forge-cleanup.sh
+168	
+169	# Force (no confirmation, for scripted use)
+170	bash scripts/forge-cleanup.sh --force
+171	```
+172	
+173	### 6. Dashboard
+174	
+175	See the full state at a glance:
+176	
+177	```bash
+178	bash scripts/forge-status.sh          # your assigned issues
+179	bash scripts/forge-status.sh --all    # all open issues
+180	```
+181	
+182	## Merge strategy
+183	
+184	**Default: squash and merge.** One issue = one PR = one commit on `main`.
+185	
+186	| Strategy | When to use |
+187	|---|---|
+188	| **Squash and merge** | Default. Agent/vibe-coding PRs with WIP commits. Gives the cleanest `git log`. |
+189	| **Rebase and merge** | Every commit in the PR is a meaningful, curated logical change worth preserving. |
+190	| **Create a merge commit** | Almost never in this workflow. Only if you need branch topology in history. |
+191	
+192	Why squash is the default:
+193	- Agent work produces noisy WIP commits — squash collapses them into one clean commit.
+194	- One commit per issue on `main` makes `git log --oneline` a readable changelog.
+195	- The squash commit message carries `Closes #N`, auto-closing the issue.
+196	- `git bisect` and `git revert` operate on meaningful units (one feature/fix).
+197	
+198	`forge-pr.sh merge` defaults to `--squash`. Override with `--rebase` when
+199	commits are curated, or `--merge` when you need the topology (rare).
+200	
+201	## Role awareness
+202	
+203	The skill detects your access level to decide what operations are available:
+204	
+205	| Role | Detection | Behavior |
+206	|---|---|---|
+207	| **Maintainer** | Has push/write access (owner, org dev with write, collaborator) | Creates labels, assigns issues, sets priority, merges PRs |
+208	| **Contributor** | Read-only or fork-based | Opens issues/PRs, describes priority in body text, leaves labeling to maintainers |
+209	
+210	Detection is automatic via `forge_detect_role` (queries repo permissions API).
+211	Override with `--role maintainer` or `--role contributor` in `forge-init.sh`,
+212	or set `FORGE_ROLE_OVERRIDE=maintainer` / `FORGE_ROLE_OVERRIDE=contributor`
+213	in your shell.
+214	
+215	### Maintainer behavior
+216	
+217	- `forge-init.sh` creates labels, scaffolds issue templates
+218	- `forge-issue.sh backlog` applies `priority/*` and `backlog` labels directly
+219	- `forge-worktree.sh start` assigns the issue and adds `in-progress` label
+220	- Full access to merge, close, and triage
+221	
+222	### Contributor behavior
+223	
+224	- `forge-init.sh` skips label creation (labels are managed by maintainers)
+225	- `forge-issue.sh backlog` notes priority in the issue body as a suggestion,
+226	  does not apply labels (maintainer will triage)
+227	- Issue templates are still scaffolded (they're just files in the repo)
+228	- PRs can be opened; merging is up to maintainers
+229	
+230	**Note**: "maintainer" here means anyone with write access — this includes
+231	org members, collaborators, and core contributors, not just the repo owner.
+232	If you can push to the repo, you're a maintainer in this skill's model.
+233	
+234	## Issue vs Discussion: content boundary
+235	
+236	| | Issue | Discussion |
+237	|---|---|---|
+238	| **Nature** | Actionable, with clear done criteria | Open-ended: evaluations, trade-offs, "should we?" |
+239	| **Lifecycle** | Open → In Progress → PR → Closed | Open → threaded conversation → may spawn Issue |
+240	| **Signals** | "Fix X", "Add Y", "Build Z" | "Should we use X?", "Compare A vs B", "Evaluate" |
+241	| **Body** | Concise — what to do, acceptance criteria | Detailed — analysis, pros/cons, research |
+242	| **Closing** | Closed when the PR merges | Stays open for ongoing discussion, or answered |
+243	
+244	**Promotion pattern**: when a Discussion matures into actionable work,
+245	create an Issue and link back to the Discussion. The Issue body says
+246	"Design decided in Discussion #N — proceeding with approach B."
+247	
+248	**Keep issue bodies concise.** Detailed analysis, trade-off tables, and
+249	research belong in Discussion threads or `backlog/` docs, linked from the
+250	issue. An issue cluttered with research is hard to scan for "what do I
+251	need to build?"
+252	
+253	**Cross-referencing**: Issues, Discussions, and PRs can all reference each
+254	other via `#N`. Use this freely — the three-way linking is the key value
+255	of using the forge natively.
+256	
+257	## Where things go
+258	
+259	| Kind of information | Where it lives | Why |
+260	|---|---|---|
+261	| Actionable work (bugs, features, chores) | Issues (with priority labels) | Searchable, assignable, linkable |
+262	| Design discussion, research, trade-offs | GitHub Discussions / GitLab issue threads | Collaborative, threaded |
+263	| Past traps, debugging knowledge | `pitfalls/` in-repo | Grep-able by symptom, portable |
+264	| Code review | PR/MR comments | Tied to the diff |
+265	| Backlog visualization | GitHub Projects / GitLab Boards | Built-in to the forge |
+266	| Release notes | Tags + auto-generated release notes | Derived from PRs |
+267	
+268	**Pitfalls stay in-repo** even in forge-native mode. They need to be
+269	grep-able by error message from any clone. Research and discussion go to
+270	the forge because they benefit from collaboration features.
+271	
+272	## Issue-as-backlog conventions
+273	
+274	Use labels to mirror priority and type:
+275	
+276	- `priority/P1`, `priority/P2`, `priority/P3` — priority lanes
+277	- `type/bug`, `type/feature`, `type/chore` — work type
+278	- `backlog` — deferred work (equivalent to PKH's `## P?`)
+279	- `agent-task` — explicitly flagged for agent implementation
+280	- `in-progress` — currently being worked on
+281	- `discussion` — not actionable work, just a topic
+282	
+283	## Agent guidance for issue-driven work
+284	
+285	### Checking for work
+286	
+287	When the user asks "what should I work on?" or "有什麼可以做的?":
+288	
+289	```bash
+290	bash scripts/forge-issue.sh list --assignee @me
+291	```
+292	
+293	### Progress reporting
+294	
+295	When working on a long task, post progress comments on the issue:
+296	
+297	```bash
+298	bash scripts/forge-issue.sh comment 42 \
+299	  --body "Progress: implemented the API endpoint, working on tests next."
+300	```
+301	
+302	### Multi-session / multi-agent work
+303	
+304	Each agent session should work in its own worktree. Use `--agent` prefix
+305	to distinguish agent branches from human branches:
+306	
+307	```bash
+308	# Agent 1 works on issue 42
+309	bash scripts/forge-worktree.sh --agent start 42
+310	
+311	# Agent 2 works on issue 38
+312	bash scripts/forge-worktree.sh --agent start 38
+313	```
+314	
+315	### Agent configuration patterns
+316	
+317	See [`references/agent-patterns.md`](references/agent-patterns.md) for
+318	concrete recipes:
+319	
+320	- GitHub: Copilot coding agent in issues, GitHub Actions triggers
+321	- Cursor: background agents, worktree-per-issue sessions
+322	- Claude Code: `--worktree` flag, issue-driven sessions
+323	
+324	## Branch naming
+325	
+326	| Who | Pattern | Example |
+327	|---|---|---|
+328	| Human | `issue/<number>-<slug>` | `issue/42-add-oauth` |
+329	| Agent | `agent/issue/<number>-<slug>` | `agent/issue/42-add-oauth` |
+330	
+331	Both patterns are recognized by `forge-cleanup.sh` and `forge-status.sh`.
+332	
+333	## Available scripts
+334	
+335	- **`scripts/forge.sh`** — sourced library, not run directly. All other
+336	  scripts depend on it. Exports `forge_detect`, `forge_issue_*`,
+337	  `forge_pr_*`, `forge_label_ensure`, `forge_slugify`, `forge_whoami`,
+338	  `forge_default_branch`.
+339	- **`scripts/forge-init.sh [--target DIR] [--project-name NAME] [--role auto|maintainer|contributor] [--skip-labels] [--skip-templates] [--skip-git-config] [--force] [--help]`**
+340	  — one-shot setup: labels (maintainer only), issue templates, git config,
+341	  AGENTS.md snippet. Role auto-detected from API permissions.
+342	- **`scripts/forge-worktree.sh <start|finish|list> [ISSUE_NUM] [--agent] [--base BRANCH] [--draft] [--help]`**
+343	  — the core lifecycle script.
+344	- **`scripts/forge-cleanup.sh [--dry-run] [--force] [--all] [--help]`**
+345	  — auto-cleanup merged branches + worktrees.
+346	- **`scripts/forge-status.sh [--json] [--assigned] [--all] [--help]`**
+347	  — alignment dashboard.
+348	- **`scripts/forge-issue.sh <create|list|view|close|comment|assign|label|backlog> [--help]`**
+349	  — standalone issue operations.
+350	- **`scripts/forge-pr.sh <create|list|view|status|merge|link> [--help]`**
+351	  — standalone PR/MR operations.
+352	
+353	## Gotchas
+354	
+355	- **`gh` / `glab` must be installed and authenticated.** The skill degrades
+356	  to error messages without them — it does not fall back to raw git for
+357	  forge operations. Run `gh auth status` or `glab auth status` to verify.
+358	- **Squash-merge orphans the source branch.** After a squashed PR, the
+359	  branch's commits never appear on the base, so `git branch --merged`
+360	  won't list it. `forge-cleanup.sh` handles this by checking PR status
+361	  directly instead of relying on git merge state.
+362	- **Worktree path is relative to repo root.** `FORGE_WORKTREE_ROOT`
+363	  defaults to `.worktrees`. It should be gitignored (the init script does
+364	  this). Gitignored files (`.env`, etc.) are NOT auto-copied into
+365	  worktrees — use a `.worktreeinclude` file (see `git-workflow`'s
+366	  `references/worktrees-parallel-agents.md`).
+367	- **One branch per issue.** If multiple branches match `issue/42-*`, the
+368	  scripts error. Resolve manually or use `--agent` for agent branches.
+369	- **GitHub Discussions API requires GraphQL.** The `forge_discussion_create`
+370	  function falls back to creating a labeled issue. Use the web UI for full
+371	  Discussion features until the CLI catches up.
+372	- **Label creation is idempotent but case-sensitive.** `priority/P1` and
+373	  `Priority/P1` are treated as different labels. Stick with lowercase.
+374	- **Issue templates are scaffolded, not enforced.** The init script copies
+375	  templates into `.github/ISSUE_TEMPLATE/` or `.gitlab/issue_templates/`.
+376	  Users can modify or remove them.
+377	- **The `@me` assignee shortcut** works in `gh` but may need the actual
+378	  username in older `glab` versions.
+379	- **After a PR merges, always create a new branch from updated main.**
+380	  Do not reuse the merged branch (squash-merge makes its history diverge
+381	  from main). Do not try to reopen a merged PR (GitHub does not allow it).
+382	  Each PR is one logical change; follow-ups are new branches and new PRs.
+383	  See [`references/conventions.md`](references/conventions.md) for details.
+384	- **GitHub Discussion categories cannot be created via API.** The GraphQL
+385	  API has no `createDiscussionCategory` mutation. Default categories
+386	  (General, Ideas, Q&A, Announcements, Polls, Show and tell) are created
+387	  automatically when Discussions is enabled. Custom categories (e.g.
+388	  "Design", "Research") must be created via the web UI:
+389	  Settings → Discussions → New category.
+390	- **`gh project link --owner @me` fails for personal repos.** Use the
+391	  actual username (e.g. `--owner myuser`) extracted from the remote URL.
+392	  The `forge_project_create` function handles this automatically.
+393
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:21Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Locate over-eager tracking defaults and related guidance
+
+`git status --short; git branch --show-current; rg -n 'Default to creating|Capture intent|Do not ask|do not ask|default.*[Ii]ssue|always.*[Ii]ssue|always.*[Dd]iscussion|[Oo]ne issue|[Ee]very.*issue|[Mm]aybe later|[Oo]pen-ended|[Pp]romotion pattern|[Ii]ssues are the unit|[Ii]ssue-driven|issue.first|issue-first' CLAUDE.md skills/local/forge-native-dev docs/skills/forge-native-dev* .github; printf '\n--- Scoped guidance ---\n'; find skills/local/forge-native-dev docs -name CLAUDE.md -print`
+
+```text
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+main
+(eval):1: no matches found: docs/skills/forge-native-dev*
+
+--- Scoped guidance ---
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:35Z)**_
+
+<think><details><summary>Thought Process</summary>
+**Considering file analysis**
+
+I'm thinking about delegating the task of exploring contradictions in several files, but I have concerns. The previous data's heavy load and bad tokens make me hesitant. I realize I might need to do a targeted read, focusing on likely matches across a handful of files—maybe around 10. It's essential to ensure I approach this thoughtfully so it goes smoothly and efficiently for better outcomes.
+</details></think>
+
+_**Agent (gpt-6-astra 2026-11-03 05:48:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find duplicated tracking policy and bootstrap coverage
+
+`rg -n -i 'default to creating|capture intent|do not ask|default.*issue|always.*issue|one issue|every.*issue|maybe later|open-ended|promotion pattern|issues are the unit|issue.first|research.*discussion|discussion.*research' CLAUDE.md skills/local/forge-native-dev docs; printf '\n--- Forge skill files ---\n'; rg --files skills/local/forge-native-dev; printf '\n--- Forge tests ---\n'; rg -n 'forge-native-dev|forge-init|issue-driven' tests Makefile pyproject.toml`
+
+```text
+Exit code 2
+CLAUDE.md:213:Discussions for evaluative/research topics. The `forge-native-dev` skill
+CLAUDE.md:219:| Evaluations, "should we?", research | [Discussions](https://github.com/daviddwlee84/agent-skills/discussions) | Threaded, collaborative |
+CLAUDE.md:225:**Capture intent as Issues** — when the user describes a bug, idea, or
+CLAUDE.md:226:"maybe later" item, create an Issue with appropriate labels. Do not ask
+CLAUDE.md:227:"should I create an issue?" — default to creating one.
+skills/local/forge-native-dev/assets/agent-guidance.md.template:7:**Capture intent as Issues** — when the user describes a bug, idea, or
+skills/local/forge-native-dev/assets/agent-guidance.md.template:8:"maybe later" item, create an Issue. Do not ask "should I create an
+skills/local/forge-native-dev/assets/agent-guidance.md.template:9:issue?" — default to creating one.
+skills/local/forge-native-dev/assets/agent-guidance.md.template:32:(one issue = one commit on main). Use rebase-merge only when every commit
+skills/local/forge-native-dev/scripts/forge-issue.sh:4:# Standalone issue lifecycle command wrapping forge.sh.
+skills/local/forge-native-dev/SKILL.md:3:description: Issue-driven development workflow backed by GitHub/GitLab — uses Issues as the canonical backlog, PRs as review gates, and worktrees for per-issue isolation with auto-cleanup. The hosted-first alternative to project-knowledge-harness. Use when committing to an issue-first workflow, creating backlog items as Issues, managing worktree-per-issue lifecycles, or cleaning up merged branches — incl. "開 issue", "maybe later", "幫我開 PR", "清理 branch".
+skills/local/forge-native-dev/SKILL.md:12:**Core thesis**: Issues are the unit of work. PRs are review gates. With AI
+skills/local/forge-native-dev/SKILL.md:14:*proposing* changes (PR-first) to *describing intent* (issue-first) and
+skills/local/forge-native-dev/SKILL.md:35:| `scripts/forge-issue.sh` | Standalone issue operations. |
+skills/local/forge-native-dev/SKILL.md:41:  "maybe later", "先記下來", or describes a bug/idea worth tracking.
+skills/local/forge-native-dev/SKILL.md:99:### 2. Capture intent as Issues
+skills/local/forge-native-dev/SKILL.md:101:When the user surfaces a "maybe later" idea, a bug, or a feature request:
+skills/local/forge-native-dev/SKILL.md:103:**Default to creating an Issue.** Do not ask "should I create an issue?" —
+skills/local/forge-native-dev/SKILL.md:184:**Default: squash and merge.** One issue = one PR = one commit on `main`.
+skills/local/forge-native-dev/SKILL.md:238:| **Nature** | Actionable, with clear done criteria | Open-ended: evaluations, trade-offs, "should we?" |
+skills/local/forge-native-dev/SKILL.md:244:**Promotion pattern**: when a Discussion matures into actionable work,
+skills/local/forge-native-dev/SKILL.md:249:research belong in Discussion threads or `backlog/` docs, linked from the
+skills/local/forge-native-dev/SKILL.md:262:| Design discussion, research, trade-offs | GitHub Discussions / GitLab issue threads | Collaborative, threaded |
+skills/local/forge-native-dev/SKILL.md:269:grep-able by error message from any clone. Research and discussion go to
+skills/local/forge-native-dev/SKILL.md:349:  — standalone issue operations.
+skills/local/forge-native-dev/references/issue-driven-workflow.md:93:### The promotion pattern
+skills/local/forge-native-dev/references/issue-driven-workflow.md:130:In the issue-driven model, each PR corresponds to one issue. The merge
+skills/local/forge-native-dev/references/agent-patterns.md:175:- When the user describes a bug, idea, or "maybe later" item, create an
+skills/local/forge-native-dev/references/agent-patterns.md:176:  Issue with appropriate labels. Do not ask "should I create an issue?"
+skills/local/forge-native-dev/references/github-features.md:23:| General | Open-ended discussions |
+docs/skills/project-knowledge-harness.md:18:Future-direction signals: "where should ideas go?", "maybe later", "nice to
+skills/local/forge-native-dev/references/conventions.md:65:**Default: squash and merge.** One issue = one PR = one commit on `main`.
+skills/local/forge-native-dev/references/coexistence.md:49:| Research | `backlog/*.md` (in-repo) | Discussions / issue threads |
+skills/local/forge-native-dev/references/coexistence.md:58:Using both creates duplicate sources of truth. A "maybe later" idea ends
+
+--- Forge skill files ---
+skills/local/forge-native-dev/assets/issue-templates/gitlab-feature-request.md
+skills/local/forge-native-dev/assets/issue-templates/github-feature-request.md
+skills/local/forge-native-dev/assets/issue-templates/github-bug-report.md
+skills/local/forge-native-dev/assets/issue-templates/gitlab-bug-report.md
+skills/local/forge-native-dev/assets/agent-guidance.md.template
+skills/local/forge-native-dev/SKILL.md
+skills/local/forge-native-dev/scripts/forge-init.sh
+skills/local/forge-native-dev/scripts/forge-cleanup.sh
+skills/local/forge-native-dev/scripts/forge-pr.sh
+skills/local/forge-native-dev/scripts/forge.sh
+skills/local/forge-native-dev/scripts/forge-worktree.sh
+skills/local/forge-native-dev/scripts/forge-status.sh
+skills/local/forge-native-dev/scripts/forge-issue.sh
+skills/local/forge-native-dev/references/forge-abstraction.md
+skills/local/forge-native-dev/references/issue-driven-workflow.md
+skills/local/forge-native-dev/references/gitlab-features.md
+skills/local/forge-native-dev/references/github-features.md
+skills/local/forge-native-dev/references/conventions.md
+skills/local/forge-native-dev/references/agent-patterns.md
+skills/local/forge-native-dev/references/coexistence.md
+
+--- Forge tests ---
+rg: tests: No such file or directory (os error 2)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/assets/agent-guidance.md.template`
+
+```text
+1	<!-- forge-native-dev:guidance -->
+2	### Issue-driven workflow (<FORGE_TYPE>, role: <FORGE_ROLE>)
+3	
+4	This project uses <FORGE_TYPE> Issues as the canonical backlog. The
+5	`forge-native-dev` skill provides the scripts below.
+6	
+7	**Capture intent as Issues** — when the user describes a bug, idea, or
+8	"maybe later" item, create an Issue. Do not ask "should I create an
+9	issue?" — default to creating one.
+10	
+11	**Work lifecycle:**
+12	1. Start: `bash scripts/forge-worktree.sh start <issue-number>`
+13	2. Work in the worktree, commit conventionally
+14	3. Finish: `bash scripts/forge-worktree.sh finish <issue-number>`
+15	4. After merge: `bash scripts/forge-cleanup.sh`
+16	
+17	**Check for work:** `bash scripts/forge-issue.sh list --assignee @me`
+18	
+19	**Progress reporting:** post comments on long-running tasks:
+20	`bash scripts/forge-issue.sh comment <number> --body "progress update"`
+21	
+22	**Where things go:**
+23	- Actionable work → Issues (with priority labels)
+24	- Design discussion → Discussions (GitHub) / issue threads (GitLab)
+25	- Past traps → `pitfalls/` in-repo (grep-able)
+26	- Review → PR/MR comments
+27	
+28	**Dashboard:** `bash scripts/forge-status.sh`
+29	
+30	**PRs are review gates, not proposals.** The issue describes intent;
+31	the PR is the diff to review. Default merge strategy: **squash and merge**
+32	(one issue = one commit on main). Use rebase-merge only when every commit
+33	in the PR is a meaningful, curated logical change.
+34	
+35	**Role: <FORGE_ROLE>**
+36	- maintainer: may create/assign labels, assign issues, merge PRs, manage
+37	  project boards, and triage incoming issues.
+38	- contributor: describe problems clearly in issues, open PRs, but leave
+39	  priority labeling and triage to maintainers. Do not auto-assign priority
+40	  labels.
+41	<!-- forge-native-dev:guidance (end) -->
+42
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/issue-driven-workflow.md`
+
+````text
+1	# Issue-Driven Workflow
+2	
+3	## The thesis: "Issue is the new PR"
+4	
+5	In traditional development, a PR is the unit of work: you write code, open a
+6	PR, describe what you did, request review, and merge. The issue (if one
+7	exists) is an afterthought — a cross-reference at best.
+8	
+9	With AI coding agents, this inverts. Creating a PR is near-zero cost — an
+10	agent can implement an issue and open a PR in minutes. The human's job
+11	shifts from *writing code and describing it in a PR* to:
+12	
+13	1. **Describing intent** clearly in an issue
+14	2. **Reviewing** the agent's work in the PR
+15	
+16	The issue becomes the primary artifact — where intent is recorded,
+17	discussed, refined, and referenced. The PR becomes a mechanical review
+18	gate: a diff to approve or reject.
+19	
+20	### References
+21	
+22	- [Sindre Sorhus on "issue is the new PR"](https://x.com/sindresorhus/status/2105693826690298314)
+23	  and [follow-up](https://x.com/sindresorhus/status/2105720399266984369)
+24	- [lazygit #1147 — Show which branches have unmerged changes](https://github.com/jesseduffield/lazygit/issues/1147)
+25	  (the branch-cleanup visibility problem this workflow solves)
+26	
+27	## Why Issues over local files?
+28	
+29	| Dimension | Local files (TODO.md) | Forge Issues |
+30	|---|---|---|
+31	| Portability | Any clone has the backlog | Requires forge access |
+32	| Collaboration | Edit conflicts on shared TODO.md | Native commenting, assignment, @-mentions |
+33	| Cross-referencing | Manual `→ [link]()` syntax | Auto-linked from commits, PRs, other issues |
+34	| Labeling/filtering | Grep + section headers | Native labels, milestones, projects |
+35	| Notifications | None | Email, mobile, integrations |
+36	| Agent access | Read file | `gh issue list`, `glab issue list` |
+37	| Visualization | `todo-kanban.sh` | GitHub Projects, GitLab Boards |
+38	
+39	Neither is strictly better. Use Issues when you want the collaboration
+40	features; use local files when portability and grep-ability matter more.
+41	This skill takes the Issues-first stance.
+42	
+43	## Practical patterns
+44	
+45	### Solo dev with agents
+46	
+47	1. Capture ideas as Issues (labeled `backlog`)
+48	2. When ready, assign an issue and let an agent work on it via worktree
+49	3. Agent opens PR, you review
+50	4. Merge, cleanup, repeat
+51	
+52	The backlog is always visible on the forge. You never lose track of ideas
+53	because they're buried in a file you forgot to grep.
+54	
+55	### Solo dev, multiple agents in parallel
+56	
+57	1. Open N issues for different features/fixes
+58	2. Each agent claims an issue via `forge-worktree.sh --agent start <N>`
+59	3. Each agent works in isolation (separate worktree + branch)
+60	4. PRs appear as they finish — review at your pace
+61	5. `forge-cleanup.sh` sweeps up after merges
+62	
+63	### Team collaboration
+64	
+65	Issues become the shared language. Anyone can:
+66	- File an issue (with templates guiding what to include)
+67	- Discuss trade-offs in issue comments or Discussions
+68	- Assign work to humans or agents
+69	- Review PRs linked to issues
+70	- Track progress via Projects/Boards
+71	
+72	### Migration from TODO.md
+73	
+74	If you have an existing `project-knowledge-harness` setup:
+75	
+76	1. For each active `TODO.md` item, create an Issue with matching labels
+77	2. For `backlog/*.md` research docs, either:
+78	   - Create a Discussion linking to the doc (keep docs in-repo)
+79	   - Paste content into issue body (if short enough)
+80	3. Keep `pitfalls/` in-repo — they need grep-ability
+81	4. Remove the PKH agent-guidance block from `AGENTS.md`
+82	5. Run `forge-init.sh` to set up the forge-native workflow
+83	
+84	## Issue vs Discussion: where does content go?
+85	
+86	A common question: "this is more than a simple bug — should it be an Issue
+87	or a Discussion?"
+88	
+89	**Rule of thumb**: if there's a clear done criteria (you can close it when
+90	something ships), it's an Issue. If it's exploratory ("should we?",
+91	"compare A vs B", "what's the right approach?"), it's a Discussion.
+92	
+93	### The promotion pattern
+94	
+95	```
+96	Discussion (Ideas)                  Issue (Backlog)
+97	  "Should we add OAuth?"    ──→     "Add OAuth support"
+98	  - Option A: JWT                   - Design: Discussion #15
+99	  - Option B: Sessions              - Approach: JWT (Option A)
+100	  - Trade-offs...                   - Effort: L
+101	```
+102	
+103	1. Exploration happens in a Discussion
+104	2. When a decision is reached, create an Issue
+105	3. Link the Issue back to the Discussion
+106	4. The Discussion can stay open for future revisits
+107	
+108	### Keeping issues clean
+109	
+110	Issue bodies should be concise and actionable:
+111	
+112	- **Good**: "Add pagination to search results. Currently all items load at
+113	  once, causing slow page loads. Paginate at 50 items per page."
+114	- **Bad**: Three paragraphs of analysis, five alternatives considered, a
+115	  table of benchmarks, then "so maybe do option B?"
+116	
+117	Put the analysis in a Discussion or `backlog/` doc and link it from the
+118	issue. An issue cluttered with research is hard to scan for "what do I
+119	need to build?"
+120	
+121	## When to stick with local files
+122	
+123	- Private repos where you don't want to expose backlog publicly
+124	- Repos without a forge remote (pure local development)
+125	- Projects where grep-ability of TODO items is critical
+126	- When working offline frequently
+127	
+128	## Merge strategy: why squash is the default
+129	
+130	In the issue-driven model, each PR corresponds to one issue. The merge
+131	strategy should reinforce this 1:1 mapping on `main`.
+132	
+133	**Squash and merge** collapses all PR commits into a single commit:
+134	
+135	```
+136	main: ... → feat: add OAuth support (Closes #42) → fix: login redirect (#38) → ...
+137	```
+138	
+139	Each commit is one shipped issue. `git log --oneline` reads like a changelog.
+140	`git bisect` finds "which issue introduced the bug". `git revert` undoes one
+141	issue cleanly.
+142	
+143	**Rebase and merge** preserves individual commits — useful only when the
+144	author curated meaningful commits (e.g., "add schema migration",
+145	"add API endpoint", "add tests" as separate logical steps). In practice,
+146	agent-generated branches rarely have this quality.
+147	
+148	**Merge commits** create diamond topology in the graph. The only benefit
+149	is seeing "this commit came from a branch" — but the PR URL in the
+150	squash commit message already tells you that. Avoid unless you have a
+151	specific reason to preserve topology.
+152	
+153	## The lifecycle in detail
+154	
+155	```
+156	  ┌─────────┐     ┌─────────┐     ┌───────────┐     ┌─────────┐
+157	  │  Issue   │────>│  Branch  │────>│  Worktree  │────>│  Work   │
+158	  │ (intent) │     │ (named)  │     │ (isolated) │     │(commits)│
+159	  └─────────┘     └─────────┘     └───────────┘     └────┬────┘
+160	                                                          │
+161	  ┌─────────┐     ┌─────────┐     ┌───────────┐          │
+162	  │ Cleanup  │<────│  Merge   │<────│    PR     │<─────────┘
+163	  │(auto)    │     │ (gate)   │     │ (review)  │
+164	  └─────────┘     └─────────┘     └───────────┘
+165	```
+166	
+167	Each step has a script. The agent (or human) drives the lifecycle forward;
+168	the scripts handle the forge interaction and git plumbing.
+169
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:01Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/agent-patterns.md`
+
+````text
+155	  1. bash scripts/forge-issue.sh list --assignee @me --json
+156	  2. (parse results, present prioritized list)
+157	  3. "You have 3 open issues assigned to you:
+158	     - #42 [P1] Fix login redirect (type/bug)
+159	     - #38 [P2] Add pagination (type/feature)
+160	     - #51 [P3] Update docs (type/chore)
+161	     Shall I start on #42?"
+162	```
+163	
+164	## Recommended agent contract snippet
+165	
+166	The `forge-init.sh` script appends this to `AGENTS.md`. If you need to
+167	add it manually:
+168	
+169	```markdown
+170	<!-- forge-native-dev:guidance -->
+171	### Issue-driven workflow
+172	
+173	This project uses GitHub/GitLab Issues as the canonical backlog.
+174	
+175	- When the user describes a bug, idea, or "maybe later" item, create an
+176	  Issue with appropriate labels. Do not ask "should I create an issue?"
+177	- To work on an issue: `bash scripts/forge-worktree.sh start <number>`
+178	- To ship: `bash scripts/forge-worktree.sh finish <number>`
+179	- To clean up: `bash scripts/forge-cleanup.sh`
+180	- To check what's assigned: `bash scripts/forge-issue.sh list --assignee @me`
+181	- Post progress comments on long tasks.
+182	- PRs are review gates, not proposals. The issue describes intent.
+183	<!-- forge-native-dev:guidance (end) -->
+184	```
+185	
+186	## Anti-patterns
+187	
+188	- **Don't create issues AND TODO.md entries for the same item.** Pick one
+189	  system per project.
+190	- **Don't skip the PR.** Even for trivial changes, the PR creates a
+191	  reviewable record and a revert point.
+192	- **Don't assign all issues to the agent at once.** Work in small batches
+193	  to maintain review quality.
+194	- **Don't let agent branches accumulate.** Run `forge-cleanup.sh`
+195	  regularly (or after each merge).
+196
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:02Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./CLAUDE.md`
+
+```text
+207	## Project Memory Workflow
+208	
+209	<!-- forge-native-dev:guidance -->
+210	### Issue-driven workflow (GitHub)
+211	
+212	This project uses GitHub Issues as the canonical backlog and GitHub
+213	Discussions for evaluative/research topics. The `forge-native-dev` skill
+214	provides the scripts below.
+215	
+216	| Information | Lives in | Why |
+217	|---|---|---|
+218	| Actionable work (bugs, features, chores) | [GitHub Issues](https://github.com/daviddwlee84/agent-skills/issues) | Searchable, assignable, cross-linkable |
+219	| Evaluations, "should we?", research | [Discussions](https://github.com/daviddwlee84/agent-skills/discussions) | Threaded, collaborative |
+220	| Research docs, trade-off analysis | `backlog/` | In-repo, diffable, reviewed in PRs |
+221	| Past traps, debugging knowledge | `pitfalls/` | Grep-able by symptom, portable |
+222	| Backlog visualization | [Project board](https://github.com/users/daviddwlee84/projects/11) | Built-in to the forge |
+223	| Historical record | `TODO.md` `## Done` section | In git |
+224	
+225	**Capture intent as Issues** — when the user describes a bug, idea, or
+226	"maybe later" item, create an Issue with appropriate labels. Do not ask
+227	"should I create an issue?" — default to creating one.
+228	
+229	**Work lifecycle:**
+230	1. Start: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh start <issue-number>`
+231	2. Work in the worktree, commit conventionally
+232	3. Finish: `bash skills/local/forge-native-dev/scripts/forge-worktree.sh finish <issue-number>`
+233	4. After merge: `bash skills/local/forge-native-dev/scripts/forge-cleanup.sh`
+234	
+235	**Check for work:** `bash skills/local/forge-native-dev/scripts/forge-issue.sh list --assignee @me`
+236	
+237	**Dashboard:** `bash skills/local/forge-native-dev/scripts/forge-status.sh`
+238	
+239	**PRs are review gates, not proposals.** The issue describes intent; the
+240	PR is the diff to review. Default merge strategy: **squash and merge**.
+241	<!-- forge-native-dev:guidance (end) -->
+242	
+243	### External skill / MCP / domain / curiosity catalog -> `docs/catalog/`
+244	
+245	`docs/catalog/` is the vendoring decision log + external-awareness
+246	registry, separate from `Skills` (what we ship) and `Reference` (our
+247	own conventions). It has four subareas:
+248	
+249	- `docs/catalog/domains/` — per-domain hub pages (one per professional
+250	  domain: Finance, Quant Research, AI/ML Research, Web & Fullstack,
+251	  Knowledge Work, Agent Harness). Each hub aggregates local + vendored
+252	  + external skills + MCPs relevant to that domain. New hubs copy
+253	  [`docs/_snippets/domain-hub-template.md`](docs/_snippets/domain-hub-template.md).
+254	- `docs/catalog/skill-collections.md` — single curated index of all
+255	  upstream skill collections (Anthropic, Vercel, Supabase, marimo,
+256	  Warp Oz, Orchestra-Research, etc.) with status per entry. Replaces
+257	  the historical `Collections.md` (kept as a stub).
+258	- `docs/catalog/curiosities.md` — docs-only shelf for interesting,
+259	  provocative, or highly personal skills that are deliberately excluded
+260	  from `vendor.yaml`, marketplace grouping, and routine skill discovery.
+261	  Entries use `skipped` with the reason they remain docs-only.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:13Z)**_
+
+原因找到了：不只是 skill 寫了「預設開 Issue」，這句也被 bootstrap template 和本 repo 的 `CLAUDE.md` 複製過去；另一條規則又把「研究」直接分流到 Discussion。我要把判斷拆成兩步：**先決定需不需要外部追蹤，再決定用 Issue 還是 Discussion**，而不是每件事都必須選一個。
+
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/coexistence.md`
+
+````text
+1	# Coexistence with Other Skills
+2	
+3	## Decision tree
+4	
+5	```
+6	Is there a GitHub/GitLab remote?
+7	├── No  → use git-workflow (+ optionally project-knowledge-harness)
+8	└── Yes → is gh/glab installed and authenticated?
+9	    ├── No  → use git-workflow (recommend installing the CLI)
+10	    └── Yes → does the user prefer local-first or hosted-first?
+11	        ├── Local-first  → project-knowledge-harness + git-workflow
+12	        └── Hosted-first → forge-native-dev (this skill)
+13	```
+14	
+15	## forge-native-dev vs git-workflow
+16	
+17	| Aspect | git-workflow | forge-native-dev |
+18	|---|---|---|
+19	| Scope | Git mechanics (commits, branches, merges) | Forge lifecycle (issues, PRs, cleanup) |
+20	| Requires | git | git + gh/glab |
+21	| Branching | `feat/`, `fix/`, `agent/` | `issue/<N>-*`, `agent/issue/<N>-*` |
+22	| Worktrees | Generic parallel isolation | Issue-linked, auto-created/destroyed |
+23	| PR creation | Delegate to `create-pull-request` skill | Built-in via `forge-worktree.sh finish` |
+24	| Branch cleanup | `branch-status.sh` (diagnosis) | `forge-cleanup.sh` (diagnosis + action) |
+25	| Backlog | Not covered (defer to PKH) | Issues on the forge |
+26	
+27	### If both are installed
+28	
+29	On first ambiguous operation, the agent asks the user's preference.
+30	Default: `forge-native-dev` for anything involving the remote.
+31	
+32	`git-workflow` is still useful for:
+33	- Commit message conventions (Conventional Commits)
+34	- AI provenance trailers (`AI-Assisted-By`, etc.)
+35	- SemVer release tagging
+36	- The lazygit cheatsheet
+37	
+38	These don't conflict with `forge-native-dev`. The overlap is specifically
+39	in branching, PR creation, and cleanup.
+40	
+41	**Recommendation**: install both, let `forge-native-dev` handle the forge
+42	layer, and `git-workflow` handle the commit/release layer.
+43	
+44	## forge-native-dev vs project-knowledge-harness
+45	
+46	| Aspect | project-knowledge-harness | forge-native-dev |
+47	|---|---|---|
+48	| Backlog | `TODO.md` (file-based, portable) | Issues (hosted, collaborative) |
+49	| Research | `backlog/*.md` (in-repo) | Discussions / issue threads |
+50	| Pitfalls | `pitfalls/*.md` (in-repo) | `pitfalls/*.md` (in-repo — same) |
+51	| Visualization | `todo-kanban.sh` | GitHub Projects / GitLab Boards |
+52	| Cross-referencing | Manual links | Auto-linked |
+53	| Offline access | Full | Limited to cached data |
+54	| td integration | Yes (optional) | No (not needed — Issues are the tracker) |
+55	
+56	### One workflow per project, not both
+57	
+58	Using both creates duplicate sources of truth. A "maybe later" idea ends
+59	up in both `TODO.md` and an Issue, and they drift apart.
+60	
+61	### Migration: PKH -> forge-native-dev
+62	
+63	1. **Run `forge-init.sh`** to set up the forge-native workflow.
+64	
+65	2. **For each active `TODO.md` item**, create an Issue:
+66	
+67	   ```bash
+68	   # Example: migrate a P2 item
+69	   bash scripts/forge-issue.sh create \
+70	     --title "Try Rspress for docs" \
+71	     --body "Evaluate AI-native docs framework alternative.
+72	
+73	   Migrated from TODO.md P? lane." \
+74	     --label "backlog" --label "priority/P3"
+75	   ```
+76	
+77	3. **For `backlog/*.md` research docs**:
+78	   - Short docs: paste into issue body
+79	   - Long docs: create a Discussion linking to the file, keep the file
+80	
+81	4. **Keep `pitfalls/`** in-repo — they need grep-ability.
+82	
+83	5. **Remove PKH guidance** from `AGENTS.md`:
+84	   Delete the block between `<!-- project-knowledge-harness:... -->` markers.
+85	
+86	6. **Optionally remove `TODO.md`** once all items are migrated.
+87	   Keep `backlog/` and `pitfalls/` directories.
+88	
+89	### Migration: forge-native-dev -> PKH
+90	
+91	If you decide to go back to local-first:
+92	
+93	1. Export open issues to `TODO.md` entries
+94	2. Run PKH's `init.sh`
+95	3. Remove forge-native-dev guidance from `AGENTS.md`
+96	
+97	## forge-native-dev vs create-pull-request (vendored)
+98	
+99	The vendored `create-pull-request` skill is a standalone PR creation guide.
+100	`forge-native-dev` includes PR creation as part of its lifecycle
+101	(`forge-worktree.sh finish` and `forge-pr.sh create`).
+102	
+103	If both are installed, prefer `forge-native-dev`'s PR flow because it
+104	automatically links the PR to the originating issue.
+105	
+106	## forge-native-dev in a submodule superproject
+107	
+108	If the repo is a superproject (`.gitmodules` present), use the two skills at
+109	different levels:
+110	
+111	- **forge-native-dev** handles issues and PRs in each child, in that child's
+112	  own forge. Superproject issue worktrees (`.worktrees/issue-<n>`) are only for
+113	  changes to outer content.
+114	- **superproject-workspace** handles pointer policy, child worktrees under
+115	  `.worktrees/<child-path>/<branch>`, and the preflighted bump commit that
+116	  records merged child work in the superproject.
+117	
+118	## Role model
+119	
+120	The skill distinguishes two roles based on actual repository permissions,
+121	not repo ownership:
+122	
+123	| Role | Who | Detection |
+124	|---|---|---|
+125	| **Maintainer** | Repo owner, org member with write access, collaborator with push | GitHub: `repo.permissions.push == true`; GitLab: `access_level >= 30` (Developer+) |
+126	| **Contributor** | Fork-based contributor, read-only org member, guest | Everything else |
+127	
+128	This means a core developer in an organization who has write access is
+129	correctly detected as `maintainer` — they can create labels, assign issues,
+130	and merge PRs, even though they didn't create the repo.
+131	
+132	### Override
+133	
+134	If auto-detection gives the wrong answer (e.g., API rate-limited, SSO
+135	not configured):
+136	
+137	```bash
+138	# At init time
+139	forge-init.sh --role maintainer
+140	
+141	# At runtime (env var)
+142	export FORGE_ROLE_OVERRIDE=maintainer
+143	```
+144	
+145	### What changes by role
+146	
+147	| Action | Maintainer | Contributor |
+148	|---|---|---|
+149	| `forge-init.sh` creates labels | Yes | Skipped |
+150	| `forge-issue.sh backlog` applies priority labels | Yes | Priority noted in body text |
+151	| `forge-worktree.sh start` assigns issue + adds label | Yes | May fail silently (no write access) |
+152	| `forge-pr.sh merge` | Yes | Cannot merge (expected — maintainer merges) |
+153	| Issue templates scaffolded | Yes | Yes (they're just repo files) |
+154	| Git config set | Yes | Yes (local config only) |
+155	
+156	## Detecting which workflow is active
+157	
+158	Agents can detect the active workflow by checking for sentinel markers:
+159	
+160	```bash
+161	# PKH is active if TODO.md has lane headers
+162	grep -q '^## P[123?]' TODO.md 2>/dev/null && echo "PKH active"
+163	
+164	# forge-native-dev is active if AGENTS.md has its sentinel
+165	grep -q 'forge-native-dev:guidance' AGENTS.md 2>/dev/null && echo "forge-native-dev active"
+166	
+167	# git-workflow is active if its commit template is configured
+168	git config commit.template 2>/dev/null | grep -q 'git-workflow' && echo "git-workflow active"
+169	```
+170
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/conventions.md`
+
+````text
+1	# Conventions (standalone)
+2	
+3	Minimum commit, branch, and merge conventions for forge-native-dev users
+4	who do not have the `git-workflow` skill installed. If you do have
+5	`git-workflow`, its `references/conventional-commits.md` is the full spec;
+6	this file covers only the essentials.
+7	
+8	## Commit messages
+9	
+10	Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+11	
+12	```
+13	<type>(<optional scope>): <imperative subject>
+14	
+15	<optional body — the "why">
+16	```
+17	
+18	### Types
+19	
+20	| Type | When |
+21	|---|---|
+22	| `feat` | New feature |
+23	| `fix` | Bug fix |
+24	| `docs` | Documentation only |
+25	| `style` | Formatting, no logic change |
+26	| `refactor` | Neither fix nor feature |
+27	| `perf` | Performance improvement |
+28	| `test` | Adding or fixing tests |
+29	| `build` | Build system / dependencies |
+30	| `ci` | CI configuration |
+31	| `chore` | Maintenance (not user-facing) |
+32	| `revert` | Reverts a prior commit |
+33	
+34	### Rules
+35	
+36	- **Subject**: imperative mood, lowercase start, no trailing period,
+37	  ≤72 chars. "add retry to client", not "Added retry." or "Adds…".
+38	- **Body**: explain the "why" for non-trivial changes, wrapped ~72 cols.
+39	- **Breaking change**: append `!` after type/scope — `feat!: drop v1 API`.
+40	- **Language**: commit messages in English, even when the prompt is in
+41	  another language. Code history is read by tooling and future collaborators.
+42	
+43	## Branch naming
+44	
+45	| Who | Pattern | Example |
+46	|---|---|---|
+47	| Human | `issue/<number>-<kebab-slug>` | `issue/42-add-oauth` |
+48	| Agent | `agent/issue/<number>-<slug>` | `agent/issue/42-add-oauth` |
+49	| Cursor/misc | `cursor/<desc>` | `cursor/dogfood-forge` |
+50	
+51	The `issue/<N>-*` pattern ties the branch to its issue, enabling
+52	`forge-cleanup.sh` and `forge-status.sh` to track alignment automatically.
+53	
+54	## Linear history
+55	
+56	Set these per-repo (or `--global`):
+57	
+58	```bash
+59	git config pull.rebase true      # rebase local work on pull
+60	git config merge.ff only         # refuse merges that can't fast-forward
+61	```
+62	
+63	## Merge strategy
+64	
+65	**Default: squash and merge.** One issue = one PR = one commit on `main`.
+66	
+67	| Strategy | When |
+68	|---|---|
+69	| **Squash** | Default. Agent branches, vibe-coding, WIP-heavy PRs. |
+70	| **Rebase** | Every commit in the PR is a curated, meaningful change. |
+71	| **Merge commit** | Almost never. Only when branch topology matters. |
+72	
+73	After squash-merge, the source branch's commits don't appear on `main`,
+74	so `git branch --merged` won't list it. `forge-cleanup.sh` checks PR
+75	status directly instead — always use it for cleanup, not `git branch -d`.
+76	
+77	## Post-merge follow-up
+78	
+79	After a PR merges:
+80	
+81	1. **New branch from updated main** — `git switch main && git pull --rebase && git switch -c cursor/next-thing`
+82	2. **New PR** — each PR is one logical change
+83	3. **Do not** reuse the merged branch (history diverges after squash)
+84	4. **Do not** try to reopen a merged PR (GitHub doesn't allow it)
+85	5. Name branches for the issue they address, not the previous PR
+86
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/github-features.md`
+
+````text
+1	# GitHub Features for Issue-Driven Development
+2	
+3	How to leverage GitHub's platform features beyond Issues and PRs.
+4	
+5	## GitHub Discussions
+6	
+7	Discussions are threaded conversations that live outside the issue tracker.
+8	Use them for:
+9	
+10	- Design proposals and trade-off analysis
+11	- Research notes that benefit from collaboration
+12	- Questions and answers (community support)
+13	- Announcements and status updates
+14	
+15	### Setup
+16	
+17	Enable in **Settings > Features > Discussions**.
+18	
+19	### Categories (recommended)
+20	
+21	| Category | Use for |
+22	|---|---|
+23	| General | Open-ended discussions |
+24	| Ideas | Feature brainstorming before it becomes an issue |
+25	| Design | Architecture decisions, trade-off analysis |
+26	| Q&A | Questions that have answers (mark as answered) |
+27	| Show and Tell | Demos, progress updates |
+28	
+29	### From the CLI
+30	
+31	GitHub Discussions creation requires the GraphQL API:
+32	
+33	```bash
+34	# List discussions
+35	gh api graphql -f query='
+36	  query {
+37	    repository(owner: "OWNER", name: "REPO") {
+38	      discussions(first: 10) {
+39	        nodes { number title category { name } }
+40	      }
+41	    }
+42	  }
+43	'
+44	```
+45	
+46	The `forge_discussion_create` function falls back to creating a labeled
+47	issue because the CLI doesn't have a native `gh discussion create` yet.
+48	Use the web UI for full Discussion features.
+49	
+50	### Linking Discussions to Issues
+51	
+52	When a Discussion matures into actionable work, create an Issue from it:
+53	
+54	```bash
+55	bash scripts/forge-issue.sh create \
+56	  --title "Implement OAuth (from Discussion #15)" \
+57	  --body "Design decided in Discussion #15. Proceeding with approach B.
+58	
+59	See: https://github.com/owner/repo/discussions/15" \
+60	  --label "type/feature"
+61	```
+62	
+63	## GitHub Projects (v2)
+64	
+65	Projects provide Kanban boards, tables, and roadmap views.
+66	
+67	### Setup
+68	
+69	Create a project from the **Projects** tab or via CLI:
+70	
+71	```bash
+72	gh project create --title "Backlog" --owner @me
+73	```
+74	
+75	### Recommended views
+76	
+77	1. **Board view**: columns by status (Backlog, In Progress, In Review, Done)
+78	2. **Table view**: sortable by priority, assignee, labels
+79	3. **Roadmap view**: timeline by milestone (if using milestones)
+80
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:13Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/scripts/forge-init.sh`
+
+```text
+200	  _forge_log "--- Configuring git ---"
+201	
+202	  git config fetch.prune true
+203	  _forge_log "Set fetch.prune = true"
+204	
+205	  git config pull.rebase true
+206	  _forge_log "Set pull.rebase = true"
+207	
+208	  git config merge.ff only
+209	  _forge_log "Set merge.ff = only"
+210	
+211	  # Ensure .worktrees/ is gitignored
+212	  if [ ! -f .gitignore ] || ! grep -qF '.worktrees/' .gitignore 2>/dev/null; then
+213	    printf '\n# forge-native-dev worktrees\n.worktrees/\n' >> .gitignore
+214	    _forge_log "Added .worktrees/ to .gitignore"
+215	  fi
+216	else
+217	  _forge_log "Skipping git config (--skip-git-config)."
+218	fi
+219	
+220	# --- Step 4b: GitHub Project board (optional) ---------------------------------
+221	
+222	if [ "$setup_project" -eq 1 ] && forge_is_maintainer; then
+223	  _forge_log ""
+224	  _forge_log "--- Setting up Project board ---"
+225	
+226	  proj_num="$(forge_project_create "$project_name Backlog" 2>/dev/null || true)"
+227	  if [ -n "$proj_num" ]; then
+228	    _forge_log "Project board: #$proj_num"
+229	  else
+230	    _forge_warn "Project creation failed or not supported. Set up manually."
+231	  fi
+232	elif [ "$setup_project" -eq 1 ] && ! forge_is_maintainer; then
+233	  _forge_warn "Skipping project creation (contributor role — only maintainers can create projects)."
+234	fi
+235	
+236	# --- Step 5: Agent guidance snippet -------------------------------------------
+237	
+238	_forge_log ""
+239	_forge_log "--- Agent guidance ---"
+240	
+241	SENTINEL="forge-native-dev:guidance"
+242	
+243	# Auto-detect agent contract file
+244	if [ -z "$agent_contract" ]; then
+245	  for candidate in AGENTS.md CLAUDE.md .opencode/AGENTS.md .cursorrules; do
+246	    if [ -f "$candidate" ]; then
+247	      agent_contract="$candidate"
+248	      break
+249	    fi
+250	  done
+251	  [ -z "$agent_contract" ] && agent_contract="AGENTS.md"
+252	fi
+253	
+254	if [ -f "$agent_contract" ] && grep -qF "$SENTINEL" "$agent_contract" 2>/dev/null; then
+255	  _forge_log "Agent guidance already present in $agent_contract (sentinel: $SENTINEL)"
+256	else
+257	  if [ -f "$SKILL_DIR/assets/agent-guidance.md.template" ]; then
+258	    {
+259	      printf '\n'
+260	      sed "s/<PROJECT NAME>/$project_name/g; s/<FORGE_TYPE>/$FORGE_TYPE/g; s/<FORGE_ROLE>/$FORGE_ROLE/g" \
+261	        "$SKILL_DIR/assets/agent-guidance.md.template"
+262	    } >> "$agent_contract"
+263	    _forge_log "Appended agent guidance to $agent_contract"
+264	  else
+265	    _forge_warn "Template not found: $SKILL_DIR/assets/agent-guidance.md.template"
+266	  fi
+267	fi
+268	
+269	# --- Summary ------------------------------------------------------------------
+270	
+271	_forge_log ""
+272	_forge_log "=== Setup complete ==="
+273	_forge_log ""
+274	_forge_log "Forge:      $FORGE_TYPE"
+275	_forge_log "CLI:        ${FORGE_CLI:-not available}"
+276	_forge_log "Role:       $FORGE_ROLE"
+277	_forge_log "Contract:   $agent_contract"
+278	_forge_log ""
+279	
+280	if [ "$FORGE_TYPE" = "github" ]; then
+281	  _forge_log "Manual steps you may want to do:"
+282	  _forge_log "  1. Enable Discussions on the repo (Settings > Features > Discussions)"
+283	  if [ "$setup_project" -eq 0 ]; then
+284	    _forge_log "  2. Create a GitHub Project board (or re-run with --setup-project)"
+285	  fi
+286	  _forge_log "  3. Review .gitignore changes and commit"
+287	elif [ "$FORGE_TYPE" = "gitlab" ]; then
+288	  _forge_log "Manual steps you may want to do:"
+289	  _forge_log "  1. Create a GitLab Board for backlog visualization"
+290	  _forge_log "  2. Review .gitignore changes and commit"
+291	fi
+292
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:37Z)**_
+
+這次會採用三層預設：當次能完成的小實驗／修正留在對話與 diff；值得保留的結論放 repo 文件；只有確實需要後續追蹤或非同步協作時才用外部紀錄。Discussion 另有更高門檻——需要持續徵求意見或共同做決策，而不是研究文件的鏡像；既有 Issue 也應優先重用。
+
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:41Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:53Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:49:59Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:50:17Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:50:24Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:50:33Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:50:38Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:50:52Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:08Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/CLAUDE.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```template
+<!-- forge-native-dev:guidance -->
+### Right-sized forge workflow (<FORGE_TYPE>, role: <FORGE_ROLE>)
+
+This project uses <FORGE_TYPE> Issues as the canonical shared backlog, not a
+mandatory record for every change. The `forge-native-dev` skill provides the
+scripts below; apply its scope gate before creating an external record.
+
+**Default local.** Bounded experiments, small fixes, and same-session research
+can finish in the conversation and diff. Keep reusable findings in a local
+research doc; local task state can support handoff without an external thread.
+
+**Track externally when warranted:** an explicit user request, outstanding
+work needing durable backlog/ownership/dependency tracking, or asynchronous
+collaborator input. Follow project publication policy. Duration, "research",
+"maybe later", or "先記下來" alone does not select an external surface.
+
+Reuse existing relevant records. Issues track actions; Discussions are for open
+questions needing ongoing shared deliberation. Do not automatically create both,
+mirror local research to Discussions, or backfill tickets for completed small
+work. A local branch/worktree or directly requested PR does not require an Issue.
+
+**Tracked work lifecycle (when an Issue is warranted):**
+1. Start: `bash scripts/forge-worktree.sh start <issue-number>`
+2. Work in the worktree, commit conventionally when authorized
+3. Finish: `bash scripts/forge-worktree.sh finish <issue-number>` (pushes + opens PR; requires publication authorization)
+4. After merge: `bash scripts/forge-cleanup.sh`
+
+**Check for work:** `bash scripts/forge-issue.sh list --assignee @me`
+
+**Progress reporting:** update an existing issue for meaningful milestones,
+blockers, or changed decisions, not every internal experiment:
+`bash scripts/forge-issue.sh comment <number> --body "progress update"`
+
+**Where things go:**
+- Bounded work → conversation + diff
+- Reusable research → in-repo notes (e.g. `backlog/`)
+- Durable shared work → Issues (with priority labels)
+- Ongoing shared deliberation → Discussions (GitHub) / existing issue threads (GitLab)
+- Past traps → `pitfalls/` in-repo (grep-able)
+- Review → PR/MR comments; follow the project's review requirements
+
+**Dashboard:** `bash scripts/forge-status.sh`
+
+**PRs are review gates.** Link the existing Issue when there is one; a direct
+PR can describe a small change without a prerequisite ticket. Default merge
+strategy: **squash and merge** (one logical change per commit on main).
+
+**Role: <FORGE_ROLE>**
+- maintainer: may create/assign labels, assign issues, merge PRs, manage
+  project boards, and triage incoming issues.
+- contributor: describe problems clearly in issues, open PRs, but leave
+  priority labeling and triage to maintainers. Do not auto-assign priority
+  labels.
+<!-- forge-native-dev:guidance (end) -->
+
+```
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/assets/agent-guidance.md.template has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:47Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/agent-patterns.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:51:48Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/conventions.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:52:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```markdown
+# Right-Sized Issue-Driven Workflow
+
+## The thesis: shared intent, not a ticket for every action
+
+For work that needs shared tracking, Issues record intent and PRs expose the
+diff for review. This makes assignment, blockers, and asynchronous decisions
+visible. It does **not** mean every agent action needs an Issue, or that research
+must pass through a Discussion before implementation.
+
+Agent-generated records are cheap to create but still cost human attention,
+notifications, triage, and maintenance. The objective is useful coordination,
+not a complete external log of the conversation.
+
+Background on the issue-first approach:
+
+- [Sindre Sorhus on "issue is the new PR"](https://x.com/sindresorhus/status/2105693826690298314)
+  and [follow-up](https://x.com/sindresorhus/status/2105720399266984369)
+- [lazygit #1147 — Show which branches have unmerged changes](https://github.com/jesseduffield/lazygit/issues/1147)
+
+## First decide whether an external record is needed
+
+Use the scope gate in `SKILL.md` before choosing an Issue or Discussion.
+
+| Situation | Lightest sufficient record |
+|---|---|
+| Small fix or bounded experiment completed now | Conversation + diff, normal validation/review |
+| Useful findings with no outstanding shared decision | Local research doc, e.g. `backlog/` |
+| Execution context must survive another session | Local task tool or handoff note, if sufficient |
+| Committed future work, shared ownership, blocker/dependency | Existing or new Issue |
+| Open question that needs continuing asynchronous input | Existing or new Discussion |
+| User explicitly requests a particular forge record | That record, subject to publication policy |
+
+Neither duration nor line count is a hard threshold. A small release blocker
+can need an Issue; a large solo experiment may not. "Research", "maybe later",
+and "先記下來" do not themselves specify where to publish.
+
+Before creating a warranted external record, look for a relevant existing one.
+An experiment within an Issue normally updates that Issue; it does not need
+another Issue plus a Discussion. Do not backfill tickets solely to document work
+that is already finished.
+
+## Issues versus local files
+
+| Dimension | Local research / task notes | Forge Issues |
+|---|---|---|
+| Portability | Available from the repo or local task store | Requires forge access |
+| Collaboration | Best for bounded work and durable supporting evidence | Comments, assignment, notifications |
+| Traceability | Link from the diff/PR when useful | Shared owner, state, blockers, milestones |
+| Overhead | No additional external lifecycle | Must triage, update, and eventually close |
+
+Hosted-first means the **shared backlog** lives on the forge. Local research,
+pitfalls and execution handoffs are compatible with it; avoid duplicating the
+same actionable backlog in two competing indexes.
+
+## Practical patterns
+
+### Bounded solo work
+
+1. Investigate or implement locally; use a normal branch/worktree if useful.
+2. Validate and report the result.
+3. Keep a local note only if the findings are worth retaining.
+4. Follow the project's review policy and the user's commit/publication request.
+
+A directly requested PR can carry a small change's rationale without an Issue.
+Do not create an Issue just because `forge-worktree.sh` takes an issue number.
+
+### Durable backlog or team coordination
+
+1. Reuse/create an Issue with an owner or clear acceptance criteria.
+2. Use the issue-linked worktree lifecycle when ready.
+3. Update the Issue for meaningful milestones, blockers, or changed decisions.
+4. Publish the PR when authorized, review, merge, and clean up.
+
+For parallel agents, split into separate Issues only when work streams need
+independent tracking. Local subtasks/worktrees can remain under one Issue.
+
+## Issue versus Discussion: second-stage choice
+
+After deciding an external record is warranted:
+
+- **Issue:** an outstanding action, deliverable, owner, blocker, or dependency.
+- **Discussion:** an unresolved question that benefits from ongoing shared
+  deliberation, not merely a place to paste a research report.
+
+### Conditional promotion
+
+An existing Discussion can lead to an Issue when the resulting work needs its
+own tracking. Reuse any existing Issue and link the decision. A small follow-up
+can instead link the Discussion from its PR/diff. Do not create a Discussion
+retroactively for a decision already settled in the conversation.
+
+### Keep one primary record
+
+Keep issue bodies concise and actionable. Detailed benchmarks and trade-offs
+can remain in a local research document linked from an existing Issue or PR.
+Do not mirror every document to Discussions, and do not create both surfaces
+merely because a task contains research and code.
+
+## Migrating an existing backlog
+
+Only migrate when the user has chosen a new canonical backlog, not merely
+because local notes exist alongside forge tooling.
+
+1. Triage outstanding actionable TODO items into Issues; do not recreate
+   completed work or every speculative thought as a ticket.
+2. Keep `backlog/` research docs; link from a relevant Issue if needed. Create a
+   Discussion only for a still-open question needing asynchronous input, not
+   based on document length.
+3. Keep `pitfalls/` in-repo for symptom-based lookup.
+4. Replace conflicting guidance with the bootstrap template's scope gate.
+
+Existing projects with the `forge-native-dev:guidance` sentinel are not rewritten
+by `forge-init.sh`. Review and update their policy block explicitly; rerunning
+init alone will not remove an old "create an Issue for every idea" rule.
+
+## Merge and review
+
+Default to squash-merge for one logical change per commit. Link an Issue when
+there is one; issue-free PRs are valid for bounded work unless repository policy
+requires otherwise. Rebase-merge fits deliberately curated commits.
+
+Keep required review and permission gates. A lightweight tracking policy does
+not authorize skipping tests, publishing unrequested content, or bypassing
+required PR review. For the tracked lifecycle's commands, see `SKILL.md` and
+`references/conventions.md`.
+
+```
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/issue-driven-workflow.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:52:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/coexistence.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:52:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/github-features.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:52:36Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/conventions.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/coexistence.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/agent-patterns.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/github-features.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/conventions.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/CLAUDE.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/coexistence.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:27Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:53:38Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/SKILL.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:05Z)**_
+
+主要規則、bootstrap template 與本 repo 指引都已同步調整，避免之後初始化新專案又帶回「每個想法都開 Issue」的預設。也保留了必要的 review／發布權限：減少追蹤負擔，不等於跳過測試、審查或自動 push；現在檢查是否還有互相矛盾的舊說法。
+
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Validate the lighter policy and check remaining contradictions
+
+`bash skills/local/skill-author/scripts/lint-skill.sh skills/local/forge-native-dev && make validate && git diff --check; printf '\n--- Remaining unconditional-policy wording ---\n'; rg -n -i 'default to creating|do not ask.*issue|create.*issue.*every|each PR corresponds|research and discussion go|long docs.*discussion|one issue =|canonical backlog|one workflow per project|each agent|one.*per.*agent' CLAUDE.md skills/local/forge-native-dev; printf '\n--- Scoped diff summary ---\n'; git diff --stat -- CLAUDE.md skills/local/forge-native-dev`
+
+```text
+Frontmatter & length:
+  ok    frontmatter delimiters present
+  ok    frontmatter parses as YAML
+  ok    name field present: forge-native-dev
+  ok    name length is 16 chars (<=64)
+  ok    name is portable hyphen-case
+  ok    description field present (425 chars)
+  ok    description includes trigger phrase ('use when' or similar)
+  ok    description is in the preferred 120-500 char budget
+  ok    SKILL.md is 437 lines (< 500)
+
+Script hygiene:
+  ok    forge-cleanup.sh has shebang
+  ok    forge-cleanup.sh is executable
+  ok    forge-cleanup.sh handles --help
+  ok    forge-init.sh has shebang
+  ok    forge-init.sh is executable
+  ok    forge-init.sh handles --help
+  ok    forge-issue.sh has shebang
+  ok    forge-issue.sh is executable
+  ok    forge-issue.sh handles --help
+  ok    forge-pr.sh has shebang
+  ok    forge-pr.sh is executable
+  ok    forge-pr.sh handles --help
+  ok    forge-status.sh has shebang
+  ok    forge-status.sh is executable
+  ok    forge-status.sh handles --help
+  ok    forge-worktree.sh has shebang
+  ok    forge-worktree.sh is executable
+  ok    forge-worktree.sh handles --help
+  FAIL  forge.sh missing shebang on line 1
+  FAIL  forge.sh is not executable (chmod +x)
+  WARN  forge.sh has no --help handler
+
+Reference reachability:
+  ok    agent-patterns.md is referenced from SKILL.md
+  ok    coexistence.md is referenced from SKILL.md
+  ok    conventions.md is referenced from SKILL.md
+  ok    forge-abstraction.md is referenced from SKILL.md
+  ok    github-features.md is referenced from SKILL.md
+  ok    gitlab-features.md is referenced from SKILL.md
+  ok    issue-driven-workflow.md is referenced from SKILL.md
+
+Summary:
+  errors:   2
+  warnings: 1
+
+--- Remaining unconditional-policy wording ---
+skills/local/forge-native-dev/SKILL.md:349:Each agent session should work in its own worktree. Use `--agent` prefix
+skills/local/forge-native-dev/references/issue-driven-workflow.md:101:Only migrate when the user has chosen a new canonical backlog, not merely
+skills/local/forge-native-dev/references/issue-driven-workflow.md:114:init alone will not remove an old "create an Issue for every idea" rule.
+skills/local/forge-native-dev/references/agent-patterns.md:7:The most natural pattern for Cursor users. Each agent session works on one
+skills/local/forge-native-dev/references/agent-patterns.md:173:This project uses GitHub/GitLab Issues as the canonical backlog.
+skills/local/forge-native-dev/references/agent-patterns.md:198:- **Don't create one record per agent or phase.** A small experiment or local
+
+--- Scoped diff summary ---
+ CLAUDE.md                                          |  34 ++--
+ skills/local/forge-native-dev/SKILL.md             | 139 ++++++++-----
+ .../assets/agent-guidance.md.template              |  47 +++--
+ .../forge-native-dev/references/agent-patterns.md  |  24 ++-
+ .../forge-native-dev/references/coexistence.md     |  18 +-
+ .../forge-native-dev/references/conventions.md     |   8 +-
+ .../forge-native-dev/references/github-features.md |  17 +-
+ .../references/issue-driven-workflow.md            | 219 +++++++++------------
+ 8 files changed, 275 insertions(+), 231 deletions(-)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:06Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check for an existing preference about tracking overhead
+
+`rg -n -i 'tracking|discussion|lightweight|overhead|issue' /Users/zhouhanru/.claude/projects/-Users-zhouhanru-Documents-David-Program-agent-skills/memory/ --glob '*.md' || true`
+
+```text
+(Bash completed with no output)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:31Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/scripts/forge.sh`
+
+```text
+1	# shellcheck shell=bash
+2	# Forge abstraction library — sourced by other scripts, not executed directly.
+3	# Provides a unified interface over GitHub (gh) and GitLab (glab) CLIs.
+4	# Compatibility: macOS system Bash 3.2+.
+5	#
+6	# Usage:
+7	#   source "$(dirname "$0")/forge.sh"
+8	#   forge_detect          # sets FORGE_TYPE and FORGE_CLI
+9	#   forge_issue_create --title "Bug" --body "Details" --label "type/bug"
+10	
+11	# Guard against double-sourcing.
+12	[ -n "${_FORGE_LIB_LOADED:-}" ] && return 0
+13	_FORGE_LIB_LOADED=1
+14	
+15	# ---------------------------------------------------------------------------
+16	# Internal helpers
+17	# ---------------------------------------------------------------------------
+18	
+19	_forge_log()  { printf '%s\n' "$*" >&2; }
+20	_forge_warn() { printf 'forge: warn: %s\n' "$*" >&2; }
+21	_forge_die()  { printf 'forge: error: %s\n' "$1" >&2; exit "${2:-1}"; }
+22	
+23	_forge_require_detected() {
+24	  if [ -z "${FORGE_TYPE:-}" ]; then
+25	    _forge_die "forge not detected yet — call forge_detect first" 1
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:35Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run publish gates and compare lint errors with committed baseline
+
+`make validate && git diff --check; printf '\n--- Baseline skill lint ---\n'; baseline=$(mktemp -d /tmp/forge-policy-baseline.XXXXXX); git archive HEAD skills/local/forge-native-dev | tar -x -C "$baseline" && bash skills/local/skill-author/scripts/lint-skill.sh --quiet "$baseline/skills/local/forge-native-dev"; result=$?; printf 'Baseline lint exit: %s\n' "$result"; printf '\n--- Shared library unchanged ---\n'; git diff --exit-code HEAD -- skills/local/forge-native-dev/scripts/forge.sh`
+
+```text
+./scripts/lint-frontmatter.sh --quiet skills
+checked 77 SKILL.md (parser: yq) — 0 failed, 0 warned
+./scripts/validate-marketplace.sh
+OK:    JSON parses
+OK:    marketplace name 'daviddwlee84-skills' is not reserved
+OK:    75 skill paths listed; all exist with SKILL.md
+OK:    no duplicate skill paths across plugins
+OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+
+PASSED: 0 errors, 0 warning(s)
+./scripts/todo-kanban.sh --validate-only
+OK: TODO.md passes project-knowledge-harness format
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24028: trailing whitespace.
++5	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24030: trailing whitespace.
++7	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24034: trailing whitespace.
++11	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24039: trailing whitespace.
++16	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24041: trailing whitespace.
++18	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24043: trailing whitespace.
++20	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24060: trailing whitespace.
++37	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24062: trailing whitespace.
++39	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24072: trailing whitespace.
++49	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24074: trailing whitespace.
++51	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24079: trailing whitespace.
++56	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24081: trailing whitespace.
++58	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24083: trailing whitespace.
++60	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24086: trailing whitespace.
++63	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24091: trailing whitespace.
++68	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24095: trailing whitespace.
++72	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24097: trailing whitespace.
++74	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24100: trailing whitespace.
++77	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24102: trailing whitespace.
++79	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24106: trailing whitespace.
++83	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24109: trailing whitespace.
++86	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24111: trailing whitespace.
++88	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24113: trailing whitespace.
++90	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24117: trailing whitespace.
++94	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24121: trailing whitespace.
++98	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24123: trailing whitespace.
++100	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24125: trailing whitespace.
++102	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24128: trailing whitespace.
++105	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24135: trailing whitespace.
++112	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24141: trailing whitespace.
++118	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24148: trailing whitespace.
++125	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24150: trailing whitespace.
++127	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24154: trailing whitespace.
++131	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24157: trailing whitespace.
++134	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24161: trailing whitespace.
++138	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24165: trailing whitespace.
++142	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24167: trailing whitespace.
++144	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24170: trailing whitespace.
++147	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24172: trailing whitespace.
++149	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24176: trailing whitespace.
++153	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24180: trailing whitespace.
++157	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24182: trailing whitespace.
++159	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24184: trailing whitespace.
++161	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24188: trailing whitespace.
++165	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24191: trailing whitespace.
++168	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24195: trailing whitespace.
++172	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24197: trailing whitespace.
++174	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24199: trailing whitespace.
++176	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24204: trailing whitespace.
++181	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24206: trailing whitespace.
++183	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24208: trailing whitespace.
++185	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24214: trailing whitespace.
++191	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24220: trailing whitespace.
++197	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24223: trailing whitespace.
++200	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24225: trailing whitespace.
++202	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24227: trailing whitespace.
++204	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24232: trailing whitespace.
++209	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24237: trailing whitespace.
++214	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24239: trailing whitespace.
++216	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24244: trailing whitespace.
++221	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24246: trailing whitespace.
++223	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24252: trailing whitespace.
++229	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24256: trailing whitespace.
++233	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24258: trailing whitespace.
++235	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24266: trailing whitespace.
++243	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24270: trailing whitespace.
++247	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24275: trailing whitespace.
++252	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24279: trailing whitespace.
++256	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24281: trailing whitespace.
++258	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24290: trailing whitespace.
++267	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24294: trailing whitespace.
++271	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24296: trailing whitespace.
++273	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24298: trailing whitespace.
++275	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24305: trailing whitespace.
++282	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24307: trailing whitespace.
++284	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24309: trailing whitespace.
++286	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24311: trailing whitespace.
++288	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24315: trailing whitespace.
++292	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24317: trailing whitespace.
++294	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24319: trailing whitespace.
++296	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24324: trailing whitespace.
++301	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24326: trailing whitespace.
++303	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24329: trailing whitespace.
++306	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24333: trailing whitespace.
++310	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24337: trailing whitespace.
++314	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24339: trailing whitespace.
++316	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24342: trailing whitespace.
++319	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24346: trailing whitespace.
++323	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24348: trailing whitespace.
++325	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24353: trailing whitespace.
++330	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24355: trailing whitespace.
++332	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24357: trailing whitespace.
++334	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24375: trailing whitespace.
++352	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24377: trailing whitespace.
++354	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24526: trailing whitespace.
++3	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24529: trailing whitespace.
++6	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24533: trailing whitespace.
++10	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24539: trailing whitespace.
++16	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24541: trailing whitespace.
++18	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24544: trailing whitespace.
++21	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24550: trailing whitespace.
++27	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24552: trailing whitespace.
++29	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24557: trailing whitespace.
++34	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24577: trailing whitespace.
++2	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24579: trailing whitespace.
++4	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24583: trailing whitespace.
++8	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24587: trailing whitespace.
++12	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24590: trailing whitespace.
++15	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24594: trailing whitespace.
++19	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24596: trailing whitespace.
++21	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24601: trailing whitespace.
++26	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24603: trailing whitespace.
++28	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24613: trailing whitespace.
++38	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24617: trailing whitespace.
++42	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24619: trailing whitespace.
++44	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24621: trailing whitespace.
++46	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24626: trailing whitespace.
++51	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24629: trailing whitespace.
++54	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24631: trailing whitespace.
++56	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24637: trailing whitespace.
++62	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24639: trailing whitespace.
++64	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24646: trailing whitespace.
++71	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24648: trailing whitespace.
++73	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24650: trailing whitespace.
++75	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24658: trailing whitespace.
++83	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24660: trailing whitespace.
++85	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24663: trailing whitespace.
++88	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24667: trailing whitespace.
++92	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24669: trailing whitespace.
++94	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24677: trailing whitespace.
++102	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24682: trailing whitespace.
++107	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24684: trailing whitespace.
++109	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24686: trailing whitespace.
++111	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24691: trailing whitespace.
++116	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24695: trailing whitespace.
++120	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24697: trailing whitespace.
++122	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24702: trailing whitespace.
++127	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24704: trailing whitespace.
++129	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24707: trailing whitespace.
++132	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24709: trailing whitespace.
++134	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24713: trailing whitespace.
++138	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24717: trailing whitespace.
++142	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24722: trailing whitespace.
++147	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24727: trailing whitespace.
++152	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24729: trailing whitespace.
++154	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24741: trailing whitespace.
++166	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24763: trailing whitespace.
++163	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24765: trailing whitespace.
++165	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24768: trailing whitespace.
++168	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24772: trailing whitespace.
++172	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24774: trailing whitespace.
++174	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24785: trailing whitespace.
++185	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24787: trailing whitespace.
++187	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24808: trailing whitespace.
++208	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24811: trailing whitespace.
++211	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24815: trailing whitespace.
++215	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24824: trailing whitespace.
++224	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24828: trailing whitespace.
++228	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24834: trailing whitespace.
++234	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24836: trailing whitespace.
++236	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24838: trailing whitespace.
++238	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24842: trailing whitespace.
++242	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24844: trailing whitespace.
++244	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24848: trailing whitespace.
++248	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24878: trailing whitespace.
++2	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24880: trailing whitespace.
++4	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24890: trailing whitespace.
++14	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24892: trailing whitespace.
++16	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24902: trailing whitespace.
++26	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24904: trailing whitespace.
++28	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24907: trailing whitespace.
++31	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24913: trailing whitespace.
++37	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24916: trailing whitespace.
++40	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24919: trailing whitespace.
++43	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24921: trailing whitespace.
++45	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24931: trailing whitespace.
++55	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24933: trailing whitespace.
++57	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24936: trailing whitespace.
++60	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24938: trailing whitespace.
++62	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24940: trailing whitespace.
++64	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24942: trailing whitespace.
++66	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24948: trailing whitespace.
++72	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24952: trailing whitespace.
++76	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24956: trailing whitespace.
++80	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24958: trailing whitespace.
++82	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24961: trailing whitespace.
++85	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24964: trailing whitespace.
++88	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24966: trailing whitespace.
++90	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24968: trailing whitespace.
++92	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24972: trailing whitespace.
++96	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24974: trailing whitespace.
++98	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24978: trailing whitespace.
++102	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24981: trailing whitespace.
++105	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24983: trailing whitespace.
++107	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24986: trailing whitespace.
++110	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24993: trailing whitespace.
++117	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24995: trailing whitespace.
++119	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:24998: trailing whitespace.
++122	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25003: trailing whitespace.
++127	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25007: trailing whitespace.
++131	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25009: trailing whitespace.
++133	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25012: trailing whitespace.
++136	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25016: trailing whitespace.
++140	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25020: trailing whitespace.
++144	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25022: trailing whitespace.
++146	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25031: trailing whitespace.
++155	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25033: trailing whitespace.
++157	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25035: trailing whitespace.
++159	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25039: trailing whitespace.
++163	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25042: trailing whitespace.
++166	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25058: trailing whitespace.
++2	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25063: trailing whitespace.
++7	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25065: trailing whitespace.
++9	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25067: trailing whitespace.
++11	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25070: trailing whitespace.
++14	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25073: trailing whitespace.
++17	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25075: trailing whitespace.
++19	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25089: trailing whitespace.
++33	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25091: trailing whitespace.
++35	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25098: trailing whitespace.
++42	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25100: trailing whitespace.
++44	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25106: trailing whitespace.
++50	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25109: trailing whitespace.
++53	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25111: trailing whitespace.
++55	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25113: trailing whitespace.
++57	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25118: trailing whitespace.
++62	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25120: trailing whitespace.
++64	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25122: trailing whitespace.
++66	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25128: trailing whitespace.
++72	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25132: trailing whitespace.
++76	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25134: trailing whitespace.
++78	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25136: trailing whitespace.
++80	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25154: trailing whitespace.
++2	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25156: trailing whitespace.
++4	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25158: trailing whitespace.
++6	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25161: trailing whitespace.
++9	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25166: trailing whitespace.
++14	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25168: trailing whitespace.
++16	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25170: trailing whitespace.
++18	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25172: trailing whitespace.
++20	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25180: trailing whitespace.
++28	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25182: trailing whitespace.
++30	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25184: trailing whitespace.
++32	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25197: trailing whitespace.
++45	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25201: trailing whitespace.
++49	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25203: trailing whitespace.
++51	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25205: trailing whitespace.
++53	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25210: trailing whitespace.
++58	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25214: trailing whitespace.
++62	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25216: trailing whitespace.
++64	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25218: trailing whitespace.
++66	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25220: trailing whitespace.
++68	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25222: trailing whitespace.
++70	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25226: trailing whitespace.
++74	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25228: trailing whitespace.
++76	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25244: trailing whitespace.
++201	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25247: trailing whitespace.
++204	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25250: trailing whitespace.
++207	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25253: trailing whitespace.
++210	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25262: trailing whitespace.
++219	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25264: trailing whitespace.
++221	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25268: trailing whitespace.
++225	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25278: trailing whitespace.
++235	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25280: trailing whitespace.
++237	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25283: trailing whitespace.
++240	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25285: trailing whitespace.
++242	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25296: trailing whitespace.
++253	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25311: trailing whitespace.
++268	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25313: trailing whitespace.
++270	
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md:25322: trailing whitespace.
++279	
+
+--- Baseline skill lint ---
+Frontmatter & length:
+
+Script hygiene:
+  FAIL  forge.sh missing shebang on line 1
+  FAIL  forge.sh is not executable (chmod +x)
+  WARN  forge.sh has no --help handler
+
+Reference reachability:
+
+Summary:
+  errors:   2
+  warnings: 1
+Baseline lint exit: 3
+
+--- Shared library unchanged ---
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:35Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `/Users/zhouhanru/.claude/projects/-Users-zhouhanru-Documents-David-Program-agent-skills/memory/MEMORY.md`
+
+```text
+
+1	- [Shared checkout branch can change](shared-checkout-branch-can-change.md) — concurrent sessions may switch HEAD; re-check the branch right before committing
+2
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:54:35Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/references/agent-patterns.md`
+
+````text
+1	# Agent Configuration Patterns
+2	
+3	Recipes for wiring AI coding agents into the issue-driven workflow.
+4	
+5	## Pattern 1: Cursor Agent with worktree-per-issue
+6	
+7	The most natural pattern for Cursor users. Each agent session works on one
+8	issue in an isolated worktree.
+9	
+10	### Setup
+11	
+12	1. Run `forge-init.sh` on the project
+13	2. Install this skill in the project (via `npx skills add` or symlinks)
+14	
+15	### Workflow
+16	
+17	```
+18	Human: "Work on issue #42"
+19	Agent:
+20	  1. bash scripts/forge-worktree.sh start 42
+21	  2. cd .worktrees/issue-42/
+22	  3. (implement the feature)
+23	  4. git add -A && git commit -m "feat: add OAuth support"
+24	  5. bash scripts/forge-worktree.sh finish 42
+25	```
+26	
+27	The agent creates the branch, works in isolation, and opens the PR — all
+28	from a single prompt.
+29	
+30	### Parallel agents
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:55:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/references/agent-patterns.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:55:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```markdown
+---
+name: proportional-tracking-overhead
+description: User prefers lightweight handling of bounded experiments, not automatic Issue-plus-Discussion overhead.
+metadata:
+  type: feedback
+---
+
+The user values process proportional to the work: small experiments and changes should not automatically produce external Issues or Discussions. Retaining findings and starting an external discussion are different needs.
+
+**Why:** They found the automatic creation of both a Discussion and an Issue for a bounded integration experiment unnecessarily heavy and noisy.
+
+**How to apply:** Default to the conversation/diff and a useful local note. Escalate to shared tracking when explicitly requested or when an outstanding commitment, coordination need, or ongoing shared decision justifies it; reuse existing records. Duration alone is not the criterion. Do not create a new external item just to track a correction to this behavior.
+
+```
+
+```text
+File created successfully at: /Users/zhouhanru/.claude/projects/-Users-zhouhanru-Documents-David-Program-agent-skills/memory/proportional-tracking-overhead.md
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:55:07Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/.claude/projects/-Users-zhouhanru-Documents-David-Program-agent-skills/memory/MEMORY.md has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:55:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify policy-only changes without touching live history
+
+`git diff --check -- CLAUDE.md skills/local/forge-native-dev; printf '\n--- Policy anchors ---\n'; rg -n '^## Scope gate|^## Issue vs|^### 2\. Capture|^\*\*Right-size|^\*\*Default local|^## First decide' CLAUDE.md skills/local/forge-native-dev/SKILL.md skills/local/forge-native-dev/assets/agent-guidance.md.template skills/local/forge-native-dev/references/issue-driven-workflow.md; printf '\n--- Changed paths ---\n'; git status --short`
+
+```text
+--- Policy anchors ---
+CLAUDE.md:226:**Right-size tracking.** Default to local work for bounded experiments and
+skills/local/forge-native-dev/SKILL.md:63:## Scope gate — before any external creation
+skills/local/forge-native-dev/SKILL.md:137:### 2. Capture durable work as Issues (when warranted)
+skills/local/forge-native-dev/SKILL.md:279:## Issue vs Discussion: content boundary
+skills/local/forge-native-dev/references/issue-driven-workflow.md:20:## First decide whether an external record is needed
+skills/local/forge-native-dev/assets/agent-guidance.md.template:8:**Default local.** Bounded experiments, small fixes, and same-session research
+
+--- Changed paths ---
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+ M CLAUDE.md
+ M skills/local/forge-native-dev/SKILL.md
+ M skills/local/forge-native-dev/assets/agent-guidance.md.template
+ M skills/local/forge-native-dev/references/agent-patterns.md
+ M skills/local/forge-native-dev/references/coexistence.md
+ M skills/local/forge-native-dev/references/conventions.md
+ M skills/local/forge-native-dev/references/github-features.md
+ M skills/local/forge-native-dev/references/issue-driven-workflow.md
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 05:55:35Z)**_
+
+**這次的確過重了。問題不是 Issue／Discussion 分錯類，而是少了前一層判斷：這件事需要外部追蹤嗎？**
+
+原本的規則把「研究 → Discussion」「實作 → Issue」直接套用，結果一個當次就能完成的小實驗，也產生兩個需要維護的外部紀錄。
+
+已改成以下預設：
+
+| 情況 | 預設處理 |
+|---|---|
+| 當次能完成的小實驗、修正、評估 | 對話＋diff，不開票 |
+| 值得保留的研究結論 | repo 內研究文件，不必開 Discussion |
+| 尚待完成、需要追蹤負責人／阻塞／依賴的工作 | 優先重用既有 Issue，必要時才新增 |
+| 未決問題，需要其他人持續、非同步參與決策 | Discussion |
+
+**時間長短不是唯一標準。** 長時間的個人研究仍可留在 repo；只有一行修改的 release blocker，反而可能需要 Issue。Discussion 應該是「需要討論」，不是「有研究文件可以貼」。
+
+另外也加入：
+- 不因為用了 worktree 就補開 Issue。
+- 不因同一件事包含研究與程式碼，就同時開兩種紀錄。
+- 不為已完成的小改動倒補追蹤項目。
+- 優先更新既有紀錄，只回報有意義的進展。
+
+已同步修改 [skill 的判斷規則](skills/local/forge-native-dev/SKILL.md:63)、bootstrap template、相關 references 與 [本 repo 指引](CLAUDE.md:226)。按新判準，前面的 Pueue 實驗用**研究文件＋測試＋diff** 就足夠，不需要成套開 #43／#44。
+
+這次沒有新增 Issue／Discussion，也未 commit／push。`make validate` 與本次檔案的 diff 檢查通過；skill linter 的兩個既有錯誤來自被 source 的 `forge.sh` 缺少 executable/shebang，已確認不是本次引入，未擴大修改範圍。
+
+---
+
+_**User (2026-11-03 06:05:00Z)**_
+
+git commit 然後可以順便修看看你說的既有錯誤
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:08Z)**_
+
+我會先確認 `forge.sh` 的共用 library 用法，修正這類檔案的 lint 判斷，再重跑檢查並提交。這次 commit 我會沿用前面指定的範圍：只提交功能變更，保留仍在錄製的 plan／transcripts，不 push。
+
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:08Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="Skill"><details>
+<summary>Tool use: **Skill**</summary>
+
+**Input:**
+
+- skill: `skill-author`
+
+</details></tool-use>
+
+---
+
+_**User (2026-11-03 06:05:08Z)**_
+
+Skill /skill-author is already loaded above; instructions unchanged.
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect pending changes and linter coverage
+
+`git status --short; git branch --show-current; git log -3 --oneline; printf '\n--- Skill-author files ---\n'; rg --files skills/local/skill-author; printf '\n--- Linter and sourced-library patterns ---\n'; rg -n 'Script hygiene|missing shebang|not executable|--help handler|lint-skill|sourced.*not|shellcheck shell' skills/local/skill-author skills/local/forge-native-dev Makefile pyproject.toml`
+
+```text
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+ M CLAUDE.md
+ M skills/local/forge-native-dev/SKILL.md
+ M skills/local/forge-native-dev/assets/agent-guidance.md.template
+ M skills/local/forge-native-dev/references/agent-patterns.md
+ M skills/local/forge-native-dev/references/coexistence.md
+ M skills/local/forge-native-dev/references/conventions.md
+ M skills/local/forge-native-dev/references/github-features.md
+ M skills/local/forge-native-dev/references/issue-driven-workflow.md
+main
+ba408bd chore: backup plan and chat history
+2f8e2b8 feat(pueue): document verified agent continuation recipes
+b72e4fb chore: backup plan and chat history
+
+--- Skill-author files ---
+skills/local/skill-author/assets/script-python.template
+skills/local/skill-author/assets/SKILL.md.template
+skills/local/skill-author/assets/reference.md.template
+skills/local/skill-author/assets/script-bash.template
+skills/local/skill-author/SKILL.md
+skills/local/skill-author/scripts/lint-frontmatter.sh
+skills/local/skill-author/scripts/lint-skill.sh
+skills/local/skill-author/scripts/new-skill.sh
+skills/local/skill-author/references/authoring-patterns.md
+skills/local/skill-author/references/script-design.md
+skills/local/skill-author/references/this-repo-conventions.md
+
+--- Linter and sourced-library patterns ---
+skills/local/skill-author/SKILL.md:118:bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
+skills/local/skill-author/SKILL.md:126:2. **Script hygiene** — every `scripts/*.sh` has a shebang, is executable, and
+skills/local/skill-author/SKILL.md:156:- **`scripts/lint-skill.sh <skill-dir>`** — Run frontmatter, script hygiene,
+skills/local/skill-author/SKILL.md:162:  breakage class `lint-skill.sh`'s awk extractor cannot see — an unquoted
+skills/local/skill-author/SKILL.md:164:  Cursor) **silently skip the skill**. `lint-skill.sh` calls this for the
+skills/local/skill-author/scripts/lint-frontmatter.sh:6:# skips** any skill whose frontmatter fails to parse. `lint-skill.sh` reads
+skills/local/skill-author/scripts/lint-skill.sh:2:# lint-skill.sh — Lint a skill directory for quality issues.
+skills/local/skill-author/scripts/lint-skill.sh:8:#   2. Script hygiene           — every scripts/*.sh has shebang, +x, --help handler.
+skills/local/skill-author/scripts/lint-skill.sh:17:Usage: lint-skill.sh [OPTIONS] <skill-dir>
+skills/local/skill-author/scripts/lint-skill.sh:28:  bash lint-skill.sh skills/local/my-skill
+skills/local/skill-author/scripts/lint-skill.sh:29:  bash lint-skill.sh --strict skills/local/my-skill
+skills/local/skill-author/scripts/lint-skill.sh:30:  bash lint-skill.sh --json skills/local/my-skill | jq
+skills/local/skill-author/scripts/lint-skill.sh:247:# Check 2: Script hygiene
+skills/local/skill-author/scripts/lint-skill.sh:250:echo "Script hygiene:"
+skills/local/skill-author/scripts/lint-skill.sh:263:      *)     emit_err "$NAME missing shebang on line 1" ;;
+skills/local/skill-author/scripts/lint-skill.sh:270:      emit_err "$NAME is not executable (chmod +x)"
+skills/local/skill-author/scripts/lint-skill.sh:273:    # --help handler (look for the literal flag, not just the word "help").
+skills/local/skill-author/scripts/lint-skill.sh:277:      emit_warn "$NAME has no --help handler"
+skills/local/skill-author/scripts/lint-skill.sh:290:      *)     emit_warn "$NAME missing shebang (less critical for .py if invoked via 'python …' / 'uv run …')" ;;
+skills/local/skill-author/scripts/lint-skill.sh:296:      emit_warn "$NAME is not executable"
+skills/local/skill-author/scripts/new-skill.sh:483:NEXT_STEPS="\"Edit $CANONICAL_DIR/SKILL.md to fill in description and workflow\",\"Run lint-skill.sh $CANONICAL_DIR to verify\""
+skills/local/forge-native-dev/scripts/forge.sh:1:# shellcheck shell=bash
+skills/local/forge-native-dev/scripts/forge.sh:2:# Forge abstraction library — sourced by other scripts, not executed directly.
+skills/local/forge-native-dev/SKILL.md:380:- **`scripts/forge.sh`** — sourced library, not run directly. All other
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/skill-author/scripts/lint-skill.sh`
+
+```text
+1	#!/usr/bin/env bash
+2	# lint-skill.sh — Lint a skill directory for quality issues.
+3	#
+4	# Checks:
+5	#   1. Frontmatter & length     — name + description present, description has
+6	#                                  "use when" trigger phrasing, portable
+7	#                                  name/description lengths, SKILL.md < 500 lines.
+8	#   2. Script hygiene           — every scripts/*.sh has shebang, +x, --help handler.
+9	#   3. Reference reachability   — every references/*.md is mentioned in SKILL.md.
+10	#
+11	# Bash 3.2 compatible (works on stock macOS).
+12	
+13	set -euo pipefail
+14	
+15	usage() {
+16	  cat <<'EOF'
+17	Usage: lint-skill.sh [OPTIONS] <skill-dir>
+18	
+19	Lint a skill directory against agentskills.io best practices.
+20	
+21	Options:
+22	  --strict           Treat warnings as errors.
+23	  --quiet            Only print failures (suppress 'ok' lines).
+24	  --json             Emit a JSON summary on stdout (in addition to human output).
+25	  --help, -h         Show this help and exit.
+26	
+27	Examples:
+28	  bash lint-skill.sh skills/local/my-skill
+29	  bash lint-skill.sh --strict skills/local/my-skill
+30	  bash lint-skill.sh --json skills/local/my-skill | jq
+31	
+32	Exit codes:
+33	  0  all checks passed (warnings allowed unless --strict)
+34	  1  invalid arguments
+35	  2  skill directory not found or missing SKILL.md
+36	  3  one or more lint errors
+37	EOF
+38	}
+39	
+40	log()  { printf '%s\n' "$*" >&2; }
+41	die()  { printf 'error: %s\n' "$*" >&2; exit "${2:-1}"; }
+42	
+43	STRICT=0
+44	QUIET=0
+45	JSON=0
+46	SKILL_DIR=""
+47	
+48	while [ $# -gt 0 ]; do
+49	  case "$1" in
+50	    --strict)  STRICT=1; shift ;;
+51	    --quiet)   QUIET=1; shift ;;
+52	    --json)    JSON=1; shift ;;
+53	    --help|-h) usage; exit 0 ;;
+54	    -*)        die "unknown flag: $1 (try --help)" 1 ;;
+55	    *)
+56	      if [ -n "$SKILL_DIR" ]; then
+57	        die "only one skill directory allowed (got '$SKILL_DIR' and '$1')" 1
+58	      fi
+59	      SKILL_DIR="$1"; shift
+60	      ;;
+61	  esac
+62	done
+63	
+64	[ -n "$SKILL_DIR" ] || die "missing <skill-dir> (try --help)" 1
+65	[ -d "$SKILL_DIR" ] || die "not a directory: $SKILL_DIR" 2
+66	[ -f "$SKILL_DIR/SKILL.md" ] || die "no SKILL.md in $SKILL_DIR" 2
+67	
+68	ERRORS=0
+69	WARNINGS=0
+70	ERROR_MSGS=()
+71	WARNING_MSGS=()
+72	
+73	emit_ok()   { [ "$QUIET" = "1" ] || printf '  ok    %s\n' "$*"; }
+74	emit_note() { [ "$QUIET" = "1" ] || printf '  note  %s\n' "$*"; }
+75	emit_warn() {
+76	  printf '  WARN  %s\n' "$*"
+77	  WARNINGS=$((WARNINGS + 1))
+78	  WARNING_MSGS+=("$*")
+79	}
+80	emit_err()  {
+81	  printf '  FAIL  %s\n' "$*"
+82	  ERRORS=$((ERRORS + 1))
+83	  ERROR_MSGS+=("$*")
+84	}
+85	
+86	extract_frontmatter_value() {
+87	  # Minimal YAML scalar extractor for top-level SKILL.md frontmatter.
+88	  # Handles single-line values plus folded/literal blocks (`>-`, `|`).
+89	  awk -v key="$1" '
+90	    function trim(s) {
+91	      gsub(/^[ \t]+|[ \t]+$/, "", s)
+92	      return s
+93	    }
+94	    function unquote(s) {
+95	      s = trim(s)
+96	      if ((s ~ /^".*"$/) || (s ~ /^'\''.*'\''$/)) {
+97	        return substr(s, 2, length(s) - 2)
+98	      }
+99	      return s
+100	    }
+101	    function flush() {
+102	      if (found) {
+103	        gsub(/[ \t]+/, " ", value)
+104	        print trim(value)
+105	        exit
+106	      }
+107	    }
+108	    NR == 1 && $0 == "---" { in_fm = 1; next }
+109	    in_fm && $0 == "---" { flush(); exit }
+110	    !in_fm { next }
+111	    found {
+112	      if ($0 ~ /^[A-Za-z0-9_-]+:[ \t]*/) {
+113	        flush()
+114	      }
+115	      if ($0 ~ /^[ \t]+/) {
+116	        line = $0
+117	        sub(/^[ \t]+/, "", line)
+118	        if (value != "") value = value " "
+119	        value = value line
+120	        next
+121	      }
+122	      flush()
+123	    }
+124	    $0 ~ "^" key ":[ \t]*" {
+125	      found = 1
+126	      value = $0
+127	      sub("^" key ":[ \t]*", "", value)
+128	      if (value ~ /^[>|][+-]?$/) {
+129	        value = ""
+130	        next
+131	      }
+132	      print unquote(value)
+133	      exit
+134	    }
+135	  ' "$SKILL_MD"
+136	}
+137	
+138	# ----------------------------------------------------------------------
+139	# Check 1: Frontmatter & length
+140	# ----------------------------------------------------------------------
+141	echo "Frontmatter & length:"
+142	
+143	SKILL_MD="$SKILL_DIR/SKILL.md"
+144	
+145	# Extract frontmatter (between first two `---` lines).
+146	FM_START=$(awk '/^---$/{print NR; exit}' "$SKILL_MD" || true)
+147	FM_END=$(awk -v start="${FM_START:-0}" 'NR>start && /^---$/{print NR; exit}' "$SKILL_MD" || true)
+148	
+149	if [ -z "$FM_START" ] || [ -z "$FM_END" ] || [ "$FM_START" != "1" ]; then
+150	  emit_err "SKILL.md missing YAML frontmatter (must start with '---' on line 1)"
+151	else
+152	  emit_ok "frontmatter delimiters present"
+153	
+154	  FM=$(sed -n "${FM_START},${FM_END}p" "$SKILL_MD")
+155	
+156	  # Real-parser gate. The awk extractor below is permissive; harnesses
+157	  # (`npx skills`, Claude Code, Cursor) are not — they skip a skill whose
+158	  # frontmatter fails to parse. Delegate to the sibling batch linter.
+159	  FM_LINTER="$(dirname "$0")/lint-frontmatter.sh"
+160	  if [ -f "$FM_LINTER" ]; then
+161	    if FM_OUT=$(bash "$FM_LINTER" --quiet "$SKILL_MD" 2>&1); then
+162	      emit_ok "frontmatter parses as YAML"
+163	    else
+164	      while IFS= read -r fm_line; do
+165	        case "$fm_line" in
+166	          FAIL*|checked*|'') continue ;;
+167	          *) emit_err "frontmatter: $(printf '%s' "$fm_line" | sed 's/^ *//')" ;;
+168	        esac
+169	      done <<EOF
+170	$FM_OUT
+171	EOF
+172	    fi
+173	  else
+174	    emit_note "lint-frontmatter.sh not found next to this script; skipping the YAML parse check"
+175	  fi
+176	
+177	  NAME=$(extract_frontmatter_value name)
+178	  if [ -n "$NAME" ]; then
+179	    emit_ok "name field present: $NAME"
+180	    NAME_LEN=${#NAME}
+181	    if [ "$NAME_LEN" -gt 64 ]; then
+182	      emit_err "name is too long (${NAME_LEN} chars); portable maximum is 64"
+183	    else
+184	      emit_ok "name length is ${NAME_LEN} chars (<=64)"
+185	    fi
+186	    if printf '%s\n' "$NAME" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+187	      emit_ok "name is portable hyphen-case"
+188	    else
+189	      emit_err "name must be lowercase hyphen-case: letters, digits, single hyphens; no leading/trailing hyphen"
+190	    fi
+191	    # Compare against directory basename.
+192	    BASENAME=$(basename "$SKILL_DIR")
+193	    if [ "$NAME" != "$BASENAME" ]; then
+194	      emit_warn "name '$NAME' does not match directory '$BASENAME'"
+195	    fi
+196	    # Reject placeholder.
+197	    case "$NAME" in
+198	      *PLACEHOLDER*) emit_err "name still contains PLACEHOLDER text" ;;
+199	    esac
+200	  else
+201	    emit_err "frontmatter missing 'name:' field"
+202	  fi
+203	
+204	  DESC=$(extract_frontmatter_value description)
+205	  if [ -n "$DESC" ]; then
+206	    DESC_LEN=${#DESC}
+207	    emit_ok "description field present (${DESC_LEN} chars)"
+208	    case "$DESC" in
+209	      *PLACEHOLDER*) emit_err "description still contains PLACEHOLDER text" ;;
+210	    esac
+211	    # Check for trigger-phrase signal.
+212	    if printf '%s\n' "$DESC" | grep -qiE '\b(use when|use whenever|use this|trigger|invoke when)\b'; then
+213	      emit_ok "description includes trigger phrase ('use when' or similar)"
+214	    else
+215	      emit_warn "description lacks an explicit trigger phrase like 'Use when...'; this hurts triggering"
+216	    fi
+217	    # Length sanity.
+218	    if [ "$DESC_LEN" -lt 80 ]; then
+219	      emit_warn "description is short (${DESC_LEN} chars); consider naming more concrete trigger contexts"
+220	    elif [ "$DESC_LEN" -lt 120 ]; then
+221	      emit_note "description is ${DESC_LEN} chars; 120-500 chars is the preferred trigger budget"
+222	    elif [ "$DESC_LEN" -le 500 ]; then
+223	      emit_ok "description is in the preferred 120-500 char budget"
+224	    elif [ "$DESC_LEN" -le 900 ]; then
+225	      emit_note "description is ${DESC_LEN} chars: valid but context-heavy (yellow tier)"
+226	    elif [ "$DESC_LEN" -le 1024 ]; then
+227	      emit_note "description is ${DESC_LEN} chars: valid but close to the 1024-char hard limit (orange tier)"
+228	    else
+229	      emit_err "description is too long (${DESC_LEN} chars); Codex/Cursor/spec-aligned maximum is 1024"
+230	    fi
+231	  else
+232	    emit_err "frontmatter missing 'description:' field"
+233	  fi
+234	fi
+235	
+236	# Length check.
+237	LINES=$(wc -l < "$SKILL_MD" | tr -d ' ')
+238	if [ "$LINES" -lt 500 ]; then
+239	  emit_ok "SKILL.md is ${LINES} lines (< 500)"
+240	elif [ "$LINES" -lt 700 ]; then
+241	  emit_warn "SKILL.md is ${LINES} lines (recommended <500; move detail to references/)"
+242	else
+243	  emit_err "SKILL.md is ${LINES} lines (>700 is hurting context budget; split into references/)"
+244	fi
+245	
+246	# ----------------------------------------------------------------------
+247	# Check 2: Script hygiene
+248	# ----------------------------------------------------------------------
+249	echo
+250	echo "Script hygiene:"
+251	
+252	if [ -d "$SKILL_DIR/scripts" ]; then
+253	  HAS_SCRIPTS=0
+254	  for script in "$SKILL_DIR"/scripts/*.sh; do
+255	    [ -e "$script" ] || continue
+256	    HAS_SCRIPTS=1
+257	    NAME=$(basename "$script")
+258	
+259	    # Shebang on line 1.
+260	    FIRST_LINE=$(head -n1 "$script")
+261	    case "$FIRST_LINE" in
+262	      "#!"*) emit_ok "$NAME has shebang" ;;
+263	      *)     emit_err "$NAME missing shebang on line 1" ;;
+264	    esac
+265	
+266	    # Executable bit.
+267	    if [ -x "$script" ]; then
+268	      emit_ok "$NAME is executable"
+269	    else
+270	      emit_err "$NAME is not executable (chmod +x)"
+271	    fi
+272	
+273	    # --help handler (look for the literal flag, not just the word "help").
+274	    if grep -qE -- '--help' "$script"; then
+275	      emit_ok "$NAME handles --help"
+276	    else
+277	      emit_warn "$NAME has no --help handler"
+278	    fi
+279	  done
+280	
+281	  # Also lint .py scripts for shebang/+x/argparse-help.
+282	  for script in "$SKILL_DIR"/scripts/*.py; do
+283	    [ -e "$script" ] || continue
+284	    HAS_SCRIPTS=1
+285	    NAME=$(basename "$script")
+286	
+287	    FIRST_LINE=$(head -n1 "$script")
+288	    case "$FIRST_LINE" in
+289	      "#!"*) emit_ok "$NAME has shebang" ;;
+290	      *)     emit_warn "$NAME missing shebang (less critical for .py if invoked via 'python …' / 'uv run …')" ;;
+291	    esac
+292	
+293	    if [ -x "$script" ]; then
+294	      emit_ok "$NAME is executable"
+295	    else
+296	      emit_warn "$NAME is not executable"
+297	    fi
+298	
+299	    if grep -qE 'argparse|click|typer|--help' "$script"; then
+300	      emit_ok "$NAME appears to expose --help"
+301	    else
+302	      emit_warn "$NAME has no obvious --help mechanism"
+303	    fi
+304	  done
+305	
+306	  if [ "$HAS_SCRIPTS" = "0" ]; then
+307	    emit_ok "scripts/ exists but is empty (no .sh/.py files to check)"
+308	  fi
+309	else
+310	  emit_ok "no scripts/ directory (nothing to check)"
+311	fi
+312	
+313	# ----------------------------------------------------------------------
+314	# Check 3: Reference reachability
+315	# ----------------------------------------------------------------------
+316	echo
+317	echo "Reference reachability:"
+318	
+319	if [ -d "$SKILL_DIR/references" ]; then
+320	  HAS_REFS=0
+321	  for ref in "$SKILL_DIR"/references/*.md; do
+322	    [ -e "$ref" ] || continue
+323	    HAS_REFS=1
+324	    REF_BASE=$(basename "$ref")
+325	    # Look for the filename mentioned anywhere in SKILL.md.
+326	    if grep -qF "$REF_BASE" "$SKILL_MD"; then
+327	      emit_ok "$REF_BASE is referenced from SKILL.md"
+328	    else
+329	      emit_warn "$REF_BASE is not mentioned in SKILL.md (dead reference?)"
+330	    fi
+331	  done
+332	
+333	  if [ "$HAS_REFS" = "0" ]; then
+334	    emit_ok "references/ exists but is empty"
+335	  fi
+336	else
+337	  emit_ok "no references/ directory (nothing to check)"
+338	fi
+339	
+340	# ----------------------------------------------------------------------
+341	# Summary
+342	# ----------------------------------------------------------------------
+343	echo
+344	echo "Summary:"
+345	echo "  errors:   $ERRORS"
+346	echo "  warnings: $WARNINGS"
+347	
+348	if [ "$JSON" = "1" ]; then
+349	  # Build JSON arrays manually (bash 3.2 safe).
+350	  printf '{"skill_dir":"%s","errors":%d,"warnings":%d,"error_messages":[' \
+351	    "$SKILL_DIR" "$ERRORS" "$WARNINGS"
+352	  first=1
+353	  for msg in ${ERROR_MSGS[@]+"${ERROR_MSGS[@]}"}; do
+354	    if [ "$first" = "1" ]; then first=0; else printf ','; fi
+355	    printf '"%s"' "$(printf '%s' "$msg" | sed 's/"/\\"/g')"
+356	  done
+357	  printf '],"warning_messages":['
+358	  first=1
+359	  for msg in ${WARNING_MSGS[@]+"${WARNING_MSGS[@]}"}; do
+360	    if [ "$first" = "1" ]; then first=0; else printf ','; fi
+361	    printf '"%s"' "$(printf '%s' "$msg" | sed 's/"/\\"/g')"
+362	  done
+363	  printf ']}\n'
+364	fi
+365	
+366	if [ "$ERRORS" -gt 0 ]; then
+367	  exit 3
+368	fi
+369	if [ "$STRICT" = "1" ] && [ "$WARNINGS" -gt 0 ]; then
+370	  exit 3
+371	fi
+372	exit 0
+373
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/forge-native-dev/scripts/forge.sh`
+
+```text
+1	# shellcheck shell=bash
+2	# Forge abstraction library — sourced by other scripts, not executed directly.
+3	# Provides a unified interface over GitHub (gh) and GitLab (glab) CLIs.
+4	# Compatibility: macOS system Bash 3.2+.
+5	#
+6	# Usage:
+7	#   source "$(dirname "$0")/forge.sh"
+8	#   forge_detect          # sets FORGE_TYPE and FORGE_CLI
+9	#   forge_issue_create --title "Bug" --body "Details" --label "type/bug"
+10	
+11	# Guard against double-sourcing.
+12	[ -n "${_FORGE_LIB_LOADED:-}" ] && return 0
+13	_FORGE_LIB_LOADED=1
+14	
+15	# ---------------------------------------------------------------------------
+16	# Internal helpers
+17	# ---------------------------------------------------------------------------
+18	
+19	_forge_log()  { printf '%s\n' "$*" >&2; }
+20	_forge_warn() { printf 'forge: warn: %s\n' "$*" >&2; }
+21	_forge_die()  { printf 'forge: error: %s\n' "$1" >&2; exit "${2:-1}"; }
+22	
+23	_forge_require_detected() {
+24	  if [ -z "${FORGE_TYPE:-}" ]; then
+25	    _forge_die "forge not detected yet — call forge_detect first" 1
+26	  fi
+27	}
+28	
+29	# ---------------------------------------------------------------------------
+30	# Detection
+31	# ---------------------------------------------------------------------------
+32	
+33	# FORGE_TYPE: "github" | "gitlab" | "unknown"
+34	# FORGE_CLI:  "gh" | "glab" | ""
+35	# FORGE_REMOTE_URL: the origin URL
+36	FORGE_TYPE=""
+37	FORGE_CLI=""
+38	FORGE_REMOTE_URL=""
+39	
+40	forge_detect() {
+41	  git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+42	    || _forge_die "not inside a git repository" 2
+43	
+44	  FORGE_REMOTE_URL="$(git remote get-url origin 2>/dev/null || true)"
+45	  if [ -z "$FORGE_REMOTE_URL" ]; then
+46	    _forge_warn "no 'origin' remote found"
+47	    FORGE_TYPE="unknown"
+48	    FORGE_CLI=""
+49	    return 0
+50	  fi
+51	
+52	  case "$FORGE_REMOTE_URL" in
+53	    *github.com*|*github.com:*)
+54	      FORGE_TYPE="github"
+55	      if command -v gh >/dev/null 2>&1; then
+56	        FORGE_CLI="gh"
+57	      else
+58	        _forge_warn "GitHub remote detected but 'gh' CLI not found — install: brew install gh"
+59	        FORGE_CLI=""
+60	      fi
+61	      ;;
+62	    *gitlab.com*|*gitlab.com:*|*gitlab.*)
+63	      FORGE_TYPE="gitlab"
+64	      if command -v glab >/dev/null 2>&1; then
+65	        FORGE_CLI="glab"
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:05:19Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/skill-author/references/script-design.md`
+
+````text
+1	# Script design for agent skills
+2	
+3	Condensed from <https://agentskills.io/skill-creation/using-scripts>. Read this
+4	before adding anything to `scripts/` in a skill.
+5	
+6	The headline difference from "regular" CLI design: **the caller is an LLM that
+7	reads your stderr to decide what to do next.** Optimize for that.
+8	
+9	## Table of contents
+10	
+11	1. [One-off commands vs bundled scripts](#one-off-commands-vs-bundled-scripts)
+12	2. [Pin versions for `uvx` / `npx` / `pipx`](#pin-versions)
+13	3. [Self-contained scripts (PEP 723 etc.)](#self-contained-scripts)
+14	4. [Agentic CLI design rules](#agentic-cli-design-rules)
+15	5. [Error message style](#error-message-style)
+16	6. [Structured output](#structured-output)
+17	7. [Idempotency, dry-run, exit codes](#idempotency-dry-run-exit-codes)
+18	8. [Bash 3.2 compatibility (macOS)](#bash-32-compatibility-macos)
+19	9. [Quick script checklist](#quick-script-checklist)
+20	
+21	---
+22	
+23	## One-off commands vs bundled scripts
+24	
+25	If a published tool already does the job and the invocation is short, **don't
+26	bundle a script** — reference the tool directly:
+27	
+28	```bash
+29	uvx ruff@0.8.0 check .
+30	npx eslint@9.0.0 --fix .
+31	```
+32	
+33	Bundle a script when:
+34	
+35	- The invocation grows past ~3 flags or needs computed arguments.
+36	- You need to compose multiple tools.
+37	- The logic must be tested independently.
+38	- You want to give the agent a stable interface even if the underlying tool
+39	  changes.
+40	
+41	State runtime prerequisites in `SKILL.md` ("Requires Node 18+", "Requires
+42	`uv`"). Don't assume the agent's environment.
+43	
+44	---
+45	
+46	## Pin versions
+47	
+48	Unpinned `uvx`, `npx`, `pipx` invocations behave inconsistently as upstreams
+49	release new versions. Always pin:
+50	
+51	```bash
+52	# Good
+53	uvx ruff@0.8.0 check .
+54	npx eslint@9.0.0 --fix .
+55	pipx run 'black==24.10.0' .
+56	
+57	# Bad — silently breaks when upstream ships a breaking change
+58	uvx ruff check .
+59	npx eslint --fix .
+60	```
+61	
+62	`@latest` is fine **if** the skill explicitly says "tracks upstream latest" and
+63	the user understands that.
+64	
+65	---
+66	
+67	## Self-contained scripts
+68	
+69	When a script needs dependencies, prefer **inline declarations** over a
+70	sibling `requirements.txt` / `package.json`. The agent can run the script with
+71	one command and no setup.
+72	
+73	### Python — PEP 723
+74	
+75	```python
+76	#!/usr/bin/env -S uv run --script
+77	# /// script
+78	# requires-python = ">=3.11"
+79	# dependencies = [
+80	#   "beautifulsoup4>=4.12,<5",
+81	# ]
+82	# ///
+83	"""Extract <p class="info"> from an HTML file."""
+84	import sys
+85	from bs4 import BeautifulSoup
+86	
+87	with open(sys.argv[1]) as f:
+88	    html = f.read()
+89	print(BeautifulSoup(html, "html.parser").select_one("p.info").get_text())
+90	```
+91	
+92	Run with `uv run scripts/extract.py file.html`. `uv` creates an isolated
+93	environment, installs declared deps, and runs — every time, deterministically.
+94	
+95	For full reproducibility, `uv lock --script scripts/extract.py` produces
+96	`scripts/extract.py.lock`.
+97	
+98	### Deno
+99	
+100	```typescript
+101	#!/usr/bin/env -S deno run
+102	import * as cheerio from "npm:cheerio@1.0.0";
+103	// ...
+104	```
+105	
+106	### Bun
+107	
+108	```typescript
+109	#!/usr/bin/env bun
+110	import * as cheerio from "cheerio@1.0.0";
+111	// ...
+112	```
+113	
+114	If a `node_modules/` exists anywhere up the tree, Bun's auto-install is
+115	disabled. Mention this in the skill if relevant.
+116	
+117	### Ruby
+118	
+119	```ruby
+120	require 'bundler/inline'
+121	gemfile do
+122	  source 'https://rubygems.org'
+123	  gem 'nokogiri', '~> 1.16'
+124	end
+125	# ...
+126	```
+127	
+128	---
+129	
+130	## Agentic CLI design rules
+131	
+132	### No interactive prompts, ever
+133	
+134	Agents run in non-interactive shells. A script that calls `read`, `input()`,
+135	or any TTY prompt **hangs indefinitely**. There is no recovery.
+136	
+137	```
+138	# Bad
+139	$ python scripts/deploy.py
+140	Target environment: _
+141	
+142	# Good
+143	$ python scripts/deploy.py
+144	Error: --env is required. Options: development, staging, production.
+145	Usage: python scripts/deploy.py --env staging --tag v1.2.3
+146	```
+147	
+148	Accept all input via flags, env vars, or stdin (non-blocking — check `isatty`).
+149	
+150	### `--help` is the primary documentation
+151	
+152	The agent reads `--help` to learn the script. Make it concise but complete:
+153	
+154	```
+155	Usage: scripts/process.py [OPTIONS] INPUT_FILE
+156	
+157	Process input data and produce a summary report.
+158	
+159	Options:
+160	  --format FORMAT    Output format: json, csv, table (default: json)
+161	  --output FILE      Write output to FILE instead of stdout
+162	  --verbose          Print progress to stderr
+163	  --dry-run          Show what would happen without doing it
+164	
+165	Examples:
+166	  scripts/process.py data.csv
+167	  scripts/process.py --format csv --output report.csv data.csv
+168	
+169	Exit codes:
+170	  0  success
+171	  1  invalid arguments
+172	  2  input file not found
+173	  3  processing failed
+174	```
+175	
+176	The exit-codes block matters — the agent uses them to branch retry behavior.
+177	
+178	---
+179	
+180	## Error message style
+181	
+182	When an agent gets an error, the message **directly shapes its next attempt**.
+183	Opaque errors waste turns.
+184	
+185	```
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:28Z)**_
+
+<think><details><summary>Thought Process</summary>
+**Evaluating branch edits**
+
+I’m trying to figure out if I need to branch before making edits. Since I'm working with the current main modifications, there are source packages and an active recorder involved. What if switching branches could mutate files? I need to make sure there’s no confusion with commits in the existing structure. I think I’ll create a new branch for fixing the tracking policy, ensuring that the working tree stays unchanged. This should help me maintain organization while I work.
+</details></think>
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:32Z)**_
+
+確認這是 linter 的誤判：`forge.sh` 本來就是供其他腳本 `source` 的共用檔，不應為了通過檢查而改成可執行 CLI。我會加入明確的 sourced-only 標記，讓這類檔案免除 shebang／`--help` 要求，但仍檢查語法與非可執行模式；一般 CLI 的檢查不會放寬。
+
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:32Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `./skills/local/skill-author/SKILL.md`
+
+````text
+108	
+109	For Python helpers, prefer **PEP 723 inline dependencies** + `uv run` over
+110	`requirements.txt` — the script becomes self-contained and the agent doesn't
+111	have to set up an environment first.
+112	
+113	### 5. Lint
+114	
+115	Run the linter before committing or handing off to `skill-creator`:
+116	
+117	```bash
+118	bash skills/local/skill-author/scripts/lint-skill.sh skills/local/<skill-name>
+119	```
+120	
+121	It checks three things:
+122	
+123	1. **Frontmatter & length** — `name` and `description` exist; name is
+124	   hyphen-case and <=64 chars; description has a "use when" trigger phrase,
+125	   respects the 1024-char hard limit, and SKILL.md is under 500 lines.
+126	2. **Script hygiene** — every `scripts/*.sh` has a shebang, is executable, and
+127	   responds to `--help` (presence of the flag handler, not necessarily a working
+128	   script).
+129	3. **Reference reachability** — every file in `references/` is mentioned at
+130	   least once from `SKILL.md` (no dead reference docs).
+131	
+132	Fix every error. Warnings are advisory but usually worth addressing.
+133	
+134	### 6. (Optional) Hand off to skill-creator
+135	
+136	Once lint passes and the skill *looks* right, the next questions are
+137	quantitative: does it trigger reliably? does it produce good output? That's
+138	`skill-creator` territory. Tell the user: "skill-author got the structure
+139	right. If you want to validate it works on real prompts, the `skill-creator`
+140	skill runs test cases and benchmarks."
+141	
+142	## Available scripts
+143	
+144	- **`scripts/new-skill.sh <name>`** — Scaffold the canonical skill dir
+145	  (SKILL.md, references/, scripts/, assets/) and add discovery symlinks for
+146	  non-universal agents. Auto-detects scope (LOCAL / PROJECT / GLOBAL); see
+147	  table in step 2.
+148	  - Scope flags (mutually exclusive): `--local` (force this repo's
+149	    `skills/local/`), `--project` (force `<repo>/.agents/skills/`),
+150	    `--global` (force `~/.agents/skills/`).
+151	  - Other flags: `--vendor` (LOCAL only — `skills/vendor/<name>/` instead of
+152	    `skills/local/`; rare, vendored skills normally come via `vendor.yaml`);
+153	    `--root DIR` (override walk-up); `--no-symlinks` (skip the fan-out);
+154	    `--dry-run`; `--force` (overwrite existing canonical dir + replace
+155	    symlinks).
+156	- **`scripts/lint-skill.sh <skill-dir>`** — Run frontmatter, script hygiene,
+157	  and reference reachability checks. Exit non-zero on any error.
+158	  - Flags: `--strict` (treat warnings as errors); `--quiet` (only print failures).
+159	- **`scripts/lint-frontmatter.sh [PATH...]`** — YAML-parse the frontmatter of
+160	  every `SKILL.md` under PATH (default `.`) with a real parser, and check that
+161	  the root is a mapping with string `name` + `description`. Catches the
+162	  breakage class `lint-skill.sh`'s awk extractor cannot see — an unquoted
+163	  `description:` containing `": "` makes `npx skills` (and Claude Code /
+164	  Cursor) **silently skip the skill**. `lint-skill.sh` calls this for the
+165	  single-skill case; run it directly to sweep a whole collection.
+166	  - Flags: `--parser auto|yq|python3|node` (`node` = the js `yaml` package,
+167	    exactly what `npx skills` uses); `--quiet`.
+168	
+169	## Bundled assets
+170	
+171	Templates that `new-skill.sh` copies and that you can reference manually:
+172	
+173	- `assets/SKILL.md.template` — Frontmatter + workflow skeleton with placeholders.
+174	- `assets/reference.md.template` — Reference doc skeleton (TOC + sections).
+175	- `assets/script-bash.template` — Bash 3.2 compatible script with `set -euo pipefail`,
+176	  `--help` / `--dry-run` flag handler, structured-output friendly logging
+177	  (data → stdout, prose → stderr).
+````
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:32Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Confirm shell compatibility and existing test dependencies
+
+`printf '%s\n' '--- Bash versions ---'; bash --version | /usr/bin/grep -m1 'version'; /bin/bash --version | /usr/bin/grep -m1 'version'; printf '\n--- Declared test dependencies ---\n'; rg -n -A 8 'dev =|pytest' pyproject.toml; printf '\n--- Current branch ---\n'; git branch --show-current`
+
+```text
+--- Bash versions ---
+GNU bash, version 5.3.15(1)-release (aarch64-apple-darwin25.4.0)
+GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)
+
+--- Declared test dependencies ---
+27:dev = [
+28:  # Test runner for agent-history-hygiene's pytest suite. See
+29-  # skills/local/agent-history-hygiene/tests/ and `make test-skill`.
+30:  "pytest>=8.0",
+31-]
+32-
+33-[tool.uv]
+34-package = false
+
+--- Current branch ---
+main
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:49Z)**_
+
+<think><details><summary>Thought Process</summary>
+**Evaluating coding approaches**
+
+I'm considering an approach where I might want to avoid the newtagframework since it could complicate things. Instead, it seems better to use a narrow, explicit marker that has been tested for appropriateness. I also think I shouldn't rely on an automatically sourced library for testing. It looks like I need to implement file documentation and ensure there are four tests to confirm everything is working as it should.
+</details></think>
+
+_**Agent (gpt-6-astra 2026-11-03 06:06:50Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/skill-author/scripts/lint-skill.sh has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:07:01Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/skill-author/scripts/lint-skill.sh has been updated successfully. (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:07:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/forge-native-dev/scripts/forge.sh has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:07:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/skill-author/SKILL.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:07:16Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/skill-author/references/script-design.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:07:54Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Write"><details>
+<summary>Tool use: **Write**</summary>
+
+```python
+"""Regression tests for explicit sourced-only libraries; lint never runs them.
+
+Run: uv run --extra dev pytest skills/local/skill-author/tests/ -q
+Uses both PATH Bash and /bin/bash when distinct (including macOS Bash 3.2).
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import shlex
+import shutil
+import subprocess
+
+import pytest
+
+SKILL_ROOT = Path(__file__).resolve().parents[1]
+LINTER = SKILL_ROOT / "scripts/lint-skill.sh"
+BASHES = list(dict.fromkeys(
+    str(Path(p).resolve()) for p in (shutil.which("bash"), "/bin/bash")
+    if p and Path(p).is_file()
+))
+MARKER = "# skill-lint: sourced-only\n"
+
+
+@pytest.fixture(params=BASHES)
+def bash(request):
+    return request.param
+
+
+@pytest.fixture
+def sample(tmp_path):
+    root = tmp_path / "sample-skill"
+    (root / "scripts").mkdir(parents=True)
+    (root / "SKILL.md").write_text(
+        "---\nname: sample-skill\n"
+        "description: 'Use when testing shell script hygiene in a sample skill, "
+        "including explicit sourced-only libraries, regular CLI entrypoints, "
+        "and checks that never execute inspected files.'\n---\n# Sample\n"
+    )
+    return root
+
+
+def lint(bash, root):
+    result = subprocess.run(
+        [bash, str(LINTER), "--strict", "--json", str(root)],
+        capture_output=True, text=True, timeout=30,
+    )
+    return result.returncode, json.loads(result.stdout.splitlines()[-1])
+
+
+def script(sample, content, executable=False):
+    path = sample / "scripts/example.sh"
+    path.write_text(content)
+    path.chmod(0o755 if executable else 0o644)
+    return path
+
+
+def test_sourced_library_passes_without_executing(bash, sample, tmp_path):
+    sentinel = tmp_path / "must-not-exist"
+    script(sample, "# shellcheck shell=bash\n\n" + MARKER
+           + f"touch {shlex.quote(str(sentinel))}\nhelper() {{ :; }}\n")
+    code, report = lint(bash, sample)
+    assert code == 0
+    assert report["errors"] == report["warnings"] == 0
+    assert not sentinel.exists(), "lint must parse, never source or run a library"
+
+
+def test_unmarked_file_still_requires_cli_contract(bash, sample):
+    # Describing a library in prose or omitting +x is not an opt-out.
+    script(sample, "# Sourced library, not executed directly.\nhelper() { :; }\n")
+    code, report = lint(bash, sample)
+    assert code == 3
+    assert report["errors"] == 2
+    assert report["warnings"] == 1
+
+
+def test_marker_after_shell_code_does_not_opt_out(bash, sample):
+    script(sample, "helper() {\n" + MARKER + "  :\n}\n")
+    code, report = lint(bash, sample)
+    assert code == 3
+    assert report["errors"] == 2
+
+
+def test_executable_cannot_claim_sourced_only(bash, sample):
+    script(sample, "#!/usr/bin/env bash\n" + MARKER + "# --help\n:", executable=True)
+    code, report = lint(bash, sample)
+    assert code == 3
+    assert any("marked sourced-only but executable" in m for m in report["error_messages"])
+
+
+def test_sourced_library_syntax_is_checked(bash, sample):
+    script(sample, MARKER + "helper() {\n")
+    code, report = lint(bash, sample)
+    assert code == 3
+    assert any("invalid Bash syntax" in m for m in report["error_messages"])
+
+
+def test_regular_cli_still_passes(bash, sample):
+    script(sample, '#!/usr/bin/env bash\ncase "${1:-}" in --help) exit 0 ;; esac\n', executable=True)
+    code, report = lint(bash, sample)
+    assert code == 0
+    assert report["errors"] == report["warnings"] == 0
+
+
+def test_regular_cli_without_help_fails_strict(bash, sample):
+    script(sample, "#!/usr/bin/env bash\n:\n", executable=True)
+    code, report = lint(bash, sample)
+    assert code == 3
+    assert report["warnings"] == 1
+
+
+def test_real_forge_skill_passes_strict(bash):
+    code, report = lint(bash, SKILL_ROOT.parent / "forge-native-dev")
+    assert code == 0, report
+    assert report["errors"] == report["warnings"] == 0
+
+```
+
+```text
+File created successfully at: /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/skill-author/tests/test_lint_skill.py (file state is current in your context — no need to Read it back)
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:08:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run sourced-library regressions and strict skill checks
+
+`uv run --extra dev pytest skills/local/skill-author/tests/ -q && bash skills/local/skill-author/scripts/lint-skill.sh --strict skills/local/forge-native-dev && bash skills/local/skill-author/scripts/lint-skill.sh --strict skills/local/skill-author && make validate`
+
+```text
+Command running in background with ID: b8k8jrqcy. Output is being written to: /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/79a9ad9e-ebe1-48a2-8636-e3c1f20903b0/tasks/b8k8jrqcy.output. You will be notified when it completes — do not poll that file or sleep while waiting. Read the file only if the user asks for progress, or if you need a line it prints before you can go on, such as a server's ready line or port.
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:08:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Review scoped patch and verify commit lifecycle constraints
+
+`git diff --check -- CLAUDE.md skills/local/forge-native-dev skills/local/skill-author; printf '\n--- Changed feature files ---\n'; git diff --stat -- CLAUDE.md skills/local/forge-native-dev skills/local/skill-author; printf '\n--- Recorder context ---\n'; for name in AGENT_HISTORY_REQUEST_PATH AGENT_HISTORY_RUN_ID; do if printenv "$name" >/dev/null; then printf '%s=set\n' "$name"; else printf '%s=unset\n' "$name"; fi; done; printf '\n--- Current session recorder ---\n'; ps -p 52186,52195 -o pid=,ppid=,comm=`
+
+```text
+--- Changed feature files ---
+ CLAUDE.md                                          |  34 ++--
+ skills/local/forge-native-dev/SKILL.md             | 139 ++++++++-----
+ .../assets/agent-guidance.md.template              |  47 +++--
+ .../forge-native-dev/references/agent-patterns.md  |  28 ++-
+ .../forge-native-dev/references/coexistence.md     |  18 +-
+ .../forge-native-dev/references/conventions.md     |   8 +-
+ .../forge-native-dev/references/github-features.md |  17 +-
+ .../references/issue-driven-workflow.md            | 219 +++++++++------------
+ skills/local/forge-native-dev/scripts/forge.sh     |   1 +
+ skills/local/skill-author/SKILL.md                 |   8 +-
+ .../local/skill-author/references/script-design.md |  15 ++
+ skills/local/skill-author/scripts/lint-skill.sh    |  25 ++-
+ 12 files changed, 322 insertions(+), 237 deletions(-)
+
+--- Recorder context ---
+AGENT_HISTORY_REQUEST_PATH=unset
+AGENT_HISTORY_RUN_ID=unset
+
+--- Current session recorder ---
+52186 52185 specstory
+52195 52186 claude
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:08:50Z)**_
+
+修正已完成，也加了回歸測試，確認一般 CLI 不能用這個標記逃過檢查，且 lint 不會執行 library。提交前仍有一個範圍需要確認：目前 session 紀錄仍在寫入，上一筆 commit 的排除選擇不能直接視為這一筆的授權。
+
+
+_**Agent (gpt-6-astra 2026-11-03 06:09:19Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="AskUserQuestion"><details>
+<summary>Tool use: **AskUserQuestion**</summary>
+**這次「輕量追蹤規則＋linter 修正」是否也只提交功能檔案，排除仍在錄製的 plan／transcripts？**
+
+Options:
+- **只提交功能檔案** - 提交政策文件、linter 修正與測試；plan／transcripts 保留未提交，不 push。
+- **包含完整紀錄** - 先保留已完成的修改，等目前 session／recorder 結束後再提交，避免提交仍在寫入的紀錄。
+
+
+**Answer:** 包含完整紀錄
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:10:02Z)**_
+
+這次會連同完整紀錄提交，因此先不 commit，也不碰仍在寫入的 transcript。目前沒有可在 session 結束後自動執行的 finalizer；我會確認測試結果並保留修改，不會把它說成「已排程提交」。
+
+
+_**Agent (gpt-6-astra 2026-11-03 06:10:02Z)**_
+
+<tool-use data-tool-type="read" data-tool-name="Read"><details>
+<summary>Tool use: **Read**</summary>
+ `/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/79a9ad9e-ebe1-48a2-8636-e3c1f20903b0/tasks/b8k8jrqcy.output`
+
+```text
+1	Installed 3 packages in 7ms
+2	................                                                         [100%]
+3	16 passed in 1.81s
+4	Frontmatter & length:
+5	  ok    frontmatter delimiters present
+6	  ok    frontmatter parses as YAML
+7	  ok    name field present: forge-native-dev
+8	  ok    name length is 16 chars (<=64)
+9	  ok    name is portable hyphen-case
+10	  ok    description field present (425 chars)
+11	  ok    description includes trigger phrase ('use when' or similar)
+12	  ok    description is in the preferred 120-500 char budget
+13	  ok    SKILL.md is 437 lines (< 500)
+14	
+15	Script hygiene:
+16	  ok    forge-cleanup.sh has shebang
+17	  ok    forge-cleanup.sh is executable
+18	  ok    forge-cleanup.sh handles --help
+19	  ok    forge-init.sh has shebang
+20	  ok    forge-init.sh is executable
+21	  ok    forge-init.sh handles --help
+22	  ok    forge-issue.sh has shebang
+23	  ok    forge-issue.sh is executable
+24	  ok    forge-issue.sh handles --help
+25	  ok    forge-pr.sh has shebang
+26	  ok    forge-pr.sh is executable
+27	  ok    forge-pr.sh handles --help
+28	  ok    forge-status.sh has shebang
+29	  ok    forge-status.sh is executable
+30	  ok    forge-status.sh handles --help
+31	  ok    forge-worktree.sh has shebang
+32	  ok    forge-worktree.sh is executable
+33	  ok    forge-worktree.sh handles --help
+34	  ok    forge.sh is a non-executable sourced-only library
+35	  ok    forge.sh has valid Bash syntax
+36	
+37	Reference reachability:
+38	  ok    agent-patterns.md is referenced from SKILL.md
+39	  ok    coexistence.md is referenced from SKILL.md
+40	  ok    conventions.md is referenced from SKILL.md
+41	  ok    forge-abstraction.md is referenced from SKILL.md
+42	  ok    github-features.md is referenced from SKILL.md
+43	  ok    gitlab-features.md is referenced from SKILL.md
+44	  ok    issue-driven-workflow.md is referenced from SKILL.md
+45	
+46	Summary:
+47	  errors:   0
+48	  warnings: 0
+49	Frontmatter & length:
+50	  ok    frontmatter delimiters present
+51	  ok    frontmatter parses as YAML
+52	  ok    name field present: skill-author
+53	  ok    name length is 12 chars (<=64)
+54	  ok    name is portable hyphen-case
+55	  ok    description field present (770 chars)
+56	  ok    description includes trigger phrase ('use when' or similar)
+57	  note  description is 770 chars: valid but context-heavy (yellow tier)
+58	  ok    SKILL.md is 240 lines (< 500)
+59	
+60	Script hygiene:
+61	  ok    lint-frontmatter.sh has shebang
+62	  ok    lint-frontmatter.sh is executable
+63	  ok    lint-frontmatter.sh handles --help
+64	  ok    lint-skill.sh has shebang
+65	  ok    lint-skill.sh is executable
+66	  ok    lint-skill.sh handles --help
+67	  ok    new-skill.sh has shebang
+68	  ok    new-skill.sh is executable
+69	  ok    new-skill.sh handles --help
+70	
+71	Reference reachability:
+72	  ok    authoring-patterns.md is referenced from SKILL.md
+73	  ok    script-design.md is referenced from SKILL.md
+74	  ok    this-repo-conventions.md is referenced from SKILL.md
+75	
+76	Summary:
+77	  errors:   0
+78	  warnings: 0
+79	./scripts/lint-frontmatter.sh --quiet skills
+80	checked 77 SKILL.md (parser: yq) — 0 failed, 0 warned
+81	./scripts/validate-marketplace.sh
+82	OK:    JSON parses
+83	OK:    marketplace name 'daviddwlee84-skills' is not reserved
+84	OK:    75 skill paths listed; all exist with SKILL.md
+85	OK:    no duplicate skill paths across plugins
+86	OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+87	
+88	PASSED: 0 errors, 0 warning(s)
+89	./scripts/todo-kanban.sh --validate-only
+90	OK: TODO.md passes project-knowledge-harness format
+91	
+92	[exited with code 0]
+93
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:10:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify final patch and confirm no commit was created
+
+`git diff --check -- CLAUDE.md skills/local/forge-native-dev skills/local/skill-author && printf '\n--- Pending changes ---\n' && git status --short && printf '\n--- Current commit ---\n' && git log -1 --oneline`
+
+```text
+--- Pending changes ---
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+ M CLAUDE.md
+ M skills/local/forge-native-dev/SKILL.md
+ M skills/local/forge-native-dev/assets/agent-guidance.md.template
+ M skills/local/forge-native-dev/references/agent-patterns.md
+ M skills/local/forge-native-dev/references/coexistence.md
+ M skills/local/forge-native-dev/references/conventions.md
+ M skills/local/forge-native-dev/references/github-features.md
+ M skills/local/forge-native-dev/references/issue-driven-workflow.md
+ M skills/local/forge-native-dev/scripts/forge.sh
+ M skills/local/skill-author/SKILL.md
+ M skills/local/skill-author/references/script-design.md
+ M skills/local/skill-author/scripts/lint-skill.sh
+?? skills/local/skill-author/tests/
+
+--- Current commit ---
+ba408bd chore: backup plan and chat history
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 06:10:17Z)**_
+
+既有 lint 誤判已修正：
+
+- 共用 Bash library 可用 `# skill-lint: sourced-only` 明確標示。
+- 不再要求 library 有 shebang／`--help`，但仍檢查語法與非可執行模式。
+- 一般 CLI 的檢查維持不變，lint 不會執行 library。
+
+**驗證全部通過：**16 個回歸測試（Bash 3.2／5.3）、兩個 skill 的 strict lint（零錯誤／警告）、`make validate`。
+
+**尚未 commit。** 依你選擇，這次要包含完整紀錄，需先用 `/exit` 結束目前 session／recorder，再於停止錄製的環境完成提交。修改均已保留；目前沒有排程自動 commit，也未 push。
+
+---
+
+_**User (2026-11-03 07:48:53Z)**_
+
+git commit
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 07:49:20Z)**_
+
+我會先確認錄製器是否已停止，以及這次完整紀錄能否安全提交；若已停止，就連同修正與紀錄一起 commit，不 push。
+
+
+_**Agent (gpt-6-astra 2026-11-03 07:49:20Z)**_
+
+<tool-use data-tool-type="generic" data-tool-name="Skill"><details>
+<summary>Tool use: **Skill**</summary>
+
+**Input:**
+
+- skill: `agent-history-hygiene`
+
+</details></tool-use>
+
+---
+
+_**User (2026-11-03 07:49:20Z)**_
+
+Skill /agent-history-hygiene is already loaded above; instructions unchanged.
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 07:49:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check recorder quiescence and pending commit state
+
+`printf '%s\n' '--- Working tree ---'; git status --short; git branch --show-current; git log -2 --oneline; printf '\n--- Session recorder ---\n'; ps -p 52186,52195 -o pid=,ppid=,comm=; lsof -a -p 52186 -d cwd -Fn 2>/dev/null || true; printf '\n--- Finalizer context ---\n'; for name in AGENT_HISTORY_REQUEST_PATH AGENT_HISTORY_RUN_ID; do if printenv "$name" >/dev/null; then printf '%s=set\n' "$name"; else printf '%s=unset\n' "$name"; fi; done`
+
+```text
+--- Working tree ---
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+ M CLAUDE.md
+ M skills/local/forge-native-dev/SKILL.md
+ M skills/local/forge-native-dev/assets/agent-guidance.md.template
+ M skills/local/forge-native-dev/references/agent-patterns.md
+ M skills/local/forge-native-dev/references/coexistence.md
+ M skills/local/forge-native-dev/references/conventions.md
+ M skills/local/forge-native-dev/references/github-features.md
+ M skills/local/forge-native-dev/references/issue-driven-workflow.md
+ M skills/local/forge-native-dev/scripts/forge.sh
+ M skills/local/skill-author/SKILL.md
+ M skills/local/skill-author/references/script-design.md
+ M skills/local/skill-author/scripts/lint-skill.sh
+?? skills/local/skill-author/tests/
+main
+ba408bd chore: backup plan and chat history
+2f8e2b8 feat(pueue): document verified agent continuation recipes
+
+--- Session recorder ---
+52186 52185 specstory
+52195 52186 claude
+p52186
+fcwd
+n/Users/zhouhanru/Documents/David/Program/agent-skills
+
+--- Finalizer context ---
+AGENT_HISTORY_REQUEST_PATH=unset
+AGENT_HISTORY_RUN_ID=unset
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 07:50:02Z)**_
+
+錄製器仍在運作，所以依你選擇的「**包含完整紀錄**」，目前尚未 commit。
+
+- **現在提交功能檔**：請回覆「不含紀錄，直接 commit」。
+- **包含完整紀錄**：先用 `/exit` 結束這個 session，讓 SpecStory 停止，再從未錄製的終端提交。
+
+修改與測試結果都已保留，沒有遺失。
+
+---
+
+_**User (2026-11-03 07:56:51Z)**_
+
+你可以先忽略 先commit 我自己amend進去
+
+---
+
+_**Agent (gpt-6-astra 2026-11-03 07:56:58Z)**_
+
+我會只提交功能變更，將 plan／transcripts 留給你之後 amend，不 push。先確認目前分支與 staged 內容。
+
+
+_**Agent (gpt-6-astra 2026-11-03 07:57:00Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify feature-only commit scope and current branch
+
+`git status --short; printf '\n--- Branch ---\n'; git branch --show-current; git log -2 --oneline; printf '\n--- Existing staged paths ---\n'; git diff --cached --name-only; printf '\n--- Feature patch checks ---\n'; git diff --check -- CLAUDE.md skills/local/forge-native-dev skills/local/skill-author; printf '\n--- Test files ---\n'; rg --files skills/local/skill-author/tests`
+
+```text
+MM .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+M  CLAUDE.md
+M  skills/local/forge-native-dev/SKILL.md
+M  skills/local/forge-native-dev/assets/agent-guidance.md.template
+M  skills/local/forge-native-dev/references/agent-patterns.md
+M  skills/local/forge-native-dev/references/coexistence.md
+M  skills/local/forge-native-dev/references/conventions.md
+M  skills/local/forge-native-dev/references/github-features.md
+M  skills/local/forge-native-dev/references/issue-driven-workflow.md
+M  skills/local/forge-native-dev/scripts/forge.sh
+M  skills/local/skill-author/SKILL.md
+M  skills/local/skill-author/references/script-design.md
+M  skills/local/skill-author/scripts/lint-skill.sh
+A  skills/local/skill-author/tests/test_lint_skill.py
+
+--- Branch ---
+main
+ba408bd chore: backup plan and chat history
+2f8e2b8 feat(pueue): document verified agent continuation recipes
+
+--- Existing staged paths ---
+.specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+CLAUDE.md
+skills/local/forge-native-dev/SKILL.md
+skills/local/forge-native-dev/assets/agent-guidance.md.template
+skills/local/forge-native-dev/references/agent-patterns.md
+skills/local/forge-native-dev/references/coexistence.md
+skills/local/forge-native-dev/references/conventions.md
+skills/local/forge-native-dev/references/github-features.md
+skills/local/forge-native-dev/references/issue-driven-workflow.md
+skills/local/forge-native-dev/scripts/forge.sh
+skills/local/skill-author/SKILL.md
+skills/local/skill-author/references/script-design.md
+skills/local/skill-author/scripts/lint-skill.sh
+skills/local/skill-author/tests/test_lint_skill.py
+
+--- Feature patch checks ---
+
+--- Test files ---
+skills/local/skill-author/tests/test_lint_skill.py
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 07:57:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Revalidate the staged policy and sourced-library fix
+
+`uv run --extra dev pytest skills/local/skill-author/tests/ -q && bash skills/local/skill-author/scripts/lint-skill.sh --strict --quiet skills/local/forge-native-dev && bash skills/local/skill-author/scripts/lint-skill.sh --strict --quiet skills/local/skill-author && make validate && git diff --cached --check -- CLAUDE.md skills/local/forge-native-dev skills/local/skill-author`
+
+```text
+................                                                         [100%]
+16 passed in 2.41s
+Frontmatter & length:
+
+Script hygiene:
+
+Reference reachability:
+
+Summary:
+  errors:   0
+  warnings: 0
+Frontmatter & length:
+
+Script hygiene:
+
+Reference reachability:
+
+Summary:
+  errors:   0
+  warnings: 0
+./scripts/lint-frontmatter.sh --quiet skills
+checked 77 SKILL.md (parser: yq) — 0 failed, 0 warned
+./scripts/validate-marketplace.sh
+OK:    JSON parses
+OK:    marketplace name 'daviddwlee84-skills' is not reserved
+OK:    75 skill paths listed; all exist with SKILL.md
+OK:    no duplicate skill paths across plugins
+OK:    all on-disk skills are covered by a plugin (no fallback to 'Other')
+
+PASSED: 0 errors, 0 warning(s)
+./scripts/todo-kanban.sh --validate-only
+OK: TODO.md passes project-knowledge-harness format
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 07:58:05Z)**_
+
+檢查通過：16 個測試、兩個 skill 的 strict lint 與 `make validate` 都成功。Transcript 目前也在 staging；我會只將它移出 staging、保留檔案內容，再把 13 個功能檔案提交到新分支。
+
+
+_**Agent (gpt-6-astra 2026-11-03 07:58:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Create a feature branch and exclude live history from staging
+
+`test "$(git branch --show-current)" = main && git switch -c fix/forge-tracking-and-library-lint && git restore --staged -- .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md && git diff --cached --stat && printf '\n--- Exact staged paths ---\n' && git diff --cached --name-only`
+
+```text
+Switched to a new branch 'fix/forge-tracking-and-library-lint'
+ CLAUDE.md                                          |  34 ++--
+ skills/local/forge-native-dev/SKILL.md             | 139 ++++++++-----
+ .../assets/agent-guidance.md.template              |  47 +++--
+ .../forge-native-dev/references/agent-patterns.md  |  28 ++-
+ .../forge-native-dev/references/coexistence.md     |  18 +-
+ .../forge-native-dev/references/conventions.md     |   8 +-
+ .../forge-native-dev/references/github-features.md |  17 +-
+ .../references/issue-driven-workflow.md            | 219 +++++++++------------
+ skills/local/forge-native-dev/scripts/forge.sh     |   1 +
+ skills/local/skill-author/SKILL.md                 |   8 +-
+ .../local/skill-author/references/script-design.md |  15 ++
+ skills/local/skill-author/scripts/lint-skill.sh    |  25 ++-
+ skills/local/skill-author/tests/test_lint_skill.py | 115 +++++++++++
+ 13 files changed, 437 insertions(+), 237 deletions(-)
+
+--- Exact staged paths ---
+CLAUDE.md
+skills/local/forge-native-dev/SKILL.md
+skills/local/forge-native-dev/assets/agent-guidance.md.template
+skills/local/forge-native-dev/references/agent-patterns.md
+skills/local/forge-native-dev/references/coexistence.md
+skills/local/forge-native-dev/references/conventions.md
+skills/local/forge-native-dev/references/github-features.md
+skills/local/forge-native-dev/references/issue-driven-workflow.md
+skills/local/forge-native-dev/scripts/forge.sh
+skills/local/skill-author/SKILL.md
+skills/local/skill-author/references/script-design.md
+skills/local/skill-author/scripts/lint-skill.sh
+skills/local/skill-author/tests/test_lint_skill.py
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 07:58:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit feature files with normal hooks and verify the result
+
+`test "$(git branch --show-current)" = fix/forge-tracking-and-library-lint && test -z "$(git diff --cached --name-only -- .specstory .claude/plans .cursor/plans .codex .opencode)" && git commit -m "fix(skills): right-size forge tracking and lint sourced libraries" -m "Keep bounded experiments local and reserve external Issues or Discussions for durable tracking and shared decisions. Align the bootstrap guidance and repository policy." -m "Recognize explicitly marked sourced-only Bash libraries without weakening CLI checks. Validate library syntax and non-executable mode, with 16 regression tests across Bash 3.2 and 5.3." -m "Co-Authored-By: Claude Code <noreply@anthropic.com>" && printf '\n--- Commit ---\n' && git log -1 --oneline && printf '\n--- Remaining changes ---\n' && git status --short`
+
+```text
+[fix/forge-tracking-and-library-lint 225c6e4] fix(skills): right-size forge tracking and lint sourced libraries
+ 13 files changed, 437 insertions(+), 237 deletions(-)
+ create mode 100644 skills/local/skill-author/tests/test_lint_skill.py
+
+--- Commit ---
+225c6e4 fix(skills): right-size forge tracking and lint sourced libraries
+
+--- Remaining changes ---
+ M .specstory/history/2026-11-03_04-54-09Z-at-skills-local-pueue.md
+```
+</details></tool-use>
+
+_**Agent (gpt-6-astra 2026-11-03 07:58:37Z)**_
+
+已 commit：
+
+`225c6e4` — `fix(skills): right-size forge tracking and lint sourced libraries`
+
+- 分支：`fix/forge-tracking-and-library-lint`
+- 16 個測試、strict lint 與 `make validate` 全部通過
+- Transcript 未納入，保留在工作目錄供你 amend
+- 未 push，也未合併到 `main`

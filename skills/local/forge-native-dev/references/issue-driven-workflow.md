@@ -1,168 +1,125 @@
-# Issue-Driven Workflow
+# Right-Sized Issue-Driven Workflow
 
-## The thesis: "Issue is the new PR"
+## The thesis: shared intent, not a ticket for every action
 
-In traditional development, a PR is the unit of work: you write code, open a
-PR, describe what you did, request review, and merge. The issue (if one
-exists) is an afterthought — a cross-reference at best.
+For work that needs shared tracking, Issues record intent and PRs expose the
+diff for review. This makes assignment, blockers, and asynchronous decisions
+visible. It does **not** mean every agent action needs an Issue, or that research
+must pass through a Discussion before implementation.
 
-With AI coding agents, this inverts. Creating a PR is near-zero cost — an
-agent can implement an issue and open a PR in minutes. The human's job
-shifts from *writing code and describing it in a PR* to:
+Agent-generated records are cheap to create but still cost human attention,
+notifications, triage, and maintenance. The objective is useful coordination,
+not a complete external log of the conversation.
 
-1. **Describing intent** clearly in an issue
-2. **Reviewing** the agent's work in the PR
-
-The issue becomes the primary artifact — where intent is recorded,
-discussed, refined, and referenced. The PR becomes a mechanical review
-gate: a diff to approve or reject.
-
-### References
+Background on the issue-first approach:
 
 - [Sindre Sorhus on "issue is the new PR"](https://x.com/sindresorhus/status/2105693826690298314)
   and [follow-up](https://x.com/sindresorhus/status/2105720399266984369)
 - [lazygit #1147 — Show which branches have unmerged changes](https://github.com/jesseduffield/lazygit/issues/1147)
-  (the branch-cleanup visibility problem this workflow solves)
 
-## Why Issues over local files?
+## First decide whether an external record is needed
 
-| Dimension | Local files (TODO.md) | Forge Issues |
+Use the scope gate in `SKILL.md` before choosing an Issue or Discussion.
+
+| Situation | Lightest sufficient record |
+|---|---|
+| Small fix or bounded experiment completed now | Conversation + diff, normal validation/review |
+| Useful findings with no outstanding shared decision | Local research doc, e.g. `backlog/` |
+| Execution context must survive another session | Local task tool or handoff note, if sufficient |
+| Committed future work, shared ownership, blocker/dependency | Existing or new Issue |
+| Open question that needs continuing asynchronous input | Existing or new Discussion |
+| User explicitly requests a particular forge record | That record, subject to publication policy |
+
+Neither duration nor line count is a hard threshold. A small release blocker
+can need an Issue; a large solo experiment may not. "Research", "maybe later",
+and "先記下來" do not themselves specify where to publish.
+
+Before creating a warranted external record, look for a relevant existing one.
+An experiment within an Issue normally updates that Issue; it does not need
+another Issue plus a Discussion. Do not backfill tickets solely to document work
+that is already finished.
+
+## Issues versus local files
+
+| Dimension | Local research / task notes | Forge Issues |
 |---|---|---|
-| Portability | Any clone has the backlog | Requires forge access |
-| Collaboration | Edit conflicts on shared TODO.md | Native commenting, assignment, @-mentions |
-| Cross-referencing | Manual `→ [link]()` syntax | Auto-linked from commits, PRs, other issues |
-| Labeling/filtering | Grep + section headers | Native labels, milestones, projects |
-| Notifications | None | Email, mobile, integrations |
-| Agent access | Read file | `gh issue list`, `glab issue list` |
-| Visualization | `todo-kanban.sh` | GitHub Projects, GitLab Boards |
+| Portability | Available from the repo or local task store | Requires forge access |
+| Collaboration | Best for bounded work and durable supporting evidence | Comments, assignment, notifications |
+| Traceability | Link from the diff/PR when useful | Shared owner, state, blockers, milestones |
+| Overhead | No additional external lifecycle | Must triage, update, and eventually close |
 
-Neither is strictly better. Use Issues when you want the collaboration
-features; use local files when portability and grep-ability matter more.
-This skill takes the Issues-first stance.
+Hosted-first means the **shared backlog** lives on the forge. Local research,
+pitfalls and execution handoffs are compatible with it; avoid duplicating the
+same actionable backlog in two competing indexes.
 
 ## Practical patterns
 
-### Solo dev with agents
+### Bounded solo work
 
-1. Capture ideas as Issues (labeled `backlog`)
-2. When ready, assign an issue and let an agent work on it via worktree
-3. Agent opens PR, you review
-4. Merge, cleanup, repeat
+1. Investigate or implement locally; use a normal branch/worktree if useful.
+2. Validate and report the result.
+3. Keep a local note only if the findings are worth retaining.
+4. Follow the project's review policy and the user's commit/publication request.
 
-The backlog is always visible on the forge. You never lose track of ideas
-because they're buried in a file you forgot to grep.
+A directly requested PR can carry a small change's rationale without an Issue.
+Do not create an Issue just because `forge-worktree.sh` takes an issue number.
 
-### Solo dev, multiple agents in parallel
+### Durable backlog or team coordination
 
-1. Open N issues for different features/fixes
-2. Each agent claims an issue via `forge-worktree.sh --agent start <N>`
-3. Each agent works in isolation (separate worktree + branch)
-4. PRs appear as they finish — review at your pace
-5. `forge-cleanup.sh` sweeps up after merges
+1. Reuse/create an Issue with an owner or clear acceptance criteria.
+2. Use the issue-linked worktree lifecycle when ready.
+3. Update the Issue for meaningful milestones, blockers, or changed decisions.
+4. Publish the PR when authorized, review, merge, and clean up.
 
-### Team collaboration
+For parallel agents, split into separate Issues only when work streams need
+independent tracking. Local subtasks/worktrees can remain under one Issue.
 
-Issues become the shared language. Anyone can:
-- File an issue (with templates guiding what to include)
-- Discuss trade-offs in issue comments or Discussions
-- Assign work to humans or agents
-- Review PRs linked to issues
-- Track progress via Projects/Boards
+## Issue versus Discussion: second-stage choice
 
-### Migration from TODO.md
+After deciding an external record is warranted:
 
-If you have an existing `project-knowledge-harness` setup:
+- **Issue:** an outstanding action, deliverable, owner, blocker, or dependency.
+- **Discussion:** an unresolved question that benefits from ongoing shared
+  deliberation, not merely a place to paste a research report.
 
-1. For each active `TODO.md` item, create an Issue with matching labels
-2. For `backlog/*.md` research docs, either:
-   - Create a Discussion linking to the doc (keep docs in-repo)
-   - Paste content into issue body (if short enough)
-3. Keep `pitfalls/` in-repo — they need grep-ability
-4. Remove the PKH agent-guidance block from `AGENTS.md`
-5. Run `forge-init.sh` to set up the forge-native workflow
+### Conditional promotion
 
-## Issue vs Discussion: where does content go?
+An existing Discussion can lead to an Issue when the resulting work needs its
+own tracking. Reuse any existing Issue and link the decision. A small follow-up
+can instead link the Discussion from its PR/diff. Do not create a Discussion
+retroactively for a decision already settled in the conversation.
 
-A common question: "this is more than a simple bug — should it be an Issue
-or a Discussion?"
+### Keep one primary record
 
-**Rule of thumb**: if there's a clear done criteria (you can close it when
-something ships), it's an Issue. If it's exploratory ("should we?",
-"compare A vs B", "what's the right approach?"), it's a Discussion.
+Keep issue bodies concise and actionable. Detailed benchmarks and trade-offs
+can remain in a local research document linked from an existing Issue or PR.
+Do not mirror every document to Discussions, and do not create both surfaces
+merely because a task contains research and code.
 
-### The promotion pattern
+## Migrating an existing backlog
 
-```
-Discussion (Ideas)                  Issue (Backlog)
-  "Should we add OAuth?"    ──→     "Add OAuth support"
-  - Option A: JWT                   - Design: Discussion #15
-  - Option B: Sessions              - Approach: JWT (Option A)
-  - Trade-offs...                   - Effort: L
-```
+Only migrate when the user has chosen a new canonical backlog, not merely
+because local notes exist alongside forge tooling.
 
-1. Exploration happens in a Discussion
-2. When a decision is reached, create an Issue
-3. Link the Issue back to the Discussion
-4. The Discussion can stay open for future revisits
+1. Triage outstanding actionable TODO items into Issues; do not recreate
+   completed work or every speculative thought as a ticket.
+2. Keep `backlog/` research docs; link from a relevant Issue if needed. Create a
+   Discussion only for a still-open question needing asynchronous input, not
+   based on document length.
+3. Keep `pitfalls/` in-repo for symptom-based lookup.
+4. Replace conflicting guidance with the bootstrap template's scope gate.
 
-### Keeping issues clean
+Existing projects with the `forge-native-dev:guidance` sentinel are not rewritten
+by `forge-init.sh`. Review and update their policy block explicitly; rerunning
+init alone will not remove an old "create an Issue for every idea" rule.
 
-Issue bodies should be concise and actionable:
+## Merge and review
 
-- **Good**: "Add pagination to search results. Currently all items load at
-  once, causing slow page loads. Paginate at 50 items per page."
-- **Bad**: Three paragraphs of analysis, five alternatives considered, a
-  table of benchmarks, then "so maybe do option B?"
+Default to squash-merge for one logical change per commit. Link an Issue when
+there is one; issue-free PRs are valid for bounded work unless repository policy
+requires otherwise. Rebase-merge fits deliberately curated commits.
 
-Put the analysis in a Discussion or `backlog/` doc and link it from the
-issue. An issue cluttered with research is hard to scan for "what do I
-need to build?"
-
-## When to stick with local files
-
-- Private repos where you don't want to expose backlog publicly
-- Repos without a forge remote (pure local development)
-- Projects where grep-ability of TODO items is critical
-- When working offline frequently
-
-## Merge strategy: why squash is the default
-
-In the issue-driven model, each PR corresponds to one issue. The merge
-strategy should reinforce this 1:1 mapping on `main`.
-
-**Squash and merge** collapses all PR commits into a single commit:
-
-```
-main: ... → feat: add OAuth support (Closes #42) → fix: login redirect (#38) → ...
-```
-
-Each commit is one shipped issue. `git log --oneline` reads like a changelog.
-`git bisect` finds "which issue introduced the bug". `git revert` undoes one
-issue cleanly.
-
-**Rebase and merge** preserves individual commits — useful only when the
-author curated meaningful commits (e.g., "add schema migration",
-"add API endpoint", "add tests" as separate logical steps). In practice,
-agent-generated branches rarely have this quality.
-
-**Merge commits** create diamond topology in the graph. The only benefit
-is seeing "this commit came from a branch" — but the PR URL in the
-squash commit message already tells you that. Avoid unless you have a
-specific reason to preserve topology.
-
-## The lifecycle in detail
-
-```
-  ┌─────────┐     ┌─────────┐     ┌───────────┐     ┌─────────┐
-  │  Issue   │────>│  Branch  │────>│  Worktree  │────>│  Work   │
-  │ (intent) │     │ (named)  │     │ (isolated) │     │(commits)│
-  └─────────┘     └─────────┘     └───────────┘     └────┬────┘
-                                                          │
-  ┌─────────┐     ┌─────────┐     ┌───────────┐          │
-  │ Cleanup  │<────│  Merge   │<────│    PR     │<─────────┘
-  │(auto)    │     │ (gate)   │     │ (review)  │
-  └─────────┘     └─────────┘     └───────────┘
-```
-
-Each step has a script. The agent (or human) drives the lifecycle forward;
-the scripts handle the forge interaction and git plumbing.
+Keep required review and permission gates. A lightweight tracking policy does
+not authorize skipping tests, publishing unrequested content, or bypassing
+required PR review. For the tracked lifecycle's commands, see `SKILL.md` and
+`references/conventions.md`.

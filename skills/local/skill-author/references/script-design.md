@@ -41,6 +41,21 @@ Bundle a script when:
 State runtime prerequisites in `SKILL.md` ("Requires Node 18+", "Requires
 `uv`"). Don't assume the agent's environment.
 
+### Sourced Bash libraries are not CLI entrypoints
+
+A shared `.sh` file intended only for `source` should remain non-executable;
+it does not need a CLI shebang or `--help` handler. Declare its role explicitly
+with this exact line in the leading comment header (before any shell code):
+
+```bash
+# skill-lint: sourced-only
+```
+
+`lint-skill.sh` then requires non-executable mode and valid Bash syntax, without
+sourcing or running the library. A marker after shell code is not recognized.
+Do not add it to silence a broken CLI: executable files carrying the marker
+fail lint, and unmarked `.sh` files still receive the full CLI checks.
+
 ---
 
 ## Pin versions

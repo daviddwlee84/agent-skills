@@ -1,36 +1,49 @@
 <!-- forge-native-dev:guidance -->
-### Issue-driven workflow (<FORGE_TYPE>, role: <FORGE_ROLE>)
+### Right-sized forge workflow (<FORGE_TYPE>, role: <FORGE_ROLE>)
 
-This project uses <FORGE_TYPE> Issues as the canonical backlog. The
-`forge-native-dev` skill provides the scripts below.
+This project uses <FORGE_TYPE> Issues as the canonical shared backlog, not a
+mandatory record for every change. The `forge-native-dev` skill provides the
+scripts below; apply its scope gate before creating an external record.
 
-**Capture intent as Issues** — when the user describes a bug, idea, or
-"maybe later" item, create an Issue. Do not ask "should I create an
-issue?" — default to creating one.
+**Default local.** Bounded experiments, small fixes, and same-session research
+can finish in the conversation and diff. Keep reusable findings in a local
+research doc; local task state can support handoff without an external thread.
 
-**Work lifecycle:**
+**Track externally when warranted:** an explicit user request, outstanding
+work needing durable backlog/ownership/dependency tracking, or asynchronous
+collaborator input. Follow project publication policy. Duration, "research",
+"maybe later", or "先記下來" alone does not select an external surface.
+
+Reuse existing relevant records. Issues track actions; Discussions are for open
+questions needing ongoing shared deliberation. Do not automatically create both,
+mirror local research to Discussions, or backfill tickets for completed small
+work. A local branch/worktree or directly requested PR does not require an Issue.
+
+**Tracked work lifecycle (when an Issue is warranted):**
 1. Start: `bash scripts/forge-worktree.sh start <issue-number>`
-2. Work in the worktree, commit conventionally
-3. Finish: `bash scripts/forge-worktree.sh finish <issue-number>`
+2. Work in the worktree, commit conventionally when authorized
+3. Finish: `bash scripts/forge-worktree.sh finish <issue-number>` (pushes + opens PR; requires publication authorization)
 4. After merge: `bash scripts/forge-cleanup.sh`
 
 **Check for work:** `bash scripts/forge-issue.sh list --assignee @me`
 
-**Progress reporting:** post comments on long-running tasks:
+**Progress reporting:** update an existing issue for meaningful milestones,
+blockers, or changed decisions, not every internal experiment:
 `bash scripts/forge-issue.sh comment <number> --body "progress update"`
 
 **Where things go:**
-- Actionable work → Issues (with priority labels)
-- Design discussion → Discussions (GitHub) / issue threads (GitLab)
+- Bounded work → conversation + diff
+- Reusable research → in-repo notes (e.g. `backlog/`)
+- Durable shared work → Issues (with priority labels)
+- Ongoing shared deliberation → Discussions (GitHub) / existing issue threads (GitLab)
 - Past traps → `pitfalls/` in-repo (grep-able)
-- Review → PR/MR comments
+- Review → PR/MR comments; follow the project's review requirements
 
 **Dashboard:** `bash scripts/forge-status.sh`
 
-**PRs are review gates, not proposals.** The issue describes intent;
-the PR is the diff to review. Default merge strategy: **squash and merge**
-(one issue = one commit on main). Use rebase-merge only when every commit
-in the PR is a meaningful, curated logical change.
+**PRs are review gates.** Link the existing Issue when there is one; a direct
+PR can describe a small change without a prerequisite ticket. Default merge
+strategy: **squash and merge** (one logical change per commit on main).
 
 **Role: <FORGE_ROLE>**
 - maintainer: may create/assign labels, assign issues, merge PRs, manage

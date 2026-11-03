@@ -5,7 +5,8 @@
 #   1. Frontmatter & length     — name + description present, description has
 #                                  "use when" trigger phrasing, portable
 #                                  name/description lengths, SKILL.md < 500 lines.
-#   2. Script hygiene           — every scripts/*.sh has shebang, +x, --help handler.
+#   2. Script hygiene           — shell CLIs need shebang, +x, --help; explicitly
+#                                  sourced-only Bash libraries need syntax and -x off.
 #   3. Reference reachability   — every references/*.md is mentioned in SKILL.md.
 #
 # Bash 3.2 compatible (works on stock macOS).
@@ -255,6 +256,28 @@ if [ -d "$SKILL_DIR/scripts" ]; then
     [ -e "$script" ] || continue
     HAS_SCRIPTS=1
     NAME=$(basename "$script")
+
+    # A deliberate marker in the leading comment header identifies a Bash
+    # library. Never infer this from a missing shebang/+x or source the file.
+    if awk '
+      /^[[:space:]]*$/ { next }
+      /^# skill-lint: sourced-only[[:space:]]*$/ { marked = 1; next }
+      /^[[:space:]]*#/ { next }
+      { exit }
+      END { exit !marked }
+    ' "$script"; then
+      if [ -x "$script" ]; then
+        emit_err "$NAME is marked sourced-only but executable (remove +x or the marker)"
+      else
+        emit_ok "$NAME is a non-executable sourced-only library"
+      fi
+      if "$BASH" -n "$script" >/dev/null 2>&1; then
+        emit_ok "$NAME has valid Bash syntax"
+      else
+        emit_err "$NAME has invalid Bash syntax (run bash -n to inspect)"
+      fi
+      continue
+    fi
 
     # Shebang on line 1.
     FIRST_LINE=$(head -n1 "$script")

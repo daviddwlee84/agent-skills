@@ -1,20 +1,22 @@
 ---
 name: forge-native-dev
-description: Issue-driven development workflow backed by GitHub/GitLab — uses Issues as the canonical backlog, PRs as review gates, and worktrees for per-issue isolation with auto-cleanup. The hosted-first alternative to project-knowledge-harness. Use when committing to an issue-first workflow, creating backlog items as Issues, managing worktree-per-issue lifecycles, or cleaning up merged branches — incl. "開 issue", "maybe later", "幫我開 PR", "清理 branch".
+description: 'Right-sized GitHub/GitLab workflow for durable backlog, collaboration, PR review, and issue-linked worktrees. Use when the user explicitly asks to open or manage Issues, Discussions, PRs, or project boards, needs deferred work tracked or coordinated across contributors, or says "開 issue", "幫我開 PR", "清理 branch". Keep bounded experiments, small fixes, and local research local unless external tracking has a concrete purpose.'
 ---
 
 # forge-native-dev
 
-An opinionated, issue-driven development workflow that treats GitHub/GitLab as
-the single source of truth for intent, backlog, and collaboration — not just
-code hosting.
+Use GitHub/GitLab as the canonical **shared backlog**, not a mandatory record
+of every action an agent takes. Creating a ticket is cheap; maintaining,
+reading, and receiving notifications from unnecessary tickets is not.
 
-**Core thesis**: Issues are the unit of work. PRs are review gates. With AI
-agents, creating a PR is near-zero cost — the human's job shifts from
-*proposing* changes (PR-first) to *describing intent* (issue-first) and
-*reviewing* results (PR-as-gate).
+**Core thesis**: Right-size tracking before choosing a forge surface. Issues
+hold durable work commitments; PRs are review gates. A small experiment can
+finish in the conversation and diff without either an Issue or a Discussion.
 
-Lifecycle: **Issue -> branch -> worktree -> work -> PR -> review -> merge -> cleanup**.
+Lightweight lifecycle: **work -> validate -> report**, with an optional local
+note and the repository's normal commit/review policy.
+Tracked lifecycle: **Issue -> branch/worktree -> work -> PR -> review -> merge
+-> cleanup**. A Discussion is optional, not a prerequisite to either lifecycle.
 
 Surfaces, separated by the question they answer:
 
@@ -37,8 +39,10 @@ Surfaces, separated by the question they answer:
 
 ## When to use this skill
 
-- The user says "open an issue", "create a backlog item", "開 issue",
-  "maybe later", "先記下來", or describes a bug/idea worth tracking.
+- The user explicitly requests an Issue, Discussion, or shared backlog item.
+- Actionable work will remain deferred or blocked, needs ownership/dependency
+  tracking, or benefits from asynchronous coordination. Apply the scope gate below;
+  "maybe later", "先記下來", or "research" alone does not select an external surface.
 - The user asks "should I open a PR?", "幫我開 PR", or finishes work on
   a branch and needs to ship it.
 - The user says "clean up branches", "清理 branch", "which branches are
@@ -51,8 +55,44 @@ Surfaces, separated by the question they answer:
 
 - The project has no GitHub/GitLab remote — use `git-workflow` instead.
 - The user explicitly prefers `project-knowledge-harness` (local TODO.md).
-- Purely offline git operations with no forge interaction.
+- Bounded experiments, quick fixes, or same-session research with no remaining
+  coordination need — work locally; an online remote does not change this.
+- Git-only operations with no requested forge interaction.
 - Secret scanning or agent transcript hygiene — use `agent-history-hygiene`.
+
+## Scope gate — before any external creation
+
+1. **Check intent and repository policy.** Honor explicit requests and stricter
+   project requirements. Installing this skill or asking to investigate something
+   is not itself a request to publish a ticket or discussion.
+2. **Default to the lightest sufficient record.** Use the conversation/diff for
+   bounded work; add a local research note for reusable conclusions, or the
+   project's local task tool for execution handoff. Needing another session or
+   a long document alone does not require a forge record.
+3. **Use external tracking when it has a concrete purpose:** an explicitly
+   requested record, committed future work that would otherwise be lost, a blocker
+   or dependency to track, an owner to assign, or asynchronous collaborator input.
+   Follow the repository's publication authorization; when unclear, keep local
+   rather than routinely asking "should I create an issue?".
+4. **Reuse before creating.** Once external tracking is warranted, look for an
+   existing relevant Issue/Discussion. Add a meaningful update or link a local
+   note there; do not create a new record for each phase, experiment, or worktree.
+5. **Choose one surface.** Actionable follow-up → Issue. A genuinely open question
+   needing ongoing shared deliberation → Discussion. Do not create both merely
+   because one task includes research and implementation.
+
+| Example | Default |
+|---|---|
+| "Try this integration and run a small example" | Local experiment + findings; no Issue/Discussion |
+| "Keep the benchmark rationale for future reference" | Local research doc; no automatic Discussion |
+| "Fix this typo and open a PR" | Direct PR; no prerequisite Issue unless repo policy requires it |
+| "Ship this next month; blocked on upstream API" | Reuse/create an Issue for the outstanding commitment |
+| "Ask maintainers which API we should support" | Discussion if ongoing deliberation is needed |
+| New experiment within an existing Issue | Update that Issue only if the result matters to its readers |
+
+Size and duration are signals, not thresholds: a tiny release blocker can need
+an Issue; a long solo investigation can stay local. Saving a result is different
+from starting an external discussion.
 
 ## Coexistence with other skills
 
@@ -75,13 +115,11 @@ forge layer.
 PKH uses `TODO.md` + `backlog/` + `pitfalls/` as file-based project memory.
 `forge-native-dev` uses Issues + Discussions + in-repo `pitfalls/`.
 
-If `TODO.md` exists with PKH markers (`## P1` / `## P2` etc.), warn:
-
-> This project uses `project-knowledge-harness` (local TODO.md) for backlog.
-> `forge-native-dev` uses Issues instead. Using both creates duplicate
-> sources of truth. Which do you prefer for this project?
-
-**One workflow per project, not both.** The migration path is documented in
+Honor the repository's declared shared-backlog policy. Local research docs,
+historical TODO entries, and local task handoffs can coexist with Issues; their
+presence alone is not a reason to ask for migration or publish new records.
+If two active backlog indexes genuinely conflict and policy is unclear, ask
+which is canonical. **One shared backlog, not duplicate trackers.** See
 [`references/coexistence.md`](references/coexistence.md).
 
 ## Core workflow
@@ -96,12 +134,12 @@ This detects the forge, creates labels, configures git, and adds agent
 guidance to `AGENTS.md`. Read [`references/forge-abstraction.md`](references/forge-abstraction.md)
 for the full gh/glab mapping.
 
-### 2. Capture intent as Issues
+### 2. Capture durable work as Issues (when warranted)
 
-When the user surfaces a "maybe later" idea, a bug, or a feature request:
-
-**Default to creating an Issue.** Do not ask "should I create an issue?" —
-just create it with appropriate labels.
+Apply the scope gate first. For a requested or justified shared backlog item,
+reuse an existing Issue or create one with concise acceptance criteria and
+appropriate labels. Do not retrospectively create tickets for a small change
+already completed in this session merely to fill out the lifecycle.
 
 ```bash
 # Quick backlog item
@@ -124,6 +162,12 @@ bash scripts/forge-issue.sh create \
 ```
 
 ### 3. Work on an issue
+
+These helpers are for work already tied to an Issue. For a lightweight change,
+use a normal branch/worktree if isolation is useful; do not manufacture an Issue
+just to use `forge-worktree.sh`. A directly requested PR can use `forge-pr.sh`
+without an issue-linked worktree. `finish` publishes a branch and PR, so invoke
+it only when that publication is authorized, not merely because work is done.
 
 ```bash
 # Start: creates branch + worktree, assigns issue, adds "in-progress" label
@@ -181,7 +225,8 @@ bash scripts/forge-status.sh --all    # all open issues
 
 ## Merge strategy
 
-**Default: squash and merge.** One issue = one PR = one commit on `main`.
+**Default: squash and merge.** One logical change = one PR = one commit on
+`main`; link an Issue when the change has one, not as a universal prerequisite.
 
 | Strategy | When to use |
 |---|---|
@@ -233,41 +278,39 @@ If you can push to the repo, you're a maintainer in this skill's model.
 
 ## Issue vs Discussion: content boundary
 
+Choose between these **only after** external tracking passes the scope gate.
+Neither is required for a self-contained evaluation.
+
 | | Issue | Discussion |
 |---|---|---|
-| **Nature** | Actionable, with clear done criteria | Open-ended: evaluations, trade-offs, "should we?" |
-| **Lifecycle** | Open → In Progress → PR → Closed | Open → threaded conversation → may spawn Issue |
-| **Signals** | "Fix X", "Add Y", "Build Z" | "Should we use X?", "Compare A vs B", "Evaluate" |
-| **Body** | Concise — what to do, acceptance criteria | Detailed — analysis, pros/cons, research |
-| **Closing** | Closed when the PR merges | Stays open for ongoing discussion, or answered |
+| **Purpose** | Track an outstanding action, owner, blocker, or deliverable | Resolve an open question through ongoing shared deliberation |
+| **Body** | Concise scope and acceptance criteria; link supporting research | The decision/question and why asynchronous input is needed |
+| **Closing** | Done when its acceptance criteria are met | Answered or retained while deliberation remains useful |
 
-**Promotion pattern**: when a Discussion matures into actionable work,
-create an Issue and link back to the Discussion. The Issue body says
-"Design decided in Discussion #N — proceeding with approach B."
+**Promotion is conditional:** when an existing Discussion produces work that
+needs its own tracking, reuse/create an Issue and link back. If a small change
+can be completed directly, its PR/diff can link the discussion instead. Do not
+backfill a Discussion for a decision already settled in chat.
 
-**Keep issue bodies concise.** Detailed analysis, trade-off tables, and
-research belong in Discussion threads or `backlog/` docs, linked from the
-issue. An issue cluttered with research is hard to scan for "what do I
-need to build?"
-
-**Cross-referencing**: Issues, Discussions, and PRs can all reference each
-other via `#N`. Use this freely — the three-way linking is the key value
-of using the forge natively.
+**Keep one primary record.** Research can stay in `backlog/` even in a hosted-first
+project. Link it from an existing Issue/PR when useful; do not mirror every
+research document to Discussions or publish duplicate status threads.
 
 ## Where things go
 
 | Kind of information | Where it lives | Why |
 |---|---|---|
-| Actionable work (bugs, features, chores) | Issues (with priority labels) | Searchable, assignable, linkable |
-| Design discussion, research, trade-offs | GitHub Discussions / GitLab issue threads | Collaborative, threaded |
+| Bounded experiment or small change | Conversation + diff | No separate tracking lifecycle |
+| Reusable research and trade-offs | In-repo research docs (e.g. `backlog/`) | Durable without an external discussion |
+| Durable actionable backlog / coordination | Issues (with priority labels) | Searchable, assignable, linkable |
+| Ongoing shared design deliberation | GitHub Discussions / existing GitLab issue threads | Asynchronous input, not document storage |
 | Past traps, debugging knowledge | `pitfalls/` in-repo | Grep-able by symptom, portable |
 | Code review | PR/MR comments | Tied to the diff |
 | Backlog visualization | GitHub Projects / GitLab Boards | Built-in to the forge |
 | Release notes | Tags + auto-generated release notes | Derived from PRs |
 
-**Pitfalls stay in-repo** even in forge-native mode. They need to be
-grep-able by error message from any clone. Research and discussion go to
-the forge because they benefit from collaboration features.
+**Pitfalls and reusable research can stay in-repo** even in forge-native mode.
+The forge is the shared backlog, not a requirement to publish all project memory.
 
 ## Issue-as-backlog conventions
 
@@ -292,7 +335,9 @@ bash scripts/forge-issue.sh list --assignee @me
 
 ### Progress reporting
 
-When working on a long task, post progress comments on the issue:
+Update an existing Issue for meaningful milestones, blockers, or changed
+decisions that matter to its readers. Do not publish every internal experiment
+or status check merely because a task takes time:
 
 ```bash
 bash scripts/forge-issue.sh comment 42 \

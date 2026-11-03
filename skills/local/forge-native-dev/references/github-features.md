@@ -4,13 +4,14 @@ How to leverage GitHub's platform features beyond Issues and PRs.
 
 ## GitHub Discussions
 
-Discussions are threaded conversations that live outside the issue tracker.
-Use them for:
+Discussions are threaded conversations outside the issue tracker. Apply the
+scope gate in `SKILL.md` first: an exploratory prompt is not automatically a
+request for an external thread. Bounded research stays in the conversation/diff
+or a local document; reuse an existing Issue when it already owns the question.
 
-- Design proposals and trade-off analysis
-- Research notes that benefit from collaboration
-- Questions and answers (community support)
-- Announcements and status updates
+Use Discussions for open design questions needing ongoing asynchronous input,
+community Q&A, or explicitly requested announcements. Do not mirror research
+notes, completed experiments, or every internal status update into new threads.
 
 ### Setup
 
@@ -49,7 +50,9 @@ Use the web UI for full Discussion features.
 
 ### Linking Discussions to Issues
 
-When a Discussion matures into actionable work, create an Issue from it:
+When an existing Discussion leads to work needing its own tracking, reuse or
+create an Issue and link back. A small immediate follow-up can link the Discussion
+from its PR/diff instead. Example of a justified tracked follow-up:
 
 ```bash
 bash scripts/forge-issue.sh create \

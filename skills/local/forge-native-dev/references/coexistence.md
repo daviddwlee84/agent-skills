@@ -46,17 +46,20 @@ layer, and `git-workflow` handle the commit/release layer.
 | Aspect | project-knowledge-harness | forge-native-dev |
 |---|---|---|
 | Backlog | `TODO.md` (file-based, portable) | Issues (hosted, collaborative) |
-| Research | `backlog/*.md` (in-repo) | Discussions / issue threads |
+| Research | `backlog/*.md` (in-repo) | Local research docs; Discussions only for ongoing shared input |
 | Pitfalls | `pitfalls/*.md` (in-repo) | `pitfalls/*.md` (in-repo — same) |
 | Visualization | `todo-kanban.sh` | GitHub Projects / GitLab Boards |
 | Cross-referencing | Manual links | Auto-linked |
 | Offline access | Full | Limited to cached data |
-| td integration | Yes (optional) | No (not needed — Issues are the tracker) |
+| td integration | Yes (optional) | Optional local execution/handoff state, not a duplicate shared backlog |
 
-### One workflow per project, not both
+### One shared backlog, not two competing indexes
 
-Using both creates duplicate sources of truth. A "maybe later" idea ends
-up in both `TODO.md` and an Issue, and they drift apart.
+Mirroring the same actionable backlog into both `TODO.md` and Issues creates
+drift. Local research notes and task execution state are different: they can
+support a hosted backlog without creating duplicate external records. Check the
+repository's declared policy before proposing a migration merely because local
+files or multiple skills are present.
 
 ### Migration: PKH -> forge-native-dev
 
@@ -75,8 +78,9 @@ up in both `TODO.md` and an Issue, and they drift apart.
    ```
 
 3. **For `backlog/*.md` research docs**:
-   - Short docs: paste into issue body
-   - Long docs: create a Discussion linking to the file, keep the file
+   - Keep the files; link relevant evidence from an existing Issue/PR if useful.
+   - Create a Discussion only for a still-open question needing asynchronous
+     input. Document length alone is not a publication criterion.
 
 4. **Keep `pitfalls/`** in-repo — they need grep-ability.
 
