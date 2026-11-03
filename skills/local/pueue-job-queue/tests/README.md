@@ -16,7 +16,8 @@ config — your real queue is never touched. Skipped entirely if `pueue` /
 
 - `conftest.py` — `pueue_env` session fixture starts an isolated daemon and
   yields an env dict. The `_clean_between_tests` autouse fixture wipes
-  tasks between tests (kill + clean).
+  tasks between tests (`reset --force`); named groups remain, so tests use
+  distinct group names.
 - `fixtures/simple-dag.yaml` — 4-task diamond used by `test_dag.py`.
 - `test_submit.py` — `submit.sh` paths: minimal, `--after` chain, dependency
   failure propagation, group autocreate, dry-run, error paths.
@@ -25,6 +26,12 @@ config — your real queue is never touched. Skipped entirely if `pueue` /
   detection, unknown `after`, missing `cmd`, stdin spec.
 - `test_wait.py` — `wait.py` paths: success/failure/timeout exit codes
   (0/5/6), label-prefix selector, no-selector arg error.
+- `test_completion_handoff.py` — executes the Python completion gate extracted
+  directly from `references/agent-continuation.md`: success dependencies,
+  failed-parent suppression, a separate control group with single-slot workers,
+  all-settled results, missing IDs, pause/timeout, and malformed output.
+  A local receiver stub confirms one delivery attempt and preserved results when
+  delivery exits nonzero; it does not simulate an LLM or prove network delivery.
 - `test_contracts.sh` — bash exit-code contract: every script supports
   `--help` (exit 0); arg errors return 1; `check-daemon.sh` against an
   unreachable daemon returns 3.
@@ -36,6 +43,20 @@ config — your real queue is never touched. Skipped entirely if `pueue` /
   is missing.
 - Tests use ports / sockets only under `tempfile.mkdtemp(prefix="pueue-test-")`;
   no host-wide config is touched.
+
+## Opt-in terminal/agent smoke tests
+
+Normal tests never launch Herdr, Core, or a model. The 2026-11-03 live evaluation
+and exact evidence boundaries are recorded in
+[`backlog/pueue-herdr-continuation.md`](../../../../backlog/pueue-herdr-continuation.md).
+
+For another live run, explicitly authorize disposable targets, preserve focus,
+use an isolated Pueue daemon and unique result directory, and follow
+`references/agent-continuation.md`. Inspect actual assistant ACKs and native
+session identities, not echoed prompts. Do not auto-answer startup dialogs or
+resend ambiguous submissions. Core additionally needs isolated session, state,
+config/templates and socket; a synthetic receiver test is not a real-agent test.
+Clean up only the resources created by that run.
 
 ## Why these levels
 

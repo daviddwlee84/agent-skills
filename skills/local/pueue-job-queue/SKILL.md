@@ -184,14 +184,22 @@ Output is a JSON summary on stdout:
 
 ```json
 {"summary": {"total": 4, "success": 3, "failed": 1, "killed": 0, "dependency_failed": 0},
- "tasks": [{"id": 17, "status": "Done", "result": "Success", "exit_code": 0,
+ "tasks": [{"id": 17, "state": "Done", "result": "Success", "exit_code": null,
             "label": "nightly-fetch", "group": "ml",
             "start": "...", "end": "..."}],
  "elapsed_seconds": 42.3}
 ```
 
-Exit codes: `0` all succeeded, `5` ≥1 task failed/killed/dependency-failed,
-`6` timeout. The agent can branch on exit code instead of parsing JSON.
+Exit codes: `0` all succeeded, `5` failure or a watched task vanished,
+`6` timeout. Before triggering a completion action, also validate the JSON:
+all expected IDs must be present and every task's `state` must be `Done`.
+A vanished task can exit `5` without a JSON summary; timeout can emit incomplete
+results. Do not use `--fail-fast` when the next step requires all jobs to finish.
+
+To wake an agent after completion, or start a fresh conversation with the results,
+read `references/agent-continuation.md`. It covers an independent control-group
+waiter for all-settled reporting, durable handoffs, Herdr delivery, and the separate
+experimental Herdr Core route. Ordinary queue use does not require either runtime.
 
 ## Workflow E — logs, retry, kill
 
@@ -275,7 +283,8 @@ for a full sweep. Pair with the agent's existing weekly maintenance habit
 
 - **DAG fan-out is gated by `parallel_tasks` per group.** Even when two siblings both depend only on `A` and the DAG allows them to run in parallel, they will *serialize* if their group's `parallel_tasks=1`. Pueue's parallelism primitive is the group, not the dependency graph. `submit-dag.py` warns when DAG width exceeds the group's slots and suggests the exact `pueue parallel N --group G` command; pass `--auto-parallel` to apply it.
 - **`pueue add -- bash -c 'sleep 60'` does not preserve quoting.** Pueue joins all `<COMMAND>` args and re-shells. The single-quoted `'sleep 60'` is unwrapped by *your* shell before pueue sees it, then pueue re-splits. Quote the **whole** command as one arg: `pueue add 'sleep 60'` or `submit.sh -- 'bash -c "sleep 60 && echo done"'`.
-- **`--after` is AND-only and success-only.** Failed parent → dependent's `status.Done.result` becomes `"DependencyFailed"` and it never runs. There is no OR, no run-on-failure, no retry-on-failure. If you need that, you need a real orchestrator.
+- **`--after` is AND-only and success-only.** Failed parent → dependent's `status.Done.result` becomes `"DependencyFailed"` and it never runs — including a notification job. For all-settled reporting, use an independent control-group waiter with explicit IDs, not success dependencies; see `references/agent-continuation.md`. Conditional/retry scheduling still belongs in a real orchestrator.
+- **A completion notification is not proof of agent continuation.** Persist results first, target an explicit endpoint and verified agent identity, and confirm the new turn's response. Herdr toasts do not wake agents; `hc send` is terminal input, not a durable inbox. Do not blindly resend after timeout or inject completion text into blocked/unknown targets.
 - **Pueue does NOT auto-create groups.** `pueue add --group new_name` exits 1 with `"Group new_name doesn't exists. Use one of these: [...]"`. `submit.sh` calls `pueue group add` first if the group is missing.
 - **`pueue restart` (default) creates a NEW task id.** The old id stays in history with its result. To retry in-place (reusing the id, overwriting the log), pass `--in-place`. Choose deliberately — agent users often want `--in-place` for "retry this".
 - **`pause_group_on_failure` is config-only, no CLI flag.** Set it in `pueue.yml`; reload with `pueue reset` or restart `pueued`.
