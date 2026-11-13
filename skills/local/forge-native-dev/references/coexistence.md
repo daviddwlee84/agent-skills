@@ -114,10 +114,14 @@ different levels:
 
 - **forge-native-dev** handles issues and PRs in each child, in that child's
   own forge. Superproject issue worktrees (`.worktrees/issue-<n>`) are only for
-  changes to outer content.
+  changes to outer content. Child worktrees cannot be opened from inside one:
+  submodules initialized there die with that worktree, and
+  `superproject-workspace` refuses it.
 - **superproject-workspace** handles pointer policy, child worktrees under
-  `.worktrees/<child-path>/<branch>`, and the preflighted bump commit that
-  records merged child work in the superproject.
+  `.worktrees/<child-path>/<branch>`, multi-child task worktrees under
+  `.worktrees/_tasks/<task>/<child-path>`, and the preflighted bump commit that
+  records merged child work in the superproject. None of these collide with
+  `.worktrees/issue-<n>`.
 
 ## Role model
 

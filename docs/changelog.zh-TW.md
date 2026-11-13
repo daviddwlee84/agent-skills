@@ -11,6 +11,14 @@
 
 ## Unreleased
 
+- `superproject-workspace` 0.3.0：新增 `new`/`add`，可從零建立工作區並加入子 repo；
+  在建議的 submodule 模式之外，新增只用 pointer 的 home repo 模式（`.superproject` 內的
+  `[repo]` 項目，需要時才 clone）；`task open|list|close` 讓一個 branch 橫跨多個子 repo，
+  放在 `_tasks/<task>/` 下；worktree 根目錄可設定；防止從 superproject 的 linked worktree
+  開子 repo worktree 的 guard；`repair`（relink、prune、reattach、刪除孤兒）及新的
+  `audit` finding；以及自動產生的 repo map（清單很長時用 `map-file`）。既有導入者在重跑
+  `adopt` 前，`audit` 會回報 `managed-block-stale`（以及 `repo-map-stale`），屬預期行為。
+
 - 新增 canonical `agent-history-hygiene` post-session protocol v2，保留嚴格且
   不變的 v1 恢復語意：sanitation 前持久化私有完整 beforeimages、每項 finding／
   occurrence 的 transformation receipt，掃描整個 frozen prepared index，並以

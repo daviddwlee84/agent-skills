@@ -3,6 +3,7 @@
 `adopt --with-ci` installs `.github/workflows/superproject-bump.yml`:
 
 1. `ci-plan --json` lists `track` children with `x-bump` `pr` or `direct`.
+   Pointer children never appear: they have no gitlink to bump.
    Use `--only` to select one child, as `workflow_dispatch` and
    `repository_dispatch` do.
 2. `init` checks out just those children.

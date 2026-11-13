@@ -31,7 +31,9 @@ skip the child. That is intended for `lazy` children. `init <name>` passes
 
 ### Nested submodules fail to clone (private descendants)
 `--recursive` pulls in every descendant, including private or unrecoverable
-ones. The CLI never recurses unless asked. Initialize nested children
+ones. The CLI never recurses unless asked. `init --recursive` applies only to
+the nested submodules of the children that this call initializes; it does not
+touch children that were already initialized. Initialize nested children
 explicitly, only when the task needs them.
 
 ### Branch named in `.gitmodules` doesn't exist (`origin/main missing`)
@@ -39,5 +41,34 @@ The child uses `master`, or a release branch. Set `branch` explicitly. If
 `branch` is unset, the CLI uses the child's `origin/HEAD`.
 
 ### `git status` shows `.worktrees/` as untracked
-Add `.worktrees/` to `.gitignore`. `worktree add` and `adopt` do this
-automatically.
+Add `.worktrees/` (or your worktree root) to `.gitignore`. `worktree add`,
+`task open` and `adopt` do this automatically when the root is inside the
+superproject.
+
+### `git status` is noisy with `modified: app (untracked content)`
+Build output or editor files inside a child show up in the outer status.
+Fix the child's own `.gitignore` first. If a child is legitimately dirty all
+the time, opt that one child in with `git config -f .gitmodules
+submodule.<name>.ignore dirty`: the outer status then ignores its working
+tree but still reports new commits. Never set `ignore = all`; it also hides
+gitlink changes, so a moved pointer slips into commits unnoticed.
+
+### A removed child keeps coming back (`stale-submodule-config`, `stale-module-store`)
+`git rm <path>` drops the gitlink and the `.gitmodules` section, but leaves
+`submodule.<name>.*` in `.git/config` and the store in `.git/modules/<name>`.
+Re-adding the same name then reuses the old store and URL. To remove a child
+completely:
+
+1. Push or save any work in it (`git -C <path> log --branches --not --remotes`).
+2. `git submodule deinit -f -- <path>`
+3. `git rm -f <path>` and commit.
+4. `sp repair --prune` (drops the `.git/config` section).
+5. After checking the store holds nothing you need:
+   `rm -rf .git/modules/<name>` by hand. The CLI never deletes a store.
+
+### `fatal: working trees containing submodules cannot be moved or removed`
+`git worktree move` (and plain `remove`) refuse worktrees that contain
+initialized submodules. Do not move child or task worktrees by hand either:
+create a new one where you want it, move your commits there by pushing the
+branch, then `worktree remove` / `task close` the old one. If a move already
+happened, `sp repair` relinks it.

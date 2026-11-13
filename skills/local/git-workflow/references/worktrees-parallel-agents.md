@@ -134,5 +134,15 @@ it is the wrong tool for work inside a child repo. Create a worktree of the
 **child** instead, under `.worktrees/<child-path>/<branch>`. The
 `superproject-workspace` skill's
 `superproject.py worktree add <child> <branch>` does this, including the
-`.gitignore` entry and branching pins from their recorded gitlink. See its
+`.gitignore` entry and branching pins from their recorded gitlink. For one
+change across several children, `superproject.py task open <task> <child>...`
+creates `.worktrees/_tasks/<task>/<child-path>` on one branch. See its
 `references/worktrees.md`.
+
+**Do not run `claude --worktree` (or use `isolation: worktree` subagents) at a
+superproject root for child work.** That creates a worktree of the
+superproject; submodules initialized inside it keep their git stores under
+`.git/worktrees/<id>/modules/`, and removing the worktree deletes them,
+orphaning every child worktree opened from them (`fatal: not a git
+repository`). `superproject.py repair` diagnoses and reattaches such
+orphans; see its `references/repair.md`.

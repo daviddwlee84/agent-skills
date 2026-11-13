@@ -196,9 +196,9 @@
     },
     {
       "name": "version-control",
-      "description": "Git and forge workflows: offline git discipline (Conventional Commits, AI provenance, linear history, SemVer) plus issue-driven GitHub/GitLab development (Issues as backlog, worktree-per-issue, auto-cleanup)",
+      "description": "Git and forge workflows: offline git discipline (Conventional Commits, AI provenance, linear history, SemVer), issue-driven GitHub/GitLab development (Issues as backlog, worktree-per-issue, auto-cleanup), and multi-repo workspaces (submodule superproject or pointer home repo, task worktrees, repair)",
       "category": "Engineering",
-      "tags": ["git", "commits", "ai-provenance", "branching", "worktree", "semver", "conventional-commits", "github", "gitlab", "issues", "forge", "submodules", "superproject"],
+      "tags": ["git", "commits", "ai-provenance", "branching", "worktree", "semver", "conventional-commits", "github", "gitlab", "issues", "forge", "submodules", "superproject", "home-repo", "multi-repo"],
       "source": "./",
       "strict": false,
       "skills": [

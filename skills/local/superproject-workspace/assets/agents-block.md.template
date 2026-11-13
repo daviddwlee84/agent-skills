@@ -1,10 +1,11 @@
 <!-- superproject-workspace:agent-guidance -->
 ## Working across submodules
 
-This repository is a superproject: each child under a submodule path is its
+This repository is a **superproject**: each child under a submodule path is its
 own repository with its own remote, history, and `AGENTS.md`/`CLAUDE.md`. Read
 the child's own instructions before editing inside it; they are authoritative
-there. This file only governs cross-repo work.
+there. This file only governs cross-repo work. Call it the superproject, not
+a monorepo or meta-repo.
 
 - **Gitlinks record commits, not branches.** Each child declares a policy in
   `.gitmodules` (`x-policy`): `track` follows `origin/<branch>` by
@@ -13,15 +14,22 @@ there. This file only governs cross-repo work.
 - The `just sub-*` recipes run the shared skill CLI (`just sub-which` shows
   which file). Without just: `uv run --script
   ~/.agents/skills/superproject-workspace/scripts/superproject.py <cmd>`.
-- **Look before acting:** `just sub-status --fetch` shows
-  policy, lag, drift, and dirty checkouts. `audit` gives fixes.
-- **Need an absent child?** `just sub-init <name>`. Never
-  recurse into nested submodules unless the task needs them.
-- **Develop in a child worktree, not the child checkout:**
+- **Look before acting:** `just sub-status --fetch` shows policy, lag, drift,
+  and dirty checkouts. `just sub-audit` gives fixes.
+- **Need an absent child?** `just sub-init <name>`. Never recurse into nested
+  submodules unless the task needs them.
+- **Outer repo rules.** Keep this checkout on its default branch; cross-repo
+  features live on child branches. Do not create worktrees of this
+  superproject for child work (no `git worktree add` here, no
+  `claude --worktree` or `isolation: worktree` at this root): child worktrees
+  opened from one die with it. The helper never commits or pushes for you.
+- **Develop in a child worktree, opened from this main checkout:**
   `just sub-wt add <child> <branch>` creates
-  `.worktrees/<child-path>/<branch>`. Keep the checkout at its tracked branch
-  or pinned commit. Do not create worktrees of this superproject for child
-  work; their submodules start uninitialized.
+  `{{WORKTREE_ROOT}}/<child-path>/<branch>`. For one task across several
+  children: `just sub-task open <task> <child>...` creates
+  `{{WORKTREE_ROOT}}/_tasks/<task>/<child-path>`; close it with
+  `just sub-task close <task> --delete-branch`. Keep the checkout at its
+  tracked branch or pinned commit.
 - **Commit inside-out.** Commit and push the child first, through the child's
   own PR flow. Then move the pointer here with
   `just sub-bump <child> --commit` (add `--reason` for pin/lazy).
@@ -30,6 +38,8 @@ there. This file only governs cross-repo work.
   together, and leave no unrelated gitlink drift behind.
 - **Before any outer commit that stages gitlinks**, run
   `just sub-preflight`.
+- **`fatal: not a git repository` in a child worktree?** Run
+  `just sub-repair --dry-run`; never `rm -rf` it before reading the output.
 - Preserve existing child branches, local commits, and dirty work. `pull`
   refuses diverged or dirty checkouts; resolve those by hand, don't force.
 <!-- superproject-workspace:agent-guidance --> (end)

@@ -86,6 +86,9 @@ jobs:
       - name: Test NautilusTrader skill helpers
         run: make test-nautilus-trader-skill
 
+      - name: Test superproject-workspace helpers
+        run: make test-superproject-skill
+
       - name: Test MkDocs bootstrap helpers
         run: make test-mkdocs-skill
 

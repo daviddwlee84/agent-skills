@@ -1,0 +1,38 @@
+<!-- superproject-workspace:agent-guidance -->
+## Working across repositories
+
+This repository is a **home repo**: it holds shared context, and lists the
+repositories it works with as pointers in `.superproject` (`[repo "<name>"]`).
+Each one is a plain clone with its own remote, history, and
+`AGENTS.md`/`CLAUDE.md`. Read a repository's own instructions before editing
+inside it; they are authoritative there. This file only governs cross-repo
+work. Call it the home repo, not a monorepo or meta-repo.
+
+- **Nothing pins versions here.** A pointer records where a repository lives
+  and which branch it follows, not a commit. Note the commit or date a
+  finding was observed against when you write it down.
+- The `just sub-*` recipes run the shared skill CLI (`just sub-which` shows
+  which file). Without just: `uv run --script
+  ~/.agents/skills/superproject-workspace/scripts/superproject.py <cmd>`.
+- **Look before acting:** `just sub-status --fetch` shows each clone's branch,
+  lag behind `origin/<branch>`, and dirty state. `just sub-audit` gives fixes.
+- **Need a repository that is not cloned?** `just sub-init <name>` clones it.
+  The repository map below says which name owns what.
+- **Outer repo rules.** Keep this checkout on its default branch. Do not
+  create worktrees of this home repo for work in a listed repository (no
+  `git worktree add` here, no `claude --worktree` or `isolation: worktree` at
+  this root). Never commit a clone into this repository. The helper never
+  commits or pushes for you.
+- **Develop in a worktree of the repository, not in its main clone:**
+  `just sub-wt add <name> <branch>` creates `{{WORKTREE_ROOT}}/<name>/<branch>`.
+  For one task across several repositories:
+  `just sub-task open <task> <name>...` creates
+  `{{WORKTREE_ROOT}}/_tasks/<task>/<name>`; close it with
+  `just sub-task close <task> --delete-branch`.
+- Commit, push, and open PRs in each repository's own workflow. To bring a
+  clone up to date: `just sub-pull <name>` (fast-forward only).
+- **`fatal: not a git repository` in a worktree?** Run
+  `just sub-repair --dry-run`; never `rm -rf` it before reading the output.
+- Preserve existing branches, local commits, and dirty work; resolve
+  divergence by hand, don't force.
+<!-- superproject-workspace:agent-guidance --> (end)

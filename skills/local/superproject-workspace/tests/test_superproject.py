@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,8 +24,11 @@ def sh(*args: str, cwd: Path, check: bool = True) -> str:
     return p.stdout.strip()
 
 
-class Fixture(unittest.TestCase):
-    """Superproject with children `app` (track/pr), `lib` (pin), `ref` (lazy)."""
+class BaseFixture(unittest.TestCase):
+    """Throwaway temp dir, isolated git config, and helpers; no superproject yet.
+
+    Other test modules import this (and `Fixture`) to build their own layouts.
+    """
 
     def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp(prefix="superproject-test-"))
@@ -35,26 +39,11 @@ class Fixture(unittest.TestCase):
             "[protocol \"file\"]\n\tallow = always\n"
             "[commit]\n\tgpgsign = false\n"
         )
-        self._env = {k: os.environ.get(k) for k in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM")}
+        self._env = {k: os.environ.get(k) for k in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM", "SUPERPROJECT_ROOT")}
         os.environ["GIT_CONFIG_GLOBAL"] = str(gitconfig)
         os.environ["GIT_CONFIG_NOSYSTEM"] = "1"
-
-        self.remotes = {}
-        for name in ("app", "lib", "ref"):
-            bare = self.tmp / "remotes" / f"{name}.git"
-            sh("git", "init", "--bare", "-q", str(bare), cwd=self.tmp)
-            seed = self.tmp / "seed" / name
-            sh("git", "clone", "-q", str(bare), str(seed), cwd=self.tmp)
-            self.commit(seed, "init")
-            sh("git", "push", "-q", "origin", "main", cwd=seed)
-            self.remotes[name] = (bare, seed)
-
-        self.root = self.tmp / "super"
-        self.root.mkdir()
-        sh("git", "init", "-q", cwd=self.root)
-        for name, (bare, _) in self.remotes.items():
-            sh("git", "submodule", "add", "-q", str(bare), name, cwd=self.root)
-        sh("git", "commit", "-qm", "add children", cwd=self.root)
+        os.environ.pop("SUPERPROJECT_ROOT", None)
+        self.remotes: dict[str, tuple[Path, Path]] = {}
 
     def tearDown(self) -> None:
         for k, v in self._env.items():
@@ -65,6 +54,17 @@ class Fixture(unittest.TestCase):
         subprocess.run(["rm", "-rf", str(self.tmp)])
 
     # helpers
+    def make_remote(self, name: str) -> tuple[Path, Path]:
+        """A bare remote `remotes/<name>.git` with one commit on main, plus its seed clone."""
+        bare = self.tmp / "remotes" / f"{name}.git"
+        sh("git", "init", "--bare", "-q", str(bare), cwd=self.tmp)
+        seed = self.tmp / "seed" / name
+        sh("git", "clone", "-q", str(bare), str(seed), cwd=self.tmp)
+        self.commit(seed, "init")
+        sh("git", "push", "-q", "origin", "main", cwd=seed)
+        self.remotes[name] = (bare, seed)
+        return bare, seed
+
     def commit(self, repo: Path, msg: str) -> str:
         (repo / "f.txt").write_text((repo / "f.txt").read_text() + msg + "\n" if (repo / "f.txt").exists() else msg + "\n")
         sh("git", "add", "f.txt", cwd=repo)
@@ -78,12 +78,45 @@ class Fixture(unittest.TestCase):
         return sha
 
     def run_cli(self, *args: str, expect: int = 0, cwd: Path | None = None) -> subprocess.CompletedProcess:
-        p = subprocess.run([sys.executable, str(CLI), *args], cwd=cwd or self.root, capture_output=True, text=True)
+        cwd = cwd or getattr(self, "root", None) or self.tmp
+        p = subprocess.run([sys.executable, str(CLI), *args], cwd=cwd, capture_output=True, text=True)
         self.assertEqual(p.returncode, expect, f"{args}: rc={p.returncode}\nstdout={p.stdout}\nstderr={p.stderr}")
         return p
 
-    def json_cli(self, *args: str, expect: int = 0) -> dict:
-        return json.loads(self.run_cli(*args, "--json", expect=expect).stdout)
+    def json_cli(self, *args: str, expect: int = 0, cwd: Path | None = None) -> dict:
+        return json.loads(self.run_cli(*args, "--json", expect=expect, cwd=cwd).stdout)
+
+
+class Fixture(BaseFixture):
+    """Superproject with children `app` (track/pr), `lib` (pin), `ref` (lazy)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        for name in ("app", "lib", "ref"):
+            self.make_remote(name)
+
+        self.root = self.tmp / "super"
+        self.root.mkdir()
+        sh("git", "init", "-q", cwd=self.root)
+        for name, (bare, _) in self.remotes.items():
+            sh("git", "submodule", "add", "-q", str(bare), name, cwd=self.root)
+        sh("git", "commit", "-qm", "add children", cwd=self.root)
+
+    def linked_super(self, name: str) -> Path:
+        """A linked worktree of the superproject with `app` initialized inside it.
+
+        Its app store lives under `<root>/.git/worktrees/<name>/modules/app`, the layout
+        the guard refuses and `repair` diagnoses.
+        """
+        wt = self.tmp / name
+        sh("git", "worktree", "add", "-q", str(wt), cwd=self.root)
+        sh("git", "submodule", "update", "-q", "--init", "app", cwd=wt)
+        return wt
+
+    def sever(self, wt: Path) -> None:
+        """Delete a superproject linked worktree the careless way: rm -rf, then prune."""
+        shutil.rmtree(wt)
+        sh("git", "worktree", "prune", cwd=self.root)
 
     def adopt_policies(self) -> None:
         self.run_cli("adopt", "--set", "app=track:pr", "--set", "lib=pin", "--set", "ref=lazy",

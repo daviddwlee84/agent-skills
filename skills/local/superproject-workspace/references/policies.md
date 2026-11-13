@@ -6,9 +6,17 @@ Keys live in `.gitmodules` under the submodule's **name** (not path):
 git config -f .gitmodules submodule.<name>.x-policy track   # track | pin | lazy
 git config -f .gitmodules submodule.<name>.x-bump pr        # pr | direct | manual
 git config -f .gitmodules submodule.<name>.x-tier core
+git config -f .gitmodules submodule.<name>.x-role "Web client"  # one line, for the repo map
 git config -f .gitmodules submodule.<name>.branch main      # native git key
 git config -f .gitmodules submodule.<name>.update none      # lazy children
 ```
+
+`add` writes these for a new child; `adopt` fills in missing ones.
+
+**Pointer children have no policy.** A `[repo]` entry in `.superproject` has
+no gitlink to move, so `x-policy` and `x-bump` do not apply; it keeps
+`branch`, `x-tier` and `x-role`. `status` shows its POLICY as `pointer`. See
+`home-repo.md`.
 
 ## Choosing a policy
 
@@ -32,42 +40,44 @@ git config -f .gitmodules submodule.<name>.update none      # lazy children
 
 ## Example: umbrella (every child follows main)
 
-Parallel, equally owned repos, such as per-platform dotfiles:
+Parallel, equally owned repos, such as one client per platform:
 
 ```ini
-[submodule "dotfiles-unix"]
-    path = dotfiles-unix
-    url = git@github.com:me/dotfiles.git
+[submodule "client-web"]
+    path = client-web
+    url = https://example.com/org/client-web.git
     branch = main
     x-policy = track
     x-bump = pr
-[submodule "dotfiles-windows"]
-    path = dotfiles-windows
-    url = git@github.com:me/dotfiles-windows.git
+    x-role = Browser client
+[submodule "client-desktop"]
+    path = client-desktop
+    url = https://example.com/org/client-desktop.git
     branch = main
     x-policy = track
     x-bump = pr
+    x-role = Desktop client
 ```
 
 ## Example: workspace hub (tiers)
 
 ```ini
-[submodule "submodules/engine"]
-    path = submodules/engine
-    url = https://github.com/org/engine.git
+[submodule "core/engine"]
+    path = core/engine
+    url = https://example.com/org/engine.git
     branch = release/2.x       # the baseline the pin follows
     x-policy = pin
     x-tier = core
-[submodule "submodules/dashboard"]
-    path = submodules/dashboard
-    url = https://github.com/org/dashboard.git
+[submodule "core/dashboard"]
+    path = core/dashboard
+    url = https://example.com/org/dashboard.git
     branch = main
     x-policy = track
     x-bump = manual
     x-tier = core
-[submodule "submodules/references/someone/paper-code"]
-    path = submodules/references/someone/paper-code
-    url = https://github.com/someone/paper-code.git
+[submodule "references/paper-code"]
+    path = references/paper-code
+    url = https://example.com/research/paper-code.git
     x-policy = lazy
     x-tier = reference
     update = none

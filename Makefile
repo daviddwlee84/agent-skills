@@ -1,4 +1,4 @@
-.PHONY: sync sync-check add-vendor kanban add-todo start-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill test-nautilus-trader-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
+.PHONY: sync sync-check add-vendor kanban add-todo start-todo promote-todo sweep-inbox docs-serve docs-build docs-deploy test-skill test-mkdocs-skill test-source-sync test-vectorbt-skill test-nautilus-trader-skill test-superproject-skill marketplace native-marketplace-smoke native-claude-smoke native-codex-smoke lint-frontmatter validate install-hooks
 
 SYSTEM_BASH ?= /bin/bash
 TEST_GIT_CONFIG_GLOBAL ?= /dev/null
@@ -119,3 +119,7 @@ test-vectorbt-skill:
 # Offline NautilusTrader skill fixtures: local git remotes, fake packages, PyPI JSON.
 test-nautilus-trader-skill:
 	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) python3 -m unittest discover -s skills/local/nautilus-trader/tests -v
+
+# Offline superproject-workspace fixtures: throwaway local superprojects and bare remotes.
+test-superproject-skill:
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) python3 -m unittest discover -s skills/local/superproject-workspace/tests -v

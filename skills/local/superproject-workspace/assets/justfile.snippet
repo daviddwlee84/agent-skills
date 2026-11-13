@@ -10,11 +10,15 @@ _sp_global := home_directory() / ".agents" / "skills" / "superproject-workspace"
 _sp_remote := "https://raw.githubusercontent.com/daviddwlee84/agent-skills/" + env("SUPERPROJECT_CLI_REF", "main") + "/skills/local/superproject-workspace/scripts/superproject.py"
 _sp := env("SUPERPROJECT_CLI", if path_exists(_sp_vendored) == "true" { _sp_vendored } else if path_exists(_sp_project) == "true" { _sp_project } else if path_exists(_sp_global) == "true" { _sp_global } else { _sp_remote })
 
-# Policy, lag and drift for every submodule (add --fetch for current numbers).
+# Policy, lag and drift for every child (add --fetch for current numbers).
 sub-status *args:
     uv run --script "{{_sp}}" status {{args}}
 
-# Initialize children; lazy ones only when named, by --tier, or with --all.
+# Add a child: sub-add <url> [path] [--pointer] [--policy track|pin|lazy] [--role "..."]
+sub-add *args:
+    uv run --script "{{_sp}}" add {{args}}
+
+# Initialize children; lazy and pointer ones only when named, by --tier, or with --all.
 sub-init *args:
     uv run --script "{{_sp}}" init {{args}}
 
@@ -33,6 +37,14 @@ sub-preflight *args:
 # Child worktrees: sub-wt add <child> <branch> | list | remove <child> <branch>
 sub-wt *args:
     uv run --script "{{_sp}}" worktree {{args}}
+
+# One task across children: sub-task open <task> <child>... | list [task] | close <task> [--delete-branch]
+sub-task *args:
+    uv run --script "{{_sp}}" task {{args}}
+
+# Severed worktrees and stale submodule state: start with --dry-run.
+sub-repair *args:
+    uv run --script "{{_sp}}" repair {{args}}
 
 # Read-only health report (also flags stale managed blocks).
 sub-audit *args:

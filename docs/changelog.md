@@ -6,6 +6,16 @@ file curates the milestones.
 
 ## Unreleased
 
+- `superproject-workspace` 0.3.0: `new`/`add` create a workspace and add
+  children from zero; a pointer-only home repo mode (`[repo]` entries in
+  `.superproject`, clone on demand) beside the recommended submodule mode;
+  `task open|list|close` for one branch across several children under
+  `_tasks/<task>/`; a configurable worktree root; a guard against opening child
+  worktrees from a superproject linked worktree; `repair` (relink, prune,
+  reattach, delete orphans) with new `audit` findings; and a generated repo map
+  (`map-file` for long lists). Existing adopters will see `managed-block-stale`
+  (and `repo-map-stale`) in `audit` until they rerun `adopt`; that is expected.
+
 - Added canonical `agent-history-hygiene` post-session protocol v2 with strict
   unchanged v1 recovery: durable private sanitation beforeimages, exact finding/
   occurrence transformation receipts, whole frozen-index scanner coverage, and
