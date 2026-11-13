@@ -34,6 +34,21 @@ would drift the same way the gitlinks do.
 - Ad-hoc reads across a few checkouts for one session: Project / `--add-dir` is enough (see the decision guide).
 - A third-party manifest tool already manages the clones (`repo`, `mani`, `gita`): keep it, or migrate to pointer mode deliberately.
 
+## Setup commands need an explicit ask
+
+A project's nature rarely changes. `new`, `add` and `adopt` change what the
+repo is or add this skill's metadata to it, so run them only when the user
+asks for one of these:
+
+- turn this project into a superproject or home repo, or add a repo to it;
+- set up a new workspace from zero;
+- bring an existing superproject onto this skill's conventions.
+
+A repo that merely has `.gitmodules` is not a request. There, `status`,
+`pull`, `bump`, `worktree`, `task`, `audit` and `repair` already work without
+adoption. Do not offer `adopt` unprompted; if `audit` reports `policy-missing`
+or `agents-block`, mention once that `adopt --dry-run` exists and move on.
+
 ## Two modes
 
 | | Submodule superproject (**recommended**) | Pointer home repo (fallback) |
