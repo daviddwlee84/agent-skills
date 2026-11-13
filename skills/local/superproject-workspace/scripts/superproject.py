@@ -1404,8 +1404,15 @@ def scan_health(root: Path, subs: list[Sub]) -> list[dict]:
             f".git/config still has submodule.{n}.* but .gitmodules does not declare it",
             "repair --prune", name=n)
     if root_cd:
+        # A store's path follows the name the submodule had when it was first cloned, so a
+        # renamed or moved child keeps using a store that matches no declared name.
+        in_use = set()
+        for s in subs:
+            gd = git_dirs(child_dir(root, s)) if child_dir(root, s).exists() else None
+            if gd:
+                in_use.add(gd[1].resolve())
         for n, store in store_dirs(root_cd / "modules").items():
-            if n not in declared:
+            if n not in declared and store.resolve() not in in_use:
                 add("info", "stale-module-store", n,
                     f"{display_path(root, store)} stores an undeclared submodule (it may hold unpushed commits)",
                     f"manual: check for unpushed work, then delete it by hand ({REPAIR_DOC}); never automatic",

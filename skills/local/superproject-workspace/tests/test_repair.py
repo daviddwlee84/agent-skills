@@ -183,6 +183,12 @@ class TestRepair(RepairFixture):
         self.assertIn("stale-module-store", f)  # stores are never deleted automatically
         self.assertTrue((store / "HEAD").exists())
 
+    def test_store_of_renamed_child_is_not_stale(self) -> None:
+        # Rename the declaration only: the checkout keeps using the store under the old name.
+        sh("git", "config", "-f", ".gitmodules", "--rename-section", "submodule.lib", "submodule.renamed", cwd=self.root)
+        sh("git", "commit", "-qam", "rename lib", cwd=self.root)
+        self.assertNotIn("stale-module-store", self.findings())
+
 
 if __name__ == "__main__":
     unittest.main()
