@@ -61,6 +61,8 @@ and prevention guidance.
 | [`pre-commit-restores-over-live-specstory-writes`](pre-commit-restores-over-live-specstory-writes.md) | `files were modified by this hook`, `Stashed changes conflicted with hook auto-fixes... Rolling back fixes...`, `Restored changes from`, a `.specstory/history/*.md` append disappears or returns after a failed commit | active |
 | [`gitleaks-line-scoped-allowlist-shields-live-key`](gitleaks-line-scoped-allowlist-shields-live-key.md) | live key in `.specstory/history` never reported, `no leaks found` on a line holding `[REDACTED:...]` plus a real token, same bytes fire under `src/`, gitleaks `regexTarget` line-vs-match, allowlist `condition = "AND"` | active |
 | [`sourcegraph-access-token-flags-git-commit-shas`](sourcegraph-access-token-flags-git-commit-shas.md) | `rule=sourcegraph-access-token` on 40-hex Git commit OIDs, hundreds of `.specstory/history` findings, no `sgp_` prefix, scanner-output recursion | fixed in `ahh-v2.0.1` |
+| [`github-secret-scanning-misses-generic-credentials-in-agent-transcripts`](github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md) | Security tab lists only synthetic alerts, real `secret:` in `.specstory/history` never reported, gitleaks `rule=generic-api-key` that GitHub did not list, `secret_scanning_non_provider_patterns = disabled`, agent said "without printing any secret" then Read tool output was recorded | active |
+| [`global-pre-commit-hook-silently-skips-repos-without-config`](global-pre-commit-hook-silently-skips-repos-without-config.md) | `git commit` succeeds with no scanner output, global `core.hooksPath`, no `.pre-commit-config.yaml` / `.gitleaks.toml`, repo that ships the scanning skill is itself unscanned | active |
 
 ## Cross-referenced pitfalls
 
