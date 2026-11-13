@@ -272,7 +272,8 @@ sp repair --reattach     # orphan -> branch rescue/<dir> in the child's store; f
 sp repair --delete-orphans .worktrees/app/old   # explicit paths only
 ```
 
-The typical cause is `fatal: not a git repository` inside `.worktrees/...` after
+The typical cause is `fatal: not a git repository` (newer git: `gitfile does
+not point to a valid repository`) inside `.worktrees/...` after
 a superproject linked worktree was deleted. Unpushed commits made in an orphan
 are gone with its store; its files are not. `repair` never deletes a
 `.git/modules` store, force-removes dirty worktrees, or moves worktrees. Read
@@ -304,7 +305,7 @@ SHA).
 - `references/home-repo.md`: read when working with pointer children (manifest, paths, clone on demand, repo map, `map-file`).
 - `references/policies.md`: read when assigning policies, or for umbrella vs hub examples.
 - `references/worktrees.md`: read before any branch work inside a child (worktree root, tasks, the guard, environments).
-- `references/repair.md`: read when a child worktree says `fatal: not a git repository`, or `audit` reports orphans, at-risk worktrees, or stale stores.
+- `references/repair.md`: read when a child worktree says `fatal: not a git repository` or `gitfile does not point to a valid repository`, or `audit` reports orphans, at-risk worktrees, or stale stores.
 - `references/ci-bump.md`: read when enabling `pr`/`direct` automation, private or GitLab children, or dispatch.
 - `references/agent-entry.md`: read when setting up the superproject as an agent entry point (AGENTS.md layering, Claude/Codex Projects, root context).
 - `references/gotchas.md`: read when git prints something surprising about a submodule.

@@ -5,6 +5,8 @@
 ```text
 $ cd .worktrees/app/feat && git status
 fatal: not a git repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat
+# newer git:
+fatal: gitfile does not point to a valid repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat
 ```
 
 A child worktree's `.git` file points to an admin directory that no longer

@@ -61,8 +61,10 @@ class TestRepair(RepairFixture):
     def test_repair_detects_orphan_after_superproject_worktree_removed(self) -> None:
         linked, wt = self.at_risk_worktree()
         self.sever(linked)
-        self.assertIn("not a git repository", subprocess.run(
-            ["git", "status"], cwd=wt, capture_output=True, text=True).stderr)
+        # Older git says "not a git repository"; newer git says
+        # "gitfile does not point to a valid repository".
+        err = subprocess.run(["git", "status"], cwd=wt, capture_output=True, text=True).stderr
+        self.assertRegex(err, r"not a git repository|does not point to a valid repository")
         f = self.findings(expect=1)
         self.assertEqual(f["worktree-orphan"]["level"], "error")
         self.assertIn("superproject-worktree-removed", f["worktree-orphan"]["message"])
