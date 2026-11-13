@@ -9,6 +9,7 @@
 # tree disagree in either direction.
 
 [files]
+"CHANGELOG.md" = "*"
 "pyproject.toml"                   = "*"
 "README.md"                        = "*"
 "AGENTS.md"                        = "*"
