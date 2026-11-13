@@ -18,6 +18,21 @@ symlink with a real file.
 - **Secrets live in `.env`, which is gitignored.** When you add a setting, add
   it to `settings.py` *and* to `.env.example` with a placeholder value.
 
+## Version and release policy
+
+- Keep the package version only in `[project].version` in `pyproject.toml`.
+  Runtime surfaces read the package's metadata-backed `__version__`.
+- Before 1.0: incompatible public API/CLI/config/format changes bump minor;
+  compatible features and fixes bump patch. This is our project convention.
+  From 1.0: breaking = major, feature = minor, fix = patch.
+- Add user-visible changes to `CHANGELOG.md` under `Unreleased` with the change.
+  Docs/tests/internal refactors alone do not require a bump.
+- At release time, update version, lockfile, and dated changelog together;
+  run `uv sync`, `just check`, and `uv build`. Verify a fresh wheel install's
+  metadata and `__version__` equal the release version (never `unknown`).
+- Tag the landed release commit `vX.Y.Z`; never retag published releases.
+  Feature commits do not automatically trigger releases or publication.
+
 ## Layout
 
 src layout, so `uv run pytest` imports the INSTALLED package rather than the

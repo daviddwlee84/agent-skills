@@ -192,6 +192,13 @@ requirements.txt` flattening the dependency graph, a formatting commit
 destroying `git blame`, a tracked `.env` needing rotation before any history
 rewrite — are all there.
 
+## Versioning and releases
+
+Use `pyproject.toml` as the default single version source and read installed
+metadata at runtime. Before changing version policy or preparing a release,
+read [versioning-and-releases.md](references/versioning-and-releases.md) for
+the pre-1.0 contract, changelog workflow, artifact checks, and consumer pins.
+
 ## Available scripts
 
 - **`scripts/new-python-project.py <target-dir>`** — scaffold from the bundled
