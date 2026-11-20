@@ -8,7 +8,7 @@
 
 - 明確指定目標、支援 dry-run，拒絕覆寫既有文件站設定。
 - 可保留經確認的 `docs/`，不自動重組內容。
-- Zensical 0.0.73 放在 docs 依賴群組，不加入應用程式 runtime dependencies。
+- Zensical 0.1.2 放在 docs 依賴群組，不加入應用程式 runtime dependencies。
 - 原生 `llms.txt`、`llms-full.txt`、Markdown 匯出與 Copy as Markdown。
 - Mermaid 流程圖與可指定 host／port 的預覽指令。
 - 專案自有的檢查腳本，驗證內容完整性、複製目標與 Pages 子路徑。

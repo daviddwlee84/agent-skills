@@ -43,7 +43,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(config["project"]["site_name"], 'Example "Docs"')
         self.assertEqual(config["project"]["theme"]["language"], "en")
         deps = tomllib.loads((self.root / "pyproject.toml").read_text())
-        self.assertEqual(deps["dependency-groups"]["docs"], ["zensical==0.0.73"])
+        self.assertEqual(deps["dependency-groups"]["docs"], ["zensical==0.1.2"])
         self.assertEqual(deps["project"]["requires-python"], ">=3.11")
         self.assertEqual(deps["project"]["dependencies"], [])
         workflow = (self.root / ".github/workflows/docs-check.yml").read_text()
@@ -122,7 +122,7 @@ class BootstrapTests(unittest.TestCase):
             "# Nested setup\n\nNested export marker.\n\n[Home](../index.md)\n\n"
             "```mermaid\nflowchart TD\n    Start[Start] --> Done[Done]\n```\n")
         result = subprocess.run([
-            "uvx", "--from", "zensical==0.0.73", "zensical", "build", "--strict",
+            "uvx", "--from", "zensical==0.1.2", "zensical", "build", "--strict",
             "--config-file", str(self.root / "zensical.toml"),
         ], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

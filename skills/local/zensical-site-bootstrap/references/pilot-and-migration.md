@@ -40,7 +40,8 @@ then reinstall/update the distribution copy.
 
 ## Revalidate on upgrades
 
-The initial pin is Zensical **0.0.73**, not a permanent guarantee. Test:
+The current pin is Zensical **0.1.2** (upgraded from 0.0.73 on 2026-11-20),
+not a permanent guarantee. Test:
 
 1. Initialization dry-run, nonempty-doc consent, conflicts, and symlink refusal.
 2. Fresh and curated existing docs; root and deeply nested source pages.
@@ -56,9 +57,10 @@ that requirement. A language dropdown is not sufficient evidence.
 
 ## Sources
 
-Verified on 2026-10-30; revisit these pages when changing the pin:
+Verified on 2026-11-20 (0.1.2 is beta; content i18n is still roadmap-only);
+revisit these pages when changing the pin:
 
-- [Zensical 0.0.73](https://github.com/zensical/zensical/releases/tag/v0.0.73)
+- [Zensical 0.1.2](https://github.com/zensical/zensical/releases/tag/v0.1.2)
 - [Native plugin compatibility](https://zensical.org/docs/compatibility/mkdocs/plugins/)
 - [Language settings](https://zensical.org/docs/setup/language/)
 - [Roadmap](https://zensical.org/roadmap/)

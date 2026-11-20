@@ -13,6 +13,9 @@ Build finished in 0.45s
 But `llms.txt` contains only the site and section headings, and root source
 pages have no exported Markdown counterparts or Copy as Markdown buttons.
 
+Still reproduces with Zensical 0.1.2 (rechecked 2026-11-20): with only
+`**/*.md`, root `index.md` is missing from `llms.txt` while nested pages appear.
+
 ## Root cause
 
 The native llmstxt section used only `Documentation = ["**/*.md"]`.

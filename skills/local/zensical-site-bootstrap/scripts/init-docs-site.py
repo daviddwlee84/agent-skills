@@ -14,7 +14,7 @@ import tomllib
 from urllib.parse import urlsplit
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
-VERSION = "0.0.73"
+VERSION = "0.1.2"
 
 
 def safe_path(root, relative):

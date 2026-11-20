@@ -37441,7 +37441,7 @@ _**Agent (claude-fable-5-2 2026-11-13 13:37:23Z)**_
 <summary>Tool use: **Bash**</summary>
 Check what remains uncommitted in both repos, the history-backup convention, and how the skill describes adoption
 
-`git status -sb && git log --oneline -3 && ls .pre-commit-config.yaml 2>/dev/null; grep -c "<redacted>\|zhouhanru" .specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md .claude/plans/*majestic-valley.md .specstory/references/gemini-*1653.md; git log --stat -1 ba408bd | tail -6; echo "--- adopt mentions"; grep -n -i "adopt" skills/local/superproject-workspace/SKILL.md | head -30; echo "--- dev-cli"; cd ../dev-cli && git status -sb | head -30 && git log --oneline -3 && grep -n -i "commit\|push\|main\|PR" AGENTS.md CLAUDE.md 2>/dev/null | head -30`
+`git status -sb && git log --oneline -3 && ls .pre-commit-config.yaml 2>/dev/null; grep -c "xcaverybingo\|zhouhanru" .specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md .claude/plans/*majestic-valley.md .specstory/references/gemini-*1653.md; git log --stat -1 ba408bd | tail -6; echo "--- adopt mentions"; grep -n -i "adopt" skills/local/superproject-workspace/SKILL.md | head -30; echo "--- dev-cli"; cd ../dev-cli && git status -sb | head -30 && git log --oneline -3 && grep -n -i "commit\|push\|main\|PR" AGENTS.md CLAUDE.md 2>/dev/null | head -30`
 
 ```text
 ## main...origin/main
@@ -37521,7 +37521,7 @@ _**Agent (claude-fable-5-2 2026-11-13 13:37:31Z)**_
 <summary>Tool use: **Bash**</summary>
 Scan the session transcript and plan for the email and token patterns before committing, and check the dev-cli branch state
 
-`F=.specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md && echo "email hits new: $(grep -c '<redacted>' $F)"; echo "email hits in tracked history: $(git grep -l '<redacted>' -- .specstory | wc -l)"; echo "home-path in tracked history files: $(git grep -l 'zhouhanru' -- .specstory | wc -l)"; grep -n -E -i '(ghp_|gho_|github_pat_|glpat-|sk-ant-|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|xox[bp]-)' $F .claude/plans/*majestic-valley.md .specstory/references/gemini-*1653.md | cut -c1-160 | head; ls .git/hooks | grep -v sample; git -C ../dev-cli status -sb | head -1; git -C ../dev-cli branch -r --contains 6e0ab0f 2>/dev/null`
+`F=.specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md && echo "email hits new: $(grep -c 'xcaverybingo' $F)"; echo "email hits in tracked history: $(git grep -l 'xcaverybingo' -- .specstory | wc -l)"; echo "home-path in tracked history files: $(git grep -l 'zhouhanru' -- .specstory | wc -l)"; grep -n -E -i '(ghp_|gho_|github_pat_|glpat-|sk-ant-|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY|xox[bp]-)' $F .claude/plans/*majestic-valley.md .specstory/references/gemini-*1653.md | cut -c1-160 | head; ls .git/hooks | grep -v sample; git -C ../dev-cli status -sb | head -1; git -C ../dev-cli branch -r --contains 6e0ab0f 2>/dev/null`
 
 ```text
 email hits new: 1
@@ -37537,11 +37537,2622 @@ _**Agent (claude-fable-5-2 2026-11-13 13:37:36Z)**_
 <summary>Tool use: **Bash**</summary>
 Show the single line in the transcript that contains the email address
 
-`F=.specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md && grep -n -o '.\{80\}<redacted>.\{40\}' $F | cut -c1-260; wc -l $F`
+`F=.specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md && grep -n -o '.\{80\}xcaverybingo.\{40\}' $F | cut -c1-260; wc -l $F`
 
 ```text
-37444:-sb && git log --oneline -3 && ls .pre-commit-config.yaml 2>/dev/null; grep -c "<redacted>\|zhouhanru" .specstory/history/2026-11-
-37524:26-11-13_08-47-56Z-matt-pocock-home-repo.md && echo "email hits new: $(grep -c '<redacted>' $F)"; echo "email hits in tracked hist
+37444:-sb && git log --oneline -3 && ls .pre-commit-config.yaml 2>/dev/null; grep -c "xcaverybingo\|zhouhanru" .specstory/history/2026-11-
+37524:26-11-13_08-47-56Z-matt-pocock-home-repo.md && echo "email hits new: $(grep -c 'xcaverybingo' $F)"; echo "email hits in tracked hist
    37532 .specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md
 ```
 </details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:38:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Redact the email fragment from the transcript, commit the plan and history backup, and push
+
+```bash
+F=.specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md && git branch --show-current && sed -i '' 's/xcavery[b]ingo/<redacted>/g' $F && git add .claude/plans/matt-pocock-home-repo-https-www-youtube-majestic-valley.md .specstory/history/2026-11-13_08-47-56Z-matt-pocock-home-repo.md .specstory/references/ && echo "staged hits: $(git diff --cached | grep -c 'xcavery[b]ingo')" && git commit -q -m "chore: backup plan and chat history
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>" && git push origin main 2>&1 | tail -3 && git status -sb | head -3
+```
+
+```text
+main
+staged hits: 0
+To github.com:daviddwlee84/agent-skills.git
+   b6ad544..8ff5a47  main -> main
+## main...origin/main
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:38:17Z)**_
+
+`agent-skills` 已收尾並 push；我再確認一下 skill 目前對 `adopt` 的寫法，好回答你的第二個問題。
+
+_**Agent (claude-fable-5-2 2026-11-13 13:38:19Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the skill's workflow entry and adopt section
+
+`cd /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/superproject-workspace && sed -n 60,80p SKILL.md; sed -n 221,246p SKILL.md; grep -n '"managed-block-missing"\|"no-policy\|policy-missing\|"agents-' scripts/superproject.py | head`
+
+````text
+3. Never create a worktree of the outer repo for child work: no
+   `git worktree add` there, no `claude --worktree` at the root, no
+   `isolation: worktree` subagents. (`audit`: `superproject-worktrees`.)
+4. Commit and push children first, then **one** outer commit covers every
+   affected gitlink.
+5. The helper never commits or pushes on its own (except `bump --commit`, on request).
+6. Inside a child, the child's own instruction files win.
+
+## The policy model
+
+Each child declares its policy as extra keys in `.gitmodules`. Git ignores keys
+it does not know, so these keys live next to `path` and `url` and cannot fall
+out of sync with them.
+
+```ini
+[submodule "app"]
+    path = app
+    url = https://example.com/org/app.git
+    branch = main        # tracking branch (native key; unset -> child's origin/HEAD)
+    x-policy = track     # track | pin | lazy
+    x-bump = pr          # pr | direct | manual   (only for track)
+```
+
+### 6. Adopt an existing superproject
+
+```bash
+uv run --script <skill>/scripts/superproject.py audit --root ../old-super
+uv run --script <skill>/scripts/superproject.py adopt --root ../old-super --dry-run \
+    --policy-default pin --set app=track:pr --set docs-ref=lazy
+```
+
+`adopt` writes policy keys, but only where they are missing or named by
+`--set` (pointer children have no policy). It also upserts a marker-delimited
+AGENTS.md guidance block and repo map, `sub-*` justfile recipes, adds the
+worktree root to `.gitignore`, and, when submodule children exist, sets local
+git config:
+- `diff.submodule=log`
+- `status.submoduleSummary=true`
+- `push.recurseSubmodules=check`
+
+Opt in to `--with-ci` and `--with-hook`. It does **not** copy the CLI. Pass
+`--vendor-cli` only for offline or air-gapped superprojects, and accept that
+the copy stops receiving fixes. It is idempotent: rerun it (`just sub-adopt`)
+after a skill update to refresh the managed blocks. `audit` reports
+`managed-block-stale`, `repo-map-stale` and `vendored-cli-stale` when the
+tool itself has drifted. Review `git diff`
+before committing, and pick policies with the user. The default
+1645:            add("warn", "policy-missing", s.name, "no x-policy; treated as pin",
+1717:        add("warn", "agents-block", agents.name if agents else "AGENTS.md",
+1723:            add("warn", "agents-not-loaded", "CLAUDE.md",
+1805:        return "agents-block.md.template"
+1807:    return "agents-block-pointer.md.template" if mode == "pointer" else "agents-block.md.template"
+````
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:38:33Z)**_
+
+`agent-skills` 已收尾：計畫檔與這次的對話紀錄已 commit 成 `8ff5a47` 並 push，`main` 與遠端一致，工作目錄是乾淨的。
+
+**收尾時的兩件事**
+
+- **對話紀錄做了一處遮蔽**：transcript 裡有我自己下的檢查指令，其中帶著你 email 的帳號部分（沒有網域）。這個 repo 是公開的，所以我在 commit 前把它換成 `<redacted>`。SpecStory 之後若重寫這個檔案，原字串可能會回來，下次備份 commit 前值得再看一眼。
+- **`dev-cli` 不是我 commit 的**：它現在在 `feat/superproject-workspace-interop` branch 上，已有一個 commit `6e0ab0f`，遠端還沒有這個 branch。只剩兩個 `.specstory` 檔未 commit。我沒有動它；要我 push 並開 PR 的話說一聲，放寬 park / complete 檢查的那個改動也在這個 commit 裡。
+
+**現在會不會主動問要不要 adopt**
+
+不會，兩種情況都不會自動問：
+
+- **觸發條件**：repo 有 `.gitmodules` 或 `.superproject`，而且你談到相關話題（更新 submodule、開 child worktree 等），skill 才會載入。單純有 submodule 不會觸發任何詢問。
+- **`adopt` 的位置**：它是 workflow 的第 6 步，要你或 agent 主動去跑。`SKILL.md` 沒有寫「發現還沒 adopt 就問使用者」。
+- **間接的提示**：跑 `audit` 時，沒 adopt 過的 repo 會出現 `policy-missing` 和 `agents-block` 這兩個 warning。
+
+**我的建議**
+
+不要做成「有 submodule 就問」。很多普通 repo 只是掛一個第三方 submodule，每次都問會很煩。比較合適的規則是：skill 在某個 root 被觸發、而 `audit` 顯示還沒 adopt 時，提一次並附上 `adopt --dry-run` 的結果，由你決定；永遠不自動執行。
+
+這只需要在 `SKILL.md` 加兩三行，你同意這個規則我就加上去。
+
+---
+
+_**User (2026-11-13 13:57:16Z)**_
+
+可以照你建議 其實就是要明確指示改project為superproject的情況下才操作
+其次就是初始化project的情況 或是既有superproject引入我們的設施/額外metadata 否則一般情況可能project的性質不太會變動
+
+dev-cli可以commit and push and merge PR as new version
+
+---
+
+_**Agent (claude-fable-5-2 2026-11-13 13:57:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the skill's section layout and find how dev-cli cuts releases
+
+`grep -n "^## \|^### " SKILL.md | head -40; sed -n 40,52p SKILL.md; echo ---- DEVCLI; cd /Users/zhouhanru/Documents/David/Program/dev-cli && git status -sb && git log --oneline -4 && git tag --sort=-v:refname | head -3 && grep -n -i "release" Makefile | head -20; ls docs/contributing* docs/maintainers* RELEASING* 2>/dev/null; grep -rn -i -l "release" docs/*.md docs/**/release*.md .github/workflows 2>/dev/null | head; sed -n 1,30p CHANGELOG.md; git show --stat f70c529 | head -20`
+
+```text
+22:## When to use
+30:## When NOT to use
+37:## Two modes
+53:## Outer repo rules
+68:## The policy model
+100:## Workflow
+116:### 0. Start from zero, or add a child
+142:### 1. Look first
+152:### 2. Get a child you need
+168:### 3. Develop inside a child: use a child worktree
+187:### 3b. One task across several children
+203:### 4. Move pointers: inside-out, one outer commit
+217:### 5. Guard every outer commit
+223:### 6. Adopt an existing superproject
+249:### 7. Repair severed worktrees
+266:## Available scripts
+273:## Bundled assets
+286:## Reference files
+298:## Gotchas
+|---|---|---|
+| Children | `.gitmodules`, pinned by gitlinks | `[repo "<name>"]` in `.superproject`, plain clones |
+| Version snapshot | Yes: one outer commit = an exact set | No |
+| `bump` / `preflight` / CI bumps | Yes | No (refused) |
+| Clone | by policy (`lazy` on demand) | always on demand (`init <name>`) |
+| Worktrees, tasks, repair, audit, repo map | Yes | Yes |
+
+Prefer submodules whenever feasible. Choose pointers only when the outer
+history cannot hold gitlinks, the clones must stay where they are, there are
+dozens of rarely touched repos, collaborators cannot use submodules, or nobody
+would ever bump. Both kinds can coexist in one root. Criteria:
+`references/decision-guide.md`; pointer details: `references/home-repo.md`.
+
+---- DEVCLI
+## feat/superproject-workspace-interop
+ M .specstory/history/2026-11-03_16-42-54Z-image-hash-1-repo.md
+?? .specstory/history/2026-11-13_11-00-36Z-pasted-content-id-2dec.md
+6e0ab0f feat(submodule): interoperate with superproject-workspace worktrees
+f70c529 chore(release): v0.3.5
+b812b66 chore: backup plan and chat history
+c87647b feat(repos): keep row order steady while REPOS loads
+v0.3.5
+v0.3.4
+v0.3.3
+(eval):1: no matches found: docs/contributing*
+(eval):1: no matches found: docs/**/release*.md
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- `dev git submodule status` detects the `superproject-workspace` convention
+  (`x-policy` keys in `.gitmodules` or a `.superproject` file), shows its child
+  worktree root with a hint when it lies inside the repository, and lists every
+  additional child worktree. Worktrees in the skill's single-child and
+  `_tasks/<task>/` layouts are labelled with the skill command that closes them.
+  `--json` adds `convention` and `child_worktrees` to the existing object.
+- Recursive cleanup blockers for a child that still owns other worktrees now
+  name each worktree, label convention-managed ones, warn when they live in the
+  outer worktree's store, and point to `task close` / `worktree remove`.
+
+### Fixed
+
+- Recursive submodule initialization no longer initializes children declaring
+  `update = none` in `.gitmodules`; it previously forced a checkout. Selecting
+  such a child with `--submodule` or `dev git submodule develop` initializes it,
+  and an absent on-demand child no longer blocks parking or completion. Its
+  recorded gitlink is then not verified against the child's remote.
+
+### Changed
+
+commit f70c529701220b5dce0c97e6bccbc004bb0cf292
+Author: Da-Wei Lee <daviddwlee84@gmail.com>
+Date:   Fri Nov 13 18:55:45 2026 +0800
+
+    chore(release): v0.3.5
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ AGENTS.md                                         | 4 ++--
+ CHANGELOG.md                                      | 8 ++++++--
+ README.md                                         | 4 ++--
+ docs/guides/ai-artifacts.md                       | 2 +-
+ docs/guides/ai-artifacts.zh-TW.md                 | 2 +-
+ docs/llms-full.txt                                | 4 ++--
+ internal/skill/dev-cli/references/ai-artifacts.md | 2 +-
+ 7 files changed, 15 insertions(+), 11 deletions(-)
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:57:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect the previous dev-cli release commit, release tooling, tags and recent pull requests
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && git show f70c529 -- AGENTS.md README.md CHANGELOG.md docs/guides/ai-artifacts.md | grep '^[+-]' | cut -c1-220; echo ---; grep -rn -i -l "releas" --include='*.md' --include='*.yml' --include='*.yaml' --include='Makefile' --include='*.sh' . 2>/dev/null | grep -v -E 'specstory|node_modules|^./site/' | head -20; ls .github/workflows scripts 2>/dev/null; sed -n 30,45p CHANGELOG.md; git tag -l v0.3.5 --format='%(objecttype) %(objectname:short) %(contents:subject)'; git log --oneline -1 v0.3.5; gh release list -L 3 2>&1 | head -4; gh pr list --state all -L 5 --json number,title,state,mergeCommit,headRefName --jq '.[]|"\(.number) \(.state) \(.headRefName) \(.title)"'`
+
+```text
+--- a/AGENTS.md
++++ b/AGENTS.md
+-The current published baseline is `v0.3.4` (2026-10-31). The CLI version authority is an immutable `vMAJOR.MINOR.PATCH` Git tag:
++The current published baseline is `v0.3.5` (2026-11-13). The CLI version authority is an immutable `vMAJOR.MINOR.PATCH` Git tag:
+-committing packaging edits, `python3 scripts/check-distribution.py --version v0.3.4`.
++committing packaging edits, `python3 scripts/check-distribution.py --version v0.3.5`.
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
++## [0.3.5] - 2026-11-13
++
+-  favorites frame fixes the order, later-discovered rows append, and the complete
++  favorites frame fixes the order, later-discovered rows take their sorted slot
++  and stay there, and the complete
+-[Unreleased]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.4...HEAD
++[Unreleased]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.5...HEAD
++[0.3.5]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.4...v0.3.5
+--- a/README.md
++++ b/README.md
+-# Pin @v0.3.4 instead when you need a reproducible install.
++# Pin @v0.3.5 instead when you need a reproducible install.
+-  version=v0.3.4
++  version=v0.3.5
+--- a/docs/guides/ai-artifacts.md
++++ b/docs/guides/ai-artifacts.md
+-`python3 scripts/check-distribution.py --version v0.3.4` independently builds
++`python3 scripts/check-distribution.py --version v0.3.5` independently builds
+---
+CHANGELOG.md
+AGENTS.md
+README.md
+backlog/herdr-client-navigation.md
+backlog/agent-config-interop-plan.md
+.agents/skills/skill-author/references/authoring-patterns.md
+.agents/skills/skill-author/references/script-design.md
+.agents/skills/agent-history-hygiene/SKILL.md
+.agents/skills/agent-history-hygiene/references/remediation.md
+.agents/skills/agent-history-hygiene/UPSTREAM.md
+.agents/skills/agent-history-hygiene/references/pre-commit-redaction-stack.md
+.agents/skills/agent-history-hygiene/scripts/scan-staged.sh
+.agents/skills/mkdocs-site-bootstrap/references/mkdocs-2-and-zensical.md
+.agents/skills/mkdocs-site-bootstrap/references/docs-stack-recipe.md
+internal/skill/dev-cli/references/runtime-herdr.md
+internal/skill/dev-cli/references/commands.md
+internal/sshvault/README.md
+internal/skill/dev-cli/references/task-lifecycle.md
+internal/skill/dev-cli/references/local-triage.md
+internal/skill/dev-cli/references/ai-artifacts.md
+.github/workflows:
+ci.yml
+docs.yml
+hygiene.yml
+published-module.yml
+release.yml
+windows-full.yml
+
+scripts:
+__pycache__
+check-distribution.py
+check-docs.py
+check-hygiene-regressions.py
+check-source-archive.py
+distribution.json
+e2e.sh
+mkdocs_hooks.py
+release.py
+test-hygiene-hooks.py
+test_distribution.py
+test_release.py
+test_windows_shards.py
+test_worktree_trial.py
+update-scoop-manifest.sh
+verify-published-module.py
+windows-shards.py
+
+- The submodule workspace guide and bundled skill explain using one model per
+  task (dev's outer worktree or the skill's child/task worktrees) and document
+  `git config --local superproject.worktreeRoot` for keeping skill worktrees
+  outside the repository.
+
+## [0.3.5] - 2026-11-13
+
+### Changed
+
+- REPOS keeps a stable order while a progressive load streams: the cache or
+  favorites frame fixes the order, later-discovered rows take their sorted slot
+  and stay there, and the complete
+  snapshot re-sorts once while the selection follows its repository. Changing
+  sort (`O`, `R`, column sort or a config reload) still re-sorts immediately.
+  Per-repository progress and size results are applied in batches, so one burst
+tag a3a2306 v0.3.5
+f70c529 chore(release): v0.3.5
+v0.3.5	Latest	v0.3.5	2026-11-13T11:20:58Z
+v0.3.4		v0.3.4	2026-10-30T20:57:40Z
+v0.3.3		v0.3.3	2026-09-24T21:07:41Z
+36 MERGED docs/remote-sudo-backlog docs: remote sudo credential research and provisioning UX notes
+35 MERGED feat/repo-fork feat(repo): add guarded GitHub fork workflows for v0.3.2
+34 MERGED feat/graduate-wizard-v0.3.1 feat: review Try graduation and remember project names for v0.3.1
+33 MERGED release/v0.3.0-command-groups feat: simplify CLI navigation and add Try demotion for v0.3.0
+32 MERGED fix/closeout-review-tui feat: guarded closeout and visible worktrees (v0.2.40)
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:57:41Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read dev-cli's release script help and documented release procedure
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && python3 scripts/release.py --help 2>&1 | head -40; grep -n -i -B2 -A12 "release" AGENTS.md | sed -n 1,80p | cut -c1-400; sed -n 1,40p .github/workflows/release.yml`
+
+```text
+usage: release.py [-h] --project {dev-cli,translate} [--dist DIST] --tag TAG
+                  [--repo REPO] [--notes NOTES] [--smoke]
+                  {check,publish}
+
+Build completions, verify release payloads, and publish a complete draft.
+
+positional arguments:
+  {check,publish}
+
+options:
+  -h, --help            show this help message and exit
+  --project {dev-cli,translate}
+  --dist DIST
+  --tag TAG
+  --repo REPO
+  --notes NOTES
+  --smoke
+77-- `sshactivity` owns private durable per-profile usage and test observations. Usage records actual local dev-mediated SSH process starts; network/full tests never update usage. Observations retain source fingerprints and cannot authorize mutations or imply present connectivity.
+78-- `tuiissue` owns typed problem guidance and reviewed native dependency installation recipes. UI actions use finite IDs and exact guarded service callbacks, never executable error text.
+79:- `selfupdate` selects exact release platform assets and stages native Go source builds when an asset is absent, preferring the checksummed compact source archive over legacy Go module source. CLI owns confirmation and executable replacement; download/checksum failures never authorize a source fallback, and failed builds retain the installed binary.
+80-- `platformfs` owns the native Android Termux home anchor, inherited app-data SELinux/encryption metadata recognition and no-replace publication. It also recognizes macOS kernel-managed provenance: observe it for same-file stale detection, but never restore or require it on a replacement. Verify the exact system/app prefix and all user-controlled descendants; never trust arbitrary UID-1000 dire
+81-- `sshremote` owns strict bounded v1 SSH capability/inventory/resolve/key/connect protocols and private disposable source/route caches. Only explicit capability may initialize remote dev identity. Static inventory never evaluates SSH or agents; source profiles are scoped by observed UUID, user, root and alias. Local imports preserve native controller trust/authentication context, while remote c
+82-- `sshcredential` owns per-context operation secrets, guarded ask/never metadata and exact provider references. System stores and explicitly selected Bitwarden contain saved passwords; the TOML ledger never does. Source-bound authentication evidence authorizes an optional save prompt, not arbitrary askpass, MFA or host-key text. Unknown provider writes stay unknown and are not retried automatic
+83-- `sshvault` owns explicit new vault-key creation, service-bound single-attempt plans, exact public receipts, and native account/profile execution context. It never imports existing private keys or writes new private material to files. Experimental Bitwarden memory creation and delegation to a native profile need separate approvals; freeze the actual environment/cwd and revalidate session/profi
+84-
+85-- `fleetnav` owns contextual host/repository navigation ordering, explicit Herdr profile/session selection and partial results. Repository checks precede profile changes; preparation uses a distinct versioned helper and session-scoped runtime with no focus or attach. Inside Herdr, navigation reports a native sidebar target; outside it attaches to the explicit session. Failures never implicitly 
+86-- `fleet` merges the user-authored primary `remotes.toml` with strict dev-owned `remotes.d/ssh-<alias>.toml` registrations. Remote `dev` state remains host-local. `remote_os` selects target semantics: POSIX uses the shell launcher, while Windows uses an encoded PowerShell launcher that accepts only hidden fleet helpers, preserves sync stdin, and never applies controller path rules to remote pat
+87-
+88-The principal task start flow spans `internal/cli/start.go`, `start_flow.go`, `gitx`/`wt`, `runtime`, and `task`: resolve the canonical repository and explicit base, create or select the checkout, provision/open it, then persist and annotate the task. Task-backed park/resume/completion/retirement and exact unmanaged Adopt/Remove policy belong in `taskflow`; CLI commands, the dashboard, `sweep`,
+89-
+90-State is split intentionally:
+91-
+--
+135-- `pyproject.toml` version `0.0.0` belongs only to the MkDocs environment and is not the CLI version.
+136-
+137:Every user-visible feature must be added to `[Unreleased]` in `CHANGELOG.md` as part of the feature change. Do not publish or describe a feature build under an older release's version; a release containing new compatible behavior must receive a newer version. Decide from public compatibility impact rather than blindly from the commit type.
+138-
+139:**When to release.** A tag is not an occasional ceremony; it is how a downstream binary learns it is stale. `go install ...@latest` resolves to the newest tag, so anything merged but untagged is invisible outside this repository.
+140-
+141:- A landed branch that stands alone is released immediately: bump the patch during `0.x` (`v0.1.x`) and tag it as the last step of landing.
+142:- A landed branch belonging to an announced milestone accumulates in `[Unreleased]`; the milestone closes with a minor bump (`v0.2.0`).
+143:- Never let `[Unreleased]` grow past one milestone's worth of work. `v0.1.0` to `v0.1.11` were tagged retroactively on 2026-08-29 precisely because 38 commits accumulated with no release.
+144-
+145:**What downstream gets.** Every release from `v0.2.0` forward publishes platform binaries and `SHA256SUMS` alongside the GitHub release, and `dev doctor` reports the running version so a user can compare without leaving the terminal. A release that ships neither leaves `dev --version` as the only signal, which is what the freshness work exists to fix.
+146-
+147:For a release:
+148-
+149:1. Move the relevant `[Unreleased]` entries into `## [x.y.z] - YYYY-MM-DD` and update comparison links.
+150:2. Update version-pinned install examples when the documented recommended release changes.
+151:3. Push `main` first. `release.yml` asserts the tagged commit is an ancestor of `origin/main`, so a tag pushed ahead of its branch fails validation.
+152-4. Tag the exact commit on `main` as `vMAJOR.MINOR.PATCH`; never move or reuse a published tag. Never push `backup/*` or `rescue/*` tags — a tag reachable from a commit that predates the `--match` filter breaks the workflow's `./dev --version` assertion.
+153:5. Let `.github/workflows/release.yml` run CI, verify `./dev --version`, build the platform matrix, create the GitHub release, and update Scoop. The `daviddwlee84/homebrew-tap` repository is the single Homebrew formula writer: its hourly/manual sync validates the published assets and installs/tests the formula before committing. This repository does not need a Homebrew tap-writing token.
+154-
+155:To retry Homebrew synchronization, run `gh workflow run sync.yml --repo daviddwlee84/homebrew-tap -f tool=dev-cli`. This uses the tap repository’s own token and does not create or move an application tag. Stable formulas install release binaries; `brew install --HEAD daviddwlee84/tap/dev-cli` retains the source-build path.
+156-
+157:Stable release tags only are accepted by the current workflow; prerelease tags are not supported.
+158-
+159-## Keep implementation, skill, and docs aligned
+160-
+161-`internal/skill/dev-cli/` is shipped product surface, not incidental prose: `internal/skill/skill.go` embeds the entire tree in the binary. A code change is incomplete when the bundled skill or public documentation still describes old behavior.
+162-
+163-| Change | Required synchronization |
+164-|---|---|
+165-| Cobra command name, `Use`, `Short`, flag, or global option | Run `make skill-sync`, inspect `internal/skill/dev-cli/references/commands.md`, then run `make skill-check`. Never edit the generated block by hand. |
+166-| Task modes/states/defaults or lifecycle preconditions | Update `SKILL.md`, `references/task-lifecycle.md`, README, embedded help, relevant English and zh-TW workflow/mental-model/compatibility pages, and transition tests. |
+167-| Worktree placement, provisioning, include rules, strategies, or safety checks | Update `references/worktree-ownership.md`, README/public worktree docs, config examples, and focused `wt` tests. |
+168-| Runtime protocol, fallback order, activation, agent collision, exact-pane launch, or cleanup behavior | Update `references/runtime-herdr.md`, `references/parallel-agents.md`, compatibility docs, and runtime/lifecycle tests. Keep the boundary clear: `dev start` prepares a checkout/runtime surface; it does not launch an agent. |
+169-| Bootstrap scan/layout/index/move behavior | Update `references/bootstrap.md`, public bootstrap docs, and bootstrap tests. |
+--
+220-helper observations separate and never mutate or reconcile. Helper/tool identity
+221-drift, unsupported versions and native Windows fail closed; no automatic install
+222:or v1-journal upgrade. Per-finding noncredential review releases only the exact
+223-sanitized run's rotation gate, never restores secrets or bypasses hooks; actual
+224-credentials still require rotation and unknown findings remain blocked.
+225-
+226-## Distribution verification
+227-
+228-Run `python3 -m unittest discover -s scripts -p test_distribution.py` and, after
+229-committing packaging edits, `python3 scripts/check-distribution.py --version v0.3.5`.
+230-The latter validates independent source and Go module payloads, including their
+231-embedded resources. Evidence-only nested `go.mod` files intentionally remove
+232-those directories from the parent module ZIP; do not run module tidy in them.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate stable release tag
+        shell: bash
+        run: |
+          [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Build tagged version
+        run: |
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:57:53Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the skill's when-to-use sections and changelog head
+
+`sed -n 22,36p skills/local/superproject-workspace/SKILL.md; grep -n "0.3.0\|Unreleased" -A3 docs/changelog.md | head -20`
+
+```text
+## When to use
+
+- The repo has `.gitmodules` and the user wants to update, sync, or "pull latest" children.
+- After a child PR merges, to move the superproject pointer.
+- Starting feature work inside a child repo from the superproject.
+- Creating a superproject from scratch (`new`), adding a repo to it (`add`), or deciding *how* to bring repos together (see `references/decision-guide.md`).
+- Auditing or upgrading an older superproject that has ad-hoc recipes.
+
+## When NOT to use
+
+- Ordinary single-repo git work: use `git-workflow`.
+- Issue/PR lifecycle inside one child: use that child's own workflow (`forge-native-dev`, etc.).
+- Ad-hoc reads across a few checkouts for one session: Project / `--add-dir` is enough (see the decision guide).
+- A third-party manifest tool already manages the clones (`repo`, `mani`, `gita`): keep it, or migrate to pointer mode deliberately.
+
+7:## Unreleased
+8-
+9:- `superproject-workspace` 0.3.0: `new`/`add` create a workspace and add
+10-  children from zero; a pointer-only home repo mode (`[repo]` entries in
+11-  `.superproject`, clone on demand) beside the recommended submodule mode;
+12-  `task open|list|close` for one branch across several children under
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:57:58Z)**_
+
+<tool-use data-tool-type="write" data-tool-name="Edit"><details>
+<summary>Tool use: **Edit**</summary>
+
+```text
+The file /Users/zhouhanru/Documents/David/Program/agent-skills/skills/local/superproject-workspace/SKILL.md has been updated successfully.
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:58:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Lint, commit and push the skill rule, then list version pins in dev-cli
+
+```bash
+bash skills/local/skill-author/scripts/lint-skill.sh skills/local/superproject-workspace 2>&1 | tail -3 && git branch --show-current && git add skills/local/superproject-workspace/SKILL.md && git commit -q -m "docs(superproject-workspace): run setup commands only on an explicit ask
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>" && git push origin main 2>&1 | tail -2
+cd ../dev-cli && git branch --show-current && grep -rn "0\.3\.5" --include='*.md' --include='*.txt' --include='*.json' --include='*.go' --include='*.py' --include='*.toml' . 2>/dev/null | grep -v -E '\.specstory|/site/|CHANGELOG' | cut -c1-170
+```
+
+```text
+Summary:
+  errors:   0
+  warnings: 0
+main
+To github.com:daviddwlee84/agent-skills.git
+   8ff5a47..aa5d901  main -> main
+feat/superproject-workspace-interop
+README.md:184:# Pin @v0.3.5 instead when you need a reproducible install.
+README.md:228:  version=v0.3.5
+AGENTS.md:131:The current published baseline is `v0.3.5` (2026-11-13). The CLI version authority is an immutable `vMAJOR.MINOR.PATCH` Git tag:
+AGENTS.md:229:committing packaging edits, `python3 scripts/check-distribution.py --version v0.3.5`.
+internal/skill/dev-cli/references/ai-artifacts.md:365:payloads with `python3 scripts/check-distribution.py --version v0.3.5` after
+docs/llms-full.txt:3966:`python3 scripts/check-distribution.py --version v0.3.5` independently builds
+docs/llms-full.txt:18181:`python3 scripts/check-distribution.py --version v0.3.5` 分別產生真正的 Git
+docs/guides/ai-artifacts.zh-TW.md:312:`python3 scripts/check-distribution.py --version v0.3.5` 分別產生真正的 Git
+docs/guides/ai-artifacts.md:346:`python3 scripts/check-distribution.py --version v0.3.5` independently builds
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 13:58:29Z)**_
+
+Skill 的規則已加上並 push（`aa5d901`）。現在在 `dev-cli` 準備 v0.3.6 的 release commit，接著跑檢查、開 PR。
+
+_**Agent (claude-fable-5-2 2026-11-13 13:58:34Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Bump version pins to v0.3.6, move changelog entries under the new version, and list make targets
+
+```bash
+cd /Users/zhouhanru/Documents/David/Program/dev-cli && sed -i '' 's/v0\.3\.5/v0.3.6/g' README.md AGENTS.md internal/skill/dev-cli/references/ai-artifacts.md docs/llms-full.txt docs/guides/ai-artifacts.zh-TW.md docs/guides/ai-artifacts.md && python3 - <<'EOF'
+import re,pathlib
+p=pathlib.Path("CHANGELOG.md"); t=p.read_text()
+head,rest=t.split("## [0.3.5] - 2026-11-13",1)
+i=head.index("## [Unreleased]")+len("## [Unreleased]")
+body=head[i:]
+head=head[:i]+"\n\n## [0.3.6] - 2026-11-13"+body
+t=head+"## [0.3.5] - 2026-11-13"+rest
+t=t.replace("[Unreleased]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.5...HEAD","[Unreleased]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.6...HEAD\n[0.3.6]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.5...v0.3.6")
+p.write_text(t)
+EOF
+git diff --stat | cat; sed -n 5,12p CHANGELOG.md; grep -n "^\[Unreleased\]\|^\[0.3.6\]\|^\[0.3.5\]" CHANGELOG.md; grep -n "^[a-z-]*:" Makefile | cut -d: -f1,2 | tr '\n' ' '
+```
+
+```text
+ .../2026-11-03_16-42-54Z-image-hash-1-repo.md      | 439 ++++++++++++++++++++-
+ AGENTS.md                                          |   4 +-
+ CHANGELOG.md                                       |   5 +-
+ README.md                                          |   4 +-
+ docs/guides/ai-artifacts.md                        |   2 +-
+ docs/guides/ai-artifacts.zh-TW.md                  |   2 +-
+ docs/llms-full.txt                                 |   4 +-
+ internal/skill/dev-cli/references/ai-artifacts.md  |   2 +-
+ 8 files changed, 451 insertions(+), 11 deletions(-)
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.3.6] - 2026-11-13
+
+### Added
+
+1587:[Unreleased]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.6...HEAD
+1588:[0.3.6]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.5...v0.3.6
+1589:[0.3.5]: https://github.com/daviddwlee84/dev-cli/compare/v0.3.4...v0.3.5
+10:all 12:build 17:install 24:test 27:vet 30:fmt 34:skill-sync 40:skill-check 46:clean
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:03:49Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run dev-cli's format, vet, skill, docs, distribution and unit test checks
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && (test -z "$(gofmt -l .)" && echo GOFMT_OK); make vet 2>&1 | tail -2; make skill-check 2>&1 | tail -2; python3 scripts/check-docs.py 2>&1 | tail -3; python3 -m unittest discover -s scripts -p test_distribution.py 2>&1 | tail -3; go test ./... 2>&1 | grep -v '^ok\|no test files' | tail -20; echo "go test exit: ${pipestatus[1]}"`
+
+```text
+GOFMT_OK
+go vet ./...
+./dev skill sync --check
+command reference is current (internal/skill/dev-cli/references/commands.md)
+  File "/Users/zhouhanru/Documents/David/Program/dev-cli/scripts/check-docs.py", line 16, in <module>
+    import yaml
+ModuleNotFoundError: No module named 'yaml'
+Ran 4 tests in 3.069s
+
+OK
+go test exit: 0
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:03:50Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show the safety-check change that relaxes parking for on-demand children
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && git diff f70c529 6e0ab0f -- internal/submodule/removal.go internal/submodule/workspace.go | head -150`
+
+```text
+diff --git a/internal/submodule/removal.go b/internal/submodule/removal.go
+index 878ad5a..a601157 100644
+--- a/internal/submodule/removal.go
++++ b/internal/submodule/removal.go
+@@ -68,12 +68,20 @@ func InspectPublication(ctx context.Context, cfg config.Config, root string, mer
+ 	if err != nil {
+ 		return nil, err
+ 	}
++	var initialized []gitx.SubmoduleNode
+ 	for _, n := range g.Nodes {
++		// An on-demand child (`update = none`) that recursive initialization
++		// deliberately left absent has no local refs or content to publish.
++		// A populated directory there is "unknown", not this case.
++		if n.SkipsInitialization() && n.State == "uninitialized" && len(n.Blockers) == 0 {
++			continue
++		}
+ 		if !n.Initialized || n.Status.Dirty() || n.HEAD != n.Gitlink {
+ 			return nil, fmt.Errorf("submodule %s must be committed and match its gitlink before publishing/integrating the parent", n.Path)
+ 		}
++		initialized = append(initialized, n)
+ 	}
+-	return &Removal{Graph: g, Repository: r, Workspace: w, Revision: revision, Config: cfg, Merged: merged, remoteRefs: map[string]string{}, initialized: append([]gitx.SubmoduleNode(nil), g.Nodes...), observed: true, publication: true}, nil
++	return &Removal{Graph: g, Repository: r, Workspace: w, Revision: revision, Config: cfg, Merged: merged, remoteRefs: map[string]string{}, initialized: initialized, observed: true, publication: true}, nil
+ }
+ 
+ // InspectRemoval is local only. Destructive adapters must call it even when
+@@ -147,6 +155,9 @@ func InspectRemoval(ctx context.Context, cfg config.Config, root string, recursi
+ 			return nil, err
+ 		}
+ 		if len(worktrees) != 1 {
++			if detail := DescribeChildWorktrees(ctx, g, n); detail != "" {
++				return nil, fmt.Errorf("submodule %s still owns other worktrees: %s", n.Path, detail)
++			}
+ 			return nil, fmt.Errorf("submodule %s still owns other worktrees", n.Path)
+ 		}
+ 		if err := inspectPrivateState(ctx, child, n.GitDir); err != nil {
+diff --git a/internal/submodule/workspace.go b/internal/submodule/workspace.go
+index b82a595..5be319c 100644
+--- a/internal/submodule/workspace.go
++++ b/internal/submodule/workspace.go
+@@ -119,8 +119,13 @@ func Prepare(ctx context.Context, cfg config.Config, root, mode string, develop
+ 			s.Init = previous.Init
+ 		}
+ 	}
++	if taskStart && develop == nil && s.Init != "none" && r.IsLinkedWorktree && st.Branch != "" {
++		develop = s.Develop
++	}
+ 	if s.Init == "recursive" {
+-		g, err = gitx.InitSubmodules(ctx, root)
++		// Selected members are named explicitly, so an on-demand child
++		// (`update = none`) is initialized only when a task develops it.
++		g, err = gitx.InitSubmodules(ctx, root, develop...)
+ 		if err != nil {
+ 			return g, err
+ 		}
+@@ -128,9 +133,6 @@ func Prepare(ctx context.Context, cfg config.Config, root, mode string, develop
+ 	if !r.IsLinkedWorktree || st.Branch == "" {
+ 		return g, nil
+ 	}
+-	if taskStart && develop == nil && s.Init != "none" {
+-		develop = s.Develop
+-	}
+ 	if len(develop) > 0 && s.Init == "none" {
+ 		return g, errors.New("developing submodules requires recursive initialization")
+ 	}
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:03:54Z)**_
+
+本機檢查都過了（docs 檢查少一個 Python 套件，改用 `uv` 重跑），接著 commit、push、開 PR。
+
+_**Agent (claude-fable-5-2 2026-11-13 14:03:55Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Rerun the docs check with its dependencies available
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && (uv run --extra docs python scripts/check-docs.py 2>&1 || uv run --with pyyaml python scripts/check-docs.py 2>&1) | tail -4`
+
+```text
+check-docs.py: error: choose --source, --publish-markdown PATH, and/or --site PATH
+usage: check-docs.py [-h] [--source] [--generate-llms]
+                     [--publish-markdown PUBLISH_MARKDOWN] [--site SITE]
+check-docs.py: error: choose --source, --publish-markdown PATH, and/or --site PATH
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:03:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run the docs source check and show the working tree
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && uv run --with pyyaml python scripts/check-docs.py --source 2>&1 | tail -4; git status -sb | head -12`
+
+```text
+docs check passed
+## feat/superproject-workspace-interop
+ M .specstory/history/2026-11-03_16-42-54Z-image-hash-1-repo.md
+ M AGENTS.md
+ M CHANGELOG.md
+ M README.md
+ M docs/guides/ai-artifacts.md
+ M docs/guides/ai-artifacts.zh-TW.md
+ M docs/llms-full.txt
+ M internal/skill/dev-cli/references/ai-artifacts.md
+?? .specstory/history/2026-11-13_11-00-36Z-pasted-content-id-2dec.md
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:04:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the release prep, push the branch, open the pull request, and check which merge methods the repo allows
+
+```bash
+cd /Users/zhouhanru/Documents/David/Program/dev-cli && git add AGENTS.md CHANGELOG.md README.md docs/guides/ai-artifacts.md docs/guides/ai-artifacts.zh-TW.md docs/llms-full.txt internal/skill/dev-cli/references/ai-artifacts.md && git commit -q -m "chore(release): v0.3.6
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>" && git push -u origin feat/superproject-workspace-interop 2>&1 | tail -3 && gh pr create --base main --title "feat(submodule): interoperate with superproject-workspace worktrees (v0.3.6)" --body "$(cat <<'EOF'
+Closes #39.
+
+## Summary
+
+- `dev git submodule status` detects the `superproject-workspace` convention (`x-policy` keys in `.gitmodules` or a `.superproject` file), shows the child worktree root, and lists every additional child worktree. Worktrees in the skill's single-child and `_tasks/<task>/` layouts are labelled with the command that closes them. `--json` adds `convention` and `child_worktrees`.
+- Recursive cleanup blockers for a child that still owns other worktrees now name each worktree and point to `task close` / `worktree remove`.
+- Fix: recursive submodule initialization no longer initializes children that declare `update = none`; it previously forced a checkout. Naming such a child with `--submodule` or `dev git submodule develop` still initializes it.
+- Docs and the bundled skill describe using one model per task.
+- Release prep for v0.3.6 (changelog and version pins).
+
+## Behavior change to review
+
+An absent `update = none` child no longer blocks parking or completion (`InspectPublication` in `internal/submodule/removal.go`). Without this, a superproject with an on-demand child could never be parked once the initialization fix landed. A populated directory at that path still blocks. The recorded gitlink of an absent child is not verified against the child's remote.
+
+## Test plan
+
+- `gofmt`, `make vet`, `make skill-check`, `go test ./...`
+- `python3 -m unittest discover -s scripts -p test_distribution.py`
+- `scripts/check-docs.py --source`
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)" 2>&1 | tail -2; gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed --jq . ; git log --oneline --merges -3 main | cat; git log -4 --format='%h %s' main | cat
+```
+
+```text
+[WARNING] Unstaged files detected.
+[INFO] Stashing unstaged files to /Users/zhouhanru/.cache/pre-commit/patch1794578652-33170.
+Repository secret and privacy policy.....................................Passed
+- hook id: dev-hygiene
+- duration: 1.92s
+
+Hygiene staged · complete · 7 files · 0 blocking / 11 warning findings
+Report 25d75c28-c351-4651-ad24-db5d07d0ce95
+  warn  README.md:373  privacy-ip ×2  42371d3171bf5430feb6bc9c48d0e1b06f7b558ef1d400a1c91dc0ef1e21bf4f
+  warn  README.md:377  privacy-ip ×1  30ab583175697ed21c30ecad522ad56983201d4b9fa9f326004c9117616a8062
+  warn  README.md:531  privacy-ip ×1  17afee3bbae40eea5c8ea5a25309e6cbb5a216e54f8a1415c34bee9cde2ab714
+  warn  README.md:1445  privacy-email ×1  9afe9b45898408062c7fc348af7738f97ef1486dcef56357996c1f1939486819
+  warn  docs/llms-full.txt:1445  privacy-email ×4  86078d8da7da8583728d911c99286e60234b8cc3d4b33b8c7a610a2c33515c83
+  warn  docs/llms-full.txt:2528  privacy-ip ×2  2235885497d93d59abd42e87a39c91007980a9fa0b289fe675f83123d0fed3a2
+  warn  docs/llms-full.txt:2537  privacy-ip ×2  141971e79ada04a4ac9e218dd611b86ca58ed86a59e606b33ebce1668927af5b
+  warn  docs/llms-full.txt:2946  privacy-ip ×2  d31b393d7d6756c62a51abc87d54d0b0f47576eb8d66c20a38efc7d3b3c273ec
+  warn  docs/llms-full.txt:3013  privacy-ip ×4  029b1305f4717c7cc819465b5aa94adc42cfa3ee1484d05ce15852c57cfc1507
+  warn  docs/llms-full.txt:4133  privacy-ip ×2  0b5bddfdbbd09648eb079b0435271ddc4dce19c26b0d01f09df0fff24e6e157d
+  warn  docs/llms-full.txt:4486  privacy-ip ×2  f5c4adacb6221a599864690a8c1e14cf93ebef016323ae0892913184ec8ea51e
+
+[INFO] Restored changes from /Users/zhouhanru/.cache/pre-commit/patch1794578652-33170.
+To https://github.com/daviddwlee84/dev-cli.git
+ * [new branch]      feat/superproject-workspace-interop -> feat/superproject-workspace-interop
+branch 'feat/superproject-workspace-interop' set up to track 'origin/feat/superproject-workspace-interop'.
+Warning: 2 uncommitted changes
+https://github.com/daviddwlee84/dev-cli/pull/40
+{"mergeCommitAllowed":true,"rebaseMergeAllowed":true,"squashMergeAllowed":true}
+6177f65 Merge pull request #35 from daviddwlee84/feat/repo-fork
+e7e6798 Merge remote-tracking branch 'origin/main'
+953a3a0 Merge pull request #32 from daviddwlee84/fix/closeout-review-tui
+f70c529 chore(release): v0.3.5
+b812b66 chore: backup plan and chat history
+c87647b feat(repos): keep row order steady while REPOS loads
+f05c16d feat(tui): open filtered actions directly (v0.3.4)
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:14:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait for the pull request's CI checks to finish
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && sleep 20; gh pr checks 40 --watch --interval 30 2>&1 | tail -15`
+
+```text
+Command did not complete within its 600s timeout and was moved to the background (ID: bsr3rsh1z). Output is being written to: /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bsr3rsh1z.output. You will be notified when it completes. It is running now: do not start a second copy while it runs. If it is no longer needed, stop it with TaskStop. No output had been read from it when it was moved. A program that buffers its output, or a pipe into one such as tail, can keep the output file empty until the command finishes. To check interim output, use Read on that file path.
+Session cwd remains /Users/zhouhanru/Documents/David/Program/agent-skills; directory changes made by the backgrounded command do not apply to subsequent commands.
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:14:33Z)**_
+
+PR #40 已開，CI 跑超過十分鐘還沒結束；我看一下目前各項檢查的狀態。
+
+_**Agent (claude-fable-5-2 2026-11-13 14:14:37Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show the current status of each CI check on the pull request
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && gh pr checks 40 2>&1 | cut -c1-110`
+
+```text
+Source and Go module packages	pass	1m48s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258/job/
+Windows SSH required	pass	4m27s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258/job/131932377
+Windows full suite required / plan	pass	1m26s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258
+Windows full suite required / run (0)	pass	6m40s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285
+Windows full suite required / run (2)	pass	5m51s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285
+Windows full suite required / run (4)	pass	7m22s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285
+build	pass	36s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285182/job/131932375456	
+native (macos-latest)	pass	1m57s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285244/job/13193237
+native (ubuntu-latest)	pass	1m23s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285244/job/1319323
+native (windows-latest)	pass	4m36s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285244/job/131932
+Windows full suite required / run (3)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/434392852
+test (macos-latest)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258/job/13193237813
+scan	pass	44s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285244/job/131932377011	
+deploy	skipping	0	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285182/job/131932716350	
+test (windows-latest)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258/job/131932378
+test (ubuntu-latest)	pass	4m44s	https://github.com/daviddwlee84/dev-cli/actions/runs/43439285258/job/131932377
+Windows full suite required / run (1)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/434392852
+Windows full suite required / run (5)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/434392852
+Windows full suite required / run (6)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/434392852
+Windows full suite required / run (7)	pending	0	https://github.com/daviddwlee84/dev-cli/actions/runs/434392852
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:14:44Z)**_
+
+PR #40（https://github.com/daviddwlee84/dev-cli/pull/40）的 CI 還在跑，目前完成的項目全部通過，剩 macOS、Windows 測試和幾個 Windows shard 還沒結束。背景監看結束後我會接著 merge、打 `v0.3.6` tag 並確認 release workflow。
+
+目前已完成的部分：
+
+- **`agent-skills`**：`SKILL.md` 新增「Setup commands need an explicit ask」一節並 push（`aa5d901`）。`new`、`add`、`adopt` 只在你明確要求把 project 轉成 superproject、從零建立、或把既有 superproject 納入這套慣例時才執行；單純有 `.gitmodules` 不算要求，agent 也不會主動提議，最多在 `audit` 出現相關 warning 時提一次 `adopt --dry-run`。
+- **`dev-cli`**：在 `feat/superproject-workspace-interop` 上加了 `chore(release): v0.3.6`（changelog 與版本號），本機的 `gofmt`、`make vet`、`make skill-check`、`go test ./...`、distribution 測試與 docs 檢查都通過。放寬 park / complete 檢查的那段我看過 diff，範圍只限於「宣告 `update = none` 且目錄不存在」的 child，PR 說明裡有單獨列出。
+- **沒有納入**：`dev-cli` 的兩個 `.specstory` 檔是其他 session 的紀錄，我沒讀過內容，所以沒有 commit。
+
+---
+
+_**User (2026-11-13 14:22:03Z)**_
+
+<task-notification>
+<task-id>bsr3rsh1z</task-id>
+<tool-use-id>toolu_014bDPXBcu3YXTcwad75pARx</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bsr3rsh1z.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the pull request's CI checks to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+_**Agent (claude-fable-5-2 2026-11-13 14:22:11Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Summarise the final CI results and mergeability of the pull request
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && gh pr checks 40 2>&1 | awk -F'\t' '{print $2}' | sort | uniq -c; gh pr view 40 --json mergeable,mergeStateStatus,headRefOid --jq .`
+
+```text
+  20 pass
+   1 skipping
+{"headRefOid":"1deb333072f5a9e155025a3070fddc27085e7a5f","mergeStateStatus":"CLEAN","mergeable":"MERGEABLE"}
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:22:27Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Merge the pull request with a merge commit and confirm main's new head and that the v0.3.6 tag is unused
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && gh pr merge 40 --merge --match-head-commit 1deb333072f5a9e155025a3070fddc27085e7a5f 2>&1 | tail -3 && git fetch -q origin main && M=$(git rev-parse origin/main) && git log --oneline -3 origin/main | cat && gh pr view 40 --json state,mergeCommit --jq '"\(.state) \(.mergeCommit.oid)"' && echo "origin/main=$M" && git tag -l v0.3.6 && git ls-remote --tags origin v0.3.6`
+
+```text
+14f0675 Merge pull request #40 from daviddwlee84/feat/superproject-workspace-interop
+1deb333 chore(release): v0.3.6
+6e0ab0f feat(submodule): interoperate with superproject-workspace worktrees
+MERGED 14f0675464fd52e47fd5d6746bd756c7274f5cf0
+origin/main=14f0675464fd52e47fd5d6746bd756c7274f5cf0
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:22:54Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Tag the merge commit as v0.3.6, push the tag, and find the release workflow run
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && git tag -a v0.3.6 -m v0.3.6 14f0675464fd52e47fd5d6746bd756c7274f5cf0 && git push origin v0.3.6 2>&1 | tail -2 && sleep 15 && gh run list --workflow release.yml -L 1 --json databaseId,status,headBranch,url --jq '.[]|"\(.databaseId) \(.status) \(.headBranch) \(.url)"'`
+
+```text
+To https://github.com/daviddwlee84/dev-cli.git
+ * [new tag]         v0.3.6 -> v0.3.6
+43442125866 in_progress v0.3.6 https://github.com/daviddwlee84/dev-cli/actions/runs/43442125866
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:22:59Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait for the release workflow and report its result and the published release
+
+`cd /Users/zhouhanru/Documents/David/Program/dev-cli && gh run watch 43442125866 --interval 30 --exit-status >/dev/null 2>&1; echo "exit=$?"; gh run view 43442125866 --json conclusion,status --jq '"\(.status) \(.conclusion)"'; gh release view v0.3.6 --json isDraft,name,assets --jq '"draft=\(.isDraft) assets=\(.assets|length)"' 2>&1`
+
+```text
+Command running in background with ID: bmacuhs3p. Output is being written to: /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bmacuhs3p.output. You will be notified when it completes — do not poll that file or sleep while waiting. Read the file only if the user asks for progress, or if you need a line it prints before you can go on, such as a server's ready line or port.
+Session cwd remains /Users/zhouhanru/Documents/David/Program/agent-skills; directory changes made by the backgrounded command do not apply to subsequent commands.
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:23:04Z)**_
+
+PR #40 已 merge 進 `dev-cli` 的 `main`（merge commit `14f0675`，21 項檢查中 20 項通過、1 項本來就會略過），`v0.3.6` tag 也已推上去。release workflow 正在跑：https://github.com/daviddwlee84/dev-cli/actions/runs/43442125866 ，它會重跑 CI、建置各平台 binary 並建立 GitHub release，結束後我會回報結果。
+
+兩點留意：
+
+- **本機 `dev-cli` checkout 還停在 `feat/superproject-workspace-interop`**：我是直接對遠端的 `main` 打 tag，沒有切換本機 branch，因為那個 checkout 有別的 session 在用。本機 `main` 還沒 pull。
+- **issue #39**：PR 說明裡寫了 `Closes #39`，merge 後應該會自動關閉，我會在 release 完成時一併確認。
+
+---
+
+_**User (2026-11-13 14:47:15Z)**_
+
+<task-notification>
+<task-id>bmacuhs3p</task-id>
+<tool-use-id>toolu_01LJW9zZ8p2hTzEnSdTJxfqa</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bmacuhs3p.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the release workflow and report its result and the published release" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+_**Agent (claude-fable-5-2 2026-11-13 14:47:22Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the release workflow result and check the issue and release list
+
+`cat /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bmacuhs3p.output; cd /Users/zhouhanru/Documents/David/Program/dev-cli && gh issue view 39 --json state --jq .state; gh release list -L 2 | cut -c1-60`
+
+```text
+exit=0
+completed success
+draft=false assets=9
+
+[exited with code 0]
+CLOSED
+v0.3.6	Latest	v0.3.6	2026-11-13T14:47:03Z
+v0.3.5		v0.3.5	2026-11-13T11:20:58Z
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-fable-5-2 2026-11-13 14:47:28Z)**_
+
+`dev-cli` v0.3.6 已發布：release workflow 成功，GitHub release 是正式版（非 draft）、帶 9 個 asset，並標為 Latest；issue #39 已隨 PR #40 自動關閉。
+
+剩下兩件事沒做：
+
+- **本機 `dev-cli` checkout**：還在 `feat/superproject-workspace-interop`，本機 `main` 沒 pull，兩個 `.specstory` 檔也沒 commit。
+- **Homebrew**：依 `AGENTS.md` 的說明，formula 由 tap repo 的排程每小時同步，我沒有手動觸發，也沒確認它是否已更新到 v0.3.6。
+
+`agent-skills` 這邊都已 push，`main` 與遠端一致。全域安裝 skill 和各 superproject 的 `adopt` 還沒做；依照剛加的規則，這兩步等你明確說要做再執行。
+
+---
+
+_**User (2026-11-13 18:42:12Z)**_
+
+可以順便做一下 全域安裝 skill 和各 superproject 的 adopt
+以及順便看看local branches是否有可以clean up的 [Image #2]
+
+---
+
+_**User (2026-11-13 18:42:12Z)**_
+
+[Image: source: /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/images/2.png]
+
+---
+
+_**Agent (claude-opus-5-5 2026-11-13 18:42:46Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Install the superproject-workspace skill globally with npx skills
+
+`cd ~ && npx -y skills@latest add daviddwlee84/agent-skills/skills --skill superproject-workspace -g -y 2>&1 | tail -15`
+
+```text
+[?25h
+│
+◇  Installed 1 skill ─────────────────────────────────────────────────────────╮
+│                                                                             │
+│                                                                             │
+│  Version Control                                                            │
+│  ✓ ~/.agents/skills/superproject-workspace                                  │
+│    universal: Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode +14 more  │
+│    symlinked: Antigravity, Antigravity CLI, Claude Code, OpenClaw           │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────╯
+
+│
+└  Done!  Review skills before use; they run with full agent permissions.
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:43:07Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+For each local branch, check upstream, unmerged commits, pull requests, and worktrees
+
+`git fetch -q --prune origin && for b in $(git for-each-ref --format='%(refname:short)' refs/heads | grep -v '^main$'); do up=$(git rev-parse --abbrev-ref $b@{upstream} 2>/dev/null || echo -); gone=$( [ "$up" != - ] && ! git rev-parse -q --verify $up >/dev/null && echo GONE ); ahead=$(git rev-list --count origin/main..$b); cherry=$(git cherry origin/main $b | grep -c '^+'); wt=$(git worktree list --porcelain | grep -B2 "branch refs/heads/$b$" | head -1 | sed 's/worktree //'); pr=$(gh pr list --head $b --state all --json number,state --jq '.[0]|"#\(.number) \(.state)"' 2>/dev/null); echo "$b | up=$up $gone | ahead=$ahead unmerged-patches=$cherry | pr=$pr | wt=${wt:--}"; done`
+
+```text
+agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- | up=origin/agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind-  | ahead=1 unmerged-patches=1 | pr=#31 OPEN | wt=/Users/zhouhanru/Worktrees/agent-skills/issue-30
+agent/issue/44-validate-and-document-pueue-agent-continuation-rec | up=origin/main  | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-44
+chore/go-cli-tui-owned | up= GONE | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Documents/David/Program/.worktrees/agent-skills-go-cli-tui-owned
+chore/source-packaging-skills | up= GONE | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Worktrees/agent-skills/chore-source-packaging-skills
+cursor/forge-native-dev | up=origin/cursor/forge-native-dev  | ahead=4 unmerged-patches=0 | pr=#5 MERGED | wt=-
+feat/managed-upgrade | up= GONE | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Worktrees/agent-skills/feat-managed-upgrade
+feat/mkdocs-i18n-llms-issue | up= GONE | ahead=0 unmerged-patches=0 | pr=#null null | wt=-
+feat/private-development-guidance | up= GONE | ahead=1 unmerged-patches=1 | pr=#null null | wt=/Users/zhouhanru/Worktrees/agent-skills/private-development-guidance
+feat/windows-personal-tools | up= GONE | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Worktrees/agent-skills/feat-windows-personal-tools
+issue/33-feat-skills-superproject-workspace-submodule-super | up=origin/issue/33-feat-skills-superproject-workspace-submodule-super  | ahead=2 unmerged-patches=2 | pr=#34 MERGED | wt=/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-33
+issue/40-document-python-package-versioning-and-release-pol | up=origin/main  | ahead=0 unmerged-patches=0 | pr=#null null | wt=/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-40
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:43:30Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Audit each of the four superprojects and show their child status
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; grep -m1 '__version__' $SP; cd /Users/zhouhanru/Documents/David/Program; for r in Tadronaut-Mono-Repo AlphaResearch Tons-Mono-Repo dotfiles-all; do echo "########## $r"; git -C $r status -sb | head -1; git -C $r status --porcelain | grep -v '^ m\|^ ?\|^??.*specstory' | head -5; ls $r/AGENTS.md $r/CLAUDE.md $r/justfile 2>/dev/null | tr '\n' ' '; echo; uv run --script $SP audit --root $r --json 2>/dev/null | python3 -c 'import json,sys,collections;d=json.load(sys.stdin);f=d.get("findings",d);print(collections.Counter((x["level"],x["code"]) for x in f))'; uv run --script $SP status --root $r 2>&1 | head -30; done`
+
+```text
+__version__ = "0.3.0"
+########## Tadronaut-Mono-Repo
+## main...origin/main
+ M .claude/plans/here-is-a-note-immutable-swing.md
+ M .specstory/history/2026-11-03_16-05-59Z-pasted-content-id-9649.md
+ M submodules/personal/ConvertibleBond
+ M submodules/tarlin
+ M submodules/trading-journal
+Tadronaut-Mono-Repo/AGENTS.md Tadronaut-Mono-Repo/justfile 
+Counter({('warn', 'policy-missing'): 25, ('info', 'submodule-config-missing'): 23, ('info', 'pin-behind'): 5, ('info', 'stale-module-store'): 3, ('info', 'stale-submodule-config'): 2, ('info', 'dirty'): 1, ('warn', 'uninitialized'): 1, ('warn', 'agents-block'): 1, ('warn', 'worktrees-not-ignored'): 1, ('info', 'push-check'): 1})
+NAME                                                    POLICY   BUMP    TIER  GITLINK  LAG     STATE
+submodules/tarlin                                       (unset)  manual  -     e1d45e5  7       detached; dirty(1)
+submodules/atp-sipui                                    (unset)  manual  -     f48292e  0       on main
+submodules/dongwu-tick-downloader                       (unset)  manual  -     75638c1  0       on main
+submodules/personal/ConvertibleBond_LimitOrderBook      (unset)  manual  -     3162ee3  0       on src_package
+submodules/personal/ConvertibleBond                     (unset)  manual  -     88915ab  0       on main
+submodules/references/daviddwlee84/PyTorch-In-CPP       (unset)  manual  -     ed4d32d  uninit
+submodules/OfflineAnalysis                              (unset)  manual  -     9979095  0       detached
+submodules/tarlin-infra                                 (unset)  manual  -     ba7fc6f  0       on main
+submodules/trading-journal                              (unset)  manual  -     4c14016  0       on journal/2026-11-12-111012-rejection
+submodules/libkdc-simple-demo                           (unset)  manual  -     1286513  0       on main
+submodules/references/jingle/Ats                        (unset)  manual  -     c1b622f  0       on main
+submodules/references/jingle/junglezone                 (unset)  manual  -     ab7dee7  0       on main
+submodules/references/jingle/data-platform-distill      (unset)  manual  -     eab0bcd  2       on main
+submodules/references/jingle/monitor-dashboard-distill  (unset)  manual  -     7dc8ff6  0       on main
+submodules/lazytarlin                                   (unset)  manual  -     ca2796b  0       on main
+submodules/personal/SyntheticSnapshot                   (unset)  manual  -     c9e3287  0       on master
+submodules/infra                                        (unset)  manual  -     e8ed6b2  2       detached
+submodules/Agreements                                   (unset)  manual  -     6b06522  0       on main
+submodules/schema                                       (unset)  manual  -     476ecb7  0       on main
+submodules/navigation                                   (unset)  manual  -     c0c863a  0       on main
+submodules/market-analysis                              (unset)  manual  -     03732e1  0       on main
+submodules/personal/quant-data-kit                      (unset)  manual  -     2bd04ad  21      on main
+submodules/data-orchestration                           (unset)  manual  -     4eff79f  1       on main
+submodules/oesn-tick-parser                             (unset)  manual  -     1b38004  0       on main
+submodules/personal/ferry                               (unset)  manual  -     f8e5ccc  0       on main
+(lag uses local remote refs; add --fetch for current numbers)
+########## AlphaResearch
+## main...origin/main [ahead 5]
+ M .specstory/history/2026-11-03_15-47-04Z-at-libs-featurelab-https.md
+ M knowledge/quant-factor-dictionary
+ M libs/alpha-risk-kit
+AlphaResearch/AGENTS.md AlphaResearch/CLAUDE.md AlphaResearch/justfile 
+Counter({('warn', 'policy-missing'): 37, ('warn', 'uninitialized'): 26, ('info', 'pin-behind'): 4, ('error', 'gitlink-unreachable'): 3, ('info', 'checkout-drift'): 1, ('warn', 'agents-block'): 1, ('warn', 'worktrees-not-ignored'): 1, ('info', 'justfile-hardcoded'): 1, ('info', 'push-check'): 1})
+NAME                                         POLICY   BUMP    TIER  GITLINK  LAG     STATE
+libs/alpha-risk-kit                          (unset)  manual  -     aa3cef9  0       on main
+libs/quant-data-kit                          (unset)  manual  -     091794e  47      on main
+references/platforms/qlib                    (unset)  manual  -     5435523  0       detached
+references/platforms/vectorbt                (unset)  manual  -     dd8eb3a  1       detached; gitlink NOT on any origin branch
+references/platforms/nautilus_trader         (unset)  manual  -     a51ae01  1       detached; gitlink NOT on any origin branch
+references/factors/WorldQuant_alpha101_code  (unset)  manual  -     3bb9918  0       detached
+references/factors/popbo_alphas              (unset)  manual  -     620594a  0       detached
+references/factors/CrossSection              (unset)  manual  -     ae0cf4d  1       detached; gitlink NOT on any origin branch
+references/factors/KunQuant                  (unset)  manual  -     d8922b2  0       detached
+references/factor-mining/alphagen            (unset)  manual  -     259687e  uninit
+references/factor-mining/AlphaForge          (unset)  manual  -     d0cfc27  uninit
+references/factor-mining/Genetic-Alpha       (unset)  manual  -     8d8e041  uninit
+references/factor-mining/AlphaGPT            (unset)  manual  -     35244de  uninit
+references/models/Multitask-Stockformer      (unset)  manual  -     0a4f78b  uninit
+references/evaluation/alphalens-reloaded     (unset)  manual  -     1bc181d  uninit
+references/evaluation/quantstats             (unset)  manual  -     9ef4c6d  uninit
+references/evaluation/pyfolio-reloaded       (unset)  manual  -     365e649  uninit
+references/portfolio/cvxportfolio            (unset)  manual  -     351c782  uninit
+references/portfolio/Riskfolio-Lib           (unset)  manual  -     7b1b26a  uninit
+references/portfolio/PyPortfolioOpt          (unset)  manual  -     a6638d2  uninit
+references/data/akshare                      (unset)  manual  -     fe10d1d  uninit
+references/data/investment_data              (unset)  manual  -     b8c129b  uninit
+references/data/jqdatasdk                    (unset)  manual  -     ba61143  uninit
+references/data/A-Shares-DB                  (unset)  manual  -     48e93e6  uninit
+references/data/ChinaStock                   (unset)  manual  -     5c0e02f  uninit
+references/data/TaiwanStock                  (unset)  manual  -     797e3b3  uninit
+references/data/jg-data-platform             (unset)  manual  -     1c0cf8b  uninit
+references/learning/InvestmentManagement     (unset)  manual  -     e28e463  uninit
+references/learning/PortfolioOptimization    (unset)  manual  -     2d5f75f  uninit
+########## Tons-Mono-Repo
+## main...origin/main
+Tons-Mono-Repo/AGENTS.md Tons-Mono-Repo/justfile 
+Counter({('warn', 'policy-missing'): 5, ('info', 'submodule-config-missing'): 5, ('info', 'gitlink-off-branch'): 1, ('error', 'gitlink-unreachable'): 1, ('warn', 'agents-block'): 1, ('warn', 'worktrees-not-ignored'): 1, ('info', 'push-check'): 1})
+NAME                        POLICY   BUMP    TIER  GITLINK  LAG  STATE
+submodules/effortless       (unset)  manual  -     fb8aa79  0    detached
+submodules/nautilus_trader  (unset)  manual  -     138358e  0    detached
+submodules/countless        (unset)  manual  -     0d25d36  0    detached; gitlink off origin/main (on another origin branch)
+submodules/old-countless    (unset)  manual  -     484a44c  0    detached
+submodules/TWSE-Tick-Data   (unset)  manual  -     fe718cd  0    detached; gitlink NOT on any origin branch
+(lag uses local remote refs; add --fetch for current numbers)
+########## dotfiles-all
+## main...origin/main
+ M .specstory/statistics.json
+dotfiles-all/AGENTS.md -> CLAUDE.md dotfiles-all/CLAUDE.md dotfiles-all/justfile 
+Counter({('warn', 'policy-missing'): 5, ('warn', 'agents-block'): 1, ('warn', 'worktrees-not-ignored'): 1, ('info', 'justfile-hardcoded'): 1, ('info', 'push-check'): 1})
+NAME                      POLICY   BUMP    TIER  GITLINK  LAG  STATE
+dotfiles-windows          (unset)  manual  -     ddbceb6  0    on main
+dotfiles (dotfiles-unix)  (unset)  manual  -     6fcb367  0    on main
+dotfiles-iSH              (unset)  manual  -     aee390f  0    on main
+dotfiles-OpenWrt          (unset)  manual  -     06a0308  0    on main
+dotfiles-Termux           (unset)  manual  -     a1fc916  0    on main
+(lag uses local remote refs; add --fetch for current numbers)
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:43:43Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Dry-run adopt on each superproject with pin as the default policy
+
+```bash
+SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; cd /Users/zhouhanru/Documents/David/Program; for r in Tadronaut-Mono-Repo AlphaResearch Tons-Mono-Repo dotfiles-all; do echo "########## $r"; uv run --script $SP adopt --root $r --policy-default pin --dry-run --json 2>&1 | python3 -c '
+import json,sys,collections
+d=json.load(sys.stdin)
+acts=d.get("actions",[])
+c=collections.Counter()
+for a in acts:
+    s=a if isinstance(a,str) else json.dumps(a,ensure_ascii=False)
+    k=s.split(":")[0][:60] if "policy" in s or "x-policy" in s else s[:200]
+    c[k]+=1
+for k,v in c.items(): print(v,"x",k)
+print("keys:",[k for k in d if k!="actions"])
+'; done
+```
+
+```text
+########## Tadronaut-Mono-Repo
+25 x {"kind"
+1 x {"kind": "gitmodules", "target": "submodule.submodules/tarlin.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/atp-sipui.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/dongwu-tick-downloader.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/personal/ConvertibleBond.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/references/daviddwlee84/PyTorch-In-CPP.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/OfflineAnalysis.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/tarlin-infra.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/trading-journal.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/libkdc-simple-demo.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/references/jingle/Ats.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/references/jingle/junglezone.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/references/jingle/data-platform-distill.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/references/jingle/monitor-dashboard-distill.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/lazytarlin.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/personal/SyntheticSnapshot.branch", "detail": "master"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/infra.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/Agreements.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/schema.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/navigation.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/market-analysis.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/personal/quant-data-kit.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/data-orchestration.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/oesn-tick-parser.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/personal/ferry.branch", "detail": "main"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert agent guidance block"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert repo map"}
+1 x {"kind": "file", "target": "justfile", "detail": "upsert sub-* recipes"}
+1 x {"kind": "file", "target": ".gitignore", "detail": "ignore .worktrees/"}
+1 x {"kind": "git-config", "target": "diff.submodule", "detail": "log"}
+1 x {"kind": "git-config", "target": "status.submoduleSummary", "detail": "true"}
+1 x {"kind": "git-config", "target": "push.recurseSubmodules", "detail": "check"}
+keys: ['dry_run']
+########## AlphaResearch
+37 x {"kind"
+1 x {"kind": "gitmodules", "target": "submodule.libs/alpha-risk-kit.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.libs/quant-data-kit.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/platforms/qlib.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/platforms/vectorbt.branch", "detail": "master"}
+1 x {"kind": "gitmodules", "target": "submodule.references/platforms/nautilus_trader.branch", "detail": "develop"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factors/WorldQuant_alpha101_code.branch", "detail": "master"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factors/popbo_alphas.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factors/CrossSection.branch", "detail": "master"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factors/KunQuant.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factor-mining/alphagen.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factor-mining/AlphaForge.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factor-mining/Genetic-Alpha.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/factor-mining/AlphaGPT.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/models/Multitask-Stockformer.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/evaluation/alphalens-reloaded.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/evaluation/quantstats.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/evaluation/pyfolio-reloaded.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/portfolio/cvxportfolio.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/portfolio/Riskfolio-Lib.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/portfolio/PyPortfolioOpt.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/akshare.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/investment_data.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/jqdatasdk.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/A-Shares-DB.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/ChinaStock.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/TaiwanStock.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/data/jg-data-platform.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/learning/InvestmentManagement.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/learning/PortfolioOptimization.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/learning/Quant.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/learning/RLinQuant.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/learning/Trading.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/legacy/Alpha.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/legacy/AlphaBaseline.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.references/legacy/alpha_xc.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.knowledge/quant-factor-dictionary.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.libs/featurelab.branch", "detail": "main"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert agent guidance block"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert repo map"}
+1 x {"kind": "file", "target": "justfile", "detail": "upsert sub-* recipes"}
+1 x {"kind": "file", "target": ".gitignore", "detail": "ignore .worktrees/"}
+1 x {"kind": "git-config", "target": "diff.submodule", "detail": "log"}
+1 x {"kind": "git-config", "target": "status.submoduleSummary", "detail": "true"}
+1 x {"kind": "git-config", "target": "push.recurseSubmodules", "detail": "check"}
+keys: ['dry_run']
+########## Tons-Mono-Repo
+5 x {"kind"
+1 x {"kind": "gitmodules", "target": "submodule.submodules/effortless.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/nautilus_trader.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/countless.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/old-countless.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.submodules/TWSE-Tick-Data.branch", "detail": "main"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert agent guidance block"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert repo map"}
+1 x {"kind": "file", "target": "justfile", "detail": "upsert sub-* recipes"}
+1 x {"kind": "file", "target": ".gitignore", "detail": "ignore .worktrees/"}
+1 x {"kind": "git-config", "target": "diff.submodule", "detail": "log"}
+1 x {"kind": "git-config", "target": "status.submoduleSummary", "detail": "true"}
+1 x {"kind": "git-config", "target": "push.recurseSubmodules", "detail": "check"}
+keys: ['dry_run']
+########## dotfiles-all
+5 x {"kind"
+1 x {"kind": "gitmodules", "target": "submodule.dotfiles-windows.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.dotfiles.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.dotfiles-iSH.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.dotfiles-OpenWrt.branch", "detail": "main"}
+1 x {"kind": "gitmodules", "target": "submodule.dotfiles-Termux.branch", "detail": "main"}
+1 x {"kind": "file", "target": "AGENTS.md", "detail": "upsert agent guidance block"}
+1 x {"kind": "file", "target": "CLAUDE.md", "detail": "upsert repo map"}
+1 x {"kind": "file", "target": "justfile", "detail": "upsert sub-* recipes"}
+1 x {"kind": "file", "target": ".gitignore", "detail": "ignore .worktrees/"}
+1 x {"kind": "git-config", "target": "diff.submodule", "detail": "log"}
+1 x {"kind": "git-config", "target": "status.submoduleSummary", "detail": "true"}
+1 x {"kind": "git-config", "target": "push.recurseSubmodules", "detail": "check"}
+keys: ['dry_run']
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:43:58Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Run adopt on each superproject and re-audit to confirm the warnings cleared
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; cd /Users/zhouhanru/Documents/David/Program; for r in Tadronaut-Mono-Repo AlphaResearch Tons-Mono-Repo dotfiles-all; do echo "########## $r"; uv run --script $SP adopt --root $r --policy-default pin --json >/dev/null 2>$TMPDIR/adopt-err || cat $TMPDIR/adopt-err; git -C $r diff --stat -- .gitmodules AGENTS.md CLAUDE.md justfile .gitignore | cat; ls -la $r/AGENTS.md | grep -o -- '-> .*'; uv run --script $SP audit --root $r --json 2>/dev/null | python3 -c 'import json,sys,collections;d=json.load(sys.stdin);f=d.get("findings",d);print(dict(collections.Counter((x["level"],x["code"]) for x in f if x["level"]!="info")))'; done`
+
+```text
+########## Tadronaut-Mono-Repo
+ .gitignore  |  2 ++
+ .gitmodules | 49 ++++++++++++++++++++++++++++++++++++
+ AGENTS.md   | 82 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 133 insertions(+)
+{('warn', 'uninitialized'): 1}
+########## AlphaResearch
+ .gitignore  |  2 ++
+ .gitmodules | 74 ++++++++++++++++++++++++++++++++++++++++++++++++
+ AGENTS.md   | 94 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ justfile    | 63 +++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 233 insertions(+)
+{('warn', 'update-none'): 33, ('error', 'gitlink-unreachable'): 3, ('warn', 'uninitialized'): 26}
+########## Tons-Mono-Repo
+ .gitignore  |  2 ++
+ .gitmodules | 10 ++++++++++
+ AGENTS.md   | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 74 insertions(+)
+{('error', 'gitlink-unreachable'): 1}
+########## dotfiles-all
+ .gitignore  |  2 ++
+ .gitmodules | 10 ++++++++++
+ CLAUDE.md   | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ justfile    | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 137 insertions(+)
+-> CLAUDE.md
+{}
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:08Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect the update-none warnings in AlphaResearch and why two justfiles were not changed
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; cd /Users/zhouhanru/Documents/David/Program; uv run --script $SP audit --root AlphaResearch --json 2>/dev/null | python3 -c 'import json,sys;d=json.load(sys.stdin);f=d.get("findings",d);x=[i for i in f if i["code"]=="update-none"];print(json.dumps(x[0],ensure_ascii=False));print([i["subject"] for i in x][:40])'; git -C AlphaResearch show HEAD:.gitmodules | grep -c 'update = none'; for r in Tadronaut-Mono-Repo Tons-Mono-Repo; do echo "== $r"; git -C $r ls-files justfile; grep -n "superproject-workspace" $r/justfile | head -3; git -C $r status --porcelain justfile; done`
+
+```text
+{"level": "warn", "code": "update-none", "subject": "references/platforms/qlib", "message": "pin child has update=none; plain git will never check it out", "fix": ""}
+['references/platforms/qlib', 'references/platforms/vectorbt', 'references/platforms/nautilus_trader', 'references/factors/WorldQuant_alpha101_code', 'references/factors/popbo_alphas', 'references/factors/CrossSection', 'references/factors/KunQuant', 'references/factor-mining/alphagen', 'references/factor-mining/AlphaForge', 'references/factor-mining/Genetic-Alpha', 'references/factor-mining/AlphaGPT', 'references/models/Multitask-Stockformer', 'references/evaluation/alphalens-reloaded', 'references/evaluation/quantstats', 'references/evaluation/pyfolio-reloaded', 'references/portfolio/cvxportfolio', 'references/portfolio/Riskfolio-Lib', 'references/portfolio/PyPortfolioOpt', 'references/data/akshare', 'references/data/investment_data', 'references/data/jqdatasdk', 'references/data/A-Shares-DB', 'references/data/ChinaStock', 'references/data/TaiwanStock', 'references/data/jg-data-platform', 'references/learning/InvestmentManagement', 'references/learning/PortfolioOptimization', 'references/learning/Quant', 'references/learning/RLinQuant', 'references/learning/Trading', 'references/legacy/Alpha', 'references/legacy/AlphaBaseline', 'references/legacy/alpha_xc']
+33
+== Tadronaut-Mono-Repo
+142:# superproject-workspace:begin (managed by `superproject.py adopt`; edits inside this block are overwritten)
+149:_sp_project := justfile_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+150:_sp_global := home_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+== Tons-Mono-Repo
+50:# superproject-workspace:begin (managed by `superproject.py adopt`; edits inside this block are overwritten)
+57:_sp_project := justfile_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+58:_sp_global := home_directory() / ".agents" / "skills" / "superproject-workspace" / "scripts" / "superproject.py"
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:12Z)**_
+
+Skill 已全域安裝，四個 superproject 都已 adopt。正在修正 AlphaResearch：33 個本來就設為 `update = none` 的 reference child 應標為 `lazy`，不是 `pin`。
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:22Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Mark AlphaResearch's update=none children as lazy and re-audit
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; cd /Users/zhouhanru/Documents/David/Program; sets=$(uv run --script $SP audit --root AlphaResearch --json 2>/dev/null | python3 -c 'import json,sys;d=json.load(sys.stdin);f=d.get("findings",d);print(" ".join("--set "+i["subject"]+"=lazy" for i in f if i["code"]=="update-none"))'); uv run --script $SP adopt --root AlphaResearch --policy-default pin $sets --json >/dev/null && uv run --script $SP audit --root AlphaResearch --json 2>/dev/null | python3 -c 'import json,sys,collections;d=json.load(sys.stdin);f=d.get("findings",d);print(dict(collections.Counter((x["level"],x["code"]) for x in f if x["level"]!="info")));[print(x["subject"],"|",x["message"]) for x in f if x["level"]=="error"]'; git -C AlphaResearch diff --stat | cat; uv run --script $SP status --root AlphaResearch | awk '{print $2}' | sort | uniq -c; git -C Tons-Mono-Repo check-ignore -v justfile; git -C Tadronaut-Mono-Repo check-ignore -v justfile`
+
+```text
+Exit code 1
+usage: superproject.py [-h] [--version]
+                       {new,add,status,init,pull,bump,preflight,worktree,task,repair,audit,adopt,ci-plan}
+                       ...
+superproject.py: error: unrecognized arguments: --set references/platforms/qlib=lazy --set references/platforms/vectorbt=lazy --set references/platforms/nautilus_trader=lazy --set references/factors/WorldQuant_alpha101_code=lazy --set references/factors/popbo_alphas=lazy --set references/factors/CrossSection=lazy --set references/factors/KunQuant=lazy --set references/factor-mining/alphagen=lazy --set references/factor-mining/AlphaForge=lazy --set references/factor-mining/Genetic-Alpha=lazy --set references/factor-mining/AlphaGPT=lazy --set references/models/Multitask-Stockformer=lazy --set references/evaluation/alphalens-reloaded=lazy --set references/evaluation/quantstats=lazy --set references/evaluation/pyfolio-reloaded=lazy --set references/portfolio/cvxportfolio=lazy --set references/portfolio/Riskfolio-Lib=lazy --set references/portfolio/PyPortfolioOpt=lazy --set references/data/akshare=lazy --set references/data/investment_data=lazy --set references/data/jqdatasdk=lazy --set references/data/A-Shares-DB=lazy --set references/data/ChinaStock=lazy --set references/data/TaiwanStock=lazy --set references/data/jg-data-platform=lazy --set references/learning/InvestmentManagement=lazy --set references/learning/PortfolioOptimization=lazy --set references/learning/Quant=lazy --set references/learning/RLinQuant=lazy --set references/learning/Trading=lazy --set references/legacy/Alpha=lazy --set references/legacy/AlphaBaseline=lazy --set references/legacy/alpha_xc=lazy
+ .gitignore                                         |   2 +
+ .gitmodules                                        |  74 ++
+ ...026-11-03_15-47-04Z-at-libs-featurelab-https.md | 760 +++++++++++++++++++++
+ AGENTS.md                                          |  94 +++
+ justfile                                           |  63 ++
+ knowledge/quant-factor-dictionary                  |   2 +-
+ 6 files changed, 994 insertions(+), 1 deletion(-)
+  37 pin
+   1 POLICY
+   1 uses
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:25Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show the adopt option syntax for per-child policies
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; uv run --script $SP adopt --help | grep -A2 -i "set\b\|--set"`
+
+```text
+                             [--set NAME=POLICY[:BUMP]] [--vendor-cli]
+                             [--no-agents] [--no-justfile] [--no-gitignore]
+                             [--no-git-config] [--with-ci] [--with-hook]
+--
+  --set NAME=POLICY[:BUMP]
+                        explicit per-child policy (repeatable)
+  --vendor-cli          copy this CLI to scripts/superproject.py (offline use
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:40Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Retry marking the update=none children as lazy with proper word splitting
+
+`SP=~/.agents/skills/superproject-workspace/scripts/superproject.py; cd /Users/zhouhanru/Documents/David/Program; sets=$(uv run --script $SP audit --root AlphaResearch --json 2>/dev/null | python3 -c 'import json,sys;d=json.load(sys.stdin);f=d.get("findings",d);print(" ".join("--set "+i["subject"]+"=lazy" for i in f if i["code"]=="update-none"))'); uv run --script $SP adopt --root AlphaResearch --policy-default pin ${=sets} --json >/dev/null && uv run --script $SP audit --root AlphaResearch --json 2>/dev/null | python3 -c 'import json,sys,collections;d=json.load(sys.stdin);f=d.get("findings",d);print(dict(collections.Counter((x["level"],x["code"]) for x in f if x["level"]!="info")));[print(x["subject"],"|",x["message"]) for x in f if x["level"]=="error"]'; uv run --script $SP status --root AlphaResearch | awk 'NR>1{print $2}' | sort | uniq -c; git -C AlphaResearch diff --stat -- .gitmodules | cat; git -C Tons-Mono-Repo check-ignore -v justfile; git -C Tadronaut-Mono-Repo check-ignore -v justfile`
+
+```text
+Exit code 1
+{('error', 'gitlink-unreachable'): 3}
+references/platforms/vectorbt | recorded dd8eb3a is on no origin branch; a fresh clone cannot check it out
+references/platforms/nautilus_trader | recorded a51ae01 is on no origin branch; a fresh clone cannot check it out
+references/factors/CrossSection | recorded ae0cf4d is on no origin branch; a fresh clone cannot check it out
+  33 lazy
+   4 pin
+   1 uses
+ .gitmodules | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check why the Tadronaut and Tons justfiles show no git change
+
+`cd /Users/zhouhanru/Documents/David/Program; for r in Tadronaut-Mono-Repo Tons-Mono-Repo; do echo "== $r"; ls -la $r/justfile; git -C $r config status.showUntrackedFiles; git -C $r status --porcelain -uall -- justfile; git -C $r log --oneline -1 -- justfile | cat; done`
+
+```text
+== Tadronaut-Mono-Repo
+.rw-r--r--@ 9.6k zhouhanru 14 Nov 02:43 Tadronaut-Mono-Repo/justfile
+== Tons-Mono-Repo
+.rw-r--r--@ 4.9k zhouhanru 14 Nov 02:43 Tons-Mono-Repo/justfile
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:44:53Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Look for case differences, ignore rules, or skip-worktree flags on the justfiles
+
+`cd /Users/zhouhanru/Documents/David/Program; for r in Tadronaut-Mono-Repo Tons-Mono-Repo; do echo "== $r"; git -C $r ls-files | grep -i '^justfile$\|/justfile$' | head -3; git -C $r check-ignore -v --no-index justfile; git -C $r diff --stat | grep -i justfile; git -C $r ls-files -v | grep -i ' justfile$'; done`
+
+```text
+== Tadronaut-Mono-Repo
+Justfile
+ Justfile                                           |   63 +
+H Justfile
+== Tons-Mono-Repo
+Justfile
+ Justfile    | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+H Justfile
+Shell cwd was reset to /Users/zhouhanru/Documents/David/Program/agent-skills
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:45:13Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check worktree cleanliness, unmerged commits, and related issue states for the local branches
+
+`cd /Users/zhouhanru/Documents/David/Program/agent-skills; for w in /Users/zhouhanru/Worktrees/agent-skills/issue-30 .worktrees/issue-44 ../.worktrees/agent-skills-go-cli-tui-owned /Users/zhouhanru/Worktrees/agent-skills/chore-source-packaging-skills /Users/zhouhanru/Worktrees/agent-skills/feat-managed-upgrade /Users/zhouhanru/Worktrees/agent-skills/private-development-guidance /Users/zhouhanru/Worktrees/agent-skills/feat-windows-personal-tools .worktrees/issue-33 .worktrees/issue-40; do echo "== $w: $(git -C $w status --porcelain 2>&1 | wc -l | tr -d ' ') changes; $(git -C $w status --porcelain 2>&1 | head -3 | tr '\n' ';')"; done; echo; echo "--- issue/33 extra commits"; git log --oneline origin/main..issue/33-feat-skills-superproject-workspace-submodule-super | cat; echo "--- private-development-guidance"; git log --format='%h %ad %s' --date=short origin/main..feat/private-development-guidance | cat; git diff --stat origin/main...feat/private-development-guidance | tail -3; echo "--- cursor/forge-native-dev"; git log --oneline -1 cursor/forge-native-dev | cat; for i in 30 40 44 33; do gh issue view $i --json state,title --jq "\"#$i \(.state) \(.title)\""; done`
+
+```text
+== /Users/zhouhanru/Worktrees/agent-skills/issue-30: 0 changes; 
+== .worktrees/issue-44: 0 changes; 
+== ../.worktrees/agent-skills-go-cli-tui-owned: 0 changes; 
+== /Users/zhouhanru/Worktrees/agent-skills/chore-source-packaging-skills: 0 changes; 
+== /Users/zhouhanru/Worktrees/agent-skills/feat-managed-upgrade: 0 changes; 
+== /Users/zhouhanru/Worktrees/agent-skills/private-development-guidance: 0 changes; 
+== /Users/zhouhanru/Worktrees/agent-skills/feat-windows-personal-tools: 0 changes; 
+== .worktrees/issue-33: 0 changes; 
+== .worktrees/issue-40: 5 changes; M  skills/local/python-project-best-practice/SKILL.md;M  skills/local/python-project-best-practice/assets/manifest.toml;M  skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl;
+
+--- issue/33 extra commits
+b7b14a2 refactor(superproject-workspace): reference the installed CLI instead of vendoring it
+2d6054d feat(skills): add superproject-workspace for submodule superprojects
+--- private-development-guidance
+4511ed3 2026-09-22 feat: distribute private development guidance and webhook coverage
+ skills/owned/go-cli-tui/SKILL.md                   |   6 ++
+ .../go-cli-tui/references/private-development.md   | 101 +++++++++++++++++++++
+ 6 files changed, 162 insertions(+), 4 deletions(-)
+--- cursor/forge-native-dev
+89603d2 feat(forge-native-dev): add role detection and merge strategy guidance
+#30 OPEN docs(pitfalls): record GitHub secret-scanning blind spot and silent global-hook skip
+#40 OPEN Document Python package versioning and release policy
+#44 OPEN Validate and document Pueue agent continuation recipes
+#33 CLOSED feat(skills): superproject-workspace — submodule superproject policy, bump, worktree, audit/adopt
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:45:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Verify the private-guidance work reached main and that merged PRs match local branch heads
+
+`cd /Users/zhouhanru/Documents/David/Program/agent-skills; git cat-file -e origin/main:skills/owned/go-cli-tui/references/private-development.md 2>/dev/null && echo "private-development.md on main" || echo "NOT on main"; git log --oneline -3 origin/main -- skills/owned/go-cli-tui/references/private-development.md | cat; gh pr view 34 --json headRefOid,mergeCommit --jq '"head=\(.headRefOid[0:7]) merge=\(.mergeCommit.oid[0:7])"'; gh pr view 5 --json headRefOid --jq '"pr5 head=\(.headRefOid[0:7])"'; git log --oneline -1 origin/main --grep='#44\|pueue' | cat; gh issue view 44 --json body --jq .body | head -5`
+
+```text
+NOT on main
+head=b7b14a2 merge=7f295df
+pr5 head=89603d2
+2f8e2b8 feat(pueue): document verified agent continuation recipes
+Run isolated Pueue completion tests and disposable Herdr agent smoke tests; evaluate Herdr Core separately. Preserve versioned evidence in backlog/pueue-herdr-continuation.md and publish only verified optional recipes in pueue-job-queue. Acceptance: distinguish all-success/all-settled, durable results vs delivery, original vs fresh session, and tested vs source-only limitations. No universal adapter or global configuration changes.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:45:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Remove clean worktrees of merged branches and delete the merged local branches
+
+```bash
+cd /Users/zhouhanru/Documents/David/Program/agent-skills; set -e
+for w in ../.worktrees/agent-skills-go-cli-tui-owned /Users/zhouhanru/Worktrees/agent-skills/chore-source-packaging-skills /Users/zhouhanru/Worktrees/agent-skills/feat-managed-upgrade /Users/zhouhanru/Worktrees/agent-skills/feat-windows-personal-tools .worktrees/issue-33; do git worktree remove "$w" && echo "removed $w"; done
+git branch -d chore/go-cli-tui-owned chore/source-packaging-skills feat/managed-upgrade feat/windows-personal-tools feat/mkdocs-i18n-llms-issue
+[ "$(git rev-parse cursor/forge-native-dev)" = "$(gh pr view 5 --json headRefOid --jq .headRefOid)" ] && git branch -D cursor/forge-native-dev
+[ "$(git rev-parse issue/33-feat-skills-superproject-workspace-submodule-super)" = "$(gh pr view 34 --json headRefOid --jq .headRefOid)" ] && git branch -D issue/33-feat-skills-superproject-workspace-submodule-super
+git worktree prune; echo; git branch -vv | cut -c1-140; echo; git worktree list | cat; rmdir ../.worktrees 2>/dev/null && echo "removed empty ../.worktrees" || true
+```
+
+```text
+removed ../.worktrees/agent-skills-go-cli-tui-owned
+removed /Users/zhouhanru/Worktrees/agent-skills/chore-source-packaging-skills
+removed /Users/zhouhanru/Worktrees/agent-skills/feat-managed-upgrade
+removed /Users/zhouhanru/Worktrees/agent-skills/feat-windows-personal-tools
+removed .worktrees/issue-33
+Deleted branch chore/go-cli-tui-owned (was 808a26e).
+Deleted branch chore/source-packaging-skills (was 25c79d2).
+Deleted branch feat/managed-upgrade (was 923b45d).
+Deleted branch feat/windows-personal-tools (was 5769146).
+Deleted branch feat/mkdocs-i18n-llms-issue (was a535fbb).
+Deleted branch cursor/forge-native-dev (was 89603d2).
+Deleted branch issue/33-feat-skills-superproject-workspace-submodule-super (was b7b14a2).
+
++ agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- 56af9db (/Users/zhouhanru/Worktrees/agent-skills/issue-30) [origin/agent
++ agent/issue/44-validate-and-document-pueue-agent-continuation-rec 2f8e2b8 (/Users/zhouhanru/Documents/David/Program/agent-skills/.worktree
++ feat/private-development-guidance                                 4511ed3 (/Users/zhouhanru/Worktrees/agent-skills/private-development-gui
++ issue/40-document-python-package-versioning-and-release-pol       b72e4fb (/Users/zhouhanru/Documents/David/Program/agent-skills/.worktree
+* main                                                              aa5d901 [origin/main] docs(superproject-workspace): run setup commands o
+
+/Users/zhouhanru/Documents/David/Program/agent-skills                     aa5d901 [main]
+/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-40 b72e4fb [issue/40-document-python-package-versioning-and-release-pol]
+/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-44 2f8e2b8 [agent/issue/44-validate-and-document-pueue-agent-continuation-rec]
+/Users/zhouhanru/Worktrees/agent-skills/issue-30                          56af9db [agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind-]
+/Users/zhouhanru/Worktrees/agent-skills/private-development-guidance      4511ed3 [feat/private-development-guidance]
+removed empty ../.worktrees
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:46:04Z)**_
+
+做完了：skill 已全域安裝，四個 superproject 都跑了 `adopt`，但都**還沒 commit**；`agent-skills` 刪掉了 7 個已 merge 的 local branch 和 5 個 worktree。
+
+**全域安裝**
+
+`npx skills` 把 0.3.0 版裝在 `~/.agents/skills/superproject-workspace`，Claude Code、Codex、Cursor 等工具都讀得到。
+
+**四個 superproject 的 adopt**
+
+每個 repo 都寫入了 `.gitmodules` 的 policy key、`AGENTS.md` 的規則和 repo map、`Justfile` 的 `sub-*` recipes，以及 `.gitignore` 和 local git config。
+
+| repo | policy | adopt 後還剩的 warning / error |
+|---|---|---|
+| Tadronaut | 25 個 `pin` | `PyTorch-In-CPP` 沒有初始化（warning） |
+| AlphaResearch | 4 個 `pin`、33 個 `lazy` | 3 個 `gitlink-unreachable`（error） |
+| Tons | 5 個 `pin` | 1 個 `gitlink-unreachable`（error） |
+| dotfiles-all | 5 個 `pin` | 無 |
+
+- **policy 怎麼選的**：一律設成 `pin`，因為沒設 policy 時本來就當 `pin` 處理，行為不會變。AlphaResearch 那 33 個 reference 原本就設了 `update = none`，所以改標成 `lazy`。哪些要改成 `track`（自動跟最新）由你決定，我沒有設。
+- **`gitlink-unreachable` 是原本就有的問題**：外層記錄的 commit 不在任何遠端 branch 上，新 clone 會拿不到。AlphaResearch 是 `vectorbt`、`nautilus_trader`、`CrossSection`；Tons 是 `TWSE-Tick-Data`。
+- **dotfiles-all**：`AGENTS.md` 是指向 `CLAUDE.md` 的 symlink，內容寫進了 `CLAUDE.md`，symlink 本身沒動。
+- **檔名大小寫**：Tadronaut 和 Tons 在 git 裡的檔名是 `Justfile`，`git diff` 要看那個名字。
+- **還沒 commit 的原因**：Tadronaut 和 AlphaResearch 工作目錄裡還有別的 session 留下的修改，AlphaResearch 也還有 5 個沒 push 的 commit。建議只 stage `.gitmodules`、`.gitignore`、`AGENTS.md` / `CLAUDE.md`、`Justfile` 這幾個檔案再 commit。
+- **worktree 位置**：child worktree 預設在各 repo 內的 `.worktrees/`。你現在的 tarlin worktree 放在 `~/Worktrees/`；想統一放外面的話，在各 repo 設 `git config --local superproject.worktreeRoot`。
+
+**`agent-skills` 的 branch 清理**
+
+已刪除的都確認過內容在 `main` 上，或 local branch 與已 merge 的 PR head 是同一個 commit，worktree 也都沒有未 commit 的修改：
+
+- **遠端已刪且內容已在 `main` 上**：`chore/go-cli-tui-owned`、`chore/source-packaging-skills`、`feat/managed-upgrade`、`feat/windows-personal-tools`、`feat/mkdocs-i18n-llms-issue`。前四個連同 worktree 一起移除。
+- **PR 已 merge**：`cursor/forge-native-dev`（#5）、`issue/33-...`（#34，連同 `.worktrees/issue-33`）。
+
+留下的四個需要你看一下：
+
+| branch | 原因 |
+|---|---|
+| `agent/issue/30-...` | PR #31 還開著 |
+| `issue/40-...` | worktree 裡有 5 個已 stage 但沒 commit 的修改 |
+| `agent/issue/44-...` | 內容就是 `main` 上已有的 `2f8e2b8`，但 issue #44 還開著。若那個 commit 已完成 #44，可以關掉 issue，再刪掉這個 branch 和 worktree |
+| `feat/private-development-guidance` | 遠端 branch 已刪，但 9 月那個 commit（`skills/owned/go-cli-tui/references/private-development.md`）不在 `main` 上。go-cli-tui 是從另一個 repo 同步過來的，可能已經改到那邊；確認之前不要刪 |
+
+---
+
+_**User (2026-11-13 18:55:27Z)**_
+
+現在Claude Code已經aware of .agents 目錄了嗎？（這是什麼時候的事情？ 應該比通用 AGENTS.md 更晚？）
+
+PR #31 你覺得ok就merge吧
+已stage沒commit的 是不是也commit and merge一下？
+
+---
+
+_**Agent (claude-opus-5-5 2026-11-13 18:55:40Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Confirm how Claude Code sees the global skill and inspect PR #31
+
+`ls -la ~/.claude/skills | grep -i super; cd /Users/zhouhanru/Documents/David/Program/agent-skills; gh pr view 31 --json title,state,mergeable,mergeStateStatus,baseRefName,headRefOid,files,body --jq '"\(.title) | \(.state) \(.mergeable) \(.mergeStateStatus) base=\(.baseRefName) head=\(.headRefOid[0:7])\nfiles: \([.files[].path]|join(", "))\n---\n\(.body)"' | head -40; gh pr checks 31 2>&1 | cut -c1-90; git log --oneline origin/main..origin/agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- | cat; git rev-list --count origin/agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind-..origin/main`
+
+```text
+lrwxr-xr-x@ - zhouhanru 14 Nov 02:42 superproject-workspace -> ../../.agents/skills/superproject-workspace
+docs(pitfalls): record GitHub secret-scanning blind spot and silent global-hook skip | OPEN MERGEABLE CLEAN base=main head=56af9db
+files: pitfalls/README.md, pitfalls/github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md, pitfalls/global-pre-commit-hook-silently-skips-repos-without-config.md
+---
+Closes #30
+
+## What
+
+Two new symptom-first pitfalls (plus index rows in `pitfalls/README.md`), both from a full-history secret audit of this repo:
+
+- **`github-secret-scanning-misses-generic-credentials-in-agent-transcripts`**: GitHub only reports provider-pattern secrets (`secret_scanning_non_provider_patterns` was `disabled`), so an all-synthetic Security tab says nothing about generic credentials recorded in transcripts. Includes the evidence-based triage that reduced 371 gitleaks occurrences to 132 distinct values.
+- **`global-pre-commit-hook-silently-skips-repos-without-config`**: the global hook delegates by file presence and exits 0 with no output when a repo has neither `.pre-commit-config.yaml` nor `.gitleaks.toml`. This repo had neither, so its transcripts were never scanned at commit time.
+
+## Deliberately not included
+
+The value, file path, line, and date of the real finding are omitted: this repository is public and the credential is still being rotated. The two notes are written to stand on their own without them.
+
+## Docs only. Checked
+
+- `make validate` passes
+- `gitleaks dir pitfalls` with the skill's own config: no leaks found
+- all relative links resolve; no tabs / trailing whitespace
+- commit message passes `check-commit-msg.sh --agentic --staged`
+
+## Not in this PR (separate decisions)
+
+Bootstrapping the hygiene stack here plus a CI gitleaks job, a shipped-file regression guard, and redacting the affected transcript at HEAD (waits on provider-side rotation).
+
+Made with [Cursor](https://cursor.com)
+no checks reported on the 'agent/issue/30-docs-pitfalls-record-github-secret-scanning-blin
+56af9db docs(pitfalls): record GitHub scanning blind spot and silent hook skip
+12
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:55:41Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Inspect the staged changes in the issue-40 worktree and the issue's scope
+
+`cd /Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-40 && git status -sb | head -10 && git log --oneline -3 | cat && git diff --cached --stat | cat && git rev-list --count HEAD..origin/main && gh issue view 40 --json body --jq .body | head -20`
+
+```text
+## issue/40-document-python-package-versioning-and-release-pol...origin/main [behind 7]
+M  skills/local/python-project-best-practice/SKILL.md
+M  skills/local/python-project-best-practice/assets/manifest.toml
+M  skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl
+A  skills/local/python-project-best-practice/assets/project/CHANGELOG.md.tmpl
+A  skills/local/python-project-best-practice/references/versioning-and-releases.md
+b72e4fb chore: backup plan and chat history
+61723bd feat(docs): add Zensical bootstrap skill (#39)
+a8d6845 fix(mkdocs): align dependency hints and refresh Zensical guidance (#37)
+ skills/local/python-project-best-practice/SKILL.md |  7 +++
+ .../assets/manifest.toml                           |  1 +
+ .../assets/project/AGENTS.md.tmpl                  | 15 +++++
+ .../assets/project/CHANGELOG.md.tmpl               |  9 +++
+ .../references/versioning-and-releases.md          | 71 ++++++++++++++++++++++
+ 5 files changed, 103 insertions(+)
+7
+Keep pyproject.toml as the default single version source; add pre-1.0 compatibility policy, changelog scaffold, release verification and downstream pinning guidance.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:55:45Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the PR #31 diff
+
+`git diff origin/main...origin/agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- | head -260`
+
+````text
+diff --git a/pitfalls/README.md b/pitfalls/README.md
+index dab7860..06757c1 100644
+--- a/pitfalls/README.md
++++ b/pitfalls/README.md
+@@ -61,6 +61,8 @@ and prevention guidance.
+ | [`pre-commit-restores-over-live-specstory-writes`](pre-commit-restores-over-live-specstory-writes.md) | `files were modified by this hook`, `Stashed changes conflicted with hook auto-fixes... Rolling back fixes...`, `Restored changes from`, a `.specstory/history/*.md` append disappears or returns after a failed commit | active |
+ | [`gitleaks-line-scoped-allowlist-shields-live-key`](gitleaks-line-scoped-allowlist-shields-live-key.md) | live key in `.specstory/history` never reported, `no leaks found` on a line holding `[REDACTED:...]` plus a real token, same bytes fire under `src/`, gitleaks `regexTarget` line-vs-match, allowlist `condition = "AND"` | active |
+ | [`sourcegraph-access-token-flags-git-commit-shas`](sourcegraph-access-token-flags-git-commit-shas.md) | `rule=sourcegraph-access-token` on 40-hex Git commit OIDs, hundreds of `.specstory/history` findings, no `sgp_` prefix, scanner-output recursion | fixed in `ahh-v2.0.1` |
++| [`github-secret-scanning-misses-generic-credentials-in-agent-transcripts`](github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md) | Security tab lists only synthetic alerts, real `secret:` in `.specstory/history` never reported, gitleaks `rule=generic-api-key` that GitHub did not list, `secret_scanning_non_provider_patterns = disabled`, agent said "without printing any secret" then Read tool output was recorded | active |
++| [`global-pre-commit-hook-silently-skips-repos-without-config`](global-pre-commit-hook-silently-skips-repos-without-config.md) | `git commit` succeeds with no scanner output, global `core.hooksPath`, no `.pre-commit-config.yaml` / `.gitleaks.toml`, repo that ships the scanning skill is itself unscanned | active |
+ 
+ ## Cross-referenced pitfalls
+ 
+diff --git a/pitfalls/github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md b/pitfalls/github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md
+new file mode 100644
+index 0000000..5e9d7cb
+--- /dev/null
++++ b/pitfalls/github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md
+@@ -0,0 +1,99 @@
++# GitHub secret scanning lists only fake alerts while a real credential sits in an agent transcript
++
++**Symptoms** (grep this section): Security → Secret scanning shows only
++synthetic / `false_positive` alerts · `gitleaks git . --log-opts="--all"`
++reports a `rule=generic-api-key` hit that GitHub never listed · a
++`secret:` / `password:` / `token:` value inside `.specstory/history/*.md` with
++no provider prefix · the agent wrote "without printing any secret" and the next
++tool block contains the file's raw head ·
++`secret_scanning_non_provider_patterns = disabled`
++**First seen**: 2026-10
++**Affects**: any repo that commits agent transcripts (SpecStory, Claude/Cursor
++plans) and treats GitHub-native secret scanning as its leak detector
++**Status**: active — the detection runbook below works today; installing a
++commit-time gate in the affected repo is tracked separately
++
++## Symptom
++
++The Security tab shows a handful of open alerts. Every one turns out to be
++synthetic (an all-`a` `whsec_…` test vector, a seeded-RNG `tskey-auth-…`).
++Dismissing them as false positives feels like the end of the audit.
++
++It is not. A full-history gitleaks pass over the same repo reports hundreds of
++occurrences, including a hit like this (value masked, tool-output shape kept):
++
++```text
++3  listen: 127.0.0.1:<port>
++4  secret: <value>
++```
++
++GitHub never listed it. Just above it in the transcript the agent had written
++`Let me read the config … (without printing any secret)`, and the very next
++block is the Read tool's raw output of that file.
++
++## Root cause
++
++1. **GitHub alerts on provider patterns, and the non-provider toggle was off.**
++   A known prefix or shape per provider (`AKIA…`, `whsec_…`, `tskey-…`) is
++   reported; a random-looking string after `secret:` has no provider and is
++   invisible. `secret_scanning_non_provider_patterns` was `disabled` on the
++   repo (`gh api repos/<owner>/<repo> --jq .security_and_analysis`). Turning it
++   on is worthwhile, but treat the alert list as a *lower bound*, not an
++   inventory.
++2. **The leak came in through a tool result, not through prose.** "Without
++   printing any secret" is a promise about what the agent *writes*. The Read
++   tool prints whatever it reads, and the recorder stores tool output verbatim.
++   SpecStory's native redaction recognises token *shapes* (with known gaps); it
++   does not know that a YAML key named `secret` holds a credential.
++3. **Nothing scanned the commit.** See
++   [`global-pre-commit-hook-silently-skips-repos-without-config`](global-pre-commit-hook-silently-skips-repos-without-config.md).
++
++## Workaround / triage
++
++1. **Scan all history and all refs, not just HEAD.** Keep the report private:
++   it holds plaintext values.
++
++   ```bash
++   umask 077
++   gitleaks git . --log-opts="--all" --no-banner \
++     --report-format json --report-path "$(mktemp)" --exit-code 0
++   ```
++
++   Delete the report when done.
++2. **Collapse to unique values.** Dedupe by `(RuleID, sha256(Secret))`. In the
++   audit behind this note, 371 occurrences were 132 distinct values.
++3. **Classify each value by evidence, never by a hunch.**
++   - 40-hex `sourcegraph-access-token`: `git cat-file -e <value>` proves a real
++     object in this repo; the rest are upstream SHAs (`vendor.yaml` history,
++     `git ls-remote`, `git branch -vv`). See
++     [`sourcegraph-access-token-flags-git-commit-shas`](sourcegraph-access-token-flags-git-commit-shas.md).
++   - `private-key`: pull out *complete* `BEGIN … END` blocks whose body is pure
++     base64 and try `ssh-keygen -y -f` / `openssl pkey`. A span that contains
++     prose is not a key. Do **not** judge by length — EC and ed25519 blocks are
++     short.
++   - JWT: decode header and payload locally. An `iss` of `127.0.0.1:<port>` and
++     an `example.com` address is a local dev stack, not production.
++   - Documented samples: compare against the scanner's own published examples.
++   - Whatever is left: read the surrounding lines with the value masked.
++4. **Never test a suspected credential against its provider.** Ask the
++   provider's CLI who *owns* it, using your own session (for AWS,
++   `aws sts get-access-key-info --access-key-id <id>` returns the owning
++   account without authenticating as the leaked key). Also check provenance
++   with `git log`: a key committed years before your fork existed is not yours
++   to rotate.
++5. **A real finding: rotate at the provider first.** Then follow
++   [`agent-history-hygiene/references/remediation.md`](../skills/local/agent-history-hygiene/references/remediation.md).
++   On a shared `main` the runbook says not to rewrite history: redact HEAD in a
++   new commit and push forward.
++
++## Prevention
++
++- Run the hygiene stack in the repo that commits transcripts: config files plus
++  a CI job running `gitleaks git` over all refs.
++- Enable `secret_scanning_non_provider_patterns` and
++  `secret_scanning_validity_checks` where the plan allows; they widen what
++  GitHub reports but do not replace your own history scan.
++- When an agent must inspect a config that may hold credentials, redact on the
++  way out rather than using a raw Read: `yq 'del(.secret)' file.yaml`,
++  `grep -v -i -e secret -e token file`, or `sed 's/^\( *secret:\).*/\1 <redacted>/'`.
++- Treat the Security tab as one signal. "No real alerts" is not "no leak".
+diff --git a/pitfalls/global-pre-commit-hook-silently-skips-repos-without-config.md b/pitfalls/global-pre-commit-hook-silently-skips-repos-without-config.md
+new file mode 100644
+index 0000000..21714dd
+--- /dev/null
++++ b/pitfalls/global-pre-commit-hook-silently-skips-repos-without-config.md
+@@ -0,0 +1,91 @@
++# Global `pre-commit` hook silently skips repos that have no `.pre-commit-config.yaml` or `.gitleaks.toml`
++
++**Symptoms** (grep this section): `git commit` of a transcript or plan succeeds
++with **zero** scanner output · `git config --get core.hooksPath` is a global
++directory · `ls .pre-commit-config.yaml .gitleaks.toml` → `No such file or
++directory` · secrets are found only later, by an audit or a GitHub alert · the
++repo that *ships* a secret-scanning skill has no scanner config of its own
++**First seen**: 2026-10
++**Affects**: a machine with one global `core.hooksPath` whose `pre-commit` hook
++delegates to repo-local config (here a chezmoi-managed
++`~/.config/git/hooks/pre-commit`)
++**Status**: active
++
++## Symptom
++
++```console
++$ git config --get core.hooksPath
++~/.config/git/hooks
++$ ls .pre-commit-config.yaml .gitleaks.toml
++ls: .pre-commit-config.yaml: No such file or directory
++ls: .gitleaks.toml: No such file or directory
++$ git commit -m "docs: add session transcript"   # succeeds, prints nothing from any scanner
++```
++
++Silence looks exactly like "scanned and clean". In the audit behind this note,
++running the skill's own gitleaks config over that repo's history reported 278
++occurrences of 51 distinct values — including a real credential — and every one
++had been committed through this silent path. The same config run at commit time
++would have flagged the real one.
++
++## Root cause
++
++The global hook is opt-in by file presence. Paraphrased:
++
++```sh
++if [ -f .pre-commit-config.yaml ]; then
++    command -v pre-commit && exec pre-commit run --config .pre-commit-config.yaml
++fi
++if [ -f .gitleaks.toml ] && command -v gitleaks; then
++    gitleaks git --staged --verbose || exit 1
++fi
++exit 0
++```
++
++With neither file, both branches are skipped and the hook exits `0` without a
++word. That is a deliberate design (do not force a scanner onto every repo), but
++it makes "no scanner ran" indistinguishable from "scanner passed".
++
++Two details that matter:
++
++- `exec pre-commit run …` replaces the shell, so when a `.pre-commit-config.yaml`
++  exists the `.gitleaks.toml` branch never runs — the pre-commit config must
++  carry its own gitleaks hook.
++- The repo that distributes `agent-history-hygiene` had never run its own
++  `bootstrap-project.sh`, so it sat in the skipped state while committing
++  transcripts all day.
++
++## Workaround / fix
++
++1. **Detect it.**
++
++   ```bash
++   [ -f .pre-commit-config.yaml ] || [ -f .gitleaks.toml ] \
++     || echo "NO SECRET SCAN ON COMMIT"
++   ```
++
++2. **Bootstrap the repo, without `--install-hook`.**
++
++   ```bash
++   bash skills/local/agent-history-hygiene/scripts/bootstrap-project.sh
++   pre-commit run --all-files
++   ```
++
++   `--install-hook` is refused when `core.hooksPath` is set (by design, see the
++   skill's gotchas) and is unnecessary here: dropping the config files in is
++   what makes the global hook start delegating.
++3. **Decide a baseline for existing transcripts** before turning the gate on:
++   redact, or allowlist reviewed fingerprints. Running `--all-files` on a repo
++   with months of transcripts will, correctly, light up.
++4. **Prove it fires** once, with a throwaway file carrying a canary assembled at
++   runtime (never commit one), rather than assuming.
++
++## Prevention
++
++- Make the silent branch loud: have the global hook print one line to stderr
++  when neither file exists. That change belongs in the managed dotfiles hook,
++  not in this repo.
++- Add a CI job running `gitleaks git` over all refs. A per-clone hook is never
++  the last gate.
++- Dogfood: a repo that ships a scanning skill should run it. See also
++  [`github-secret-scanning-misses-generic-credentials-in-agent-transcripts`](github-secret-scanning-misses-generic-credentials-in-agent-transcripts.md).
+````
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:55:46Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the staged issue-40 diff
+
+`git diff --cached | cat`
+
+```text
+diff --git a/skills/local/python-project-best-practice/SKILL.md b/skills/local/python-project-best-practice/SKILL.md
+index 7b019fc..11e27fc 100644
+--- a/skills/local/python-project-best-practice/SKILL.md
++++ b/skills/local/python-project-best-practice/SKILL.md
+@@ -192,6 +192,13 @@ requirements.txt` flattening the dependency graph, a formatting commit
+ destroying `git blame`, a tracked `.env` needing rotation before any history
+ rewrite — are all there.
+ 
++## Versioning and releases
++
++Use `pyproject.toml` as the default single version source and read installed
++metadata at runtime. Before changing version policy or preparing a release,
++read [versioning-and-releases.md](references/versioning-and-releases.md) for
++the pre-1.0 contract, changelog workflow, artifact checks, and consumer pins.
++
+ ## Available scripts
+ 
+ - **`scripts/new-python-project.py <target-dir>`** — scaffold from the bundled
+diff --git a/skills/local/python-project-best-practice/assets/manifest.toml b/skills/local/python-project-best-practice/assets/manifest.toml
+index b3910ff..c3c01ce 100644
+--- a/skills/local/python-project-best-practice/assets/manifest.toml
++++ b/skills/local/python-project-best-practice/assets/manifest.toml
+@@ -9,6 +9,7 @@
+ # tree disagree in either direction.
+ 
+ [files]
++"CHANGELOG.md" = "*"
+ "pyproject.toml"                   = "*"
+ "README.md"                        = "*"
+ "AGENTS.md"                        = "*"
+diff --git a/skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl b/skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl
+index d786650..a44476c 100644
+--- a/skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl
++++ b/skills/local/python-project-best-practice/assets/project/AGENTS.md.tmpl
+@@ -18,6 +18,21 @@ symlink with a real file.
+ - **Secrets live in `.env`, which is gitignored.** When you add a setting, add
+   it to `settings.py` *and* to `.env.example` with a placeholder value.
+ 
++## Version and release policy
++
++- Keep the package version only in `[project].version` in `pyproject.toml`.
++  Runtime surfaces read the package's metadata-backed `__version__`.
++- Before 1.0: incompatible public API/CLI/config/format changes bump minor;
++  compatible features and fixes bump patch. This is our project convention.
++  From 1.0: breaking = major, feature = minor, fix = patch.
++- Add user-visible changes to `CHANGELOG.md` under `Unreleased` with the change.
++  Docs/tests/internal refactors alone do not require a bump.
++- At release time, update version, lockfile, and dated changelog together;
++  run `uv sync`, `just check`, and `uv build`. Verify a fresh wheel install's
++  metadata and `__version__` equal the release version (never `unknown`).
++- Tag the landed release commit `vX.Y.Z`; never retag published releases.
++  Feature commits do not automatically trigger releases or publication.
++
+ ## Layout
+ 
+ src layout, so `uv run pytest` imports the INSTALLED package rather than the
+diff --git a/skills/local/python-project-best-practice/assets/project/CHANGELOG.md.tmpl b/skills/local/python-project-best-practice/assets/project/CHANGELOG.md.tmpl
+new file mode 100644
+index 0000000..512973d
+--- /dev/null
++++ b/skills/local/python-project-best-practice/assets/project/CHANGELOG.md.tmpl
+@@ -0,0 +1,9 @@
++# Changelog
++
++User-visible changes and migration notes are recorded here.
++
++## Unreleased
++
++### Added
++
++- Initial project scaffold (not yet released).
+diff --git a/skills/local/python-project-best-practice/references/versioning-and-releases.md b/skills/local/python-project-best-practice/references/versioning-and-releases.md
+new file mode 100644
+index 0000000..43bb3d7
+--- /dev/null
++++ b/skills/local/python-project-best-practice/references/versioning-and-releases.md
+@@ -0,0 +1,71 @@
++# Versioning and releases
++
++## Single source
++
++Default to static `[project].version` in `pyproject.toml` (initially `0.1.0`).
++Runtime `__version__` reads `importlib.metadata.version(distribution_name)`;
++CLI and API surfaces reuse it. The fallback `0.0.0+unknown` means the package
++is not installed and must never pass release verification. Run `uv sync`
++after version changes; installed metadata can otherwise be stale.
++
++A source constant plus Hatch dynamic version extraction is valid for projects
++that need a version before installation. Keep that existing scheme when it
++works, but do not also maintain a static project version. VCS-derived versions
++are an alternative for established tag-driven release pipelines; account for
++shallow clones and source archives. Do not combine competing version sources.
++
++## Compatibility contract
++
++Document the public surface: Python API, CLI flags/output, configuration keys,
++and persisted formats consumers rely on. Classify changes against that surface.
++
++| Stage | Incompatible change | Compatible feature | Compatible fix |
++|---|---|---|---|
++| `0.y.z`, y >= 1 | minor, reset patch | patch | patch |
++| `1.0.0` onward | major, reset minor/patch | minor, reset patch | patch |
++
++The pre-1.0 row is this scaffold's explicit convention, not a guarantee made
++by SemVer itself. `0.1.0` is an initial release, not a stable API promise.
++Move to `1.0.0` when the public API and compatibility commitment are ready.
++Use Python-compatible prerelease spelling such as `1.0.0rc1`.
++
++## Change and release workflow
++
++1. Record user-visible changes under `CHANGELOG.md` → `Unreleased` in the
++   change's commit, including migration steps for breaking changes. Docs,
++   tests, and internal refactors alone need no version bump; record them only
++   when useful to consumers.
++2. At a release boundary, choose the bump from all accumulated changes.
++   Update the static version (for example `uv version --bump patch`), refresh
++   `uv.lock` with `uv lock`, and move released notes under `X.Y.Z - YYYY-MM-DD`.
++   Leave a fresh `Unreleased` section. The initial release may retain `0.1.0`.
++3. Run `uv sync`, `just check`, and `uv build`. Install the built wheel in a
++   fresh environment outside the source tree. Assert its distribution metadata
++   and imported `__version__` both equal the intended version; check any exposed
++   CLI/API version too. For Rust profiles, Cargo's crate version is separate
++   metadata: explicitly document whether it is independent or synchronized.
++4. Commit the version, lockfile, and changelog together. After the release
++   commit lands on the release branch, tag that exact commit `vX.Y.Z` and
++   publish the verified artifact through the project's release workflow.
++   Never move a published tag or replace an already published version.
++
++A normal feature commit does not automatically constitute a release. Tag only
++release commits; recording a changelog entry does not authorize publishing.
++Persisted data formats may need a separate `format_version` and migration
++policy: a package version alone does not establish storage compatibility.
++
++## Downstream consumption
++
++An application consuming a package with the documented pre-1.0 contract may
++use `example>=0.1,<0.2` and commit its lockfile for reproducibility. This is a
++compatibility range, not an exact pin. An exact `==0.1.2` or git commit pins
++one revision; a release tag is a readable selection under an immutable-tag
++policy. Review migration notes before widening the range.
++
++Reusable libraries should retain broad dependency floors by default (see
++`uv-and-pyproject.md`); justify an upper bound with the dependency's explicit
++compatibility contract or a known incompatibility, rather than applying caps
++to every dependency automatically.
++
++Sources: [PyPA single-sourcing](https://packaging.python.org/en/latest/discussions/single-source-version/),
++[SemVer](https://semver.org/).
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:07Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Squash-merge PR #31, confirm issue #30 closed, and check how recent the issue-40 work is and how its skill is tested
+
+`gh pr merge 31 --squash --match-head-commit 56af9db$(git rev-parse origin/agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- | cut -c8-) --delete-branch=false 2>&1 | tail -3; gh pr view 31 --json state,mergeCommit --jq '"\(.state) \(.mergeCommit.oid[0:7])"'; gh issue view 30 --json state --jq .state; ls -la --time-style=+%F\ %R . 2>/dev/null | head -3; stat -f '%Sm %N' -t '%F %R' .git skills/local/python-project-best-practice/references/versioning-and-releases.md; grep -n "python-project" /Users/zhouhanru/Documents/David/Program/agent-skills/Makefile | head -5`
+
+```text
+MERGED b4e3212
+CLOSED
+drwxr-xr-x@    - zhouhanru 2026-10-31 19:38 .agents
+drwxr-xr-x@    - zhouhanru 2026-10-31 19:38 .claude
+drwxr-xr-x@    - zhouhanru 2026-10-31 19:38 .cursor
+2026-10-31 19:38 .git
+2026-10-31 19:39 skills/local/python-project-best-practice/references/versioning-and-releases.md
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:12Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+List the repo's skill test targets and the python skill's tests
+
+`grep -n "^test-[a-z-]*:" Makefile | cut -d: -f2 | tr '\n' ' '; echo; ls skills/local/python-project-best-practice/tests 2>/dev/null | head; git log -1 --format='%an %ad' --date=short b72e4fb | cat`
+
+```text
+test-source-sync test-skill test-zensical-skill test-mkdocs-skill test-vectorbt-skill test-nautilus-trader-skill 
+Da-Wei Lee 2026-10-30
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:16Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Show the generic skill test target and the python skill's scripts
+
+`sed -n "/^test-skill:/,/^$/p" Makefile; ls skills/local/python-project-best-practice/scripts; grep -n "manifest" skills/local/python-project-best-practice/scripts/*.py | head -5`
+
+```text
+test-skill: test-mkdocs-skill
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) uv run --extra dev pytest skills/local/agent-history-hygiene/tests/ -q
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_scan_staged.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_find_session.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_stage_agent_artifacts.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_agent_commit_metadata.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/agent-history-hygiene/tests/test_post_session_finalize.sh
+	GIT_CONFIG_GLOBAL=$(TEST_GIT_CONFIG_GLOBAL) $(SYSTEM_BASH) skills/local/git-workflow/tests/test_check_commit_msg.sh
+
+audit-python-project.py
+new-python-project.py
+skills/local/python-project-best-practice/scripts/new-python-project.py:42:    4  the template tree and assets/manifest.toml disagree
+skills/local/python-project-best-practice/scripts/new-python-project.py:65:MANIFEST = SKILL_DIR / "assets" / "manifest.toml"
+skills/local/python-project-best-practice/scripts/new-python-project.py:213:def load_manifest() -> dict[str, str]:
+skills/local/python-project-best-practice/scripts/new-python-project.py:218:def check_manifest(files: dict[str, str]) -> None:
+skills/local/python-project-best-practice/scripts/new-python-project.py:219:    """Fail loudly when the manifest and the template tree disagree."""
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:21Z)**_
+
+<think><details><summary>Thought Process</summary>
+PR #31 已合併、issue #30 已關閉；接下來我會把 issue-40 的修改 commit、rebase 到最新 `main`，並實際跑一次 scaffold 來確認新的 `CHANGELOG.md` template 可用。
+
+</details></think>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:26Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Commit the staged release-policy docs, rebase onto main, and show the scaffold script usage
+
+```bash
+git branch --show-current && git commit -q -m "docs(python-project-best-practice): add versioning and release policy
+
+Keep pyproject.toml as the single version source and document the pre-1.0
+compatibility contract, changelog workflow, release verification and
+downstream pinning. The scaffold now ships a CHANGELOG.md and release rules
+in its AGENTS.md.
+
+Closes #40
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && git rebase -q origin/main && git log --oneline -2 | cat && T=/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/scratchpad/pyproj-$$ && uv run --script skills/local/python-project-best-practice/scripts/new-python-project.py --help 2>&1 | sed -n 1,6p
+```
+
+```text
+issue/40-document-python-package-versioning-and-release-pol
+27632e5 docs(python-project-best-practice): add versioning and release policy
+aa5d901 docs(superproject-workspace): run setup commands only on an explicit ask
+Installed 4 packages in 15ms
+usage: new-python-project.py [-h] [OPTIONS] STR
+
+Scaffold a modern Python project from the bundled template tree.
+
+Copies ``assets/project/`` into a target directory, stripping the ``.tmpl`` suffix, substituting placeholders, and keeping only the files and marker blocks that belong to the chosen ``--profile``. Writes nothing outside the target directory and makes no network calls.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:56:36Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Scaffold a throwaway project to verify the new template, lint the skill, and run the repo publish gates
+
+`T=/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/scratchpad/pyproj-demo && rm -rf $T && uv run --script skills/local/python-project-best-practice/scripts/new-python-project.py $T 2>&1 | tail -4; echo "exit=$?"; ls $T | tr '\n' ' '; echo; head -5 $T/CHANGELOG.md; grep -c "Version and release policy" $T/AGENTS.md; bash skills/local/skill-author/scripts/lint-skill.sh skills/local/python-project-best-practice 2>&1 | tail -3; make -s validate 2>&1 | tail -3`
+
+```text
+    "just docs-sync   # populate the CLI block in AGENTS.md",
+    "npx skills@latest add daviddwlee84/agent-skills/skills"
+  ]
+}
+exit=0
+scripts src tests AGENTS.md CHANGELOG.md CLAUDE.md -> AGENTS.md Justfile pyproject.toml README.md 
+# Changelog
+
+User-visible changes and migration notes are recorded here.
+
+## Unreleased
+1
+Summary:
+  errors:   0
+  warnings: 0
+
+PASSED: 0 errors, 0 warning(s)
+OK: TODO.md passes project-knowledge-harness format
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:57:15Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Push the branch and open a pull request for issue #40
+
+```bash
+B=issue/40-document-python-package-versioning-and-release-pol && git push -q -u origin $B 2>&1 | tail -2; gh pr create --base main --head $B --title "docs(python-project-best-practice): add versioning and release policy" --body "$(cat <<'EOF'
+Closes #40
+
+## What
+
+- New `references/versioning-and-releases.md`: `pyproject.toml` as the single version source, the pre-1.0 compatibility contract, changelog workflow, release verification (fresh wheel install, `__version__` must not be `unknown`), and downstream pinning.
+- `SKILL.md` points to it; the scaffold's `AGENTS.md` template gains a short release-policy section, and the scaffold now ships `CHANGELOG.md`.
+
+## Checked
+
+- Scaffolded a throwaway project: exits 0, `CHANGELOG.md` and the new `AGENTS.md` section are present.
+- `lint-skill.sh` on the skill: 0 errors, 0 warnings.
+- `make validate` passes.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)" 2>&1 | tail -1; gh pr view $B --json number,mergeable,mergeStateStatus --jq '"#\(.number) \(.mergeable) \(.mergeStateStatus)"'
+```
+
+```text
+remote:      https://github.com/daviddwlee84/agent-skills/pull/new/issue/40-document-python-package-versioning-and-release-pol        
+remote: 
+https://github.com/daviddwlee84/agent-skills/pull/45
+#45 MERGEABLE CLEAN
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:57:40Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Check whether CI runs on the new pull request
+
+`sleep 20; gh pr checks 45 2>&1 | cut -c1-80`
+
+```text
+validate	pending	0	https://github.com/daviddwlee84/agent-skills/actions/runs/434
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:58:28Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait for the pull request's validate check to finish
+
+`gh pr checks 45 --watch --interval 20 --fail-fast >/dev/null 2>&1; gh pr checks 45 2>&1 | cut -c1-60`
+
+```text
+validate	fail	55s	https://github.com/daviddwlee84/agent-skil
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:58:39Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the failing validate log
+
+`R=$(gh pr checks 45 --json link --jq '.[0].link' | sed -E 's#.*/runs/([0-9]+).*#\1#'); gh run view $R --log-failed 2>&1 | grep -v '^\s*$' | tail -30 | cut -c1-220`
+
+```text
+validate	Test superproject-workspace helpers	2026-11-13T18:58:06.1850439Z test_bump_pin_requires_reason (test_superproject.TestPullBump.test_bump_pin_requires_reason) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:06.5763108Z test_bump_refuses_other_staged_changes (test_superproject.TestPullBump.test_bump_refuses_other_staged_changes) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:06.8743888Z test_bump_refuses_unpushed_commit (test_superproject.TestPullBump.test_bump_refuses_unpushed_commit) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:07.3775984Z test_lag_pull_bump_commit (test_superproject.TestPullBump.test_lag_pull_bump_commit) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:07.8047300Z test_pin_may_point_at_another_pushed_branch (test_superproject.TestPullBump.test_pin_may_point_at_another_pushed_branch) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:08.0899165Z test_pull_refuses_feature_branch_checkout (test_superproject.TestPullBump.test_pull_refuses_feature_branch_checkout) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:08.4552338Z test_pull_refuses_pin_without_force (test_superproject.TestPullBump.test_pull_refuses_pin_without_force) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:09.1526830Z test_task_close_atomic_refusal_then_force (test_tasks.TestTasks.test_task_close_atomic_refusal_then_force) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:09.6400372Z test_task_list_reports_dirty_and_merged (test_tasks.TestTasks.test_task_list_reports_dirty_and_merged) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:10.1270379Z test_task_open_creates_members_same_branch (test_tasks.TestTasks.test_task_open_creates_members_same_branch) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:10.6346829Z test_task_open_is_idempotent_and_extends (test_tasks.TestTasks.test_task_open_is_idempotent_and_extends) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:11.0471728Z test_task_open_rolls_back_on_failure (test_tasks.TestTasks.test_task_open_rolls_back_on_failure) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:11.5533291Z test_worktree_add_refused_in_linked_superproject (test_tasks.TestWorktreeRoot.test_worktree_add_refused_in_linked_superproject) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:11.9289886Z test_worktree_root_from_tracked_config (test_tasks.TestWorktreeRoot.test_worktree_root_from_tracked_config) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6033385Z test_worktree_root_local_override (test_tasks.TestWorktreeRoot.test_worktree_root_local_override) ... ok
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6033874Z 
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6034201Z ======================================================================
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6034893Z FAIL: test_repair_detects_orphan_after_superproject_worktree_removed (test_repair.TestRepair.test_repair_detects_orphan_after_superproject_worktre
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6035581Z ----------------------------------------------------------------------
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6035905Z Traceback (most recent call last):
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6041730Z   File "/home/runner/work/agent-skills/agent-skills/skills/local/superproject-workspace/tests/test_repair.py", line 64, in test_repair_detects_orp
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6042745Z     self.assertIn("not a git repository", subprocess.run(
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6043332Z AssertionError: 'not a git repository' not found in 'fatal: gitfile does not point to a valid repository: /tmp/superproject-test-wougyqqz/super/.w
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6043834Z 
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6043990Z ----------------------------------------------------------------------
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6044304Z Ran 50 tests in 25.289s
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6044419Z 
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6044576Z FAILED (failures=1)
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6115876Z make: *** [Makefile:125: test-superproject-skill] Error 1
+validate	Test superproject-workspace helpers	2026-11-13T18:58:12.6127490Z ##[error]Process completed with exit code 2.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:58:44Z)**_
+
+<think><details><summary>Thought Process</summary>
+CI 失敗來自我之前新增的 superproject 測試，因為較新的 git 改了錯誤訊息的文字。我正在檢查程式碼是否依賴那段字串，然後再修正。
+
+</details></think>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:58:47Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Find where the old git error text is relied on and check main's CI status
+
+`grep -rn "not a git repository\|does not point" skills/local/superproject-workspace/ docs/skills/superproject-workspace*.md | cut -c1-200; sed -n 58,68p skills/local/superproject-workspace/tests/test_repair.py; gh run list --branch main -L 3 --workflow validate.yml --json conclusion,headSha,displayTitle --jq '.[]|"\(.conclusion) \(.headSha[0:7]) \(.displayTitle)"'; git --version`
+
+```text
+skills/local/superproject-workspace/SKILL.md:3:description: 'Set up and keep a multi-repo workspace on track as one agent entry point: a git-submodule superproject (recommended; per-child track/pin/la
+skills/local/superproject-workspace/SKILL.md:275:The typical cause is `fatal: not a git repository` inside `.worktrees/...` after
+skills/local/superproject-workspace/SKILL.md:307:- `references/repair.md`: read when a child worktree says `fatal: not a git repository`, or `audit` reports orphans, at-risk worktrees, or stale stores
+skills/local/superproject-workspace/references/worktrees.md:78:orphaned (`fatal: not a git repository`). The refusal names the main checkout;
+skills/local/superproject-workspace/references/repair.md:7:fatal: not a git repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat
+skills/local/superproject-workspace/tests/test_repair.py:64:        self.assertIn("not a git repository", subprocess.run(
+skills/local/superproject-workspace/assets/agents-block-pointer.md.template:34:- **`fatal: not a git repository` in a worktree?** Run
+skills/local/superproject-workspace/scripts/superproject.py:2124:        raise Refused(f"{root} is not a git repository; run `new` first")
+skills/local/superproject-workspace/assets/agents-block.md.template:41:- **`fatal: not a git repository` in a child worktree?** Run
+docs/skills/superproject-workspace.md:22:| `scripts/superproject.py repair` | "A child worktree says `fatal: not a git repository`. Now what?" |
+docs/skills/superproject-workspace.zh-TW.md:26:| `scripts/superproject.py repair` | 「子 repo worktree 出現 `fatal: not a git repository`，怎麼辦？」 |
+        self.assertEqual(f["superproject-worktrees"]["level"], "info")
+        self.assertEqual(f["outer-branch"]["level"], "info")
+
+    def test_repair_detects_orphan_after_superproject_worktree_removed(self) -> None:
+        linked, wt = self.at_risk_worktree()
+        self.sever(linked)
+        self.assertIn("not a git repository", subprocess.run(
+            ["git", "status"], cwd=wt, capture_output=True, text=True).stderr)
+        f = self.findings(expect=1)
+        self.assertEqual(f["worktree-orphan"]["level"], "error")
+        self.assertIn("superproject-worktree-removed", f["worktree-orphan"]["message"])
+failure aa5d901 docs(superproject-workspace): run setup commands only on an explicit ask
+failure b6ad544 fix(superproject-workspace): do not flag the store of a renamed child…
+success d47cf9d fix(skills): right-size forge tracking and lint sourced libraries
+git version 2.53.0
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:59:03Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+On a fix branch from main, accept both git error messages in the test and list both in the repair reference
+
+```bash
+git fetch -q origin && git switch -q -c fix/superproject-git-error-text origin/main && python3 - <<'EOF'
+import pathlib,re
+p=pathlib.Path("skills/local/superproject-workspace/tests/test_repair.py"); t=p.read_text()
+t=t.replace('''        self.assertIn("not a git repository", subprocess.run(
+            ["git", "status"], cwd=wt, capture_output=True, text=True).stderr)''','''        # Older git says "not a git repository"; newer git says
+        # "gitfile does not point to a valid repository".
+        err = subprocess.run(["git", "status"], cwd=wt, capture_output=True, text=True).stderr
+        self.assertRegex(err, r"not a git repository|does not point to a valid repository")''')
+p.write_text(t)
+r=pathlib.Path("skills/local/superproject-workspace/references/repair.md"); s=r.read_text()
+s=s.replace("fatal: not a git repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat\n","fatal: not a git repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat\n# newer git:\nfatal: gitfile does not point to a valid repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat\n",1)
+r.write_text(s)
+EOF
+sed -n 1,14p skills/local/superproject-workspace/references/repair.md; sed -n 270,278p skills/local/superproject-workspace/SKILL.md
+```
+
+````text
+# Repair: severed child worktrees and stale submodule state
+
+## Symptom
+
+```text
+$ cd .worktrees/app/feat && git status
+fatal: not a git repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat
+# newer git:
+fatal: gitfile does not point to a valid repository: /path/super/.git/worktrees/wt-1/modules/app/worktrees/feat
+```
+
+A child worktree's `.git` file points to an admin directory that no longer
+exists. Its files are still there; git cannot see them. Start with:
+
+sp repair --prune        # prune gone worktrees and stale submodule config
+sp repair --reattach     # orphan -> branch rescue/<dir> in the child's store; files kept
+sp repair --delete-orphans .worktrees/app/old   # explicit paths only
+```
+
+The typical cause is `fatal: not a git repository` inside `.worktrees/...` after
+a superproject linked worktree was deleted. Unpushed commits made in an orphan
+are gone with its store; its files are not. `repair` never deletes a
+`.git/modules` store, force-removes dirty worktrees, or moves worktrees. Read
+````
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 18:59:24Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Mention the newer git message in SKILL.md, lint, and rerun the repair tests
+
+`S=skills/local/superproject-workspace && sed -i '' 's/^The typical cause is `fatal: not a git repository` inside `.worktrees\/...` after$/The typical cause is `fatal: not a git repository` (newer git: `gitfile does\nnot point to a valid repository`) inside `.worktrees\/...` after/' $S/SKILL.md && sed -i '' 's/^- `references\/repair.md`: read when a child worktree says `fatal: not a git repository`, or/- `references\/repair.md`: read when a child worktree says `fatal: not a git repository` or `gitfile does not point to a valid repository`, or/' $S/SKILL.md && git diff --stat | cat && bash skills/local/skill-author/scripts/lint-skill.sh $S 2>&1 | tail -2 && python3 -m unittest discover -s $S/tests -p test_repair.py 2>&1 | tail -2`
+
+```text
+ skills/local/superproject-workspace/SKILL.md             | 5 +++--
+ skills/local/superproject-workspace/references/repair.md | 2 ++
+ skills/local/superproject-workspace/tests/test_repair.py | 6 ++++--
+ 3 files changed, 9 insertions(+), 4 deletions(-)
+  errors:   0
+  warnings: 0
+
+OK
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:00:18Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Push the test fix to main, then rebase the issue-40 branch onto it and update the pull request
+
+```bash
+git add -A skills/local/superproject-workspace && git commit -q -m "fix(superproject-workspace): accept newer git's severed-worktree message
+
+git 2.5x reports a severed worktree as \"gitfile does not point to a valid
+repository\" instead of \"not a git repository\", which failed the repair test
+in CI. The helper never parsed the text; only the test and the symptom docs
+did. Accept both and list both for grep.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && git push -q origin HEAD:main 2>&1 | tail -2; git log --oneline -1 origin/main | cat; git switch -q issue/40-document-python-package-versioning-and-release-pol && git branch -D fix/superproject-git-error-text >/dev/null && git rebase -q origin/main && git push -q --force-with-lease origin HEAD 2>&1 | tail -2; git log --oneline -3 | cat
+```
+
+```text
+a76976a fix(superproject-workspace): accept newer git's severed-worktree message
+6962118 docs(python-project-best-practice): add versioning and release policy
+a76976a fix(superproject-workspace): accept newer git's severed-worktree message
+b4e3212 docs(pitfalls): record GitHub scanning blind spot and silent hook skip (#31)
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:00:23Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait for CI on the pull request and check main's latest validate run
+
+`sleep 30; gh pr checks 45 --watch --interval 20 >/dev/null 2>&1; gh pr checks 45 2>&1 | cut -c1-60; gh run list --branch main -L 1 --workflow validate.yml --json status,conclusion,headSha --jq '.[]|"main: \(.status) \(.conclusion) \(.headSha[0:7])"'`
+
+```text
+<tool_use_error>Blocked: sleep 30 followed by: gh pr checks 45 --watch --interval 20 gh pr checks 45 cut -c1-60 gh run list --branch main -L 1 --workflow validate.yml --json status,conclusion,headSha --jq '.[]|"main: \(.status) \(.conclusion) \(.headSha[0:7])"'. To wait for a condition, use Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you started, use run_in_background: true. Do not chain shorter sleeps to work around this block.</tool_use_error>
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:00:36Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Wait until CI finishes on the pull request and on main, then report both
+
+`until gh pr checks 45 2>/dev/null | grep -q validate && ! gh pr checks 45 2>/dev/null | grep -q pending; do sleep 15; done; gh pr checks 45 2>&1 | cut -c1-60; until ! gh run list --branch main -L 1 --workflow validate.yml --json status --jq '.[0].status' | grep -qv completed; do sleep 15; done; gh run list --branch main -L 1 --workflow validate.yml --json conclusion,headSha --jq '.[]|"main: \(.conclusion) \(.headSha[0:7])"'`
+
+```text
+Command running in background with ID: bhvn3lttl. Output is being written to: /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bhvn3lttl.output. You will be notified when it completes — do not poll that file or sleep while waiting. Read the file only if the user asks for progress, or if you need a line it prints before you can go on, such as a server's ready line or port.
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:00:49Z)**_
+
+PR #31 已 squash merge，issue #30 也關了。issue-40 的修改已 commit 並開成 PR #45，正在等 CI，跑過就 merge。
+
+**`.agents` 目錄的問題**
+
+Claude Code 本身應該還是不讀 `.agents/skills`。`npx skills` 是先把 skill 裝到 `~/.agents/skills/superproject-workspace`，再為 Claude Code 另外建一個 symlink：`~/.claude/skills/superproject-workspace -> ../../.agents/skills/superproject-workspace`。安裝輸出也把 Claude Code 列在「symlinked」那組，而不是直接讀取的「universal」那組。所以是安裝工具在幫 Claude Code 接橋，不是 Claude Code 自己支援了 `.agents`。
+
+`AGENTS.md` 的情況類似：照 skill 裡 `references/agent-entry.md` 的整理，Claude Code 只在目錄及上層都沒有 `CLAUDE.md` 時才讀 `AGENTS.md`，所以 dotfiles-all 那種 `AGENTS.md` 與 `CLAUDE.md` 互相 symlink 的做法最保險。至於這些支援是什麼時候加進 Claude Code 的，我手上沒有可靠的日期，就不猜了；需要的話我可以去查官方 changelog。
+
+**PR #31**
+
+內容只有兩篇 pitfall 文件加上索引，沒有改程式。我看過全文，沒有真的憑證值，作者也刻意略去了那筆真實 finding 的路徑和日期。這個 PR 沒有觸發 CI，我直接 squash merge 成 `b4e3212`。
+
+**issue #40**
+
+那份 staged 修改是 10 月 31 日留下的：替 `python-project-best-practice` 加上版本與 release 政策，scaffold 也會多產生一個 `CHANGELOG.md`。我 commit 後 rebase 到最新 `main`，實際 scaffold 了一個拋棄式專案確認新 template 能用，`lint-skill.sh` 和 `make validate` 都通過。PR 寫了 `Closes #40`，merge 後會自動關閉。
+
+**順手修掉的 CI 問題**
+
+PR #45 第一次 CI 失敗，原因是我前天推上 `main` 的 superproject 測試：CI 上的新版 git 把壞掉 worktree 的錯誤訊息改成 `gitfile does not point to a valid repository`。所以 `main` 從 `5b2cf54` 那次 push 起 CI 就一直是紅的，我之前沒注意到。helper 本身不解析這段文字，只有測試和文件用到。我讓測試兩種訊息都接受，文件也兩種都列出，直接 push 到 `main`（`a76976a`）。
+
+---
+
+_**User (2026-11-13 19:02:36Z)**_
+
+<task-notification>
+<task-id>bhvn3lttl</task-id>
+<tool-use-id>toolu_01XWjCFgJwM19bxbhtHCwQew</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bhvn3lttl.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait until CI finishes on the pull request and on main, then report both" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+_**Agent (claude-opus-5-5 2026-11-13 19:02:40Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Read the CI results for the pull request and main
+
+`cat /private/tmp/claude-501/-Users-zhouhanru-Documents-David-Program-agent-skills/9864ce10-101f-4de2-b084-621ae78459a0/tasks/bhvn3lttl.output`
+
+```text
+validate	pass	1m45s	https://github.com/daviddwlee84/agent-sk
+main: success a76976a
+
+[exited with code 0]
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:02:50Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Squash-merge PR #45 and confirm issue #40 closed
+
+`gh pr merge 45 --squash --match-head-commit $(git rev-parse HEAD) 2>&1 | tail -2; gh pr view 45 --json state,mergeCommit --jq '"\(.state) \(.mergeCommit.oid[0:7])"'; gh issue view 40 --json state --jq .state`
+
+```text
+MERGED a7aca29
+CLOSED
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:03:10Z)**_
+
+<tool-use data-tool-type="shell" data-tool-name="Bash"><details>
+<summary>Tool use: **Bash**</summary>
+Remove the merged issue-30 worktree and branch, and delete both merged remote branches
+
+`B=agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- && [ "$(git rev-parse $B)" = "$(gh pr view 31 --json headRefOid --jq .headRefOid)" ] && [ -z "$(git -C /Users/zhouhanru/Worktrees/agent-skills/issue-30 status --porcelain)" ] && git worktree remove /Users/zhouhanru/Worktrees/agent-skills/issue-30 && git branch -D $B && git push -q origin --delete $B issue/40-document-python-package-versioning-and-release-pol 2>&1 | tail -2; git worktree list | cat`
+
+```text
+Deleted branch agent/issue/30-docs-pitfalls-record-github-secret-scanning-blind- (was 56af9db).
+/Users/zhouhanru/Documents/David/Program/agent-skills                     aa5d901 [main]
+/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-40 6962118 [issue/40-document-python-package-versioning-and-release-pol]
+/Users/zhouhanru/Documents/David/Program/agent-skills/.worktrees/issue-44 2f8e2b8 [agent/issue/44-validate-and-document-pueue-agent-continuation-rec]
+/Users/zhouhanru/Worktrees/agent-skills/private-development-guidance      4511ed3 [feat/private-development-guidance]
+```
+</details></tool-use>
+
+_**Agent (claude-opus-5-5 2026-11-13 19:03:17Z)**_
+
+PR #45 的 CI 通過後已 squash merge 成 `a7aca29`，issue #40 自動關閉。`main` 的 CI 也恢復正常，`a76976a` 那次是綠的。
+
+**順手清掉的**
+
+- PR #31 的 local branch 和 `~/Worktrees/agent-skills/issue-30` worktree。刪之前確認過 branch 與 PR head 是同一個 commit、worktree 沒有未 commit 的修改。
+- #31 和 #45 的遠端 branch。
+
+**還留著的**
+
+- **`.worktrees/issue-40` 和它的 local branch**：內容已經 merge，但這個 session 現在就在那個 worktree 裡，沒辦法自己移除。在主 checkout 跑 `git worktree remove .worktrees/issue-40`，再 `git branch -D issue/40-document-python-package-versioning-and-release-pol` 即可。
+- **主 checkout 還停在 `aa5d901`**：要 `git pull` 才會拿到 `b4e3212`、`a76976a`、`a7aca29` 這三個 commit。
+- **`agent/issue/44-...`**：issue #44 還開著，branch 的內容就是 `main` 上的 `2f8e2b8`，等你決定要不要關 issue。
+- **`feat/private-development-guidance`**：有一個 commit 不在 `main` 上，可能已經移到 go-cli-tui 自己的 repo，確認之前不要刪。
+- **四個 superproject 的 `adopt` 修改**：都還沒 commit。

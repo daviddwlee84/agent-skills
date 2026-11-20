@@ -9,7 +9,7 @@ Build an English documentation site without adding application runtime
 dependencies or publishing anything. This is a single-language pilot, separate
 from `mkdocs-site-bootstrap`; existing MkDocs projects retain their old workflow.
 
-Requires Python 3.11+ and `uv`. The tested builder is **Zensical 0.0.73**.
+Requires Python 3.11+ and `uv`. The tested builder is **Zensical 0.1.2**.
 
 ## When to use
 
@@ -74,7 +74,7 @@ Existing `pyproject.toml` is left untouched; follow the initializer's JSON
 `next_steps` after reviewing the proposed dependency group:
 
 ```bash
-uv add --group docs 'zensical==0.0.73'
+uv add --group docs 'zensical==0.1.2'
 uv sync --locked --only-group docs
 uv run --no-sync zensical build --strict
 uv run --no-sync python scripts/check-docs-site.py

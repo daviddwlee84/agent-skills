@@ -6,6 +6,9 @@ With Zensical 0.0.73, both `pre.mermaid svg` and `.mermaid svg` timed out in
 Playwright. The visible host serialized as `<div class="mermaid"></div>` and
 `element.shadowRoot` returned `null`, despite a rendered diagram and nonzero height.
 
+Still reproduces with Zensical 0.1.2 (rechecked 2026-11-20): `.mermaid svg`
+is absent from the light DOM and `shadowRoot` is `null` in both color schemes.
+
 ## Root cause
 
 The native Mermaid integration replaces the source block with a host using a

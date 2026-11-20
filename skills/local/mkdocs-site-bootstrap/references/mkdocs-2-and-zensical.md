@@ -1,6 +1,7 @@
 # MkDocs 2.0, Zensical, and why this stack pins `mkdocs<2`
 
-Last verified: **2026-10-30** against upstream documentation and release notes.
+Last verified: **2026-10-30** against upstream documentation and release notes;
+Zensical release, language, plugin, and roadmap status rechecked **2026-11-20**.
 This replaces the April 2026 assessment. Upstream support below is not a claim
 that this skill's sites have been built or migrated with Zensical.
 
@@ -42,7 +43,8 @@ GitHub Actions can build the static output before GitHub Pages serves it.
 ## What Zensical supports now
 
 The latest release at verification was
-[0.0.73 (2026-10-26)](https://github.com/zensical/zensical/releases/tag/v0.0.73).
+[0.1.2 (2026-11-17)](https://github.com/zensical/zensical/releases/tag/v0.1.2),
+the beta line that began with 0.1.0.
 [0.0.67 (2026-09-30)](https://github.com/zensical/zensical/releases/tag/v0.0.67)
 added native `llmstxt` and a Copy as Markdown button. The old assessment that
 there was no published support for these functions is obsolete.
@@ -55,7 +57,7 @@ is the authority for individual settings, not the presence of a plugin name in
 |---|---|
 | Existing `mkdocs.yml` / Material look | Supported migration path; `theme.variant: classic` preserves the familiar appearance. Custom template overrides may need changes. |
 | Search / Python API reference | Native search and `mkdocstrings` integration are documented. Install the required handler; audit companion plugins separately. |
-| `llms.txt`, full output, Markdown counterparts | Native `llmstxt` since 0.0.67. Validate sections, exported content, and project Pages subpaths. Custom Python `preprocess` is ignored. |
+| `llms.txt`, full output, Markdown counterparts | Native `llmstxt` since 0.0.67. Validate sections, exported content, and project Pages subpaths. Custom Python `preprocess` was ignored through 0.0.73; the 0.1.2 release notes add support, not yet validated here. |
 | Copy as Markdown | `content.action.copy` works for pages with Markdown counterparts. This is not proof of parity with every `mkdocs-copy-to-llm` button or custom asset. |
 | UI language / alternate-language links | Documented, but not proof of suffix content translation, fallback, contextual switching, translated nav, or per-language search. |
 | Arbitrary MkDocs plugins / hooks | No MkDocs plugin API; arbitrary plugins cannot run. The migration guide lists `hooks` as unsupported. |

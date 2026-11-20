@@ -9,7 +9,7 @@ uv documentation dependencies, native LLM exports, and build-only CI.
 
 - Explicit-target dry runs and refusal to overwrite existing site configurations.
 - Optional preservation of a reviewed `docs/` tree, without reorganizing content.
-- Zensical 0.0.73 in a docs dependency group, not application runtime dependencies.
+- Zensical 0.1.2 in a docs dependency group, not application runtime dependencies.
 - Native `llms.txt`, `llms-full.txt`, Markdown exports, and Copy as Markdown.
 - Mermaid fences and preview commands with configurable host/port.
 - A project-owned checker for content coverage, copy targets, and Pages subpaths.
