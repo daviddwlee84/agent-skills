@@ -7,6 +7,7 @@ not a claim that a generated application has already passed these checks.
 
 - [Verification sequence](#verification-sequence)
 - [Behavior cases](#behavior-cases)
+- [Visual review](#visual-review)
 - [Unicode emulator limits](#unicode-emulator-limits)
 - [Three development walkthroughs](#three-development-walkthroughs)
 - [Evidence](#evidence)
@@ -29,7 +30,10 @@ not a claim that a generated application has already passed these checks.
 5. Run a real PTY session for changed interaction/terminal behavior. Launch,
    type, paste, switch, resize, open/close overlays, simulate slow/error I/O,
    and exit. Verify shell echo and cursor state afterward.
-6. Fix failures and rerun the affected gates. Report any unavailable PTY or
+6. Review the look of changed screens: render them at 80×24 and a wide size,
+   dark, light, and color-off, and inspect the images (see
+   [Visual review](#visual-review)). Fix what reads poorly, then re-render.
+7. Fix failures and rerun the affected gates. Report any unavailable PTY or
    target-OS check as unverified, not as passed from snapshots or cross-builds.
 
 Use an isolated environment for runtime tests: child-process HOME/XDG directories,
@@ -74,6 +78,10 @@ its terminal interaction works on that OS.
 | Mouse press/release, drag off button, layout/target change while pressed | Only the same still-enabled semantic action can execute; no stale coordinate activation |
 | Modal outside click/wheel; click field then type action mnemonic | No click-through; field keeps text ownership; draft remains unsaved until submit |
 | Mouse disabled or toggled; wheel over inactive pane | Native selection can be restored; hovered pane scroll/focus is predictable |
+| Default launch; toggle key; config opt-out | Mouse captured by default (mode sequence on the wire), released by the toggle, off when configured |
+| Drag over a log/detail pane; plain click there | Whole untruncated lines copied (OSC 52 and the local tool, faked in tests) with a status; a click only focuses |
+| Wizard field focus, option cursor, chosen value with and without color | Three distinct markers; no SGR color sequences when color is off |
+| Selected list row containing status words | Status colors remain inside the selection background |
 | Timestamped graphs after disconnect, target switch, source failure and counter reset | Gaps/stale source age remain truthful; history and aggregates stay bounded |
 | Normal exit, handled interruption, supported recovery | Shell cursor, echo, and terminal modes restored |
 
@@ -94,6 +102,31 @@ click-through case in deterministic tests even when the PTY scenario stays short
 A replay emulator need not understand mouse reporting modes to display the
 resulting screen; inspect raw control sequences separately when needed. Snapshot
 appearance alone does not prove a mouse event reached the intended action.
+
+## Visual review
+
+A green PTY run proves keys reach actions; it does not show whether the screen
+is readable. Review the look with real renders:
+
+1. Add an opt-in test (skipped unless an env var names an output directory)
+   that builds populated models with fake data and writes `View()` content,
+   ANSI included, for each screen and overlay at 80×24 and a wide size, with
+   color on and off. Keep it deterministic and free of network access.
+2. Render the files in a terminal emulator and capture images, for example a
+   generated VHS tape that runs `clear; cat <file>; sleep 2` and `Screenshot`
+   for each file, once with a dark and once with a light theme.
+3. Look at every image against the
+   [visual acceptance list](visual-design.md#visual-acceptance); fix, re-render.
+4. Optionally record the real binary against fake backends (the PTY harness's
+   environment) to see the actual renderer, but keep assertions in tests.
+
+Observed VHS 0.11.0 quirks (2026-11-21): absolute paths starting with `/` in
+`Output`/`Screenshot` failed to parse, so run the tape from the output
+directory with relative paths; a screenshot can catch a frame mid-redraw (a
+half-updated footer), so judge the settled frame and add sleeps rather than
+"fixing" the app; xterm.js drew a ZWJ emoji wider than its measured width,
+shifting the rest of that line. Keep Unicode width checks in unit tests (below)
+and prefer simple sample names in visual fixtures.
 
 ## Unicode emulator limits
 
@@ -169,11 +202,13 @@ Record the meaningful result, not only the commands invoked:
 Changed behavior:
 Automated checks and outcomes:
 PTY sequence, terminal/size, and observed outcome:
+Screens rendered (sizes, themes, color-off) and what changed after review:
 Slow/failure path exercised:
 Unverified platform or behavior:
 ```
 
-VHS can record a reviewed scenario; it does not assert correctness by itself.
+VHS can record a reviewed scenario or render visual-review images; it does not
+assert correctness by itself.
 Do not report these walkthroughs as executed Go applications when only the skill
 documents were reviewed. Structural skill lint, documentation builds, and
 scenario coverage are distinct from runtime and comparative skill evaluations.

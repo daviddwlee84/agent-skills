@@ -93,6 +93,14 @@ and reveal advanced choices only when selected or needed. Keep optional fields
 skippable. Show the current step/task; avoid an inaccurate fixed step count when
 branches change the flow.
 
+Make the form's parts visually distinct: an accent title, a muted description,
+unfocused fields collapsed to aligned `label value` lines, the focused field
+expanded behind an accent bar with muted help, choices with a `›` cursor and
+`●/○` marks, errors inside the field block, and buttons directly below the
+fields with the primary one accent-colored. Up/Down on a single-line text field
+moves between fields; on a selector it changes the choice. Details and a
+mockup are in [visual-design.md](visual-design.md#forms-and-wizards).
+
 Maintain a draft request separate from applied state. Back preserves answers;
 changing an upstream choice invalidates or revalidates dependent answers.
 Validate locally on field/step completion, then validate the complete request
@@ -113,6 +121,7 @@ consequential operations.
 |---|---|
 | Tab / Shift+Tab | Move between controls; input letters remain text |
 | Up/Down or j/k in a non-text selector | Select options |
+| Up/Down in a single-line text field | Previous / next field; letters stay text |
 | Back button / Esc | Close nested selector first, then previous step |
 | Esc at first step / Cancel / Ctrl+C | Cancel the wizard; do not submit |
 | Ctrl+S, where direct local Save is offered | Validate and save the current draft without traversing remaining fields |

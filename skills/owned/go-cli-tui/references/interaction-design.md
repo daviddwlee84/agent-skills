@@ -102,15 +102,19 @@ changes the hints as well as dispatch.
 
 ## Mouse interaction
 
-Mouse support complements keyboard access; make capture configurable so native
-terminal selection remains available. Check the pinned framework's event and
-mouse-mode APIs before copying examples from another major version.
+Mouse support complements keyboard access. Dashboards and forms capture the
+mouse by default; a toggle key and a config opt-out return native terminal
+selection, and in-app copy covers the text users copy most (see
+[visual-design.md](visual-design.md#mouse-by-default)). Check the pinned
+framework's event and mouse-mode APIs before copying examples from another
+major version.
 
 - Derive rendering and hit rectangles from one pure layout calculation, including
   borders, scroll offsets, narrow-pane collapse and visible clipping. Do not
   populate hit maps as a side effect of `View`: input may precede another render.
-- Click rows to select/focus. Keep activation explicit and route buttons through
-  the same semantic actions and availability checks as keyboard/palette input.
+- Click tabs and rows to switch/select/focus on press. Keep activation explicit:
+  footer hints and buttons run on release, through the same semantic actions
+  and availability checks as keyboard/palette input.
 - For press/release buttons, remember the semantic target on press and activate
   only when release hits that same target. Revalidate the entity, pending state
   and read-only policy on release. Cancel the press after target, overlay,
@@ -118,6 +122,9 @@ mouse-mode APIs before copying examples from another major version.
 - Let the active modal consume all mouse events, including clicks outside its
   visible box. Closing a modal cannot activate content behind it. Wheel events
   scroll the hovered pane or active modal, respecting actual visible rows.
+- A drag that starts in a text pane selects whole content lines (not screen
+  cells); copy the untruncated plain text on release and confirm it. A click
+  without motion only focuses. Freeze auto-follow while a drag is active.
 - In forms, clicking a field can focus it while caret editing remains keyboard
   driven. Save, Cancel and Test should preserve the same draft/review lifecycle
   as the keyboard path. Printable mouse-toggle mnemonics still type in inputs.
@@ -151,7 +158,9 @@ that a clicked aggregate and its detail list contain the same objects.
   `é`, and `👩🏽‍💻` in the supported terminal.
 - Use semantic colors for text, focus, selection, pending, warning, error, and
   success; pair color with labels/shapes. Honor `NO_COLOR` in automatic mode;
-  explicit color overrides follow the documented application policy.
+  explicit color overrides follow the documented application policy. Theme
+  roles, pane chrome, list/detail styling, and form hierarchy are in
+  [visual-design.md](visual-design.md).
 - Avoid required Nerd Fonts. Make icons/motion optional; check light, dark,
   and default backgrounds. Offer a plain/linear path where full-screen layout
   is unsuitable for assistive technology.

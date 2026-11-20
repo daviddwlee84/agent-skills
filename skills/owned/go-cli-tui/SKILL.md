@@ -1,7 +1,7 @@
 ---
 name: go-cli-tui
 license: MIT
-description: 'Build Go CLIs, terminal dashboards, and interactive wizards with Lazygit-inspired UX. Use when creating a Go command-line tool, adding a CLI/TUI feature, designing Bubble Tea or Charm interfaces, improving keyboard navigation or responsiveness, or adding guided setup and XDG configuration. Defaults to Cobra and the compatible Charm stack, with arrow/Vim navigation, shared operations, and real terminal verification.'
+description: 'Build Go CLIs, terminal dashboards, and interactive wizards with Lazygit-inspired UX. Use when creating a Go command-line tool, adding a CLI/TUI feature, designing Bubble Tea or Charm interfaces, improving keyboard navigation, mouse support, responsiveness, or a TUI that looks plain or hard to scan (theme, panes, color, focus), or adding guided setup and XDG configuration. Defaults to Cobra and the compatible Charm stack, with arrow/Vim navigation, a semantic theme, shared operations, and real terminal and visual verification.'
 ---
 
 # Go CLI / TUI
@@ -33,9 +33,11 @@ are opinionated defaults for new tools and features; respect existing contracts.
   and whether it needs a command, picker, wizard, or dashboard. For a distributed
   CLI, include its installation and upgrade paths in the interaction scope. Infer from the
   repo; ask only about consequential product choices that remain unknown.
-- [ ] **2. Define the interaction.** Sketch the primary screen and one complete
-  action path using the compact contract below. Record focus, keyboard behavior,
-  entry conditions, and failure/cancel behavior before wiring widgets.
+- [ ] **2. Define the interaction and its look.** Sketch the primary screen as
+  an ASCII mockup that marks chrome, content, secondary text, state, and focus,
+  plus one complete action path, using the compact contract below. Record
+  focus, keyboard and mouse behavior, entry conditions, and failure/cancel
+  behavior before wiring widgets.
 - [ ] **3. Build a vertical slice.** Connect a real operation from CLI and UI to
   the same domain service, validation, and result. Keep handlers and views thin;
   add packages as responsibilities grow, rather than generating empty layers.
@@ -43,7 +45,9 @@ are opinionated defaults for new tools and features; respect existing contracts.
   errors, refresh, cancellation, resize, and return from overlays or external
   programs. Add configuration for actual recurring preferences.
 - [ ] **5. Verify and finish.** Run relevant checks, fix failures, and exercise
-  the interaction in a PTY. Report changes, evidence, and untested paths.
+  the interaction in a PTY. Render the changed screens at 80×24 and wide, dark,
+  light, and color-off, and look at the images; a passing PTY test says nothing
+  about how a screen looks. Report changes, evidence, and untested paths.
   For a published CLI, verify how an existing installation reaches the next
   version; a successful fresh install alone does not cover that journey.
   Complete an authorized build request; do not stop after producing a design.
@@ -57,7 +61,8 @@ specification file for a small change; omit inapplicable rows.
 Task:           repeated action and state needed to decide
 Surface:        command / inline picker / wizard / dashboard
 Layout:         list, detail/preview, status; narrow-screen behavior
-Navigation:     focus, arrows + Vim aliases, search, Back, help
+Look:           theme roles, focus/cursor/selection markers, color-off form
+Navigation:     focus, arrows + Vim aliases, mouse, search, Back, help
 Entry:          bare command, flags, --interactive, non-TTY/JSON
 Operation:      shared service, validation, target, result, cancellation
 State:          selection identity, async ownership, freshness, failure
@@ -85,9 +90,19 @@ Acceptance:     input sequence and observable expected result
 6. **Proportional confirmation.** Destructive actions name the exact target and
    consequence. Reversible navigation stays immediate. A mutating wizard ends
    with one meaningful review/submit step.
+7. **Readable at a glance.** One semantic theme styles chrome, content,
+   secondary text, state, and focus differently; panes have borders and titles;
+   question, help, answer, choices, and cursor never look alike. Focus, cursor,
+   and selection have distinct markers that survive `NO_COLOR`.
+8. **Mouse on, with a way back.** Dashboards and forms capture the mouse by
+   default (click, wheel), keep native text selection one toggle away, and
+   offer in-app copy where users copy most (logs, details).
 
 Read [interaction-design.md](references/interaction-design.md) when laying out
 screens or implementing navigation, filtering, help, mouse behavior, or resize.
+Read [visual-design.md](references/visual-design.md) when styling a screen,
+building a theme, laying out panes or forms, or when a TUI looks plain, flat,
+or hard to scan.
 
 ## CLI and wizard entry policy
 
@@ -138,7 +153,8 @@ guided setup, validation, configuration, or shell integration.
   verify the effective installed copy while preserving local builds by default.
 - Read [verification.md](references/verification.md) before declaring an
   interaction implemented. Select applicable cases, use deterministic state
-  tests, and exercise a real PTY; screenshots cannot prove input behavior.
+  tests, and exercise a real PTY; screenshots cannot prove input behavior, and
+  passing input tests cannot prove the look, so do both.
 
 ## Installed-tool lifecycle
 
@@ -182,6 +198,13 @@ separate from updating its managed service, data, or configuration.
 - **`os.UserConfigDir()` does not enforce XDG everywhere.** macOS uses
   Application Support. Implement the chosen XDG policy explicitly; persistent
   state belongs outside both disposable cache and the preferences file.
+- **Reverse video of stripped text erases state.** Highlight a selected row by
+  adding a background to each styled segment, not by `ansi.Strip` plus reverse.
+  Chips with fixed white/black text on an ANSI background are unreadable on some
+  themes; reverse an ANSI accent so the text takes the terminal background.
+- **Bubble Tea v2 mouse capture is per frame.** `tea.View.MouseMode` is set on
+  the view each render; a config flag that never reaches `View` silently leaves
+  the mouse off. Capture also disables native selection, so ship a toggle.
 - **Nested terminal readers compete.** Integrate a form into the current model
   or release/suspend the outer program before running another reader. Restore
   terminal modes before children/editors and on handled exit paths.
