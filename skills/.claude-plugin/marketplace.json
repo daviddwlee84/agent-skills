@@ -267,6 +267,7 @@
         "./local/pueue-job-queue",
         "./local/slurm-hpc",
         "./local/long-running-jobs",
+        "./local/colab-remote-runner",
         "./local/clash-proxy-api",
         "./vendor/herdr"
       ]

@@ -244,6 +244,7 @@ scripts/check-runs.sh --marker-dir .runs --json
 ## See also
 
 - `slurm-hpc` — writing the batch scripts these tiers submit.
+- `colab-remote-runner` — when the remote resource is a Colab VM driven by the `colab` CLI.
 - `pueue-job-queue` — a local Tier 0/1 implementation with its own blocking
   `wait.py`, group parallelism, and JSON status.
 - `experiment-knowledge-harness` — recording what the run *meant* once it lands.

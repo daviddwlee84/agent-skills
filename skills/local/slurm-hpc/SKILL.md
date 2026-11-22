@@ -113,6 +113,7 @@ or partitioning GPU VRAM, or choosing between shard/mps/MIG.
 
 - `references/gpu-isolation.md` — read when capping/partitioning GPU VRAM or
   choosing shard vs mps vs MIG; has the config snippets and enforcement details.
+- No cluster, just need a GPU for a few hours? → `colab-remote-runner` (Colab VM via the `colab` CLI).
 
 ## Gotchas
 
