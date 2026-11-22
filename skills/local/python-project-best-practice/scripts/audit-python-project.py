@@ -45,6 +45,13 @@ from typing import Literal
 
 import tyro
 
+# Coding-agent directories no formatter may rewrite. `.claude` is listed even
+# though `.agents` is: `.claude/skills/<name>` symlinks into `.agents`, so an
+# `.agents`-only exclude still reaches the same bytes by the other path.
+AGENT_DIRS = (
+    ".agents", ".claude", ".codex", ".cursor", ".opencode", ".specify", ".specstory",
+)
+
 Status = Literal["pass", "warn", "fail", "n/a"]
 RANK = {"pass": 0, "n/a": 0, "warn": 1, "fail": 2}
 
@@ -276,6 +283,37 @@ def audit(root: Path) -> list[Check]:
         else "no black/ruff formatter overlap",
         "drop black: `ruff format` is a black reimplementation, and running both makes "
         "them fight over magic trailing commas" if (black and ruff_cfg) else "")
+
+    # Coding-agent dirs must be out of the formatter's reach: transcripts and
+    # plans are records (ruff 0.16+ formats Python inside Markdown code blocks),
+    # and .agents/.claude hold skills installed by `npx skills`.
+    if ruff_cfg:
+        ruff_conf = dict(tool.get("ruff", {}))
+        for candidate in ("ruff.toml", ".ruff.toml"):
+            standalone = root / candidate
+            if standalone.exists():
+                ruff_conf = {**read_toml(standalone), **ruff_conf}
+                break
+        excluded = set(ruff_conf.get("extend-exclude", [])) | set(ruff_conf.get("exclude", []))
+        missing = [d for d in AGENT_DIRS if d not in excluded]
+        forced = ruff_conf.get("force-exclude", False)
+        if missing:
+            status, evidence = "warn", f"ruff may rewrite {', '.join(missing)}"
+        elif not forced:
+            # The subtle half: excludes are ignored for explicitly-passed paths,
+            # which is how pre-commit invokes ruff.
+            status, evidence = "warn", "agent dirs excluded but force-exclude unset"
+        else:
+            status, evidence = "pass", "agent dirs excluded, force-exclude set"
+        add("artifact-dirs-excluded", status, evidence,
+            "" if status == "pass" else
+            'add extend-exclude = [".agents", ".claude", ".codex", ".cursor", '
+            '".opencode", ".specify", ".specstory"] and force-exclude = true to '
+            "[tool.ruff]. force-exclude is required because ruff ignores excludes "
+            "for paths passed explicitly on the command line - exactly how "
+            "pre-commit calls it")
+    else:
+        add("artifact-dirs-excluded", "n/a", "no ruff configuration", "")
 
     checker = next(
         (name for name in ("ty", "mypy", "pyright", "basedpyright")

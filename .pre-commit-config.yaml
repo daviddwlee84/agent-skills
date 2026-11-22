@@ -1,0 +1,77 @@
+# Pre-commit config for the agent-skills repo itself.
+#
+# This repo PUBLISHES the redact-agent-secrets hook (see .pre-commit-hooks.yaml)
+# and ships the template this file is derived from
+# (skills/local/agent-history-hygiene/assets/pre-commit-config.yaml.template).
+# Running it here is dogfooding: a template regression shows up on our own
+# commits instead of in a downstream repo.
+#
+# Two deliberate differences from the shipped template:
+#   1. redact-agent-secrets is wired as a `repo: local` hook against the
+#      in-tree script. Consuming repos use the pinned remote form so fixes
+#      arrive via `pre-commit autoupdate`; here the pinned tag (ahh-v1.1.0)
+#      would run an OLD copy of a script we are actively editing. Local wiring
+#      tests the working tree, which is the point of dogfooding.
+#   2. The rewriter excludes add `skills/vendor/`, which only exists here.
+#
+# Per-clone setup:   pre-commit install
+# One-off full run:  pre-commit run --all-files
+# `make validate` / scripts/git-hooks/pre-push remain the separate publish gate
+# (frontmatter + marketplace + TODO format); this file is about not committing
+# secrets and not rewriting files we do not own.
+
+repos:
+  # Auto-redact leaked secrets in agent artifacts BEFORE gitleaks runs.
+  - repo: local
+    hooks:
+      - id: redact-agent-secrets
+        name: Auto-redact secrets in agent artifacts
+        entry: skills/local/agent-history-hygiene/assets/redact_secrets.py --fix
+        language: script
+        pass_filenames: false
+        # Keep in sync with .pre-commit-hooks.yaml, which is what consumers get.
+        files: ^(\.specstory/history|\.claude/plans|\.cursor/plans|\.cursor/rules|\.opencode/plans|\.specify|\.codex)/.*\.md$
+
+  # Gitleaks -- block the commit when unallowlisted secrets are detected.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks-system
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+        # This hook greps `BEGIN <TYPE> PRIVATE KEY` as a plain byte substring
+        # and honours no allowlist -- not `<!-- gitleaks:allow -->`, nothing.
+        # In a repo whose subject matter IS secret scanning, that string shows
+        # up as prose: docs about risk evaluations, plans and transcripts
+        # describing which test fixtures hold fake keys. All are false
+        # positives (verified: no real key material exists in this repo).
+        #
+        # Coverage is NOT lost. gitleaks in pre-commit mode
+        # (`gitleaks git --staged`) was verified to catch a real planted RSA
+        # key inside .specstory/history/, and it has proper allowlists plus
+        # the redaction sentinels. Only the substring grep is scoped off.
+        exclude: '(^|/)\.(agents|claude|codex|cursor|opencode|specify|specstory)/|^docs/reference/skills-risk-evaluations(\.zh-TW)?\.md$'
+      - id: check-added-large-files
+        args: ['--maxkb=2048']
+      - id: check-merge-conflict
+      # In-place rewriters, scoped past everything this repo does not own:
+      #   skills/vendor/    -- upstream bytes. sync-vendor.sh `rm -rf`s and
+      #                        re-downloads the dir, so any rewrite here is
+      #                        reverted on the next `make sync` and lands as
+      #                        noise in the chore/vendor-sync PR.
+      #   .agents/ .claude/ -- skills installed by `npx skills`, hashed in
+      #                        skills-lock.json.
+      #   .specstory/ etc.  -- agent artifacts are records, not source.
+      # Measured: without these, trailing-whitespace rewrites 105 files here.
+      #
+      # PER-HOOK ON PURPOSE -- a top-level `exclude:` would also switch off
+      # redact-agent-secrets and gitleaks on exactly these directories.
+      - id: end-of-file-fixer
+        exclude: &no-rewrite '(^|/)\.(agents|claude|codex|cursor|opencode|specify|specstory)/|^skills/vendor/'
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: *no-rewrite

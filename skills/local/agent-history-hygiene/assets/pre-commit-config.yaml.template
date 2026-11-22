@@ -57,6 +57,23 @@ repos:
         # Keep every other agent root, plan, and installed skill subject to this gate.
         exclude: '^\.specstory/history(?:/|$)'
       - id: check-merge-conflict
+      # The two in-place rewriters below are scoped past every agent
+      # directory, not just .specstory:
+      #   - Agent artifacts (transcripts, plans) are RECORDS, not source.
+      #     Rewriting them falsifies the record, and churns forever against
+      #     the agent rewriting the same file.
+      #   - .agents/skills/<name> and .claude/skills/<name> hold skills
+      #     installed by `npx skills` -- vendored third-party code. No skill
+      #     can be format-clean under every downstream rule set, and edits
+      #     there invalidate the hashes in skills-lock.json.
+      # .claude is listed even though .agents is: .claude/skills/<name>
+      # symlinks into .agents, so an .agents-only exclude still reaches the
+      # same bytes by the other path.
+      #
+      # PER-HOOK ON PURPOSE -- never promote this to a top-level `exclude:`.
+      # That would also switch off check-agent-artifact-secrets and gitleaks on
+      # .specstory/history and .claude/plans: precisely the directories whose
+      # whole reason for being scanned is that secrets land in them.
       - id: end-of-file-fixer
         exclude: '^(?:\.agents|\.claude|\.codex|\.cursor|\.opencode|\.specify|\.specstory)(?:/|$)'
       - id: trailing-whitespace

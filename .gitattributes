@@ -1,0 +1,13 @@
+# Review ergonomics only. NOTHING here enforces the "do not rewrite what we do
+# not own" rule -- `linguist-*` attributes are read by GitHub for diff collapsing
+# and language statistics, and by no formatter, linter, or pre-commit hook. The
+# enforcement lives in pyproject.toml ([tool.ruff] extend-exclude +
+# force-exclude) and .pre-commit-config.yaml (per-hook excludes).
+
+# Upstream code. Keeps it out of the repo's language stats and collapses it in
+# the weekly chore/vendor-sync PR, where the diff is machine-generated anyway.
+skills/vendor/** linguist-vendored
+
+# Agent transcripts: machine-written records, routinely thousands of lines per
+# session. Collapsed by default in PR review; expand deliberately when auditing.
+.specstory/history/** linguist-generated

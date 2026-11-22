@@ -269,6 +269,10 @@ When a scan finds a real credential, or the user says it was committed/pushed:
 - `--install-hook` requires `core.hooksPath` genuinely unset. Empty, relative,
   global, or custom values are refused; integrate the validation-only gate in
   the configured hook directory yourself.
+- Ruff ignores `extend-exclude` for explicitly passed paths — which is how
+  pre-commit calls it. Pair the artifact-root excludes with
+  `force-exclude = true`, and keep rewriter excludes per-hook, never top-level
+  (that would also blind the scanners).
 - `gitleaks protect` is deprecated. Use `gitleaks git --staged` or
   `gitleaks dir`.
 - Rotate oversized sessions instead of raising the 2 MiB transcript allowance.

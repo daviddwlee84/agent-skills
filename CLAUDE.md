@@ -125,6 +125,23 @@ it with `renamed_from:` or `frozen:` as below.
 Active series in this repo:
 - `fullstack-nextjs` — Next.js + Supabase + shadcn/ui + Tailwind + design/testing skills (9 skills from vercel/vercel-plugin, vercel-labs/agent-skills, supabase/agent-skills, anthropics/skills)
 
+### Never rewrite what we do not own
+
+Nothing may reformat `skills/vendor/` in place. `sync-vendor.sh` does
+`rm -rf "$dest"` and re-downloads the tree, so a reformat is reverted by the
+next `make sync` and lands as unrelated noise in the weekly
+`chore/vendor-sync` PR. The same holds for `.agents/` and `.claude/` (skills
+installed by `npx skills`, hashed in `skills-lock.json`) and for `.specstory/`
+and the other agent artifact dirs, which are records rather than source.
+
+This is enforced, not merely documented: `[tool.ruff]` in `pyproject.toml`
+carries `extend-exclude` **and** `force-exclude = true` (without the latter the
+excludes are ignored for explicitly-passed paths, which is how pre-commit calls
+ruff), and `.pre-commit-config.yaml` scopes `end-of-file-fixer` /
+`trailing-whitespace` past the same set — per-hook, never top-level, so the
+secret scanners keep their full reach. Background:
+[`pitfalls/formatter-rewrites-committed-agent-transcripts.md`](pitfalls/formatter-rewrites-committed-agent-transcripts.md).
+
 ### When an upstream skill is renamed or removed
 
 Upstream repos reorganize; `make sync` fails hard if a tracked

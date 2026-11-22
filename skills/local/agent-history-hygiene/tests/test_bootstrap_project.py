@@ -829,3 +829,64 @@ def test_tracked_state_warns_until_explicitly_untracked(tmp_path: Path) -> None:
     assert git(repo, "ls-files", ".specstory/statistics.json").stdout == ""
     assert "D  .specstory/.project.json" in git(repo, "status", "--short").stdout
     assert "D  .specstory/statistics.json" in git(repo, "status", "--short").stdout
+
+
+# Every agent directory an in-place rewriter must leave alone. Mirrors the
+# ARCHIVE_EXCLUDE in assets/pre-commit-config.yaml.template.
+NO_REWRITE_DIRS = (
+    ".agents",
+    ".claude",
+    ".codex",
+    ".cursor",
+    ".opencode",
+    ".specify",
+    ".specstory",
+)
+
+# Hooks that rewrite files in place. These -- and only these -- carry the
+# exclude. Scanners must keep their full scope.
+REWRITING_HOOKS = ("end-of-file-fixer", "trailing-whitespace")
+SCANNING_HOOKS = ("check-agent-artifact-secrets", "gitleaks-system")
+
+
+def _installed_hooks(repo: Path) -> dict:
+    yaml = pytest.importorskip("yaml")
+    config = yaml.safe_load((repo / ".pre-commit-config.yaml").read_text())
+    assert "exclude" not in config, (
+        "top-level `exclude:` in the installed config would also switch off "
+        "check-agent-artifact-secrets and gitleaks on the artifact dirs -- the exclude "
+        "must stay per-hook on the rewriters"
+    )
+    return {hook["id"]: hook for repo_ in config["repos"] for hook in repo_["hooks"]}
+
+
+def test_rewriting_hooks_skip_every_agent_dir(tmp_path: Path) -> None:
+    """trailing-whitespace / end-of-file-fixer must not touch agent artifacts
+    or skills installed by `npx skills` under .agents/ and .claude/."""
+    repo = init_repo(tmp_path)
+    run_bootstrap(repo, tmp_path)
+    hooks = _installed_hooks(repo)
+
+    for hook_id in REWRITING_HOOKS:
+        pattern = hooks[hook_id].get("exclude")
+        assert pattern, f"{hook_id} has no exclude"
+        matcher = re.compile(pattern)
+        for directory in NO_REWRITE_DIRS:
+            assert matcher.search(f"{directory}/some/file.md"), (
+                f"{hook_id} would rewrite files under {directory}/"
+            )
+        # ...but ordinary source stays in scope.
+        assert not matcher.search("src/app.py")
+
+
+def test_scanners_keep_full_artifact_scope(tmp_path: Path) -> None:
+    """The rewriter excludes must not leak onto the secret scanners: the
+    artifact dirs are exactly where leaked secrets land."""
+    repo = init_repo(tmp_path)
+    run_bootstrap(repo, tmp_path)
+    hooks = _installed_hooks(repo)
+
+    for hook_id in SCANNING_HOOKS:
+        assert not hooks[hook_id].get("exclude"), (
+            f"{hook_id} must keep scanning the agent artifact dirs"
+        )

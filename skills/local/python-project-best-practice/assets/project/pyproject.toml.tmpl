@@ -82,6 +82,27 @@ features = ["pyo3/extension-module"]
 line-length = 100
 target-version = "RUFF_TARGET_PLACEHOLDER"
 src = ["src", "tests"]
+# Coding-agent directories are off-limits to the formatter. Agent transcripts
+# and plans are records, not source -- and since ruff 0.16 `ruff format` also
+# formats Python inside Markdown code blocks, so it rewrites them. `.agents/`
+# and `.claude/` additionally hold skills installed by `npx skills`: vendored
+# third-party code that no rule set can keep format-clean. `.claude` is listed
+# even though `.agents` is, because `.claude/skills/<name>` symlinks into
+# `.agents` and reaches the same bytes by the other path.
+extend-exclude = [
+    ".agents",
+    ".claude",
+    ".codex",
+    ".cursor",
+    ".opencode",
+    ".specify",
+    ".specstory",
+]
+# Required, not optional: ruff ignores exclude/extend-exclude for paths passed
+# explicitly on the command line, and pre-commit passes every changed file
+# explicitly. Without this the excludes above protect `ruff format .` and
+# silently do nothing under the ruff pre-commit hook.
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4", "RUF"]

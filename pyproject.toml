@@ -32,3 +32,30 @@ dev = [
 
 [tool.uv]
 package = false
+
+[tool.ruff]
+# Nothing in this repo may rewrite files it does not own.
+#   skills/vendor/  -- upstream bytes; sync-vendor.sh `rm -rf`s and re-downloads
+#                      the dir, so any reformat is reverted on the next
+#                      `make sync` and shows up as noise in the vendor-sync PR.
+#   .agents/ .claude/ -- skills installed by `npx skills`, hashed in
+#                      skills-lock.json; reformatting invalidates computedHash.
+#   the rest        -- agent artifacts are records, not source. Since ruff 0.16
+#                      `ruff format` also formats Python inside Markdown code
+#                      blocks, so it rewrites committed transcripts.
+# See pitfalls/formatter-rewrites-committed-agent-transcripts.md
+extend-exclude = [
+    ".agents",
+    ".claude",
+    ".codex",
+    ".cursor",
+    ".opencode",
+    ".specify",
+    ".specstory",
+    "skills/vendor",
+]
+# Load-bearing. Ruff ignores exclude/extend-exclude for paths passed explicitly
+# on the command line -- which is exactly how the ruff pre-commit hook invokes
+# it. Without this, the excludes above protect `ruff format .` and silently do
+# nothing under pre-commit.
+force-exclude = true

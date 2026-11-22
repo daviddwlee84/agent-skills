@@ -68,7 +68,15 @@ extend-exclude = [
     ".specify",
     ".specstory",
 ]
+force-exclude = true
 ```
+
+**`force-exclude = true` is not optional, and omitting it fails silently.** Ruff
+ignores `exclude` / `extend-exclude` for paths passed *explicitly on the command
+line* — and passing every changed file explicitly is exactly how pre-commit
+invokes the `ruff-pre-commit` hook. Verify: `ruff format --check` on a file inside
+an excluded dir must report *No Python files found*, not *1 file would be
+reformatted*.
 
 Apply the same root set to other mutators, including
 `end-of-file-fixer` and `trailing-whitespace`. `.claude` remains necessary when
@@ -82,6 +90,19 @@ mutation is not exclusion from secret detection.
 If a live session is already involved, stop retrying the commit. Exit through
 the foreground recorder, let the exact post-session sync finish, and use the
 parent-authorized finalizer after the writer is quiescent.
+
+Add any **vendored upstream tree** to the same list. In this repo that is
+`skills/vendor/`: `scripts/sync-vendor.sh` does `rm -rf "$dest"` and re-downloads
+it, so a reformat there is reverted by the next `make sync` and resurfaces as
+unrelated noise in the weekly `chore/vendor-sync` PR.
+
+The equivalent for pre-commit's own in-place rewriters is a **per-hook**
+`exclude:` on `end-of-file-fixer` and `trailing-whitespace` (both carry it in
+`assets/pre-commit-config.yaml.template`). Never hoist it to a top-level
+`exclude:`: that applies to every hook in the file and would also switch off
+`check-agent-artifact-secrets` and `gitleaks` on `.specstory/history` and
+`.claude/plans` — the exact dirs whose reason for being scanned is that leaked
+secrets land in them.
 
 ## Prevention
 

@@ -30,6 +30,36 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
   over magic trailing commas and string quoting. Pick ruff.
 - `target-version` should equal your `requires-python` floor, not your
   development pin. `UP` rewrites to the *lowest* version you claim to support.
+- **Scope the formatter past the coding-agent directories, and set
+  `force-exclude`.** Agent transcripts and plans are records, not source; since
+  ruff 0.16 `ruff format` also formats Python inside Markdown code blocks, so it
+  rewrites them — falsifying the record and churning forever against the agent
+  rewriting the same file. `.agents/` and `.claude/` additionally hold skills
+  installed by `npx skills`: vendored code that no rule set keeps format-clean.
+
+  ```toml
+  [tool.ruff]
+  extend-exclude = [".agents", ".claude", ".codex", ".cursor",
+                    ".opencode", ".specify", ".specstory"]
+  force-exclude = true
+  ```
+
+  `force-exclude = true` is the load-bearing half. Ruff ignores `exclude` /
+  `extend-exclude` for paths passed **explicitly on the command line**, and
+  passing every changed file explicitly is exactly what pre-commit does — so
+  `extend-exclude` alone protects `ruff format .` and silently does nothing
+  under the `ruff-pre-commit` hook. Verify rather than assume:
+
+  ```console
+  $ ruff format --check .agents/skills/<any>/scripts/x.py
+  warning: No Python files found under the given path(s)   # correct
+  1 file would be reformatted                              # exclude not in effect
+  ```
+
+  List `.claude` even when `.agents` is present: `.claude/skills/<name>`
+  symlinks into `.agents`, so an `.agents`-only exclude still reaches the same
+  bytes by the other path. `audit-python-project.py` checks this
+  (`artifact-dirs-excluded`).
 
 Per-file ignores earn their keep in exactly two places:
 
@@ -146,4 +176,11 @@ land. Do not duplicate the whole gate there — a pre-commit hook that runs the
 test suite gets bypassed with `-n` within a week.
 
 The `agent-history-hygiene` skill already bootstraps pre-commit with secret
-scanning; add ruff hooks to that config rather than starting a second one.
+scanning; add ruff hooks to that config rather than starting a second one. That
+template already scopes its own in-place rewriters (`end-of-file-fixer`,
+`trailing-whitespace`) past the agent directories; the ruff hooks you add need
+`force-exclude = true` in `pyproject.toml` to get the same treatment.
+
+Keep such excludes **per-hook**. A top-level `exclude:` applies to every hook in
+the file, so it would also switch off the secret scanners on the artifact dirs —
+precisely where leaked keys land.
