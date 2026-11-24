@@ -19,8 +19,8 @@ skills:
       path: .agents/skills/userscript-development
       branch: main
     last_sync:
-      date: "2026-10-18T10:23:56Z"
-      commit: "ad36d86343fddca0b3a1af9390fca7729cb60247"
+      date: "2026-11-02T10:40:13Z"
+      commit: "955d47cc37459b907073a8f4b4ddc6d1fa33a9ee"
   - name: marimo-notebook
     upstream:
       owner: marimo-team
@@ -106,8 +106,8 @@ skills:
       path: skills/vercel-storage
       branch: main
     last_sync:
-      date: "2026-10-26T08:38:33Z"
-      commit: "6400c27898f28197a235fc1c93ecf53d86df2d40"
+      date: "2026-11-02T10:40:17Z"
+      commit: "67977fdf723174f4927dd5b9292a9d04c2a821ec"
     series: fullstack-nextjs
   - name: supabase
     upstream:
@@ -240,8 +240,8 @@ skills:
       path: skills/engineering/improve-codebase-architecture
       branch: main
     last_sync:
-      date: "2026-10-18T10:27:59Z"
-      commit: "d80fa0f4ebe0c5714af0adf8670336065233ecc6"
+      date: "2026-11-02T10:40:24Z"
+      commit: "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
     series: engineering-fundamentals
   - name: triage
     upstream:
@@ -320,8 +320,8 @@ skills:
       path: skills/mcp-builder
       branch: main
     last_sync:
-      date: "2026-05-12T01:07:54Z"
-      commit: "b9e19e6f44773509fbdd7001d77ff41a49a486c1"
+      date: "2026-11-02T10:40:32Z"
+      commit: "ca45fc496a3436251f191354091d557da31c15b5"
   - name: ci-fix
     upstream:
       owner: warpdotdev
@@ -383,8 +383,8 @@ skills:
       path: skills/productivity/grilling
       branch: main
     last_sync:
-      date: "2026-10-18T10:28:22Z"
-      commit: "95249b0b49782349740fd9b8c6ce32b4e59e497a"
+      date: "2026-11-02T10:40:36Z"
+      commit: "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
     series: engineering-fundamentals
   - name: domain-modeling
     upstream:
@@ -413,8 +413,8 @@ skills:
       path: skills/engineering/code-review
       branch: main
     last_sync:
-      date: "2026-10-18T10:28:35Z"
-      commit: "3da8c01116264675eeefbd6e9d59c734de9095cc"
+      date: "2026-11-02T10:40:38Z"
+      commit: "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
     series: engineering-fundamentals
   - name: wayfinder
     upstream:
@@ -423,8 +423,8 @@ skills:
       path: skills/engineering/wayfinder
       branch: main
     last_sync:
-      date: "2026-10-18T10:28:39Z"
-      commit: "8295b8e10d4cdb6cce772a56dda7b7c37075074d"
+      date: "2026-11-02T10:40:39Z"
+      commit: "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
     series: engineering-fundamentals
   - name: codebase-design
     upstream:
@@ -433,8 +433,8 @@ skills:
       path: skills/engineering/codebase-design
       branch: main
     last_sync:
-      date: "2026-10-18T10:28:44Z"
-      commit: "d80fa0f4ebe0c5714af0adf8670336065233ecc6"
+      date: "2026-11-02T10:40:41Z"
+      commit: "7739eaed7f8f3915437a8def198a6d0d7206dbc7"
     series: engineering-fundamentals
   - name: herdr
     upstream:
